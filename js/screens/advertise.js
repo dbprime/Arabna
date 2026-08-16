@@ -2,6 +2,7 @@
 import { t, icon, $, $$, go, renderHeader, toast, wireRoutes, fmtMoney } from '../ui.js';
 import { AD_PRODUCTS } from '../data.js';
 import * as S from '../store.js';
+import { mountPhotoPicker } from './marketplace.js';
 
 const DURATIONS = [
   { id: 'week1', key: 'week1' },
@@ -15,7 +16,7 @@ export function AdvertiseScreen(root, params) {
   let step = 1;
   let product = AD_PRODUCTS.find(p => p.id === (params[0] || 'slider')) || AD_PRODUCTS[0];
   let duration = DURATIONS[0];
-  const content = { bizName: '', tagline: '', ctaText: '' };
+  const content = { bizName: '', tagline: '', ctaText: '', image: '' };
 
   const shell = document.createElement('div');
   root.appendChild(shell);
@@ -77,17 +78,17 @@ export function AdvertiseScreen(root, params) {
           <div class="field mt-12"><label class="label">${t('adBizName')}</label><input class="input" id="aName" value="${content.bizName}" /></div>
           <div class="field"><label class="label">${t('adTagline')}</label><input class="input" id="aTag" value="${content.tagline}" /></div>
           <div class="field"><label class="label">${t('adCtaText')}</label><input class="input" id="aCta" placeholder="${t('call')}" value="${content.ctaText}" /></div>
-          <div class="field"><label class="label">${t('photosLabel')}</label>
-            <div class="photo-strip"><button class="photo-tile" id="up">${icon('camera', 24)}</button></div></div>
+          <div class="field"><label class="label">${t('photosLabel')}</label><div id="adPh"></div></div>
           <button class="btn btn-gold btn-block mt-12" id="next3">${t('reviewOrder')}</button>
           <button class="btn btn-ghost btn-block mt-8" id="back3">${t('back')}</button>
         </div>`;
-      $('#up').addEventListener('click', () => toast(t('comingSoon')));
+      const pic = mountPhotoPicker($('#adPh'), content.image ? [content.image] : [], 0, 1);
       $('#back3').addEventListener('click', () => { step = 2; render(); });
       $('#next3').addEventListener('click', () => {
         content.bizName = $('#aName').value.trim();
         content.tagline = $('#aTag').value.trim();
         content.ctaText = $('#aCta').value.trim() || t('call');
+        content.image = pic.photos[0] || '';
         if (!content.bizName) { toast(t('required'), 'err'); return; }
         step = 4; render();
       });
@@ -124,7 +125,8 @@ export function AdvertiseScreen(root, params) {
         e.target.innerHTML = `<span class="spinner"></span> ${t('paying')}`;
         await S.chargeCard(price(), 'ARABNA ad placement');
         S.addAdOrder({ product: product.id, duration: duration.id, price: price(),
-                       bizName: content.bizName, tagline: content.tagline, ctaText: content.ctaText });
+                       bizName: content.bizName, tagline: content.tagline,
+                       ctaText: content.ctaText, image: content.image });
         step = 5; render();
       });
 

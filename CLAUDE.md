@@ -4,7 +4,9 @@
 
 ## What this is
 ARABNA · عربنا — a mobile-first web app for the Arab community in the U.S.:
-**business directory + personal classifieds + magazine**, Arabic-first with a full English toggle.
+**business directory + marketplace + magazine**, Arabic-first with a full English toggle.
+("Classifieds / الإعلانات الشخصية" was renamed to "Marketplace / ماركت بليس" — the old
+`#/classifieds` routes still resolve so shared links keep working.)
 Current version: **V.01 (prototype)**. Owner: Rai Elby (@dbprime). Deploys to Vercel (team DB Prime).
 
 ## Hard rules (from the product brief)
@@ -50,7 +52,7 @@ Icons are sized inline via `icon('name', size)`.
 | Home main slider | highest-priced ad placement ($149+/week) |
 | Home mini banner | cheaper ad tier ($49+/week) |
 | Directory | $29/month business subscription (reviews, 10 photos, 3 videos, verified badge) |
-| Classifieds | free + paid "Boost" ($2–8) |
+| Marketplace | free + paid "Boost" ($2–8); the Handyman section caps at 1 listing / 14 days and upsells the directory subscription |
 | Magazine | native banners between articles + sponsored stories ($199+) |
 
 ## Auth tiers (do not weaken these)
@@ -67,14 +69,26 @@ Icons are sized inline via `icon('name', size)`.
 | Twilio Lookup (line type) | `lookupLineType` |
 | Twilio Verify (OTP) | `sendSmsCode`, `sendEmailCode` |
 | Stripe (payments) | `chargeCard`, `subscribeBusiness` |
-| Cloudflare R2 (media) | upload buttons in `screens/classifieds.js`, `screens/advertise.js` |
-| Geocoding | `lookupZip` in `screens/home.js` (currently local table + api.zippopotam.us) |
+| Cloudflare R2 (media) | `mountPhotoPicker` / `compressImage` in `screens/marketplace.js` — today the picker downscales to 1200px and stores a data URL in localStorage; V.02 uploads the same blob and stores the URL |
+| Geocoding | `lookupZip` + `reverseGeocode` in `screens/home.js` (ZIP table + api.zippopotam.us; coordinates via BigDataCloud → Nominatim) |
+| Moderation service | `scanMessage`, `violatesFreeRule`, `stripPhones` in `store.js` — on-device now, same call signature against the real service later |
+
+### Marketplace rules (enforced in `store.js`, never hardcoded in screens)
+`catRule(catId)` returns the per-section limits. Handyman = 1 active listing / 14 days.
+Free stuff = price pinned to "مجاني"; a **new** listing with price wording is refused outright,
+while an **edit** that adds a price is published back into the review queue with a flag.
+Phone numbers are stripped from marketplace titles, descriptions and private messages
+(`stripPhones`, Arabic-Indic digits included) — the business directory is exempt on purpose.
+Every user listing starts `status: 'pending'` and is visible to its owner immediately.
 
 Screens never touch storage directly — they only call `store.js`.
 
 ## Demo credentials (prototype only)
-Verification code `123456` · accepted mobile `(713) 466-9182` · rejected as VOIP: anything
-starting 555/800/888 · admin panel `#/admin` password `arabna2026` · payments are simulated.
+Verification code `123456` (the verify screen shows it and has a "fill demo code" button) ·
+accepted mobile `(713) 466-9182` · rejected as VOIP: anything starting 555/800/888 ·
+admin panel reachable **only** by typing `#/admin` (not linked from the drawer or profile),
+username `arabna.admin` password `Arabna@2026!` — both in `js/store.js` ·
+payments are simulated.
 
 ## Testing before you ship a change
 1. Serve locally (`python3 -m http.server`) and click through: home → directory → listing →

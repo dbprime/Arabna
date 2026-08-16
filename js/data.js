@@ -17,13 +17,29 @@ export const CATEGORIES = [
   { id: 'travel',      key: 'catTravel',      icon: 'navigation' },
 ];
 
-export const CLASSIFIED_CATS = [
+/* ---- Marketplace sections ----
+   maxActive / days / freeOnly override the account-wide defaults
+   (5 active listings, 30 days) for that one section. */
+export const MARKET_CATS = [
   { id: 'cars',       key: 'filterCars',       icon: 'car' },
   { id: 'furniture',  key: 'filterFurniture',  icon: 'sofa' },
   { id: 'realestate', key: 'filterRealEstate', icon: 'key' },
   { id: 'jobs',       key: 'filterJobs',       icon: 'briefcase' },
+  { id: 'pets',       key: 'filterPets',       icon: 'paw' },
+  { id: 'handyman',   key: 'filterHandyman',   icon: 'hammer', maxActive: 1, days: 14, upsell: true },
+  { id: 'free',       key: 'filterFree',       icon: 'gift',   freeOnly: true },
   { id: 'other',      key: 'filterOther',      icon: 'bag' },
 ];
+
+/** Section rules — screens read limits from here, never hardcode them. */
+export function marketCat(id) { return MARKET_CATS.find(c => c.id === id) || null; }
+
+/** kept as an alias so nothing that still imports the old name breaks */
+export const CLASSIFIED_CATS = MARKET_CATS;
+
+/** Sentinel stored as the price of a "Free stuff" listing — rendered
+    through priceLabel() so it reads "مجاني" / "Free" in both languages. */
+export const FREE_PRICE = '__FREE__';
 
 export const MAG_CATS = [
   { id: 'community',   key: 'magCommunity' },
@@ -212,6 +228,12 @@ export const CLASSIFIEDS = [
     desc: { ar: 'مع ٦ كراسي، خشب طبيعي.', en: 'With 6 chairs, solid wood.' } },
   { id: 'c6', cat: 'cars', title: { ar: 'هوندا أكورد ٢٠١٦', en: '2016 Honda Accord' }, price: '$11,900', city: 'Houston, TX', when: { ar: 'قبل ٥ أيام', en: '5 days ago' }, boosted: false, icon: 'car', daysLeft: 25,
     desc: { ar: 'ماشية ٩٠ ألف ميل، محرك ممتاز.', en: '90k miles, engine runs great.' } },
+  { id: 'c7', cat: 'pets', title: { ar: 'قطط شيرازي — عمر شهرين', en: 'Persian kittens — 2 months' }, price: '$250', city: 'Houston, TX', when: { ar: 'قبل يومين', en: '2 days ago' }, boosted: false, icon: 'paw', daysLeft: 28,
+    desc: { ar: 'مطعّمة ونظيفة، تربية منزلية.', en: 'Vaccinated and clean, raised at home.' } },
+  { id: 'c8', cat: 'handyman', title: { ar: 'خدمات دهان وترميم منازل', en: 'Painting & home repair services' }, price: '$40/hr', city: 'Stafford, TX', when: { ar: 'قبل ٣ أيام', en: '3 days ago' }, boosted: false, icon: 'hammer', daysLeft: 11,
+    desc: { ar: 'دهان داخلي وخارجي، تصليح جبس، خبرة ١٢ سنة.', en: 'Interior and exterior painting, drywall repair, 12 years experience.' } },
+  { id: 'c9', cat: 'free', title: { ar: 'كراتين نقل — مجاني للاستلام', en: 'Moving boxes — free to collect' }, price: '__FREE__', city: 'Sugar Land, TX', when: { ar: 'قبل يوم', en: '1 day ago' }, boosted: false, icon: 'gift', daysLeft: 29,
+    desc: { ar: 'حوالي ٢٠ كرتونة بحالة ممتازة، الاستلام من البيت.', en: 'About 20 boxes in good shape, pickup from the house.' } },
 ];
 
 /* ---- magazine ---- */

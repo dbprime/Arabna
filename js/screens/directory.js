@@ -1,7 +1,7 @@
 /* ======================= DIRECTORY + LISTING ======================= */
 import { t, L, icon, $, $$, go, back, renderHeader, openSheet, closeSheet, confirmSheet,
          toast, stars, wireRoutes, emptyState, query, openMaps, shareItem, fmtMoney } from '../ui.js';
-import { CATEGORIES, REVIEWS, SUBSCRIPTION_PRICE } from '../data.js';
+import { CATEGORIES, SUBSCRIPTION_PRICE } from '../data.js';
 import * as S from '../store.js';
 import { catIcon } from './home.js';
 
@@ -63,6 +63,9 @@ export function DirectoryScreen(root) {
   };
   paint();
 
+  const activeChip = $('#catChips .chip.active');
+  if (activeChip && cat !== 'all') activeChip.scrollIntoView({ inline: 'center', block: 'nearest' });
+
   $$('#catChips .chip').forEach(c => c.addEventListener('click', () => {
     cat = c.dataset.cat;
     $$('#catChips .chip').forEach(x => x.classList.toggle('active', x === c));
@@ -76,13 +79,14 @@ export function DirectoryScreen(root) {
 
 function rowHtml(b) {
   const paid = S.businessPlan(b) === 'paid';
+  const r = S.ratingFor(b);
   return `<div class="list-row ${paid ? 'premium' : ''}" data-route="#/directory/${b.id}">
     <span class="row-ico">${icon(catIcon(b.cat), 22)}</span>
     <div class="row-main">
       <div class="row-title">${L(b.name)}
         ${paid ? `<span class="badge badge-verified">${icon('check', 12)}${t('verified')}</span>` : `<span class="badge badge-free">${t('free')}</span>`}
       </div>
-      <div class="row-sub">${paid && b.rating ? stars(b.rating) + `<span>· ${b.reviewCount} ${t('reviews')}</span>` : ''}
+      <div class="row-sub">${paid && r.count ? stars(r.avg) + `<span>· ${r.count} ${t('reviews')}</span>` : ''}
         <span>${icon('mapPin', 13)} ${b.dist} ${t('miles')}</span>
       </div>
       <div class="row-sub">${icon('phone', 13)} <span class="ltr">${b.phone}</span></div>
@@ -101,7 +105,9 @@ export function ListingScreen(root, params) {
   renderHeader({ hidden: true });
 
   const paid = S.businessPlan(b) === 'paid';
-  const revs = REVIEWS[b.id] || [];
+  const revs = S.reviewsFor(b.id);
+  const rate = S.ratingFor(b);
+  const myRev = S.myReviewFor(b.id);
   const mine = S.state.myBusinessId === b.id;
 
   root.innerHTML = `
@@ -115,7 +121,7 @@ export function ListingScreen(root, params) {
       <div class="row-between">
         <div>
           <div class="detail-title">${L(b.name)}</div>
-          <div class="row-sub">${paid && b.rating ? stars(b.rating) + `<span>· ${b.reviewCount} ${t('reviews')}</span>` : `<span class="badge badge-free">${t('free')}</span>`}</div>
+          <div class="row-sub">${paid && rate.count ? stars(rate.avg) + `<span>· ${rate.count} ${t('reviews')}</span>` : `<span class="badge badge-free">${t('free')}</span>`}</div>
         </div>
         <button class="icon-btn" id="saveBtn">${icon('heart', 22)}</button>
       </div>
@@ -141,18 +147,16 @@ export function ListingScreen(root, params) {
         <div class="hint">${t('photosLimit')} · ${t('videoLimit')}</div>`
       : lockedBlock(t('lockedPhotos'))}
 
-      <div class="section-head" style="padding:0;margin-top:20px"><div class="section-title">${t('reviewsTitle')}</div></div>
+      <div class="section-head" style="padding:0;margin-top:20px">
+        <div class="section-title">${t('reviewsTitle')}<small>${rate.count ? `${rate.avg} · ${rate.count} ${t('reviews')}` : t('noReviewsYet')}</small></div>
+      </div>
       ${paid ? `
-        ${revs.map(r => `
-          <div class="review">
-            <div class="review-head">
-              <span class="avatar">${r.user[0]}</span>
-              <div><b class="fs-13">${r.user}</b><div class="fs-12 muted">${L(r.when)} · ${stars(r.rating)}</div></div>
-            </div>
-            <p>${L(r.text)}</p>
-          </div>`).join('') || `<div class="hint">${t('emptyDirSub')}</div>`}
-        <button class="btn btn-ghost btn-block mt-12" id="revBtn">${icon('edit', 19)} ${t('writeReview')}</button>`
-      : lockedBlock(t('lockedReviews'))}
+        <div id="revList">
+          ${revs.length ? revs.map(r => reviewHtml(r)).join('')
+                        : `<div class="hint">${t('noReviewsYet')} — ${t('beFirstReview')}</div>`}
+        </div>
+        <button class="btn btn-ghost btn-block mt-12" id="revBtn">${icon('edit', 19)} ${myRev ? t('editReview') : t('writeReview')}</button>`
+      : lockedBlock(t('lockedReviews'), t('reviewsPaidOnly'))}
 
       ${!paid ? `
         <div class="upsell" style="margin:18px 0 0">
@@ -184,36 +188,75 @@ export function ListingScreen(root, params) {
   const rv = $('#revBtn');
   if (rv) rv.addEventListener('click', () => {
     if (!S.requireTier(1, location.hash, go)) return;
-    openReviewSheet();
+    openReviewSheet(b.id, () => go('#/directory/' + b.id));
   });
+
+  $$('[data-editrev]').forEach(btn => btn.addEventListener('click', () => {
+    openReviewSheet(b.id, () => go('#/directory/' + b.id));
+  }));
+  $$('[data-delrev]').forEach(btn => btn.addEventListener('click', () => confirmSheet({
+    title: t('delete'), sub: t('myReviewOn') + ' ' + L(b.name), confirmText: t('delete'), danger: true,
+    onConfirm: () => { S.deleteReview(btn.dataset.delrev); toast(t('reviewDeleted'), 'ok'); go('#/directory/' + b.id); }
+  })));
 
   wireRoutes(root);
 }
 
-function lockedBlock(title) {
+function lockedBlock(title, sub) {
   return `<div class="locked mt-12">
     <div class="lk-ico">${icon('lock', 31)}</div>
-    <b>${title}</b><span>${t('lockedSub')}</span>
+    <b>${title}</b><span>${sub || t('lockedSub')}</span>
     <button class="btn btn-outline-gold btn-sm" data-route="#/subscribe">${t('upgradeBtn')}</button>
   </div>`;
 }
 
-function openReviewSheet() {
-  let rating = 5;
+/** One review card. Mine gets edit / delete controls. */
+export function reviewHtml(r) {
+  return `<div class="review" data-rev="${r.id || ''}">
+    <div class="review-head">
+      <span class="avatar">${(r.user || '?')[0]}</span>
+      <div><b class="fs-13">${r.user}</b><div class="fs-12 muted">${L(r.when)} · ${stars(r.rating)}</div></div>
+    </div>
+    <p>${L(r.text)}</p>
+    ${r.mine ? `<div class="row-actions">
+      <button class="mini-btn gold" data-editrev="${r.id}">${icon('edit', 15)} ${t('edit')}</button>
+      <button class="mini-btn" data-delrev="${r.id}">${icon('trash', 15)} ${t('delete')}</button>
+    </div>` : ''}
+  </div>`;
+}
+
+/**
+ * Write or edit a review. Saves through the store, so the business page,
+ * the rating average and "My reviews" all update from the same record.
+ */
+export function openReviewSheet(bizId, onSaved) {
+  const existing = S.myReviewFor(bizId);
+  let rating = existing ? existing.rating : 5;
+
   openSheet(`
-    <div class="sheet-title">${t('writeReview')}</div>
+    <div class="sheet-title">${existing ? t('editReview') : t('writeReview')}</div>
     <div class="sheet-sub">${t('yourRating')}</div>
     <div id="rateRow" style="display:flex;gap:8px;justify-content:center;margin-bottom:14px">
       ${[1, 2, 3, 4, 5].map(i => `<button data-s="${i}" style="color:var(--gold-bright)">${icon('star', 33)}</button>`).join('')}
     </div>
     <div class="field"><label class="label">${t('yourReview')}</label>
-      <textarea class="textarea" id="revTxt" placeholder="..."></textarea></div>
+      <textarea class="textarea" id="revTxt" placeholder="...">${existing ? L(existing.text) : ''}</textarea></div>
     <button class="btn btn-gold btn-block" id="revSend">${t('submitReview')}</button>
   `, (panel) => {
-    const paint = () => panel.querySelectorAll('#rateRow button').forEach(b => b.style.opacity = (+b.dataset.s <= rating) ? '1' : '.25');
+    const paint = () => panel.querySelectorAll('#rateRow button')
+      .forEach(b => b.style.opacity = (+b.dataset.s <= rating) ? '1' : '.25');
     paint();
-    panel.querySelectorAll('#rateRow button').forEach(b => b.addEventListener('click', () => { rating = +b.dataset.s; paint(); }));
-    panel.querySelector('#revSend').addEventListener('click', () => { closeSheet(); toast(t('reviewThanks'), 'ok'); });
+    panel.querySelectorAll('#rateRow button').forEach(b =>
+      b.addEventListener('click', () => { rating = +b.dataset.s; paint(); }));
+
+    panel.querySelector('#revSend').addEventListener('click', () => {
+      const txt = panel.querySelector('#revTxt').value.trim();
+      if (!txt) { toast(t('required'), 'err'); return; }
+      S.addReview(bizId, rating, txt);
+      closeSheet();
+      toast(existing ? t('reviewUpdated') : t('reviewThanks'), 'ok');
+      if (onSaved) onSaved();
+    });
   });
 }
 

@@ -35,12 +35,12 @@ export function HomeScreen(root) {
       <div class="slider-dots" id="dots">${ads.map((_, i) => `<span class="dot-i ${i === 0 ? 'active' : ''}"></span>`).join('')}</div>
     </div>
 
-    <!-- categories -->
+    <!-- categories — home is a summary: 5 max, the rest live on #/categories -->
     <div class="section">
       <div class="section-head"><div class="section-title">${t('categories')}</div>
-        <button class="link-gold" data-route="#/directory">${t('seeAll')}</button></div>
+        <button class="link-gold" data-route="#/categories">${t('seeAll')}</button></div>
       <div class="hscroll" id="cats">
-        ${CATEGORIES.map(c => `
+        ${CATEGORIES.slice(0, 5).map(c => `
           <button class="cat-item" data-cat="${c.id}">
             <span class="cat-circle">${icon(c.icon, 26)}</span>
             <span class="cat-label">${t(c.key)}</span>

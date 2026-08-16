@@ -1,14 +1,15 @@
-/* ======================= ADMIN BACK OFFICE (v1, internal) ======================= */
-import { t, L, icon, $, $$, go, renderHeader, toast, wireRoutes, emptyState, fmtMoney } from '../ui.js';
-import { MOD_QUEUE, MAG_CATS, ARTICLES, CATEGORIES } from '../data.js';
+/* ======================= ADMIN BACK OFFICE (v1, internal) =======================
+   Reachable only by typing #/admin — it is intentionally absent from the drawer
+   and the profile screen. Credentials live in store.js (V.02: a real staff
+   account behind Supabase row-level security). */
+import { t, L, icon, $, $$, go, renderHeader, toast, wireRoutes, emptyState, fmtMoney, priceLabel } from '../ui.js';
+import { MAG_CATS, ARTICLES, CATEGORIES } from '../data.js';
 import * as S from '../store.js';
 
-const ADMIN_PASS = 'arabna2026';
 let unlocked = false;
 
 export function AdminScreen(root) {
   renderHeader({ simple: true, title: t('adminPanel') });
-
   if (!unlocked) { lockView(root); return; }
   panelView(root);
 }
@@ -21,30 +22,43 @@ function lockView(root) {
       <span class="muted fs-13">${S.state.lang === 'en' ? 'Internal staff access only — separate from consumer accounts.' : 'دخول داخلي لفريق عربنا فقط — منفصل عن حسابات المستخدمين.'}</span>
     </div>
     <div class="pad mt-16">
-      <div class="field"><label class="label">${t('password')}</label><input class="input" id="aPass" type="password" placeholder="arabna2026" /></div>
-      <button class="btn btn-gold btn-block" id="aGo">${t('signIn')}</button>
-      <div class="hint" style="text-align:center;margin-top:10px">DEMO: arabna2026</div>
+      <div class="field"><label class="label">${t('adminUser')}</label>
+        <input class="input" id="aUser" autocomplete="off" /></div>
+      <div class="field"><label class="label">${t('password')}</label>
+        <input class="input" id="aPass" type="password" /></div>
+      <div id="aErr"></div>
+      <button class="btn btn-gold btn-block mt-8" id="aGo">${t('signIn')}</button>
     </div>`;
-  $('#aGo').addEventListener('click', () => {
-    if ($('#aPass').value !== ADMIN_PASS) { toast(t('wrongCode'), 'err'); return; }
+
+  const submit = () => {
+    if (!S.checkAdmin($('#aUser').value.trim(), $('#aPass').value)) {
+      $('#aErr').innerHTML = `<div class="err-msg">${icon('alert', 15)} ${t('adminLoginFail')}</div>`;
+      $('#aPass').classList.add('input-err');
+      return;
+    }
     unlocked = true;
     go('#/admin');
-  });
+  };
+  $('#aGo').addEventListener('click', submit);
+  $('#aPass').addEventListener('keydown', e => { if (e.key === 'Enter') submit(); });
 }
 
 function panelView(root) {
   let tab = 'queue';
 
-  root.innerHTML = `
-    <div class="tabs" id="aTabs">
-      <button class="tab active" data-t="queue">${S.state.lang === 'en' ? 'Moderation' : 'المراجعة'}</button>
-      <button class="tab" data-t="mag">${t('magazineTitle')}</button>
-      <button class="tab" data-t="ads">${t('advertiseWithUs')}</button>
-      <button class="tab" data-t="dir">${t('directoryTitle')}</button>
-    </div>
-    <div id="aBody"></div>`;
+  const paintTabs = () => {
+    const n = S.pendingCount();
+    return `
+      <div class="tabs" id="aTabs">
+        <button class="tab ${tab === 'queue' ? 'active' : ''}" data-t="queue">${S.state.lang === 'en' ? 'Moderation' : 'المراجعة'}${n ? ` (${n})` : ''}</button>
+        <button class="tab ${tab === 'mag' ? 'active' : ''}" data-t="mag">${t('magazineTitle')}</button>
+        <button class="tab ${tab === 'ads' ? 'active' : ''}" data-t="ads">${t('advertiseWithUs')}</button>
+        <button class="tab ${tab === 'dir' ? 'active' : ''}" data-t="dir">${t('directoryTitle')}</button>
+      </div>`;
+  };
 
   const paint = () => {
+    root.innerHTML = paintTabs() + '<div id="aBody"></div>';
     const body = $('#aBody');
     if (tab === 'queue') body.innerHTML = queueHtml();
     else if (tab === 'mag') body.innerHTML = magHtml();
@@ -53,9 +67,41 @@ function panelView(root) {
 
     wireRoutes(body);
 
-    $$('#aBody [data-approve]').forEach(b => b.addEventListener('click', () => { toast(t('done'), 'ok'); b.closest('.list-row').style.opacity = '.4'; }));
-    $$('#aBody [data-reject]').forEach(b => b.addEventListener('click', () => { toast(t('done'), 'ok'); b.closest('.list-row').style.opacity = '.4'; }));
-    $$('#aBody [data-adok]').forEach(b => b.addEventListener('click', () => { S.approveAd(b.dataset.adok); toast(t('done'), 'ok'); paint(); }));
+    // --- listings waiting for a decision ---
+    $$('#aBody [data-approve]').forEach(b => b.addEventListener('click', () => {
+      S.approveClassified(b.dataset.approve);
+      toast(t('itemApproved'), 'ok');
+      paint();
+    }));
+    $$('#aBody [data-reject]').forEach(b => b.addEventListener('click', () => {
+      S.rejectClassified(b.dataset.reject);
+      toast(t('itemRejected'), 'ok');
+      paint();
+    }));
+    // --- flags raised by the app (reports, free-section edits, scanned DMs) ---
+    $$('#aBody [data-flagok]').forEach(b => b.addEventListener('click', () => {
+      S.resolveFlag(b.dataset.flagok);
+      toast(t('done'), 'ok');
+      paint();
+    }));
+    $$('#aBody [data-flagdel]').forEach(b => b.addEventListener('click', () => {
+      const f = S.state.flags.find(x => x.id === b.dataset.flagdel);
+      if (f && f.kind !== 'message' && S.classifiedById(f.refId)) S.rejectClassified(f.refId);
+      S.resolveFlag(b.dataset.flagdel);
+      toast(t('itemRejected'), 'ok');
+      paint();
+    }));
+    // --- seeded queue rows ---
+    $$('#aBody [data-seedok]').forEach(b => b.addEventListener('click', () => {
+      S.resolveSeedMod(b.dataset.seedok); toast(t('done'), 'ok'); paint();
+    }));
+    $$('#aBody [data-seeddel]').forEach(b => b.addEventListener('click', () => {
+      S.resolveSeedMod(b.dataset.seeddel); toast(t('itemRejected'), 'ok'); paint();
+    }));
+    // --- paid ad orders ---
+    $$('#aBody [data-adok]').forEach(b => b.addEventListener('click', () => {
+      S.approveAd(b.dataset.adok); toast(t('done'), 'ok'); paint();
+    }));
 
     const pub = $('#pubArt');
     if (pub) pub.addEventListener('click', () => {
@@ -75,22 +121,72 @@ function panelView(root) {
       toast(t('done'), 'ok');
       go('#/magazine');
     });
+
+    $$('#aTabs .tab').forEach(b => b.addEventListener('click', () => {
+      tab = b.dataset.t;
+      paint();
+    }));
   };
   paint();
-
-  $$('#aTabs .tab').forEach(b => b.addEventListener('click', () => {
-    tab = b.dataset.t;
-    $$('#aTabs .tab').forEach(x => x.classList.toggle('active', x === b));
-    paint();
-  }));
 }
 
+/* ------------------------------ QUEUE ------------------------------ */
 function queueHtml() {
-  const reported = S.state.reported;
+  const pending = S.pendingListings();
+  const flags = S.state.flags;
+  const seeds = S.seedQueue();
+  const total = pending.length + flags.length + seeds.length;
+
+  if (!total) {
+    return `<div class="pad mt-16">${emptyState('checkCircle', t('noPending'), t('noPendingSub'))}</div>`;
+  }
+
   return `<div class="pad mt-16">
     <div class="list-note" style="margin:0 0 12px">${icon('shield', 18)}
-      <span>${S.state.lang === 'en' ? 'Flagged content and user reports land here for a human decision — AI scores risk, it never auto-rejects.' : 'المحتوى المشبوه وبلاغات المستخدمين تظهر هنا لقرار بشري — الذكاء الاصطناعي يعطي درجة خطورة فقط ولا يرفض تلقائياً.'}</span></div>
-    ${MOD_QUEUE.map(q => `
+      <span>${S.state.lang === 'en'
+        ? 'Flagged content and user reports land here for a human decision — the automated scan scores risk, it never auto-rejects.'
+        : 'المحتوى المشبوه وبلاغات المستخدمين تظهر هنا لقرار بشري — الفحص الآلي يعطي درجة خطورة فقط ولا يرفض تلقائياً.'}</span></div>
+
+    <div class="stat-row" style="padding:0 0 12px">
+      <div class="stat"><b>${pending.length}</b><span>${t('pendingReview')}</span></div>
+      <div class="stat"><b>${flags.length}</b><span>${t('report')}</span></div>
+      <div class="stat"><b>${total}</b><span>${t('total')}</span></div>
+    </div>
+
+    ${pending.map(c => `
+      <div class="list-row">
+        <span class="row-ico" style="overflow:hidden;padding:0">${c.photos && c.photos.length
+          ? `<img src="${c.photos[c.mainPhoto || 0] || c.photos[0]}" style="width:100%;height:100%;object-fit:cover" alt="" />`
+          : icon(c.icon || 'image', 24)}</span>
+        <div class="row-main">
+          <div class="row-title">${L(c.title)}
+            <span class="badge badge-pending">${t('statusPending')}</span></div>
+          <div class="row-sub gold"><span class="ltr">${priceLabel(c.price)}</span> · ${t(catKeyOf(c.cat))}</div>
+          <div class="row-sub">${L(c.desc || '')}</div>
+          <div class="row-sub">${icon('user', 13)} ${(S.state.user && S.state.user.name) || t('guest')} · ${(c.photos || []).length} ${t('photosCount')}</div>
+          <div class="row-actions">
+            <button class="mini-btn gold" data-approve="${c.id}">${icon('check', 15)} ${t('approve')}</button>
+            <button class="mini-btn" data-reject="${c.id}">${icon('x', 15)} ${t('reject')}</button>
+            <button class="mini-btn" data-route="#/marketplace/${c.id}">${icon('eye', 15)}</button>
+          </div>
+        </div>
+      </div>`).join('')}
+
+    ${flags.map(f => `
+      <div class="list-row">
+        <span class="row-ico" style="color:${f.risk === 'high' ? '#E79A9C' : 'var(--gold-bright)'}">${icon(f.kind === 'message' ? 'message' : 'alert', 24)}</span>
+        <div class="row-main">
+          <div class="row-title">${f.item ? L(f.item) : t(f.kind === 'message' ? 'messagesTitle' : 'report')}
+            <span class="badge badge-free" style="color:#E79A9C;background:rgba(196,89,92,.14);border-color:rgba(196,89,92,.35)">${f.risk}</span></div>
+          <div class="row-sub">${L(f.reason)}</div>
+          <div class="row-actions">
+            <button class="mini-btn gold" data-flagok="${f.id}">${icon('check', 15)} ${t('approve')}</button>
+            <button class="mini-btn" data-flagdel="${f.id}">${icon('x', 15)} ${t('reject')}</button>
+          </div>
+        </div>
+      </div>`).join('')}
+
+    ${seeds.map(q => `
       <div class="list-row">
         <span class="row-ico" style="color:${q.risk === 'high' ? '#E79A9C' : 'var(--gold-bright)'}">${icon('alert', 24)}</span>
         <div class="row-main">
@@ -98,15 +194,22 @@ function queueHtml() {
             <span class="badge ${q.risk === 'high' ? 'badge-free' : 'badge-sponsored'}" style="${q.risk === 'high' ? 'color:#E79A9C;background:rgba(196,89,92,.14);border-color:rgba(196,89,92,.35)' : ''}">${q.risk}</span></div>
           <div class="row-sub">${L(q.reason)}</div>
           <div class="row-actions">
-            <button class="mini-btn gold" data-approve="${q.id}">${icon('check', 15)} ${t('confirm')}</button>
-            <button class="mini-btn" data-reject="${q.id}">${icon('x', 15)} ${t('delete')}</button>
+            <button class="mini-btn gold" data-seedok="${q.id}">${icon('check', 15)} ${t('approve')}</button>
+            <button class="mini-btn" data-seeddel="${q.id}">${icon('x', 15)} ${t('reject')}</button>
           </div>
         </div>
       </div>`).join('')}
-    ${reported.length ? `<div class="hint">${S.state.lang === 'en' ? 'User reports' : 'بلاغات المستخدمين'}: ${reported.length}</div>` : ''}
   </div>`;
 }
 
+function catKeyOf(catId) {
+  const map = { cars: 'filterCars', furniture: 'filterFurniture', realestate: 'filterRealEstate',
+                jobs: 'filterJobs', pets: 'filterPets', handyman: 'filterHandyman',
+                free: 'filterFree', other: 'filterOther' };
+  return map[catId] || 'filterOther';
+}
+
+/* ----------------------------- MAGAZINE ----------------------------- */
 function magHtml() {
   const all = S.state.extraArticles.concat(ARTICLES);
   return `<div class="pad mt-16">
@@ -142,11 +245,11 @@ function adsHtml() {
         <span class="row-ico">${icon('megaphone', 24)}</span>
         <div class="row-main">
           <div class="row-title">${o.bizName}
-            <span class="badge ${o.status === 'live' ? 'badge-verified' : 'badge-free'}">${o.status}</span></div>
+            <span class="badge ${o.status === 'live' ? 'badge-verified' : 'badge-pending'}">${o.status === 'live' ? t('statusLive') : t('statusPending')}</span></div>
           <div class="row-sub">${t(o.product === 'slider' ? 'prodSlider' : o.product === 'mini' ? 'prodMini' : 'prodStory')} · ${fmtMoney(o.price)} · ${o.tagline || ''}</div>
           ${o.status !== 'live' ? `<div class="row-actions"><button class="mini-btn gold" data-adok="${o.id}">${icon('check', 15)} ${S.state.lang === 'en' ? 'Approve & go live' : 'اعتماد ونشر'}</button></div>` : ''}
         </div>
-      </div>`).join('') : emptyState('megaphone', t('emptyNotifTitle'), t('adSubmittedSub'))}
+      </div>`).join('') : emptyState('megaphone', t('noPending'), t('adSubmittedSub'))}
   </div>`;
 }
 
@@ -161,7 +264,7 @@ function dirHtml() {
     </div>
     <div class="list-note mt-16" style="margin-inline:0">${icon('info', 18)}
       <span>${S.state.lang === 'en' ? 'Bulk import (CSV / PDF list) seeds unclaimed free listings — V.02 with the real database.' : 'الاستيراد الجماعي (من ملف PDF/CSV) يضيف الأنشطة كإدراج مجاني غير مُطالَب به — في V.02 مع قاعدة البيانات الحقيقية.'}</span></div>
-    <button class="btn btn-ghost btn-block mt-12" onclick="void 0" id="imp">${icon('file', 19)} ${S.state.lang === 'en' ? 'Import list' : 'استيراد قائمة'}</button>
+    <button class="btn btn-ghost btn-block mt-12" disabled>${icon('file', 19)} ${S.state.lang === 'en' ? 'Import list' : 'استيراد قائمة'} — ${t('comingSoon')}</button>
     <div class="mt-16">
       ${CATEGORIES.slice(0, 6).map(c => `<div class="setting-row"><span class="s-txt"><b>${t(c.key)}</b></span>
         <span class="muted fs-12">${all.filter(b => b.cat === c.id).length}</span></div>`).join('')}

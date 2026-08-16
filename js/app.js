@@ -7,17 +7,19 @@ import { state } from './store.js';
 import { $, renderHeader, renderNav, hideNav, closeSheet, closeDrawer } from './ui.js';
 
 import { HomeScreen } from './screens/home.js';
+import { CategoriesScreen } from './screens/categories.js';
 import { DirectoryScreen, ListingScreen, AddBusinessScreen, ClaimScreen, SubscribeScreen } from './screens/directory.js';
-import { ClassifiedsScreen, ClassifiedScreen, PostScreen, BoostScreen } from './screens/classifieds.js';
+import { MarketplaceScreen, ListingDetailScreen, PostScreen, BoostScreen, MessagesScreen } from './screens/marketplace.js';
 import { MagazineScreen, ArticleScreen } from './screens/magazine.js';
-import { ProfileScreen, SavedScreen, MyAdsScreen, MyBusinessScreen, SettingsScreen, NotificationsScreen,
-         HelpScreen, AboutScreen, PrivacyScreen, TermsScreen } from './screens/profile.js';
+import { ProfileScreen, SavedScreen, MyAdsScreen, MyBusinessScreen, MyReviewsScreen, SettingsScreen,
+         NotificationsScreen, HelpScreen, AboutScreen, PrivacyScreen, TermsScreen } from './screens/profile.js';
 import { SignUpScreen, SignInScreen, EmailVerifyScreen, PhoneVerifyScreen, ForgotScreen } from './screens/auth.js';
 import { AdvertiseScreen } from './screens/advertise.js';
 import { AdminScreen } from './screens/admin.js';
 
 const ROUTES = [
   { re: /^#\/home$/,              screen: HomeScreen,        nav: 'home' },
+  { re: /^#\/categories$/,        screen: CategoriesScreen,  nav: 'home' },
   { re: /^#\/directory$/,         screen: DirectoryScreen,   nav: 'directory' },
   { re: /^#\/directory\/(.+)$/,   screen: ListingScreen,     nav: 'directory' },
   { re: /^#\/add-business$/,      screen: AddBusinessScreen, nav: 'directory' },
@@ -25,13 +27,19 @@ const ROUTES = [
   { re: /^#\/subscribe(?:\/(.+))?$/, screen: SubscribeScreen, nav: 'directory' },
   { re: /^#\/magazine$/,          screen: MagazineScreen,    nav: 'directory' },
   { re: /^#\/magazine\/(.+)$/,    screen: ArticleScreen,     nav: 'directory' },
-  { re: /^#\/classifieds$/,       screen: ClassifiedsScreen, nav: 'classifieds' },
-  { re: /^#\/classifieds\/(.+)$/, screen: ClassifiedScreen,  nav: 'classifieds' },
+  { re: /^#\/marketplace$/,       screen: MarketplaceScreen, nav: 'classifieds' },
+  { re: /^#\/marketplace\/(.+)$/, screen: ListingDetailScreen, nav: 'classifieds' },
+  // old links kept alive so nothing that was already shared breaks
+  { re: /^#\/classifieds$/,       screen: MarketplaceScreen, nav: 'classifieds' },
+  { re: /^#\/classifieds\/(.+)$/, screen: ListingDetailScreen, nav: 'classifieds' },
   { re: /^#\/post$/,              screen: PostScreen,        nav: 'classifieds' },
   { re: /^#\/boost\/(.+)$/,       screen: BoostScreen,       nav: 'classifieds' },
+  { re: /^#\/messages$/,          screen: MessagesScreen,    nav: 'classifieds' },
+  { re: /^#\/messages\/(.+)$/,    screen: MessagesScreen,    nav: 'classifieds' },
   { re: /^#\/profile$/,           screen: ProfileScreen,     nav: 'profile' },
   { re: /^#\/saved$/,             screen: SavedScreen,       nav: 'profile' },
   { re: /^#\/my-ads$/,            screen: MyAdsScreen,       nav: 'profile' },
+  { re: /^#\/my-reviews$/,        screen: MyReviewsScreen,   nav: 'profile' },
   { re: /^#\/my-business$/,       screen: MyBusinessScreen,  nav: 'profile' },
   { re: /^#\/settings$/,          screen: SettingsScreen,    nav: 'profile' },
   { re: /^#\/notifications$/,     screen: NotificationsScreen, nav: 'home' },

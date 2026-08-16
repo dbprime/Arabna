@@ -103,12 +103,13 @@ export function EmailVerifyScreen(root) {
     </div>
     <div class="pad mt-16">
       ${otpRow('e')}
-      <div class="hint" style="text-align:center">${t('demoCode')} <b class="gold">${S.DEMO_CODE}</b></div>
+      ${demoCodeCard('e')}
       <button class="btn btn-gold btn-block mt-16" id="vBtn">${t('verifyBtn')}</button>
       <button class="btn btn-ghost btn-block mt-8" id="rsBtn">${t('resendCode')}</button>
     </div>`;
 
   wireOtp('e');
+  wireDemoFill('e');
   $('#rsBtn').addEventListener('click', async () => { await S.sendEmailCode(email); toast(t('sendCode'), 'ok'); });
   $('#vBtn').addEventListener('click', () => {
     if (otpValue('e') !== S.DEMO_CODE) { toast(t('wrongCode'), 'err'); return; }
@@ -146,7 +147,7 @@ export function PhoneVerifyScreen(root) {
     </div>
     <div class="pad mt-16" id="step2" style="display:none">
       ${otpRow('p')}
-      <div class="hint" style="text-align:center">${t('demoCode')} <b class="gold">${S.DEMO_CODE}</b></div>
+      ${demoCodeCard('p')}
       <button class="btn btn-gold btn-block mt-16" id="vBtn">${t('verifyBtn')}</button>
       <button class="btn btn-ghost btn-block mt-8" id="backBtn">${t('back')}</button>
     </div>`;
@@ -173,6 +174,7 @@ export function PhoneVerifyScreen(root) {
     $('#step1').style.display = 'none';
     $('#step2').style.display = 'block';
     wireOtp('p');
+    wireDemoFill('p');
   });
 
   $('#vBtn').addEventListener('click', () => {
@@ -185,6 +187,25 @@ export function PhoneVerifyScreen(root) {
 }
 
 /* ------------------------------ OTP ------------------------------ */
+/** Prototype helper: the demo code, shown large, with a one-tap fill button. */
+function demoCodeCard(ns) {
+  return `
+    <div class="card mt-16" style="padding:14px;text-align:center;border:1px dashed var(--gold)">
+      <div class="fs-12 muted">${t('demoCodeIs')}</div>
+      <div class="ltr" style="font-size:34px;font-weight:700;letter-spacing:8px;color:var(--gold-bright);line-height:1.3">${S.DEMO_CODE}</div>
+      <button class="btn btn-outline-gold btn-sm mt-8" data-fill="${ns}" style="width:100%">${icon('edit', 17)} ${t('fillDemoCode')}</button>
+    </div>`;
+}
+function wireDemoFill(ns) {
+  const btn = $(`[data-fill="${ns}"]`);
+  if (!btn) return;
+  btn.addEventListener('click', () => {
+    const boxes = $$(`#otp-${ns} .otp-box`);
+    boxes.forEach((b, i) => { b.value = S.DEMO_CODE[i] || ''; });
+    if (boxes[boxes.length - 1]) boxes[boxes.length - 1].focus();
+  });
+}
+
 function otpRow(ns) {
   return `<div class="otp-row" id="otp-${ns}">
     ${Array.from({ length: 6 }).map((_, i) => `<input class="otp-box" inputmode="numeric" maxlength="1" data-i="${i}" />`).join('')}

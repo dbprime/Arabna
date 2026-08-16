@@ -1,8 +1,10 @@
 /* ======================= PROFILE & ACCOUNT SCREENS ======================= */
-import { t, L, icon, $, $$, go, renderHeader, toast, wireRoutes, emptyState, confirmSheet, fmtMoney } from '../ui.js';
+import { t, L, icon, $, $$, go, renderHeader, toast, wireRoutes, emptyState, confirmSheet,
+         fmtMoney, priceLabel, statusBadge, stars } from '../ui.js';
 import { SUBSCRIPTION_PRICE } from '../data.js';
 import * as S from '../store.js';
 import { catIcon } from './home.js';
+import { openReviewSheet } from './directory.js';
 
 /* ------------------------------ PROFILE ------------------------------ */
 export function ProfileScreen(root) {
@@ -28,6 +30,8 @@ export function ProfileScreen(root) {
 
     <div class="mt-20">
       ${row('bag', t('myAds'), '#/my-ads')}
+      ${row('star', t('myReviews'), '#/my-reviews')}
+      ${row('message', t('myMessages'), '#/messages')}
       ${row('heart', t('savedFav'), '#/saved')}
       ${row('briefcase', t('myBusiness'), '#/my-business')}
       ${row('crown', t('subscription'), '#/subscribe')}
@@ -67,10 +71,10 @@ export function SavedScreen(root) {
             <span class="row-ico">${icon(catIcon(b.cat), 20)}</span>
             <div class="row-main"><div class="row-title">${L(b.name)}</div>
               <div class="row-sub">${icon('mapPin', 13)} <span class="ltr">${b.address}</span></div></div></div>`).join('')}
-        ${cls.map(c => `<div class="list-row" data-route="#/classifieds/${c.id}">
+        ${cls.map(c => `<div class="list-row" data-route="#/marketplace/${c.id}">
             <span class="row-ico">${icon(c.icon || 'image', 24)}</span>
             <div class="row-main"><div class="row-title">${L(c.title)}</div>
-              <div class="row-sub gold"><span class="ltr">${c.price}</span></div></div></div>`).join('')}
+              <div class="row-sub gold"><span class="ltr">${priceLabel(c.price)}</span></div></div></div>`).join('')}
       </div>`;
   wireRoutes(root);
 }
@@ -85,14 +89,18 @@ export function MyAdsScreen(root) {
     <div class="pad mt-16">
       ${mine.length ? mine.map(c => `
         <div class="list-row">
-          <span class="row-ico">${icon(c.icon || 'image', 24)}</span>
+          <span class="row-ico" style="overflow:hidden;padding:0">${c.photos && c.photos.length
+            ? `<img src="${c.photos[c.mainPhoto || 0] || c.photos[0]}" style="width:100%;height:100%;object-fit:cover" alt="" />`
+            : icon(c.icon || 'image', 24)}</span>
           <div class="row-main">
-            <div class="row-title">${L(c.title)} ${c.boosted ? `<span class="badge badge-boost">${t('boosted')}</span>` : ''}</div>
-            <div class="row-sub gold"><span class="ltr">${c.price}</span> · ${t('expiresIn')} ${c.daysLeft} ${t('days')}</div>
+            <div class="row-title">${L(c.title)} ${c.boosted ? `<span class="badge badge-boost">${t('boosted')}</span>` : ''} ${statusBadge(c, true)}</div>
+            <div class="row-sub gold"><span class="ltr">${priceLabel(c.price)}</span> · ${t('expiresIn')} ${c.daysLeft} ${t('days')}</div>
             <div class="row-actions">
               <button class="mini-btn gold" data-route="#/boost/${c.id}">${icon('bolt', 15)} ${t('boost')}</button>
+              <button class="mini-btn" data-route="#/post?edit=${c.id}">${icon('edit', 15)} ${t('edit')}</button>
               <button class="mini-btn" data-renew="${c.id}">${icon('refresh', 15)} ${t('renew')}</button>
-              <button class="mini-btn" data-route="#/classifieds/${c.id}">${icon('eye', 15)}</button>
+              <button class="mini-btn" data-del="${c.id}">${icon('trash', 15)}</button>
+              <button class="mini-btn" data-route="#/marketplace/${c.id}">${icon('eye', 15)}</button>
             </div>
           </div>
         </div>`).join('') : emptyState('bag', t('emptyMyAdsTitle'), t('emptyMyAdsSub'), t('post'), '#/post')}
@@ -104,13 +112,54 @@ export function MyAdsScreen(root) {
             <span class="row-ico">${icon('megaphone', 24)}</span>
             <div class="row-main">
               <div class="row-title">${o.bizName}
-                <span class="badge ${o.status === 'live' ? 'badge-verified' : 'badge-free'}">${o.status === 'live' ? t('adSubmitted') : t('loading')}</span></div>
+                <span class="badge ${o.status === 'live' ? 'badge-verified' : 'badge-pending'}">${o.status === 'live' ? t('statusLive') : t('statusPending')}</span></div>
               <div class="row-sub">${t(o.product === 'slider' ? 'prodSlider' : o.product === 'mini' ? 'prodMini' : 'prodStory')} · ${fmtMoney(o.price)}</div>
             </div>
           </div>`).join('')}` : ''}
     </div>`;
 
-  $$('[data-renew]').forEach(b => b.addEventListener('click', () => { S.renewClassified(b.dataset.renew); toast(t('renewed'), 'ok'); go('#/my-ads'); }));
+  $$('[data-renew]').forEach(b => b.addEventListener('click', () => {
+    S.renewClassified(b.dataset.renew); toast(t('renewed'), 'ok'); go('#/my-ads');
+  }));
+  $$('[data-del]').forEach(b => b.addEventListener('click', () => {
+    const c = S.classifiedById(b.dataset.del);
+    confirmSheet({
+      title: t('delete'), sub: c ? L(c.title) : '', confirmText: t('delete'), danger: true,
+      onConfirm: () => { S.deleteClassified(b.dataset.del); toast(t('done'), 'ok'); go('#/my-ads'); }
+    });
+  }));
+  wireRoutes(root);
+}
+
+/* ---------------------------- MY REVIEWS ---------------------------- */
+export function MyReviewsScreen(root) {
+  renderHeader({ simple: true, title: t('myReviews') });
+  const mine = S.myReviews();
+
+  root.innerHTML = mine.length
+    ? `<div class="pad mt-16">${mine.map(r => {
+        const b = S.businessById(r.bizId);
+        return `<div class="card" style="padding:14px;margin-bottom:10px">
+          <div class="row-between">
+            <div><b class="fs-13">${b ? L(b.name) : r.bizId}</b>
+              <div class="fs-12 muted">${L(r.when)} · ${stars(r.rating)}</div></div>
+            <button class="mini-btn" data-route="#/directory/${r.bizId}">${icon('eye', 15)}</button>
+          </div>
+          <p class="fs-13 mt-8" style="margin:8px 0 0">${L(r.text)}</p>
+          <div class="row-actions mt-8">
+            <button class="mini-btn gold" data-edit="${r.bizId}">${icon('edit', 15)} ${t('editReview')}</button>
+            <button class="mini-btn" data-del="${r.id}">${icon('trash', 15)} ${t('delete')}</button>
+          </div>
+        </div>`;
+      }).join('')}</div>`
+    : emptyState('star', t('emptyRevTitle'), t('emptyRevSub'), t('directoryTitle'), '#/directory');
+
+  $$('[data-edit]').forEach(b => b.addEventListener('click', () =>
+    openReviewSheet(b.dataset.edit, () => go('#/my-reviews'))));
+  $$('[data-del]').forEach(b => b.addEventListener('click', () => confirmSheet({
+    title: t('delete'), sub: t('myReviews'), confirmText: t('delete'), danger: true,
+    onConfirm: () => { S.deleteReview(b.dataset.del); toast(t('reviewDeleted'), 'ok'); go('#/my-reviews'); }
+  })));
   wireRoutes(root);
 }
 
@@ -199,15 +248,23 @@ function sw(key, label, on) {
 export function NotificationsScreen(root) {
   renderHeader({ simple: true, title: t('notifications') });
   const list = S.notifications();
+  const unread = list.filter(n => n.unread).length;
+
   root.innerHTML = list.length
-    ? `<div class="mt-8">${list.map(n => `
-        <div class="notif-row ${n.unread ? 'unread' : ''}">
+    ? `${unread ? `<div class="pad mt-12"><button class="btn btn-ghost btn-block btn-sm" id="readAll">
+          ${icon('check', 17)} ${t('markAllRead')} (${unread})</button></div>` : ''}
+       <div class="mt-8">${list.map(n => `
+        <div class="notif-row ${n.unread ? 'unread' : ''}" ${n.route ? `data-route="${n.route}"` : ''}
+             style="${n.route ? 'cursor:pointer' : ''}">
           <span class="notif-ico">${icon(n.icon, 20)}</span>
           <div class="notif-txt"><b>${L(n.title)}</b><span>${L(n.body)}</span>
             <div class="fs-12 muted mt-8">${L(n.when)}</div></div>
+          ${n.route ? `<span class="chev">${icon(document.documentElement.dir === 'rtl' ? 'chevronL' : 'chevronR', 18)}</span>` : ''}
         </div>`).join('')}</div>`
     : emptyState('bell', t('emptyNotifTitle'), t('emptyNotifSub'));
-  S.markNotifsRead();
+
+  const ra = $('#readAll');
+  if (ra) ra.addEventListener('click', () => { S.markNotifsRead(); toast(t('done'), 'ok'); go('#/notifications'); });
   wireRoutes(root);
 }
 
@@ -232,8 +289,8 @@ export function AboutScreen(root) {
       <img src="assets/logo.png" style="max-width:230px" alt="ARABNA عربنا" />
       <p class="fs-13 muted mt-16" style="max-width:300px;text-align:center">
         ${S.state.lang === 'en'
-          ? 'ARABNA brings the Arab community in America together in one app: a business directory, personal classifieds, and a community magazine.'
-          : 'عربنا يجمع الجالية العربية في أمريكا بتطبيق واحد: دليل أعمال، إعلانات شخصية، ومجلة للمجتمع.'}
+          ? 'ARABNA brings the Arab community in America together in one app: a business directory, a marketplace, and a community magazine.'
+          : 'عربنا يجمع الجالية العربية في أمريكا بتطبيق واحد: دليل أعمال، ماركت بليس، ومجلة للمجتمع.'}
       </p>
       <span class="muted fs-12 mt-16">${t('version')} 0.1 · est. 2026</span>
     </div>`;
@@ -247,20 +304,22 @@ export function PrivacyScreen(root) {
     <p>${en ? 'Name, email address, mobile number (for verification), your listings and content, approximate location when you use radius search, and payment records processed by our payment provider.'
             : 'الاسم، البريد الإلكتروني، رقم الجوال (للتحقق)، إعلاناتك ومحتواك، موقعك التقريبي عند استخدام البحث بالنطاق، وسجلات الدفع التي تُعالَج عبر مزوّد الدفع.'}</p>
     <h2>${en ? '2. Why we collect it' : '٢. سبب الجمع'}</h2>
-    <p>${en ? 'To operate the directory and classifieds, to verify real users, to prevent fraud and abuse, and to process paid placements and subscriptions.'
-            : 'لتشغيل الدليل والإعلانات، والتحقق من أن المستخدمين حقيقيون، ومنع الاحتيال وسوء الاستخدام، ومعالجة الاشتراكات والإعلانات المدفوعة.'}</p>
+    <p>${en ? 'To operate the directory and the marketplace, to verify real users, to prevent fraud and abuse, and to process paid placements and subscriptions.'
+            : 'لتشغيل الدليل والماركت بليس، والتحقق من أن المستخدمين حقيقيون، ومنع الاحتيال وسوء الاستخدام، ومعالجة الاشتراكات والإعلانات المدفوعة.'}</p>
     <h2>${en ? '3. Card data' : '٣. بيانات البطاقة'}</h2>
     <p>${en ? 'We never store full card numbers. Payments are handled by a PCI-compliant provider.'
             : 'لا نخزّن أرقام البطاقات كاملة إطلاقاً. الدفع يتم عبر مزوّد متوافق مع معايير PCI.'}</p>
-    <h2>${en ? '4. Your rights' : '٤. حقوقك'}</h2>
+    <h2>${en ? '4. Automated message scanning' : '٤. الفحص الآلي للرسائل'}</h2>
+    <p>${t('legalScanBody')}</p>
+    <h2>${en ? '5. Your rights' : '٥. حقوقك'}</h2>
     <ul>
       <li>${en ? 'Request a copy of your data' : 'طلب نسخة من بياناتك'}</li>
       <li>${en ? 'Correct or delete your data (Settings → Delete account)' : 'تصحيح أو حذف بياناتك (الإعدادات ← حذف الحساب)'}</li>
       <li>${en ? 'Withdraw notification consent at any time' : 'إيقاف الإشعارات في أي وقت'}</li>
     </ul>
-    <h2>${en ? '5. Age' : '٥. العمر'}</h2>
+    <h2>${en ? '6. Age' : '٦. العمر'}</h2>
     <p>${en ? 'ARABNA accounts require users to be 18 years or older.' : 'إنشاء حساب في عربنا يتطلب أن يكون عمرك ١٨ سنة أو أكثر.'}</p>
-    <h2>${en ? '6. Contact' : '٦. التواصل'}</h2>
+    <h2>${en ? '7. Contact' : '٧. التواصل'}</h2>
     <p>privacy@arabna.app</p>
     <p class="muted fs-12">${en ? 'Draft v0.1 — must be reviewed by a lawyer before public launch.' : 'مسودة ٠.١ — يجب مراجعتها من محامٍ قبل الإطلاق الرسمي.'}</p>
   </div>`;
@@ -273,19 +332,21 @@ export function TermsScreen(root) {
     <h2>${en ? '1. Accounts' : '١. الحسابات'}</h2>
     <p>${en ? 'You must be 18+ to create an account. Posting, messaging and advertising require a verified real mobile number; VOIP and landline numbers are not accepted.'
             : 'يجب أن يكون عمرك ١٨ سنة أو أكثر. النشر والتواصل والإعلان تتطلب رقم جوال حقيقي مُتحقق منه؛ أرقام الإنترنت (VOIP) والأرقام الأرضية غير مقبولة.'}</p>
-    <h2>${en ? '2. Classifieds are for individuals' : '٢. الإعلانات الشخصية للأفراد'}</h2>
-    <p>${en ? 'Classifieds are for person-to-person sales only, limited to 5 active listings per account, each expiring after 30 days. Business advertising belongs in the Directory; business listings posted as classifieds may be removed.'
-            : 'قسم الإعلانات الشخصية مخصص للبيع بين الأفراد فقط، بحد أقصى ٥ إعلانات نشطة لكل حساب، وكل إعلان ينتهي بعد ٣٠ يوماً. الإعلانات التجارية مكانها الدليل، وأي إعلان تجاري في هذا القسم قد يُحذف.'}</p>
-    <h2>${en ? '3. Paid placements' : '٣. الإعلانات المدفوعة'}</h2>
+    <h2>${en ? '2. The Marketplace is for individuals' : '٢. الماركت بليس للأفراد'}</h2>
+    <p>${en ? 'The Marketplace is for person-to-person sales only, limited to 5 active listings per account, each expiring after 30 days. The Handyman & Services section allows one active listing for 14 days. The Free section is for items given away at no cost — listings that carry a price are removed or sent for review. Business advertising belongs in the Directory.'
+            : 'الماركت بليس مخصص للبيع بين الأفراد فقط، بحد أقصى ٥ إعلانات نشطة لكل حساب، وكل إعلان ينتهي بعد ٣٠ يوماً. قسم الهاندي مان والخدمات يسمح بإعلان واحد نشط لمدة ١٤ يوماً. قسم المجاني للأغراض التي تُعطى بلا مقابل، وأي إعلان يحمل سعراً يُحذف أو يُحال للمراجعة. الإعلانات التجارية مكانها الدليل.'}</p>
+    <h2>${en ? '3. Contact stays in the app' : '٣. التواصل داخل التطبيق'}</h2>
+    <p>${t('legalScanBody')}</p>
+    <h2>${en ? '4. Paid placements' : '٤. الإعلانات المدفوعة'}</h2>
     <p>${en ? 'Paid ads and sponsored stories are reviewed before going live. ARABNA may decline content that is misleading, illegal or offensive; declined orders are refunded.'
             : 'الإعلانات المدفوعة والمقالات المدعومة تُراجَع قبل النشر. يحق لعربنا رفض أي محتوى مضلل أو مخالف أو مسيء، ويُرد المبلغ في هذه الحالة.'}</p>
-    <h2>${en ? '4. Subscriptions' : '٤. الاشتراكات'}</h2>
+    <h2>${en ? '5. Subscriptions' : '٥. الاشتراكات'}</h2>
     <p>${en ? 'Business subscriptions renew monthly until cancelled. Cancelling stops future renewals; the current period is not prorated.'
             : 'اشتراك الأعمال يتجدد شهرياً حتى الإلغاء. الإلغاء يوقف التجديد القادم، ولا تُحتسب فترة جزئية للشهر الحالي.'}</p>
-    <h2>${en ? '5. Content & conduct' : '٥. المحتوى والسلوك'}</h2>
+    <h2>${en ? '6. Content & conduct' : '٦. المحتوى والسلوك'}</h2>
     <p>${en ? 'You are responsible for what you post. Fraud, harassment, illegal goods and impersonation are prohibited and result in removal and account suspension.'
             : 'أنت مسؤول عن كل ما تنشره. الاحتيال والتحرش والسلع غير القانونية وانتحال الشخصية ممنوعة وتؤدي إلى حذف المحتوى وإيقاف الحساب.'}</p>
-    <h2>${en ? '6. Liability' : '٦. المسؤولية'}</h2>
+    <h2>${en ? '7. Liability' : '٧. المسؤولية'}</h2>
     <p>${en ? 'ARABNA is a listing platform and is not a party to transactions between users.'
             : 'عربنا منصة عرض ولا يُعد طرفاً في المعاملات التي تتم بين المستخدمين.'}</p>
     <p class="muted fs-12">${en ? 'Draft v0.1 — must be reviewed by a lawyer before public launch.' : 'مسودة ٠.١ — يجب مراجعتها من محامٍ قبل الإطلاق الرسمي.'}</p>

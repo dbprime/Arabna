@@ -61,6 +61,12 @@ const P = {
   calendar: '<rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>',
   users: '<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
   play: '<polygon points="5 3 19 12 5 21 5 3"/>',
+  paw: '<circle cx="7" cy="9" r="2"/><circle cx="12" cy="6.5" r="2"/><circle cx="17" cy="9" r="2"/><circle cx="19" cy="14" r="1.6"/><path d="M12 12c-2.5 0-5 2-5 4.6C7 19 8.7 20 10.4 19.4c1-.4 2.2-.4 3.2 0C15.3 20 17 19 17 16.6 17 14 14.5 12 12 12z"/>',
+  hammer: '<path d="M14 3l7 7-2.5 2.5-7-7z"/><path d="M11.5 5.5 3 14v4h4l8.5-8.5"/><line x1="7" y1="18" x2="3" y2="22"/>',
+  gift: '<rect x="3" y="8" width="18" height="4" rx="1"/><path d="M5 12v8a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-8"/><line x1="12" y1="8" x2="12" y2="21"/><path d="M12 8S10.5 3 8 3a2.5 2.5 0 0 0 0 5z"/><path d="M12 8s1.5-5 4-5a2.5 2.5 0 0 1 0 5z"/>',
+  grid: '<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>',
+  message: '<path d="M21 11.5a8.4 8.4 0 0 1-9 8.4 9 9 0 0 1-3.9-.9L3 21l1.9-4.6A8.4 8.4 0 0 1 4 11.5 8.5 8.5 0 0 1 12.5 3 8.5 8.5 0 0 1 21 11.5z"/>',
+  inbox: '<path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.5 5h13l3.5 7v6a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-6z"/>',
 };
 
 export function icon(name, size = 20, extraClass = '') {

@@ -4,6 +4,7 @@
 
 import { icon, iconFilled } from './icons.js';
 import { t, L, getLang, setLang } from './i18n.js';
+import { MARKET_CATS, FREE_PRICE } from './data.js';
 import * as S from './store.js';
 
 export const $ = (sel, root = document) => root.querySelector(sel);
@@ -30,7 +31,9 @@ export function toast(msg, kind = '') {
 
 /* ---------------- bottom sheet ---------------- */
 let sheetOnClose = null;
+let sheetSeq = 0;
 export function openSheet(html, onMount, onClose) {
+  sheetSeq++;
   const root = $('#sheet');
   root.innerHTML = `<div class="sheet-scrim" data-close></div>
     <div class="sheet-panel"><div class="sheet-grip"></div>${html}</div>`;
@@ -44,7 +47,8 @@ export function closeSheet() {
   const root = $('#sheet');
   root.classList.remove('open');
   root.setAttribute('aria-hidden', 'true');
-  setTimeout(() => { root.innerHTML = ''; }, 320);
+  const seq = sheetSeq;
+  setTimeout(() => { if (seq === sheetSeq) root.innerHTML = ''; }, 320);
   if (sheetOnClose) { const f = sheetOnClose; sheetOnClose = null; f(); }
 }
 
@@ -100,7 +104,7 @@ export function renderNav(active) {
     { id: 'home',        label: t('navHome'),    ico: 'home',    route: '#/home' },
     { id: 'directory',   label: t('navExplore'), ico: 'compass', route: '#/directory' },
     { id: 'post',        label: '',              ico: 'plus',    route: '#/post', center: true },
-    { id: 'classifieds', label: t('navMarket'),  ico: 'bag',     route: '#/classifieds' },
+    { id: 'classifieds', label: t('navMarket'),  ico: 'bag',     route: '#/marketplace' },
     { id: 'profile',     label: t('navProfile'), ico: 'user',    route: '#/profile' },
   ];
   nav.innerHTML = items.map(i => i.center
@@ -113,13 +117,19 @@ export function renderNav(active) {
 export function hideNav() { $('#bottomNav').style.display = 'none'; }
 
 /* ---------------- drawer ---------------- */
+let drawerSeq = 0;
 export function openDrawer() {
+  drawerSeq++;
   const root = $('#drawer');
   const u = S.state.user;
   const tierLabel = S.tier() === 2 ? t('tier2') : S.tier() === 1 ? t('tier1') : t('guest');
 
   const item = (ico, label, route, extra = '') =>
     `<button class="dr-item" data-route="${route}">${icon(ico, 22)}<span>${label}</span>${extra}<span class="chev">${icon(document.documentElement.dir === 'rtl' ? 'chevronL' : 'chevronR', 19)}</span></button>`;
+  const unreadPill = () => {
+    const n = S.unreadCount();
+    return n ? `<span class="badge badge-boost" style="margin-inline-start:auto">${n}</span>` : '';
+  };
 
   root.innerHTML = `
     <div class="drawer-scrim" data-close></div>
@@ -134,11 +144,24 @@ export function openDrawer() {
       <button class="dr-item" id="drLang">${icon('globe', 22)}<span>${t('language')}</span>
         <span class="lang-pill" style="margin-inline-start:auto">${getLang() === 'ar' ? 'العربية' : 'English'}</span></button>
 
+      ${item('home', t('navHome'), '#/home')}
+      ${item('compass', t('navExplore'), '#/directory')}
+      ${item('grid', t('allCategories'), '#/categories')}
       ${item('newspaper', t('magazineTitle'), '#/magazine')}
+
+      <div class="dr-group-label">${t('classifiedsTitle')}</div>
+      ${item('bag', t('allCategories'), '#/marketplace')}
+      ${MARKET_CATS.map(c => item(c.icon, t(c.key), '#/marketplace?cat=' + c.id)).join('')}
+
+      <div class="dr-group-label">${t('navProfile')}</div>
       ${item('briefcase', t('myBusiness'), '#/my-business')}
       ${item('bag', t('myAds'), '#/my-ads')}
+      ${item('star', t('myReviews'), '#/my-reviews')}
+      ${item('message', t('myMessages'), '#/messages')}
       ${item('heart', t('savedFav'), '#/saved')}
       ${item('megaphone', t('advertiseWithUs'), '#/advertise')}
+      ${item('bell', t('notifications'), '#/notifications', unreadPill())}
+      ${item('crown', t('subscription'), '#/subscribe')}
 
       <div class="dr-group-label">${t('settings')}</div>
       ${item('settings', t('settings'), '#/settings')}
@@ -146,7 +169,6 @@ export function openDrawer() {
       ${item('info', t('about'), '#/about')}
       ${item('shield', t('privacy'), '#/privacy')}
       ${item('file', t('terms'), '#/terms')}
-      ${item('lock', t('adminPanel'), '#/admin')}
 
       ${u ? `<button class="dr-item" id="drOut" style="color:#E79A9C">${icon('logout', 22)}<span>${t('signOut')}</span></button>` : ''}
       <div style="padding:18px;text-align:center;color:var(--muted);font-size:11px">ARABNA · عربنا — ${t('version')} 0.1</div>
@@ -167,7 +189,10 @@ export function closeDrawer() {
   const root = $('#drawer');
   root.classList.remove('open');
   root.setAttribute('aria-hidden', 'true');
-  setTimeout(() => { root.innerHTML = ''; }, 340);
+  // Only wipe the markup if the drawer was not reopened during the animation —
+  // otherwise a close that overlaps an open leaves an empty panel behind.
+  const seq = drawerSeq;
+  setTimeout(() => { if (seq === drawerSeq) root.innerHTML = ''; }, 340);
 }
 
 /* ---------------- small builders ---------------- */
@@ -199,6 +224,22 @@ export function wireRoutes(root) {
 }
 
 export function fmtMoney(n) { return '$' + n.toLocaleString('en-US'); }
+
+/** Price as shown to the user — Free-section listings never show a number. */
+export function priceLabel(price) {
+  return price === FREE_PRICE ? t('priceFree') : (price || '');
+}
+
+/**
+ * Status pill for a marketplace listing.
+ * Pending always shows; "published" only on the owner's own screens.
+ */
+export function statusBadge(c, showLive = false) {
+  if (!c) return '';
+  if (c.status === 'pending') return `<span class="badge badge-pending">${icon('clock', 12)}${t('statusPending')}</span>`;
+  if (showLive) return `<span class="badge badge-verified">${icon('check', 12)}${t('statusLive')}</span>`;
+  return '';
+}
 
 /** query params from the hash: #/directory?cat=cars → { cat: 'cars' } */
 export function query() {
