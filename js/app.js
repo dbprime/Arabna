@@ -1,0 +1,89 @@
+/* ============================================================
+   ARABNA — router / bootstrap
+   ============================================================ */
+
+import { setLang } from './i18n.js';
+import { state } from './store.js';
+import { $, renderHeader, renderNav, hideNav, closeSheet, closeDrawer } from './ui.js';
+
+import { HomeScreen } from './screens/home.js';
+import { DirectoryScreen, ListingScreen, AddBusinessScreen, ClaimScreen, SubscribeScreen } from './screens/directory.js';
+import { ClassifiedsScreen, ClassifiedScreen, PostScreen, BoostScreen } from './screens/classifieds.js';
+import { MagazineScreen, ArticleScreen } from './screens/magazine.js';
+import { ProfileScreen, SavedScreen, MyAdsScreen, MyBusinessScreen, SettingsScreen, NotificationsScreen,
+         HelpScreen, AboutScreen, PrivacyScreen, TermsScreen } from './screens/profile.js';
+import { SignUpScreen, SignInScreen, EmailVerifyScreen, PhoneVerifyScreen, ForgotScreen } from './screens/auth.js';
+import { AdvertiseScreen } from './screens/advertise.js';
+import { AdminScreen } from './screens/admin.js';
+
+const ROUTES = [
+  { re: /^#\/home$/,              screen: HomeScreen,        nav: 'home' },
+  { re: /^#\/directory$/,         screen: DirectoryScreen,   nav: 'directory' },
+  { re: /^#\/directory\/(.+)$/,   screen: ListingScreen,     nav: 'directory' },
+  { re: /^#\/add-business$/,      screen: AddBusinessScreen, nav: 'directory' },
+  { re: /^#\/claim$/,             screen: ClaimScreen,       nav: 'directory' },
+  { re: /^#\/subscribe(?:\/(.+))?$/, screen: SubscribeScreen, nav: 'directory' },
+  { re: /^#\/magazine$/,          screen: MagazineScreen,    nav: 'directory' },
+  { re: /^#\/magazine\/(.+)$/,    screen: ArticleScreen,     nav: 'directory' },
+  { re: /^#\/classifieds$/,       screen: ClassifiedsScreen, nav: 'classifieds' },
+  { re: /^#\/classifieds\/(.+)$/, screen: ClassifiedScreen,  nav: 'classifieds' },
+  { re: /^#\/post$/,              screen: PostScreen,        nav: 'classifieds' },
+  { re: /^#\/boost\/(.+)$/,       screen: BoostScreen,       nav: 'classifieds' },
+  { re: /^#\/profile$/,           screen: ProfileScreen,     nav: 'profile' },
+  { re: /^#\/saved$/,             screen: SavedScreen,       nav: 'profile' },
+  { re: /^#\/my-ads$/,            screen: MyAdsScreen,       nav: 'profile' },
+  { re: /^#\/my-business$/,       screen: MyBusinessScreen,  nav: 'profile' },
+  { re: /^#\/settings$/,          screen: SettingsScreen,    nav: 'profile' },
+  { re: /^#\/notifications$/,     screen: NotificationsScreen, nav: 'home' },
+  { re: /^#\/help$/,              screen: HelpScreen,        nav: 'profile' },
+  { re: /^#\/about$/,             screen: AboutScreen,       nav: 'profile' },
+  { re: /^#\/privacy$/,           screen: PrivacyScreen,     nav: 'profile' },
+  { re: /^#\/terms$/,             screen: TermsScreen,       nav: 'profile' },
+  { re: /^#\/auth\/signup$/,      screen: SignUpScreen,      nav: null },
+  { re: /^#\/auth\/signin$/,      screen: SignInScreen,      nav: null },
+  { re: /^#\/auth\/email$/,       screen: EmailVerifyScreen, nav: null },
+  { re: /^#\/auth\/phone$/,       screen: PhoneVerifyScreen, nav: null },
+  { re: /^#\/auth\/forgot$/,      screen: ForgotScreen,      nav: null },
+  { re: /^#\/advertise(?:\/(.+))?$/, screen: AdvertiseScreen, nav: 'home' },
+  { re: /^#\/admin$/,             screen: AdminScreen,       nav: null },
+];
+
+function render() {
+  const full = location.hash || '#/home';
+  const hash = full.split('?')[0];
+  const app = $('#app');
+  closeSheet();
+  closeDrawer();
+
+  let match = null, params = [];
+  for (const r of ROUTES) {
+    const m = hash.match(r.re);
+    if (m) { match = r; params = m.slice(1); break; }
+  }
+  if (!match) { location.hash = '#/home'; return; }
+
+  app.innerHTML = '';
+  const view = document.createElement('div');
+  view.className = 'screen';
+  app.appendChild(view);
+  app.scrollTop = 0;
+
+  if (match.nav) renderNav(match.nav); else hideNav();
+  match.screen(view, params);
+}
+
+window.addEventListener('hashchange', render);
+window.addEventListener('DOMContentLoaded', () => {
+  setLang(state.lang || 'ar');
+  if (!location.hash) location.hash = '#/home';
+  render();
+});
+
+// If DOM is already parsed (module executes after parsing), render immediately.
+if (document.readyState !== 'loading') {
+  setLang(state.lang || 'ar');
+  if (!location.hash) location.hash = '#/home';
+  render();
+}
+
+export { render, renderHeader };
