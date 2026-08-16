@@ -214,6 +214,115 @@ export async function lookupZip(zip) {
   }
 }
 
+/* ---------------------------------------------------------------
+   Reverse geocoding — real device coordinates -> city / state / ZIP.
+   NO default city is ever returned: if we cannot resolve the point
+   the caller gets a typed error and shows it to the user.
+   1. BigDataCloud reverse-geocode-client (free, keyless, CORS-open)
+   2. OpenStreetMap Nominatim (fallback)
+   3. the ZIP we got is normalised through lookupZip() so a coordinate
+      result and a hand-typed ZIP always render the same city name.
+   (V.02: swap both for Google Geocoding behind store.js)
+---------------------------------------------------------------- */
+const US_STATE_ABBR = {
+  'alabama': 'AL', 'alaska': 'AK', 'arizona': 'AZ', 'arkansas': 'AR', 'california': 'CA',
+  'colorado': 'CO', 'connecticut': 'CT', 'delaware': 'DE', 'district of columbia': 'DC',
+  'florida': 'FL', 'georgia': 'GA', 'hawaii': 'HI', 'idaho': 'ID', 'illinois': 'IL',
+  'indiana': 'IN', 'iowa': 'IA', 'kansas': 'KS', 'kentucky': 'KY', 'louisiana': 'LA',
+  'maine': 'ME', 'maryland': 'MD', 'massachusetts': 'MA', 'michigan': 'MI', 'minnesota': 'MN',
+  'mississippi': 'MS', 'missouri': 'MO', 'montana': 'MT', 'nebraska': 'NE', 'nevada': 'NV',
+  'new hampshire': 'NH', 'new jersey': 'NJ', 'new mexico': 'NM', 'new york': 'NY',
+  'north carolina': 'NC', 'north dakota': 'ND', 'ohio': 'OH', 'oklahoma': 'OK', 'oregon': 'OR',
+  'pennsylvania': 'PA', 'rhode island': 'RI', 'south carolina': 'SC', 'south dakota': 'SD',
+  'tennessee': 'TN', 'texas': 'TX', 'utah': 'UT', 'vermont': 'VT', 'virginia': 'VA',
+  'washington': 'WA', 'west virginia': 'WV', 'wisconsin': 'WI', 'wyoming': 'WY',
+  'puerto rico': 'PR', 'guam': 'GU', 'u.s. virgin islands': 'VI', 'american samoa': 'AS',
+  'northern mariana islands': 'MP',
+};
+
+const stateAbbr = (name = '') => {
+  const s = String(name).trim();
+  if (/^[A-Z]{2}$/.test(s)) return s;
+  return US_STATE_ABBR[s.toLowerCase()] || '';
+};
+
+async function getJSON(url, ms = 8000) {
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), ms);
+  try {
+    const res = await fetch(url, { signal: ctrl.signal, headers: { Accept: 'application/json' } });
+    if (!res.ok) return null;
+    return await res.json();
+  } catch (e) {
+    return null;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+/* BigDataCloud — city / principalSubdivision / postcode / countryCode */
+async function rgBigDataCloud(lat, lng) {
+  const j = await getJSON(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lng}&localityLanguage=en`);
+  if (!j) return null;
+  const country = (j.countryCode || '').toUpperCase();
+  const city = j.city || j.locality || (j.localityInfo && j.localityInfo.administrative
+    && (j.localityInfo.administrative.find(a => a.adminLevel === 8) || {}).name) || '';
+  const state = stateAbbr((j.principalSubdivisionCode || '').replace(/^US-/, '') || j.principalSubdivision || '');
+  const zip = /^\d{5}/.test(j.postcode || '') ? String(j.postcode).slice(0, 5) : '';
+  if (!country && !city) return null;
+  return { country, city, state, zip };
+}
+
+/* OpenStreetMap Nominatim — fallback */
+async function rgNominatim(lat, lng) {
+  const j = await getJSON(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&zoom=18&addressdetails=1&lat=${lat}&lon=${lng}`);
+  if (!j || !j.address) return null;
+  const a = j.address;
+  const country = (a.country_code || '').toUpperCase();
+  const city = a.city || a.town || a.village || a.hamlet || a.municipality || a.suburb || a.county || '';
+  const state = stateAbbr(a['ISO3166-2-lvl4'] ? a['ISO3166-2-lvl4'].replace(/^US-/, '') : a.state);
+  const zip = /^\d{5}/.test(a.postcode || '') ? String(a.postcode).slice(0, 5) : '';
+  if (!country && !city) return null;
+  return { country, city, state, zip };
+}
+
+/**
+ * Turn real device coordinates into a U.S. city / state / ZIP.
+ * @returns {{zip:string,city:string,state:string,lat:number,lng:number}}
+ *          on success, or { error: 'lookup' | 'outside' } — never a default city.
+ */
+export async function reverseGeocode(lat, lng) {
+  const complete = (h) => h && h.city && h.state;
+
+  let hit = await rgBigDataCloud(lat, lng);
+  if (hit && hit.country && hit.country !== 'US') return { error: 'outside' };
+
+  // Second provider whenever the first one is missing or incomplete —
+  // then keep whichever field each of them actually resolved.
+  if (!complete(hit) || !hit.zip) {
+    const alt = await rgNominatim(lat, lng);
+    if (alt && alt.country && alt.country !== 'US') return { error: 'outside' };
+    if (alt) hit = hit ? {
+      country: hit.country || alt.country,
+      city: hit.city || alt.city,
+      state: hit.state || alt.state,
+      zip: hit.zip || alt.zip,
+    } : alt;
+  }
+  if (!hit) return { error: 'lookup' };
+
+  let { city, state, zip } = hit;
+
+  // A ZIP is the strongest signal — normalise it so the label matches
+  // exactly what a hand-typed ZIP would produce.
+  if (zip) {
+    const z = await lookupZip(zip);
+    if (z && z.city) { city = z.city; state = z.state || state; }
+  }
+  if (!city || !state) return { error: 'lookup' };
+  return { zip, city, state, lat, lng };
+}
+
 /* ---------------- location sheet (ZIP + city autocomplete) ---------------- */
 export function openLocationSheet() {
   openSheet(`
@@ -270,16 +379,55 @@ export function openLocationSheet() {
       }, 250);
     });
 
-    panel.querySelector('#geoBtn').addEventListener('click', (e) => {
-      const btn = e.currentTarget;
-      btn.innerHTML = `<span class="spinner"></span> ${t('locating')}`;
-      if (!navigator.geolocation) { btn.innerHTML = t('locationDenied'); return; }
+    /* --- use my current location: real device coordinates, no default city --- */
+    const geoBtn = panel.querySelector('#geoBtn');
+    let geoBusy = false;
+
+    const geoFail = (key) => {
+      geoBusy = false;
+      input.classList.remove('input-err');
+      sugg.innerHTML = '';
+      msg.innerHTML = `<div class="err-msg">${icon('alert', 15)} ${t(key)}</div>`;
+      geoBtn.disabled = false;
+      geoBtn.innerHTML = `${icon('navigation', 19)} ${t('retryLocation')}`;
+    };
+
+    geoBtn.addEventListener('click', () => {
+      if (geoBusy) return;
+      if (!navigator.geolocation) { geoFail('geoUnsupported'); return; }
+
+      geoBusy = true;
+      geoBtn.disabled = true;
+      geoBtn.innerHTML = `<span class="spinner"></span> ${t('locating')}`;
+      sugg.innerHTML = '';
+      input.classList.remove('input-err');
+      msg.innerHTML = '';
+
       navigator.geolocation.getCurrentPosition(
-        () => { picked = { zip: '77036', city: 'Houston', state: 'TX' }; input.value = 'Houston, TX';
-                msg.innerHTML = `<div class="ok-msg">${t('zipResolved')}: <b>Houston, TX</b></div>`;
-                btn.innerHTML = `${icon('check', 19)} ${t('done')}`; },
-        () => { btn.innerHTML = `${icon('alert', 19)} ${t('locationDenied')}`; },
-        { timeout: 6000 }
+        async (pos) => {
+          const { latitude, longitude } = pos.coords;
+          geoBtn.innerHTML = `<span class="spinner"></span> ${t('resolvingLocation')}`;
+          msg.innerHTML = `<div class="hint"><span class="spinner" style="display:inline-block;vertical-align:-3px"></span> ${t('resolvingLocation')}</div>`;
+
+          const r = await reverseGeocode(latitude, longitude);
+          if (!panel.isConnected) return;               // sheet closed meanwhile
+          if (r.error === 'outside') { geoFail('geoOutsideUs'); return; }
+          if (r.error) { geoFail('geoLookupFailed'); return; }
+
+          picked = { zip: r.zip || '', city: r.city, state: r.state, lat: r.lat, lng: r.lng };
+          const label = `${r.city}, ${r.state}`;
+          input.value = r.zip || label;
+          msg.innerHTML = `<div class="ok-msg">${t('zipResolved')}: <b>${label}${r.zip ? ` ${r.zip}` : ''}</b></div>`;
+          geoBusy = false;
+          geoBtn.disabled = false;
+          geoBtn.innerHTML = `${icon('check', 19)} ${t('done')}`;
+        },
+        (err) => {
+          if (err && err.code === 1) geoFail('geoDenied');
+          else if (err && err.code === 3) geoFail('geoTimeout');
+          else geoFail('geoUnavailable');
+        },
+        { enableHighAccuracy: true, timeout: 15000, maximumAge: 60000 }
       );
     });
 
