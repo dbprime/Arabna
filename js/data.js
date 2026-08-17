@@ -8,11 +8,11 @@
    "events" is not a business category — it carries an explicit route to the
    Events screen; every other entry filters the directory. */
 export const CATEGORIES = [
-  { id: 'restaurants', key: 'catRestaurants', icon: 'utensils' },
-  { id: 'doctors',     key: 'catDoctors',     icon: 'stethoscope' },
-  { id: 'events',      key: 'catEvents',      icon: 'calendar', route: '#/events' },
-  { id: 'home',        key: 'catHome',        icon: 'wrench' },
-  { id: 'beauty',      key: 'catBeauty',      icon: 'sparkles' },
+  { id: 'restaurants', key: 'catRestaurants', shortKey: 'catShortRestaurants', icon: 'utensils' },
+  { id: 'doctors',     key: 'catDoctors',     shortKey: 'catShortDoctors',     icon: 'stethoscope' },
+  { id: 'events',      key: 'catEvents',      shortKey: 'catShortEvents',      icon: 'calendar', route: '#/events' },
+  { id: 'home',        key: 'catHome',        shortKey: 'catShortHome',        icon: 'wrench' },
+  { id: 'beauty',      key: 'catBeauty',      shortKey: 'catShortBeauty',      icon: 'sparkles' },
   { id: 'lawyers',     key: 'catLawyers',     icon: 'scale' },
   { id: 'auto',        key: 'catAuto',        icon: 'car' },
   { id: 'grocery',     key: 'catGrocery',     icon: 'bag' },
@@ -390,10 +390,12 @@ export const BOOST_PRICES = [
 
 export const SUBSCRIPTION_PRICE = 29;
 
+/* Every notification carries a `route`: tapping one must always land on the
+   thing it is talking about. */
 export const NOTIFICATIONS = [
-  { id: 'n1', icon: 'megaphone', unread: true,  title: { ar: 'إعلانك صار مباشر', en: 'Your ad is live' }, body: { ar: 'إعلان "تويوتا كامري" ظاهر الآن بأعلى فئة السيارات.', en: 'Your "Toyota Camry" listing is now pinned in Cars.' }, when: { ar: 'قبل ساعتين', en: '2 hours ago' } },
-  { id: 'n2', icon: 'clock', unread: true, title: { ar: 'إعلانك ينتهي قريباً', en: 'Listing expiring soon' }, body: { ar: 'باقي ٣ أيام على انتهاء إعلان "طقم كنب".', en: '3 days left on your "sofa set" listing.' }, when: { ar: 'قبل يوم', en: '1 day ago' } },
-  { id: 'n3', icon: 'star', unread: false, title: { ar: 'مراجعة جديدة', en: 'New review' }, body: { ar: 'وصلتك مراجعة ٥ نجوم على صفحة نشاطك.', en: 'You received a 5-star review on your business page.' }, when: { ar: 'قبل ٣ أيام', en: '3 days ago' } },
+  { id: 'n1', icon: 'megaphone', unread: true, route: '#/marketplace/c1', title: { ar: 'إعلانك صار مباشر', en: 'Your ad is live' }, body: { ar: 'إعلان "تويوتا كامري" ظاهر الآن بأعلى فئة السيارات.', en: 'Your "Toyota Camry" listing is now pinned in Cars.' }, when: { ar: 'قبل ساعتين', en: '2 hours ago' } },
+  { id: 'n2', icon: 'clock', unread: true, route: '#/my-ads', title: { ar: 'إعلانك ينتهي قريباً', en: 'Listing expiring soon' }, body: { ar: 'باقي ٣ أيام على انتهاء إعلان "طقم كنب".', en: '3 days left on your "sofa set" listing.' }, when: { ar: 'قبل يوم', en: '1 day ago' } },
+  { id: 'n3', icon: 'star', unread: false, route: '#/my-business', title: { ar: 'مراجعة جديدة', en: 'New review' }, body: { ar: 'وصلتك مراجعة ٥ نجوم على صفحة نشاطك.', en: 'You received a 5-star review on your business page.' }, when: { ar: 'قبل ٣ أيام', en: '3 days ago' } },
 ];
 
 /* The moderation queue has no seed data on purpose: it is built entirely

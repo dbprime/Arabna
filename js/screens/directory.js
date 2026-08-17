@@ -1,6 +1,7 @@
 /* ======================= DIRECTORY + LISTING ======================= */
 import { t, L, icon, $, $$, go, back, renderHeader, openSheet, closeSheet, confirmSheet,
-         toast, stars, wireRoutes, emptyState, query, openMaps, shareItem, fmtMoney } from '../ui.js';
+         toast, stars, wireRoutes, emptyState, query, openMaps, shareItem, fmtMoney,
+         openFilterSheet, activeFilterCount } from '../ui.js';
 import { CATEGORIES, SUBSCRIPTION_PRICE } from '../data.js';
 import * as S from '../store.js';
 import { catIcon } from './home.js';
@@ -11,55 +12,59 @@ export function DirectoryScreen(root) {
   const q = query();
   let cat = q.cat || 'all';
   let term = q.q || '';
+  let filters = { cat, radius: S.state.radius, sort: 'newest' };
 
   root.innerHTML = `
-    <div class="tabs">
-      <button class="tab active">${t('tabDirectory')}</button>
-      <button class="tab" data-route="#/magazine">${t('tabMagazine')}</button>
-    </div>
-
-    <div class="search-wrap">
+    <div class="search-row">
       <div class="search-bar">${icon('search', 21)}<input id="dirSearch" placeholder="${t('searchDirectory')}" value="${term}" /></div>
-      <div class="loc-bar">
-        <button class="loc-chip" data-loc>${icon('mapPin', 17)}<span>${S.state.location.city}, ${S.state.location.state}</span></button>
-        <button class="radius-chip" data-rad>${S.state.radius} ${t('miles')}${icon('chevronD', 15)}</button>
-      </div>
+      <button class="loc-chip" data-loc>${icon('mapPin', 17)}<span>${S.state.location.city}</span></button>
+      <button class="filter-btn" id="dirFilter" aria-label="${t('filters')}">${icon('filter', 20)}<span id="fCount"></span></button>
     </div>
 
-    <div class="section-head" style="margin-top:14px">
-      <div class="section-title">${t('directoryTitle')}<small>${t('directorySub')}</small></div>
-    </div>
-    <div class="hscroll" id="catChips">
+    <div class="hscroll mt-12" id="catChips">
       <button class="chip ${cat === 'all' ? 'active' : ''}" data-cat="all">${t('catAll')}</button>
-      ${CATEGORIES.map(c => `<button class="chip ${cat === c.id ? 'active' : ''}" data-cat="${c.id}">${icon(c.icon, 15)} ${t(c.key)}</button>`).join('')}
+      ${CATEGORIES.filter(c => !c.route).map(c => `<button class="chip ${cat === c.id ? 'active' : ''}" data-cat="${c.id}">${icon(c.icon, 15)} ${t(c.key)}</button>`).join('')}
     </div>
 
-    <div class="upsell" data-route="#/subscribe">
-      <div style="width:38px;height:38px;border-radius:11px;display:grid;place-items:center;background:rgba(198,161,91,.2);color:var(--gold-bright)">${icon('crown', 22)}</div>
-      <div class="upsell-txt"><b>${t('upgradeBanner')}</b><span><span class="ltr">${fmtMoney(SUBSCRIPTION_PRICE)}</span> ${t("month")}</span></div>
-      <span class="btn btn-gold btn-sm">${t('upgradeBtn')}</span>
-    </div>
-
-    <div class="pad" id="dirList"></div>
+    <div class="pad mt-12" id="dirList"></div>
 
     <div class="list-note" style="margin-bottom:18px">${icon('info', 18)}
       <span>${t('isThisYours')} <b class="gold" data-route="#/claim" style="cursor:pointer">${t('claimIt')}</b> · <b class="gold" data-route="#/add-business" style="cursor:pointer">${t('addBusiness')}</b></span>
     </div>`;
 
   const paint = () => {
-    const list = S.allBusinesses()
+    let list = S.allBusinesses()
       .filter(b => cat === 'all' || b.cat === cat)
       .filter(b => b.dist <= S.state.radius)
-      .filter(b => !term || L(b.name).toLowerCase().includes(term.toLowerCase()) || L(b.desc || '').toLowerCase().includes(term.toLowerCase()))
-      .sort((a, b) => (S.businessPlan(b) === 'paid') - (S.businessPlan(a) === 'paid') || a.dist - b.dist);
+      .filter(b => !term || L(b.name).toLowerCase().includes(term.toLowerCase()) || L(b.desc || '').toLowerCase().includes(term.toLowerCase()));
+
+    if (filters.sort === 'rated') {
+      list.sort((a, b) => S.ratingFor(b).avg - S.ratingFor(a).avg);
+    } else if (filters.sort === 'nearest') {
+      list.sort((a, b) => a.dist - b.dist);
+    } else {
+      list.sort((a, b) => (S.businessPlan(b) === 'paid') - (S.businessPlan(a) === 'paid') || a.dist - b.dist);
+    }
 
     const el = $('#dirList');
-    el.innerHTML = list.length ? list.map(rowHtml).join('')
-      : emptyState('search', t('emptyDirTitle'), t('emptyDirSub'), t('radius'), '#/directory');
+    if (!list.length) {
+      el.innerHTML = emptyState('search', t('emptyDirTitle'), t('emptyDirSub'), t('radius'), '#/directory');
+    } else {
+      // the subscription upsell sits after the first five results, not above them
+      const rows = list.map(rowHtml);
+      if (rows.length > 5) rows.splice(5, 0, upsellHtml());
+      else rows.push(upsellHtml());
+      el.innerHTML = rows.join('');
+    }
     wireRoutes(el);
     $$('#dirList [data-call]').forEach(b => b.addEventListener('click', e => { e.stopPropagation(); location.href = 'tel:' + b.dataset.call; }));
-    $$('#dirList [data-map]').forEach(b => b.addEventListener('click', e => { e.stopPropagation(); openMaps(b.dataset.map); }));
     if (!list.length) $$('#dirList .empty .btn').forEach(b => b.addEventListener('click', () => import('./home.js').then(m => m.openRadiusSheet())));
+
+    const fc = $('#fCount');
+    const n = activeFilterCount(filters);
+    fc.className = n ? 'f-count' : '';
+    fc.textContent = n || '';
+    $('#dirFilter').classList.toggle('on', n > 0);
   };
   paint();
 
@@ -73,10 +78,22 @@ export function DirectoryScreen(root) {
   }));
   $('#dirSearch').addEventListener('input', e => { term = e.target.value; paint(); });
   $('[data-loc]').addEventListener('click', () => import('./home.js').then(m => m.openLocationSheet()));
-  $('[data-rad]').addEventListener('click', () => import('./home.js').then(m => m.openRadiusSheet()));
+  $('#dirFilter').addEventListener('click', () => openFilterSheet({
+    cats: CATEGORIES.filter(c => !c.route).map(c => ({ id: c.id, label: t(c.key) })),
+    value: filters,
+    withPrice: false,
+    onApply: (v) => {
+      filters = v; cat = v.cat;
+      $$('#catChips .chip').forEach(x => x.classList.toggle('active', x.dataset.cat === cat));
+      paint();
+    },
+  }));
   wireRoutes(root);
 }
 
+/* Slim card: icon · name + verified · rating/reviews/distance on one line ·
+   call. The written phone duplicated the call button and "directions" now
+   lives on the detail page, where the address is anyway. */
 function rowHtml(b) {
   const paid = S.businessPlan(b) === 'paid';
   const r = S.ratingFor(b);
@@ -86,15 +103,25 @@ function rowHtml(b) {
       <div class="row-title">${L(b.name)}
         ${paid ? `<span class="badge badge-verified">${icon('check', 12)}${t('verified')}</span>` : `<span class="badge badge-free">${t('free')}</span>`}
       </div>
-      <div class="row-sub">${paid && r.count ? stars(r.avg) + `<span>· ${r.count} ${t('reviews')}</span>` : ''}
+      <div class="row-sub">${paid && r.count ? stars(r.avg) + `<span>· ${r.count} ${t('reviews')}</span> · ` : ''}
         <span>${icon('mapPin', 13)} ${b.dist} ${t('miles')}</span>
       </div>
-      <div class="row-sub">${icon('phone', 13)} <span class="ltr">${b.phone}</span></div>
       <div class="row-actions">
         <button class="mini-btn gold" data-call="${b.phone}">${icon('phone', 15)} ${t('call')}</button>
-        <button class="mini-btn" data-map="${b.address}">${icon('navigation', 15)} ${t('directions')}</button>
       </div>
     </div>
+  </div>`;
+}
+
+/** the $29 subscription upsell, sized like a business row */
+function upsellHtml() {
+  return `<div class="list-row" data-route="#/subscribe" style="border-color:var(--line)">
+    <span class="row-ico" style="color:var(--gold-bright)">${icon('crown', 22)}</span>
+    <div class="row-main">
+      <div class="row-title">${t('upgradeBanner')}</div>
+      <div class="row-sub gold"><span class="ltr">${fmtMoney(SUBSCRIPTION_PRICE)}</span> ${t('month')}</div>
+    </div>
+    <span class="chev">${icon(document.documentElement.dir === 'rtl' ? 'chevronL' : 'chevronR', 19)}</span>
   </div>`;
 }
 

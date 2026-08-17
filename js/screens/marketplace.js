@@ -1,6 +1,7 @@
 /* ======================= MARKETPLACE ======================= */
 import { t, L, icon, $, $$, go, back, renderHeader, confirmSheet, toast, wireRoutes,
-         emptyState, query, shareItem, fmtMoney, priceLabel, statusBadge } from '../ui.js';
+         emptyState, query, shareItem, fmtMoney, priceLabel, statusBadge,
+         openSheet, closeSheet, openFilterSheet, activeFilterCount } from '../ui.js';
 import { MARKET_CATS, BOOST_PRICES, FREE_PRICE } from '../data.js';
 import { getLang } from '../i18n.js';
 import * as S from '../store.js';
@@ -12,19 +13,26 @@ export function MarketplaceScreen(root) {
   let cat = q.cat || 'all';
   let term = '';
   const highlight = q.new || '';          // listing just published → pin it on top
+  let filters = { cat, radius: S.state.radius, sort: 'newest', priceMin: '', priceMax: '' };
+
+  /** "$14,500" / "45/hr" → 14500 so a price range can compare them */
+  const priceNum = (p) => {
+    if (!p || p === FREE_PRICE) return 0;
+    const n = parseFloat(String(p).replace(/[^0-9.]/g, ''));
+    return isNaN(n) ? 0 : n;
+  };
 
   root.innerHTML = `
-    <div class="search-wrap">
+    <div class="search-row">
       <div class="search-bar">${icon('search', 21)}<input id="clSearch" placeholder="${t('searchClassifieds')}" /></div>
-      <div class="loc-bar">
-        <button class="loc-chip" data-loc>${icon('mapPin', 17)}<span>${S.state.location.city}, ${S.state.location.state}</span></button>
-        <button class="radius-chip" data-rad>${S.state.radius} ${t('miles')}${icon('chevronD', 15)}</button>
-      </div>
+      <button class="loc-chip" data-loc>${icon('mapPin', 17)}<span>${S.state.location.city}</span></button>
+      <button class="filter-btn" id="mkFilter" aria-label="${t('filters')}">${icon('filter', 20)}<span id="fCount"></span></button>
     </div>
 
     <div class="section-head" style="margin-top:14px">
-      <div class="section-title">${t('classifiedsTitle')}<small>${t('classifiedsSub')}</small></div>
-      <button class="link-gold" data-route="#/post">${icon('plus', 17)} ${t('post')}</button>
+      <div class="section-title">${t('classifiedsTitle')}
+        <button class="info-dot" id="rulesBtn" aria-label="${t('marketRules')}">${icon('info', 15)}</button>
+      </div>
     </div>
 
     <div class="hscroll" id="clChips">
@@ -49,7 +57,7 @@ export function MarketplaceScreen(root) {
         </div>`;
       wireRoutes(el);
     } else {
-      el.innerHTML = `<div class="list-note">${icon('info', 18)}<span>${t('classifiedsNote')}</span></div>`;
+      el.innerHTML = '';          // account rules live behind the (i) button now
     }
   };
 
@@ -60,8 +68,11 @@ export function MarketplaceScreen(root) {
       .filter(c => cat === 'all' || c.cat === cat)
       .filter(c => !term || L(c.title).toLowerCase().includes(term.toLowerCase())
                          || L(c.desc || '').toLowerCase().includes(term.toLowerCase()))
+      .filter(c => !filters.priceMin || priceNum(c.price) >= Number(filters.priceMin))
+      .filter(c => !filters.priceMax || priceNum(c.price) <= Number(filters.priceMax))
       .sort((a, b) => (b.id === highlight) - (a.id === highlight)
                    || (b.boosted === true) - (a.boosted === true)
+                   || (filters.sort === 'rated' ? (b.boosted === true) - (a.boosted === true) : 0)
                    || (b.created || 0) - (a.created || 0));
 
     const section = MARKET_CATS.find(c => c.id === cat);
@@ -75,6 +86,12 @@ export function MarketplaceScreen(root) {
           t('post'),
           section ? `#/post?cat=${section.id}` : '#/post');
     wireRoutes($('#clGrid'));
+
+    const fc = $('#fCount');
+    const n = activeFilterCount(filters);
+    fc.className = n ? 'f-count' : '';
+    fc.textContent = n || '';
+    $('#mkFilter').classList.toggle('on', n > 0);
   };
 
   paintNote();
@@ -92,7 +109,24 @@ export function MarketplaceScreen(root) {
   }));
   $('#clSearch').addEventListener('input', e => { term = e.target.value; paint(); });
   $('[data-loc]').addEventListener('click', () => import('./home.js').then(m => m.openLocationSheet()));
-  $('[data-rad]').addEventListener('click', () => import('./home.js').then(m => m.openRadiusSheet()));
+  $('#rulesBtn').addEventListener('click', () => openSheet(`
+    <div class="sheet-title">${t('marketRules')}</div>
+    <div class="sheet-sub">${t('classifiedsSub')}</div>
+    <div class="list-note" style="margin-inline:0">${icon('info', 18)}<span>${t('classifiedsNote')}</span></div>
+    <div class="list-note" style="margin-inline:0">${icon('hammer', 18)}<span>${t('handymanRule')}</span></div>
+    <div class="list-note" style="margin-inline:0">${icon('gift', 18)}<span>${t('freeRule')}</span></div>
+    <button class="btn btn-ghost btn-block mt-12" data-close>${t('close')}</button>
+  `, (panel) => panel.querySelector('[data-close]').addEventListener('click', closeSheet)));
+  $('#mkFilter').addEventListener('click', () => openFilterSheet({
+    cats: MARKET_CATS.map(c => ({ id: c.id, label: t(c.key) })),
+    value: filters,
+    withPrice: true,
+    onApply: (v) => {
+      filters = v; cat = v.cat;
+      $$('#clChips .chip').forEach(x => x.classList.toggle('active', x.dataset.cat === cat));
+      paintNote(); paint();
+    },
+  }));
   wireRoutes(root);
 }
 

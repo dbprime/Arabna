@@ -177,6 +177,21 @@ export const STRINGS = {
     queueBadges: 'طلبات التوثيق', queueReports: 'البلاغات',
     contactAttemptReport: 'محاولات تبادل تواصل خارج التطبيق',
     adminPassChanged: 'تم تغيير كلمة سر الإدارة',
+    // --- short one-word labels for the home category circles
+    catShortRestaurants: 'مطاعم', catShortDoctors: 'أطباء', catShortEvents: 'فعاليات',
+    catShortHome: 'صيانة', catShortBeauty: 'تسوّق',
+    // --- unified filter sheet
+    filters: 'فلترة', applyFilters: 'تطبيق', clearFilters: 'مسح الكل',
+    sortBy: 'الترتيب', sortNewest: 'الأحدث', sortNearest: 'الأقرب', sortTopRated: 'الأعلى تقييماً',
+    priceRange: 'نطاق السعر', priceFrom: 'من', priceTo: 'إلى',
+    filtersCleared: 'تم مسح الفلاتر',
+    // --- drawer groups
+    grpSections: 'أقسام التطبيق', grpAccount: 'أعلن معنا وحسابك', grpHelp: 'المساعدة والقوانين',
+    // --- notifications
+    notifNew: 'جديد', notifOlder: 'أقدم',
+    emptyNotifTitle2: 'ما في إشعارات بعد',
+    // --- marketplace info
+    marketRules: 'شروط النشر',
     // --- demo helpers
     fillDemoCode: 'املأ الرمز التجريبي',
     demoCodeIs: 'الرمز التجريبي',
@@ -429,6 +444,16 @@ export const STRINGS = {
     queueBadges: 'Verification requests', queueReports: 'Reports',
     contactAttemptReport: 'Attempts to share off-app contact details',
     adminPassChanged: 'Admin password changed',
+    catShortRestaurants: 'Food', catShortDoctors: 'Doctors', catShortEvents: 'Events',
+    catShortHome: 'Repairs', catShortBeauty: 'Shops',
+    filters: 'Filters', applyFilters: 'Apply', clearFilters: 'Clear all',
+    sortBy: 'Sort by', sortNewest: 'Newest', sortNearest: 'Nearest', sortTopRated: 'Top rated',
+    priceRange: 'Price range', priceFrom: 'From', priceTo: 'To',
+    filtersCleared: 'Filters cleared',
+    grpSections: 'App sections', grpAccount: 'Advertise & your account', grpHelp: 'Help & policies',
+    notifNew: 'New', notifOlder: 'Earlier',
+    emptyNotifTitle2: 'No notifications yet',
+    marketRules: 'Posting rules',
     fillDemoCode: 'Fill demo code',
     demoCodeIs: 'Demo code',
     markAllRead: 'Mark all as read',

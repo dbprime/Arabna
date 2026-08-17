@@ -433,20 +433,45 @@ function sw(key, label, on) {
 export function NotificationsScreen(root) {
   renderHeader({ simple: true, title: t('notifications') });
   const list = S.notifications();
-  const unread = list.filter(n => n.unread).length;
+  const unread = list.filter(n => n.unread);
+  const read = list.filter(n => !n.unread);
 
-  root.innerHTML = list.length
-    ? `${unread ? `<div class="pad mt-12"><button class="btn btn-ghost btn-block btn-sm" id="readAll">
-          ${icon('check', 17)} ${t('markAllRead')} (${unread})</button></div>` : ''}
-       <div class="mt-8">${list.map(n => `
-        <div class="notif-row ${n.unread ? 'unread' : ''}" ${n.route ? `data-route="${n.route}"` : ''}
-             style="${n.route ? 'cursor:pointer' : ''}">
-          <span class="notif-ico">${icon(n.icon, 20)}</span>
-          <div class="notif-txt"><b>${L(n.title)}</b><span>${L(n.body)}</span>
-            <div class="fs-12 muted mt-8">${L(n.when)}</div></div>
-          ${n.route ? `<span class="chev">${icon(document.documentElement.dir === 'rtl' ? 'chevronL' : 'chevronR', 18)}</span>` : ''}
-        </div>`).join('')}</div>`
-    : emptyState('bell', t('emptyNotifTitle'), t('emptyNotifSub'));
+  if (!list.length) {
+    root.innerHTML = emptyState('bell', t('emptyNotifTitle2'), t('emptyNotifSub'));
+    return;
+  }
+
+  const row = (n) => `
+    <div class="notif-row ${n.unread ? 'unread' : ''}" data-notif="${n.id}"
+         ${n.route ? `data-go="${n.route}"` : ''} style="cursor:pointer">
+      <span class="notif-ico">${icon(n.icon, 20)}</span>
+      <div class="notif-txt"><b>${L(n.title)}</b><span>${L(n.body)}</span>
+        <div class="fs-12 muted mt-8">${L(n.when)}</div></div>
+      ${n.route ? `<span class="chev">${icon(document.documentElement.dir === 'rtl' ? 'chevronL' : 'chevronR', 18)}</span>` : ''}
+    </div>`;
+
+  root.innerHTML = `
+    ${unread.length ? `<div class="pad mt-12"><button class="btn btn-ghost btn-block btn-sm" id="readAll">
+        ${icon('check', 17)} ${t('markAllRead')} (${unread.length})</button></div>` : ''}
+
+    ${unread.length ? `<div class="notif-group-label">${t('notifNew')}</div>
+      <div id="unreadTop">${unread.map(row).join('')}</div>` : ''}
+
+    ${read.length ? `<div class="notif-group-label">${t('notifOlder')}</div>
+      ${read.map(row).join('')}` : ''}
+    <div style="height:18px"></div>`;
+
+  // land on the first unread instead of the top of the page
+  const first = $('#unreadTop .notif-row');
+  if (first) requestAnimationFrame(() => first.scrollIntoView({ behavior: 'smooth', block: 'center' }));
+
+  // a notification is read when it is opened — never all at once on render,
+  // which would wipe the counter before the user saw anything.
+  $$('[data-notif]').forEach(el => el.addEventListener('click', () => {
+    S.markNotifRead(el.dataset.notif);
+    // every notification leads somewhere; my-ads is the sane fallback
+    go(el.dataset.go || '#/my-ads');
+  }));
 
   const ra = $('#readAll');
   if (ra) ra.addEventListener('click', () => { S.markNotifsRead(); toast(t('done'), 'ok'); go('#/notifications'); });

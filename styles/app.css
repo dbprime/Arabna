@@ -284,10 +284,10 @@ ul { margin: 0; padding: 0; list-style: none; }
 .chip:active { transform: scale(0.96); }
 
 /* ---------- category circles ---------- */
-.cat-item { flex: 0 0 auto; width: 82px; text-align: center; scroll-snap-align: start;
+.cat-item { flex: 0 0 auto; width: 66px; text-align: center; scroll-snap-align: start;
   display: flex; flex-direction: column; align-items: center; }
 .cat-circle {
-  width: 66px; height: 66px; margin: 0 auto 8px;
+  width: 56px; height: 56px; margin: 0 auto 7px;
   border-radius: 50%;
   display: grid; place-items: center;
   background: linear-gradient(150deg, var(--surface-2), var(--surface));
@@ -677,7 +677,7 @@ html[dir="rtl"] .switch.on::after { transform: translateX(-18px); }
 .cl-price, .price-amt, .stat b { direction: ltr; unicode-bidi: isolate; text-align: start; }
 .price-card > span:nth-child(2) { flex: 1; min-width: 0; }
 .price-name, .price-desc { display: block; }
-.cat-label { min-height: 36px; }
+.cat-label { min-height: 18px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
 input[inputmode="tel"], input[type="email"], input[inputmode="decimal"], #zipIn { direction: ltr; text-align: start; }
 
 /* ============================================================
@@ -801,3 +801,87 @@ input[inputmode="tel"], input[type="email"], input[inputmode="decimal"], #zipIn 
 /* ---------- admin: reject reason ---------- */
 .reject-box { margin-top: 8px; }
 .reject-box .input { height: 44px; font-size: 13.5px; }
+
+/* ============================================================
+   V.01.4 — interface simplification
+   ============================================================ */
+
+/* header: a spacer opposite the menu button keeps the logo truly centred */
+.app-header .h-spacer { width: 44px; height: 44px; flex: 0 0 44px; }
+
+/* categories strip: five circles must fit a 390px screen without clipping */
+#cats { gap: 6px; }
+#cats .cat-item { width: calc((100% - 24px) / 5); min-width: 0; }
+
+/* one-row search: field takes the space, city chip stays compact */
+.search-row { display: flex; gap: 8px; align-items: center; padding: 12px 14px 0; }
+.search-row .search-bar { flex: 1 1 auto; min-width: 0; margin: 0; }
+.search-row .loc-chip { flex: 0 0 auto; max-width: 42%; overflow: hidden; }
+.search-row .loc-chip span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.filter-btn {
+  flex: 0 0 auto; position: relative;
+  height: 46px; width: 46px; border-radius: 12px;
+  display: grid; place-items: center;
+  color: var(--ivory);
+  background: rgba(255,255,255,0.05);
+  border: 1px solid var(--line);
+}
+.filter-btn.on { color: var(--gold-bright); border-color: var(--gold); }
+.filter-btn .f-count {
+  position: absolute; inset-block-start: -5px; inset-inline-end: -5px;
+  min-width: 18px; height: 18px; padding: 0 4px;
+  border-radius: 9px; display: grid; place-items: center;
+  font-size: 11px; font-weight: 700;
+  background: linear-gradient(145deg, var(--gold-bright), var(--gold));
+  color: #14213d;
+}
+.info-dot {
+  width: 26px; height: 26px; border-radius: 50%;
+  display: inline-grid; place-items: center;
+  color: var(--muted); border: 1px solid var(--line-soft);
+  vertical-align: middle; margin-inline-start: 6px;
+}
+.info-dot:active { color: var(--gold-bright); border-color: var(--gold); }
+
+/* ---------- drawer: collapsible groups ---------- */
+.dr-badge {
+  margin-inline-start: auto;
+  min-width: 22px; height: 22px; padding: 0 6px;
+  border-radius: 11px; display: grid; place-items: center;
+  font-size: 12px; font-weight: 700;
+  background: linear-gradient(145deg, var(--gold-bright), var(--gold));
+  color: #14213d;
+}
+.dr-group { border-bottom: 1px solid var(--line-soft); }
+.dr-head { width: 100%; font-weight: 700; }
+.dr-head .grp-arrow { transition: transform .2s var(--ease); }
+.dr-group.open .dr-head .grp-arrow { transform: rotate(180deg); }
+.dr-group.open .dr-head { color: var(--gold-bright); }
+/* One grid child only: with several children the extra rows fall into
+   implicit auto tracks and the group never actually collapses. */
+.dr-sub {
+  display: grid; grid-template-rows: 0fr;
+  transition: grid-template-rows .2s var(--ease);
+}
+.dr-group.open .dr-sub { grid-template-rows: 1fr; }
+.dr-sub-inner { overflow: hidden; min-height: 0; }
+.dr-sub .dr-item { padding-inline-start: 34px; font-size: 14px; }
+@media (prefers-reduced-motion: reduce) {
+  .dr-sub { transition: none; }
+  .dr-head .grp-arrow { transition: none; }
+}
+
+/* ---------- notifications: new vs earlier ---------- */
+.notif-group-label {
+  padding: 14px 16px 6px;
+  font-size: 12.5px; font-weight: 700; letter-spacing: .3px;
+  color: var(--muted); text-transform: uppercase;
+}
+.notif-row.unread { position: relative; background: rgba(198,161,91,0.06); }
+.notif-row.unread::before {
+  content: ''; position: absolute;
+  inset-inline-start: 0; inset-block-start: 50%;
+  width: 4px; height: 34px; margin-block-start: -17px;
+  border-start-end-radius: 3px; border-end-end-radius: 3px;
+  background: var(--gold-bright);
+}

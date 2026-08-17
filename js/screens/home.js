@@ -15,15 +15,25 @@ export function HomeScreen(root) {
   const loc = S.state.location;
 
   root.innerHTML = `
-    <!-- search + location -->
-    <div class="search-wrap">
+    <!-- search + location on one row; radius moved inside the location sheet -->
+    <div class="search-row">
       <div class="search-bar">
         ${icon('search', 21)}
         <input id="homeSearch" placeholder="${t('searchPlaceholder')}" />
       </div>
-      <div class="loc-bar">
-        <button class="loc-chip" id="locBtn">${icon('mapPin', 17)}<span>${loc.city}, ${loc.state}</span></button>
-        <button class="radius-chip" id="radBtn">${S.state.radius} ${t('miles')}${icon('chevronD', 15)}</button>
+      <button class="loc-chip" id="locBtn">${icon('mapPin', 17)}<span>${loc.city}</span></button>
+    </div>
+
+    <!-- categories — home is a summary: 5 max, the rest live on #/categories -->
+    <div class="section">
+      <div class="section-head"><div class="section-title">${t('categories')}</div>
+        <button class="link-gold" data-route="#/categories">${t('seeAll')}</button></div>
+      <div class="hscroll" id="cats">
+        ${CATEGORIES.slice(0, 5).map(c => `
+          <button class="cat-item" data-cat="${c.id}" ${c.route ? `data-dest="${c.route}"` : ''}>
+            <span class="cat-circle">${icon(c.icon, 24)}</span>
+            <span class="cat-label">${t(c.shortKey || c.key)}</span>
+          </button>`).join('')}
       </div>
     </div>
 
@@ -34,22 +44,6 @@ export function HomeScreen(root) {
       </div>
       <div class="slider-dots" id="dots">${ads.map((_, i) => `<span class="dot-i ${i === 0 ? 'active' : ''}"></span>`).join('')}</div>
     </div>
-
-    <!-- categories — home is a summary: 5 max, the rest live on #/categories -->
-    <div class="section">
-      <div class="section-head"><div class="section-title">${t('categories')}</div>
-        <button class="link-gold" data-route="#/categories">${t('seeAll')}</button></div>
-      <div class="hscroll" id="cats">
-        ${CATEGORIES.slice(0, 5).map(c => `
-          <button class="cat-item" data-cat="${c.id}" ${c.route ? `data-dest="${c.route}"` : ''}>
-            <span class="cat-circle">${icon(c.icon, 26)}</span>
-            <span class="cat-label">${t(c.key)}</span>
-          </button>`).join('')}
-      </div>
-    </div>
-
-    <!-- cheaper mini ad -->
-    <button class="mini-ad" id="miniAd"></button>
 
     <!-- featured (directory subscribers) -->
     <div class="section">
@@ -71,6 +65,9 @@ export function HomeScreen(root) {
           </div>`).join('')}
       </div>
     </div>
+
+    <!-- cheaper mini ad -->
+    <button class="mini-ad" id="miniAd"></button>
 
     <!-- magazine teaser -->
     <div class="section">
@@ -109,7 +106,6 @@ export function HomeScreen(root) {
     if (e.key === 'Enter') go('#/directory?q=' + encodeURIComponent(e.target.value));
   });
   $('#locBtn').addEventListener('click', openLocationSheet);
-  $('#radBtn').addEventListener('click', openRadiusSheet);
   $$('#cats .cat-item').forEach(b => b.addEventListener('click', () =>
     go(b.dataset.dest || ('#/directory?cat=' + b.dataset.cat))));
 }

@@ -117,6 +117,29 @@ change the password from the panel's Settings tab (stored in `state.adminAuth`).
 compare is case-insensitive + trimmed so iOS auto-capitalisation cannot lock you out ·
 payments are simulated.
 
+## Interface rules (V.01.4 — simplification pass)
+Nothing is shown unless the user needs it at that moment; anything advanced or
+rare opens with one tap.
+- **Header** carries the menu button and the logo only, with a 44px spacer opposite
+  the menu so the logo is optically centred in both directions. Language and
+  notifications live in the drawer.
+- **One search row** per listing screen: field + compact city chip + filter button.
+  The radius lives inside the location sheet.
+- **Home order** is categories → paid slider → featured → mini banner → magazine.
+  Five one-word categories (`shortKey` in `data.js`), 56px circles.
+- **Directory** has no second tab bar and no redundant title; the $29 upsell is a
+  normal-height row after the first five results. Business cards carry icon, name +
+  verified, rating/reviews/distance and a call button — the written phone and the
+  directions button live on the detail page.
+- **`openFilterSheet()` in `ui.js`** is the single filter surface (category · radius ·
+  sort · price on the marketplace) with apply / clear-all and a count on the button.
+- **Drawer** = exploration + language + policies, in three collapsible groups
+  (one open at a time). Everything personal lives on `#/profile`; no row appears in
+  both. A collapsed group shows the sum of its children's badges.
+- **Notifications** split into "جديد / New" and "أقدم / Earlier"; opening the screen
+  never bulk-marks them read — a notification is read when it is tapped, and every
+  one carries a `route` so no tap is a dead end.
+
 ## Testing before you ship a change
 1. Serve locally (`python3 -m http.server`) and click through: home → directory → listing →
    classifieds → post → magazine → advertise → admin.

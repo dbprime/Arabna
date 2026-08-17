@@ -4,7 +4,7 @@
 
 import { icon, iconFilled } from './icons.js';
 import { t, L, getLang, setLang } from './i18n.js';
-import { MARKET_CATS, FREE_PRICE } from './data.js';
+import { FREE_PRICE } from './data.js';
 import * as S from './store.js';
 
 export const $ = (sel, root = document) => root.querySelector(sel);
@@ -71,22 +71,21 @@ export function renderHeader(opts = {}) {
   head.style.display = 'flex';
 
   if (opts.simple) {
+    // back + title only — language moved into the drawer
     head.innerHTML = `
       <button class="icon-btn" id="hBack" aria-label="${t('back')}">${icon(document.documentElement.dir === 'rtl' ? 'chevronR' : 'chevronL', 24)}</button>
       <div class="h-title">${opts.title || ''}</div>
-      <button class="icon-btn" id="hLang">${`<span style="font-size:11px;font-weight:700;color:var(--gold-bright)">${getLang() === 'ar' ? 'EN' : 'ع'}</span>`}</button>`;
+      <span class="h-spacer" aria-hidden="true"></span>`;
     $('#hBack').addEventListener('click', () => opts.onBack ? opts.onBack() : back());
   } else {
-    const unread = S.unreadCount();
+    // menu + logo only. The spacer opposite the menu button keeps the logo
+    // optically centred instead of crowded against a stack of icons.
     head.innerHTML = `
-      <button class="icon-btn" id="hMenu" aria-label="menu">${icon('menu', 24)}</button>
+      <button class="icon-btn" id="hMenu" aria-label="menu">${icon('menu', 24)}${S.unreadCount() ? '<span class="dot"></span>' : ''}</button>
       <img class="h-logo" src="assets/logo-sm.png" alt="ARABNA عربنا" />
-      <button class="icon-btn" id="hLang" aria-label="language"><span style="font-size:11px;font-weight:700;color:var(--gold-bright)">${getLang() === 'ar' ? 'EN' : 'ع'}</span></button>
-      <button class="icon-btn" id="hBell" aria-label="notifications">${icon('bell', 24)}${unread ? '<span class="dot"></span>' : ''}</button>`;
+      <span class="h-spacer" aria-hidden="true"></span>`;
     $('#hMenu').addEventListener('click', openDrawer);
-    $('#hBell').addEventListener('click', () => go('#/notifications'));
   }
-  $('#hLang').addEventListener('click', toggleLang);
 }
 
 export function toggleLang() {
@@ -116,20 +115,59 @@ export function renderNav(active) {
 }
 export function hideNav() { $('#bottomNav').style.display = 'none'; }
 
-/* ---------------- drawer ---------------- */
+/* ---------------- drawer ----------------
+   The drawer is exploration + language + policies only. Anything that belongs
+   to the user personally lives on the profile screen, so no row appears twice.
+   Groups are collapsed by default (one open at a time) and a collapsed group
+   carries the sum of its children's badges — otherwise folding would hide the
+   unread count entirely. */
 let drawerSeq = 0;
+let openGroup = null;          // remembered while the drawer is on screen
+
 export function openDrawer() {
   drawerSeq++;
   const root = $('#drawer');
   const u = S.state.user;
   const tierLabel = S.tier() === 2 ? t('tier2') : S.tier() === 1 ? t('tier1') : t('guest');
+  const chev = () => icon(document.documentElement.dir === 'rtl' ? 'chevronL' : 'chevronR', 19);
 
-  const item = (ico, label, route, extra = '') =>
-    `<button class="dr-item" data-route="${route}">${icon(ico, 22)}<span>${label}</span>${extra}<span class="chev">${icon(document.documentElement.dir === 'rtl' ? 'chevronL' : 'chevronR', 19)}</span></button>`;
-  const unreadPill = () => {
-    const n = S.unreadCount();
-    return n ? `<span class="badge badge-boost" style="margin-inline-start:auto">${n}</span>` : '';
-  };
+  /** unread badge, hidden at zero, capped at 9+ */
+  const badge = (n) => n > 0 ? `<span class="dr-badge">${n > 9 ? '+9' : n}</span>` : '';
+
+  const unread = S.unreadCount();
+  const item = (ico, label, route, count = 0) =>
+    `<button class="dr-item" data-route="${route}">${icon(ico, 22)}<span>${label}</span>
+      ${badge(count)}<span class="chev">${chev()}</span></button>`;
+
+  const group = (id, label, count, rows) => `
+    <div class="dr-group ${openGroup === id ? 'open' : ''}" data-group="${id}">
+      <button class="dr-item dr-head" data-toggle="${id}" aria-expanded="${openGroup === id}">
+        ${icon('chevronD', 20, 'grp-arrow')}<span>${label}</span>
+        ${badge(count)}
+      </button>
+      <div class="dr-sub"><div class="dr-sub-inner">${rows}</div></div>
+    </div>`;
+
+  const sections = [
+    item('grid', t('allCategories'), '#/categories'),
+    item('calendar', t('eventsTitle'), '#/events'),
+    item('newspaper', t('magazineTitle'), '#/magazine'),
+    item('bag', t('classifiedsTitle'), '#/marketplace'),
+  ].join('');
+
+  const account = [
+    item('megaphone', t('advertiseWithUs'), '#/advertise'),
+    item('bell', t('notifications'), '#/notifications', unread),
+    item('user', t('navProfile'), '#/profile'),
+  ].join('');
+
+  const help = [
+    item('settings', t('settings'), '#/settings'),
+    item('help', t('help'), '#/help'),
+    item('info', t('about'), '#/about'),
+    item('shield', t('privacy'), '#/privacy'),
+    item('file', t('terms'), '#/terms'),
+  ].join('');
 
   root.innerHTML = `
     <div class="drawer-scrim" data-close></div>
@@ -144,32 +182,9 @@ export function openDrawer() {
       <button class="dr-item" id="drLang">${icon('globe', 22)}<span>${t('language')}</span>
         <span class="lang-pill" style="margin-inline-start:auto">${getLang() === 'ar' ? 'العربية' : 'English'}</span></button>
 
-      ${item('home', t('navHome'), '#/home')}
-      ${item('compass', t('navExplore'), '#/directory')}
-      ${item('grid', t('allCategories'), '#/categories')}
-      ${item('calendar', t('eventsTitle'), '#/events')}
-      ${item('newspaper', t('magazineTitle'), '#/magazine')}
-
-      <div class="dr-group-label">${t('classifiedsTitle')}</div>
-      ${item('bag', t('allCategories'), '#/marketplace')}
-      ${MARKET_CATS.map(c => item(c.icon, t(c.key), '#/marketplace?cat=' + c.id)).join('')}
-
-      <div class="dr-group-label">${t('navProfile')}</div>
-      ${item('briefcase', t('myBusiness'), '#/my-business')}
-      ${item('bag', t('myAds'), '#/my-ads')}
-      ${item('star', t('myReviews'), '#/my-reviews')}
-      ${item('message', t('myMessages'), '#/messages')}
-      ${item('heart', t('savedFav'), '#/saved')}
-      ${item('megaphone', t('advertiseWithUs'), '#/advertise')}
-      ${item('bell', t('notifications'), '#/notifications', unreadPill())}
-      ${item('crown', t('subscription'), '#/subscribe')}
-
-      <div class="dr-group-label">${t('settings')}</div>
-      ${item('settings', t('settings'), '#/settings')}
-      ${item('help', t('help'), '#/help')}
-      ${item('info', t('about'), '#/about')}
-      ${item('shield', t('privacy'), '#/privacy')}
-      ${item('file', t('terms'), '#/terms')}
+      ${group('sections', t('grpSections'), 0, sections)}
+      ${group('account', t('grpAccount'), unread, account)}
+      ${group('help', t('grpHelp'), 0, help)}
 
       ${u ? `<button class="dr-item" id="drOut" style="color:#E79A9C">${icon('logout', 22)}<span>${t('signOut')}</span></button>` : ''}
       <div style="padding:18px;text-align:center;color:var(--muted);font-size:11px">ARABNA · عربنا — ${t('version')} 0.1</div>
@@ -178,6 +193,18 @@ export function openDrawer() {
   root.setAttribute('aria-hidden', 'false');
   requestAnimationFrame(() => root.classList.add('open'));
   root.querySelector('[data-close]').addEventListener('click', closeDrawer);
+
+  // accordion: opening one group closes the others
+  $$('#drawer [data-toggle]').forEach(btn => btn.addEventListener('click', () => {
+    const id = btn.dataset.toggle;
+    openGroup = openGroup === id ? null : id;
+    $$('#drawer .dr-group').forEach(g => {
+      const on = g.dataset.group === openGroup;
+      g.classList.toggle('open', on);
+      g.querySelector('.dr-head').setAttribute('aria-expanded', String(on));
+    });
+  }));
+
   $$('#drawer [data-route]').forEach(b => b.addEventListener('click', () => { closeDrawer(); go(b.dataset.route); }));
   const dl = $('#drLang'); if (dl) dl.addEventListener('click', () => { closeDrawer(); toggleLang(); });
   const out = $('#drOut');
@@ -225,6 +252,85 @@ export function wireRoutes(root) {
 }
 
 export function fmtMoney(n) { return '$' + n.toLocaleString('en-US'); }
+
+/**
+ * One filter sheet for both listing screens.
+ * @param {object} o
+ * @param {Array}  o.cats     [{ id, label }] category options
+ * @param {object} o.value    current { cat, radius, sort, priceMin, priceMax }
+ * @param {boolean} o.withPrice show the price range (marketplace only)
+ * @param {Function} o.onApply called with the new value
+ */
+export function openFilterSheet({ cats, value, withPrice, onApply }) {
+  const v = Object.assign({ cat: 'all', radius: S.state.radius, sort: 'newest', priceMin: '', priceMax: '' }, value);
+  const sorts = [['newest', t('sortNewest')], ['nearest', t('sortNearest')], ['rated', t('sortTopRated')]];
+
+  openSheet(`
+    <div class="sheet-title">${t('filters')}</div>
+
+    <div class="label">${t('category')}</div>
+    <div class="hscroll" style="padding:0" id="fCats">
+      <button class="chip ${v.cat === 'all' ? 'active' : ''}" data-c="all">${t('catAll')}</button>
+      ${cats.map(c => `<button class="chip ${v.cat === c.id ? 'active' : ''}" data-c="${c.id}">${c.label}</button>`).join('')}
+    </div>
+
+    <div class="label mt-16">${t('radius')}</div>
+    <div class="hscroll" style="padding:0" id="fRad">
+      ${[5, 10, 25, 50, 100].map(r => `<button class="chip ${v.radius === r ? 'active' : ''}" data-r="${r}">${r} ${t('miles')}</button>`).join('')}
+    </div>
+
+    <div class="label mt-16">${t('sortBy')}</div>
+    <div class="hscroll" style="padding:0" id="fSort">
+      ${sorts.map(([id, lbl]) => `<button class="chip ${v.sort === id ? 'active' : ''}" data-s="${id}">${lbl}</button>`).join('')}
+    </div>
+
+    ${withPrice ? `
+      <div class="label mt-16">${t('priceRange')}</div>
+      <div class="action-grid">
+        <input class="input" id="fMin" inputmode="decimal" placeholder="${t('priceFrom')}" value="${v.priceMin}" />
+        <input class="input" id="fMax" inputmode="decimal" placeholder="${t('priceTo')}" value="${v.priceMax}" />
+      </div>` : ''}
+
+    <button class="btn btn-gold btn-block mt-16" id="fApply">${t('applyFilters')}</button>
+    <button class="btn btn-ghost btn-block mt-8" id="fClear">${t('clearFilters')}</button>
+  `, (panel) => {
+    const pick = (sel, attr, key, cast = (x) => x) => {
+      panel.querySelectorAll(`${sel} .chip`).forEach(b => b.addEventListener('click', () => {
+        v[key] = cast(b.dataset[attr]);
+        panel.querySelectorAll(`${sel} .chip`).forEach(x => x.classList.toggle('active', x === b));
+      }));
+    };
+    pick('#fCats', 'c', 'cat');
+    pick('#fRad', 'r', 'radius', Number);
+    pick('#fSort', 's', 'sort');
+
+    panel.querySelector('#fApply').addEventListener('click', () => {
+      if (withPrice) {
+        v.priceMin = panel.querySelector('#fMin').value.trim();
+        v.priceMax = panel.querySelector('#fMax').value.trim();
+      }
+      S.state.radius = v.radius; S.save();
+      closeSheet();
+      onApply(v);
+    });
+    panel.querySelector('#fClear').addEventListener('click', () => {
+      closeSheet();
+      onApply({ cat: 'all', radius: S.state.radius, sort: 'newest', priceMin: '', priceMax: '' });
+      toast(t('filtersCleared'), 'ok');
+    });
+  });
+}
+
+/** how many filters are away from their default — shown on the filter button */
+export function activeFilterCount(v) {
+  if (!v) return 0;
+  let n = 0;
+  if (v.cat && v.cat !== 'all') n++;
+  if (v.sort && v.sort !== 'newest') n++;
+  if (v.priceMin) n++;
+  if (v.priceMax) n++;
+  return n;
+}
 
 /** Price as shown to the user — Free-section listings never show a number. */
 export function priceLabel(price) {

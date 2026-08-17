@@ -334,6 +334,11 @@ export function markNotifsRead() {
   notifications().forEach(n => { if (!state.readNotifs.includes(n.id)) state.readNotifs.push(n.id); });
   save();
 }
+/** Mark one notification read — opening the screen must not clear them all. */
+export function markNotifRead(id) {
+  if (!state.readNotifs.includes(id)) { state.readNotifs.push(id); save(); }
+}
+
 /** Raise a notification for the listing owner (approve / reject / message). */
 export function pushNotif({ icon = 'bell', title, body, route }) {
   state.extraNotifs.unshift({
