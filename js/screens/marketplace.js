@@ -1,8 +1,9 @@
 /* ======================= MARKETPLACE ======================= */
 import { t, L, icon, $, $$, go, back, renderHeader, confirmSheet, toast, wireRoutes,
          emptyState, query, shareItem, fmtMoney, priceLabel, statusBadge,
-         openSheet, closeSheet, openFilterSheet, activeFilterCount, sectionNote } from '../ui.js';
-import { MARKET_CATS, BOOST_PRICES, FREE_PRICE } from '../data.js';
+         openSheet, closeSheet, openFilterSheet, activeFilterCount, sectionNote,
+         showsPrices } from '../ui.js';
+import { MARKET_CATS, BOOST_PRICES, FREE_PRICE, SUBSCRIPTION_PRICE } from '../data.js';
 import { getLang } from '../i18n.js';
 import * as S from '../store.js';
 
@@ -53,7 +54,8 @@ export function MarketplaceScreen(root) {
       el.innerHTML = `<div class="list-note">${icon('hammer', 18)}<span>${t('handymanRule')}</span></div>
         <div class="upsell" data-route="#/subscribe">
           <div style="width:38px;height:38px;border-radius:11px;display:grid;place-items:center;background:rgba(198,161,91,.2);color:var(--gold-bright)">${icon('crown', 22)}</div>
-          <div class="upsell-txt"><b>${t('handymanUpsell')}</b><span>${fmtMoney(29)} ${t('month')}</span></div>
+          <div class="upsell-txt"><b>${t('handymanUpsell')}</b><span>${showsPrices()
+            ? fmtMoney(SUBSCRIPTION_PRICE) + ' ' + t('month') : t('pricesAfterSignup')}</span></div>
           <span class="btn btn-gold btn-sm">${t('upgradeBtn')}</span>
         </div>`;
       wireRoutes(el);
@@ -591,6 +593,9 @@ function threadListView(root) {
 export function BoostScreen(root, params) {
   const c = S.classifiedById(params[0]);
   if (!c) { go('#/marketplace'); return; }
+  // boost prices are our prices — never rendered for a visitor, not even
+  // by typing the route
+  if (!S.requireTier(1, location.hash, go)) return;
   renderHeader({ simple: true, title: t('boost') });
   let sel = BOOST_PRICES[1];
 

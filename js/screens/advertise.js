@@ -1,5 +1,6 @@
 /* ======================= ADVERTISE PURCHASE FLOW ======================= */
-import { t, icon, $, $$, go, renderHeader, toast, wireRoutes, fmtMoney } from '../ui.js';
+import { t, icon, $, $$, go, renderHeader, toast, wireRoutes, fmtMoney,
+         openSheet, closeSheet, showsPrices, priceGate, wirePriceGates } from '../ui.js';
 import { AD_PRODUCTS } from '../data.js';
 import * as S from '../store.js';
 import { mountPhotoPicker } from './marketplace.js';
@@ -10,11 +11,60 @@ const DURATIONS = [
   { id: 'month1', key: 'month1' },
 ];
 
+/* Cheapest first, computed from the prices themselves so the order stays
+   right if a price ever changes. The first card is also the pre-selected
+   one, so the first number a shop owner sees is the smallest, not the
+   largest. */
+const ORDERED = AD_PRODUCTS.slice().sort((a, b) => a.prices.week1 - b.prices.week1);
+
+/* Which line of the guide sheet points at which product. */
+const GUIDE = [
+  { key: 'guideMaxReach', id: 'slider' },
+  { key: 'guideBudget',   id: 'mini' },
+  { key: 'guideStory',    id: 'story' },
+  { key: 'guideEvent',    id: 'event' },
+];
+
+/**
+ * A wireframe of the phone with this product's slot lit in gold.
+ * Seeing where the ad lands beats three lines of prose, and it costs
+ * nothing but a few divs — no images, no libraries.
+ */
+function placement(productId) {
+  const row = (cls, style = '') => `<span class="ph-row ${cls}" style="${style}"></span>`;
+  const lit = (style = '') => `<span class="ph-row ph-ad" style="${style}"></span>`;
+  const cats = `<span class="ph-row ph-cats">${'<i></i>'.repeat(5)}</span>`;
+
+  const screens = {
+    slider: [row('ph-bar'), lit('height:34px'), cats, row('ph-block', 'height:22px'), row('ph-block', 'height:22px')],
+    mini:   [row('ph-bar'), row('ph-block', 'height:26px'), cats, lit('height:15px'), row('ph-block', 'height:22px')],
+    story:  [row('ph-bar'), row('ph-line'), row('ph-block', 'height:20px'), lit('height:20px'), row('ph-block', 'height:20px')],
+    event:  [row('ph-bar'), row('ph-line'), lit('height:24px'), row('ph-block', 'height:20px'), row('ph-block', 'height:20px')],
+  };
+  const where = { slider: 'placeSlider', mini: 'placeMini', story: 'placeStory', event: 'placeEvent' };
+
+  return `<div class="ad-preview">
+    <div class="ph">${(screens[productId] || screens.slider).join('')}<span class="ph-nav"></span></div>
+    <div class="ad-preview-key">
+      <span class="ad-here">${t('adHere')}</span>
+      <span class="ad-where">${t(where[productId] || 'placeSlider')}</span>
+    </div>
+  </div>`;
+}
+
+/** The bullet list that replaces the single description line. */
+function points(productId) {
+  const list = t(productId + 'Points');
+  if (!Array.isArray(list)) return '';
+  return `<ul class="ad-points">${list.map(p => `<li>${icon('check', 14)}<span>${p}</span></li>`).join('')}</ul>`;
+}
+
 export function AdvertiseScreen(root, params) {
   renderHeader({ simple: true, title: t('advertiseTitle') });
 
   let step = 1;
-  let product = AD_PRODUCTS.find(p => p.id === (params[0] || 'slider')) || AD_PRODUCTS[0];
+  // ORDERED[0] is the cheapest — the default when no product is named.
+  let product = AD_PRODUCTS.find(p => p.id === params[0]) || ORDERED[0];
   let duration = DURATIONS[0];
   const content = { bizName: '', tagline: '', ctaText: '', image: '' };
 
@@ -28,26 +78,79 @@ export function AdvertiseScreen(root, params) {
   }
 
   function render() {
+    // Every later step quotes a number, so a session that ends mid-flow drops
+    // back to the catalogue rather than showing prices to a visitor.
+    if (step > 1 && step < 5 && !showsPrices()) step = 1;
+
     if (step === 1) {
-      shell.innerHTML = `${paintSteps()}
+      const paid = showsPrices();
+      // A visitor sees the whole catalogue — every package, every benefit and
+      // the placement diagram — with only the numbers withheld. Hiding the
+      // value along with the price would leave no reason to sign up.
+      shell.innerHTML = `${paid ? paintSteps() : ''}
         <div class="pad mt-16">
           <div class="section-title">${t('advertiseTitle')}<small>${t('advertiseSub')}</small></div>
           <div class="mt-12" id="prods">
-            ${AD_PRODUCTS.map(p => `
-              <button class="price-card ${p.id === product.id ? 'selected' : ''}" data-p="${p.id}">
-                <span class="price-radio"></span>
-                <span><span class="price-name">${icon(p.icon, 18)} ${t(p.nameKey)}</span>
-                <span class="price-desc">${t(p.descKey)}</span></span>
-                <span class="price-amt">${fmtMoney(p.prices.week1)}+</span>
-              </button>`).join('')}
+            ${ORDERED.map(p => `
+              <div class="ad-card ${p.id === product.id ? 'selected' : ''}" data-group="${p.id}">
+                <button class="price-card" data-p="${p.id}" aria-expanded="${p.id === product.id}">
+                  <span class="price-radio"></span>
+                  <span><span class="price-name">${icon(p.icon, 18)} ${t(p.nameKey)}</span>
+                  <span class="price-desc">${t(p.descKey)}</span></span>
+                  ${paid ? `<span class="price-amt">${fmtMoney(p.prices.week1)}+</span>` : ''}
+                </button>
+                <div class="ad-more"><div class="ad-more-inner">
+                  ${placement(p.id)}
+                  ${points(p.id)}
+                </div></div>
+              </div>`).join('')}
           </div>
-          <button class="btn btn-gold btn-block mt-12" id="next1">${t('next')}</button>
+
+          <button class="ad-guide-link" id="guideBtn">${icon('help', 17)} ${t('whichSuitsMe')}</button>
+
+          ${paid
+            ? `<button class="btn btn-gold btn-block mt-12" id="next1">${t('next')}</button>`
+            : priceGate('#/advertise/' + product.id)}
         </div>`;
-      $$('#prods .price-card').forEach(b => b.addEventListener('click', () => {
-        product = AD_PRODUCTS.find(p => p.id === b.dataset.p);
-        $$('#prods .price-card').forEach(x => x.classList.toggle('selected', x === b));
+
+      // tapping a card selects it and opens it in place; the others fold
+      const select = (id) => {
+        product = AD_PRODUCTS.find(p => p.id === id) || product;
+        $$('#prods .ad-card').forEach(c => {
+          const on = c.dataset.group === product.id;
+          c.classList.toggle('selected', on);
+          c.querySelector('.price-card').setAttribute('aria-expanded', String(on));
+        });
+        // the gate carries the chosen package, so signing up returns to it
+        const g = $('[data-pricegate]');
+        if (g) g.dataset.pricegate = '#/advertise/' + product.id;
+      };
+      $$('#prods .price-card').forEach(b => b.addEventListener('click', () => select(b.dataset.p)));
+
+      $('#guideBtn').addEventListener('click', () => openSheet(`
+        <div class="sheet-title">${t('guideTitle')}</div>
+        <div class="sheet-sub">${t('guideSub')}</div>
+        ${GUIDE.map(g => {
+          const p = AD_PRODUCTS.find(x => x.id === g.id);
+          return `<button class="guide-row" data-g="${g.id}">
+            <span class="g-ico">${icon(p.icon, 20)}</span>
+            <span class="g-txt"><b>${t(g.key)}</b><span>${t(p.nameKey)}</span></span>
+            <span class="chev">${icon(document.documentElement.dir === 'rtl' ? 'chevronL' : 'chevronR', 18)}</span>
+          </button>`;
+        }).join('')}
+        <button class="btn btn-ghost btn-block mt-12" data-close>${t('close')}</button>
+      `, (panel) => {
+        panel.querySelectorAll('[data-g]').forEach(b => b.addEventListener('click', () => {
+          closeSheet();
+          select(b.dataset.g);
+          $(`#prods .ad-card[data-group="${b.dataset.g}"]`).scrollIntoView({ block: 'center', behavior: 'smooth' });
+        }));
+        panel.querySelector('[data-close]').addEventListener('click', closeSheet);
       }));
-      $('#next1').addEventListener('click', () => { step = 2; render(); });
+
+      const n1 = $('#next1');
+      if (n1) n1.addEventListener('click', () => { step = 2; render(); });
+      wirePriceGates(shell);
 
     } else if (step === 2) {
       shell.innerHTML = `${paintSteps()}

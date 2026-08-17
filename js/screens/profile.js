@@ -92,9 +92,10 @@ export function ProfileScreen(root) {
 
 /* --------------------------- EDIT PROFILE --------------------------- */
 export function EditProfileScreen(root) {
+  // the badge fee is quoted here, so this screen is account holders only
+  if (!S.requireTier(1, '#/profile/edit', go)) return;
   renderHeader({ simple: true, title: t('editProfile') });
   const u = S.state.user;
-  if (!u) { go('#/auth/signup'); return; }
 
   root.innerHTML = `
     <div class="pad mt-16">
@@ -163,8 +164,8 @@ export function EditProfileScreen(root) {
 
 /* -------------------------- CHANGE PASSWORD -------------------------- */
 export function ChangePasswordScreen(root) {
+  if (!S.requireTier(1, '#/profile/password', go)) return;
   renderHeader({ simple: true, title: t('changePassword') });
-  if (!S.state.user) { go('#/auth/signup'); return; }
 
   root.innerHTML = `
     <div class="pad mt-16">

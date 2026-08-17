@@ -1,7 +1,8 @@
 /* ======================= DIRECTORY + LISTING ======================= */
 import { t, L, icon, $, $$, go, back, renderHeader, openSheet, closeSheet, confirmSheet,
          toast, stars, wireRoutes, emptyState, query, openMaps, shareItem, fmtMoney,
-         openFilterSheet, activeFilterCount, sectionNote } from '../ui.js';
+         openFilterSheet, activeFilterCount, sectionNote,
+         showsPrices, priceGate, wirePriceGates } from '../ui.js';
 import { CATEGORIES, SUBSCRIPTION_PRICE } from '../data.js';
 import * as S from '../store.js';
 import { catIcon } from './home.js';
@@ -117,13 +118,16 @@ function rowHtml(b) {
   </div>`;
 }
 
-/** the $29 subscription upsell, sized like a business row */
+/** the subscription upsell, sized like a business row.
+    A visitor gets the same offer with the number replaced by the gate. */
 function upsellHtml() {
   return `<div class="list-row" data-route="#/subscribe" style="border-color:var(--line)">
     <span class="row-ico" style="color:var(--gold-bright)">${icon('crown', 22)}</span>
     <div class="row-main">
       <div class="row-title">${t('upgradeBanner')}</div>
-      <div class="row-sub gold"><span class="ltr">${fmtMoney(SUBSCRIPTION_PRICE)}</span> ${t('month')}</div>
+      <div class="row-sub gold">${showsPrices()
+        ? `<span class="ltr">${fmtMoney(SUBSCRIPTION_PRICE)}</span> ${t('month')}`
+        : t('pricesAfterSignup')}</div>
     </div>
     <span class="chev">${icon(document.documentElement.dir === 'rtl' ? 'chevronL' : 'chevronR', 19)}</span>
   </div>`;
@@ -372,17 +376,23 @@ export function SubscribeScreen(root, params) {
       <div class="empty-ico" style="width:64px;height:64px">${icon('crown', 33)}</div>
       <b style="font-size:18px">${t('subTitle')}</b>
       <span class="muted fs-13">${t('subSub')}</span>
-      <div style="font-size:34px;font-weight:700;color:var(--gold-bright);margin:14px 0 2px">${fmtMoney(SUBSCRIPTION_PRICE)}<span style="font-size:14px;color:var(--muted)">${t('month')}</span></div>
+      ${showsPrices()
+        ? `<div style="font-size:34px;font-weight:700;color:var(--gold-bright);margin:14px 0 2px">${fmtMoney(SUBSCRIPTION_PRICE)}<span style="font-size:14px;color:var(--muted)">${t('month')}</span></div>`
+        : ''}
     </div>
     <div class="pad mt-16">
       ${[t('reviewsTitle'), t('photosLimit'), t('videoLimit'), t('verified'), t('featured')].map(f => `
         <div class="info-row"><span class="i-ico">${icon('checkCircle', 21)}</span><div class="i-txt"><b>${f}</b></div></div>`).join('')}
-      ${active
-        ? `<div class="ok-msg mt-16" style="text-align:center">${t('subActive')}</div>
-           <button class="btn btn-danger btn-block mt-12" id="cancelSub">${t('cancelSub')}</button>`
-        : `<button class="btn btn-gold btn-block mt-16" id="subBtn">${icon('creditCard', 20)} ${t('subscribeNow')}</button>`}
+      ${!showsPrices()
+        ? priceGate('#/subscribe' + (params[0] ? '/' + params[0] : ''), 'unlockPrice')
+        : active
+          ? `<div class="ok-msg mt-16" style="text-align:center">${t('subActive')}</div>
+             <button class="btn btn-danger btn-block mt-12" id="cancelSub">${t('cancelSub')}</button>`
+          : `<button class="btn btn-gold btn-block mt-16" id="subBtn">${icon('creditCard', 20)} ${t('subscribeNow')}</button>`}
       <div class="hint" style="text-align:center;margin-top:10px">${t('needPhoneSub')}</div>
     </div>`;
+
+  wirePriceGates(root);
 
   const sb = $('#subBtn');
   if (sb) sb.addEventListener('click', async () => {

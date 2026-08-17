@@ -120,14 +120,12 @@ export function EmailVerifyScreen(root) {
     S.confirmEmail();
     toast(t('emailVerified'), 'ok');
     const p = S.peekPendingIntent();
-    // if the pending action needs phone verification, continue straight into it
-    if (p && needsPhone(p.route)) { go('#/auth/phone'); return; }
+    // Only continue into phone verification when the pending action really
+    // needs tier 2. Reading ad prices needs tier 1, and #/advertise is the
+    // same route either way — so the intent carries the tier, not the URL.
+    if (p && (p.tier || 2) >= 2) { go('#/auth/phone'); return; }
     afterAuth();
   });
-}
-
-function needsPhone(route) {
-  return /#\/(post|advertise|boost|subscribe|add-business|claim)/.test(route || '');
 }
 
 /* ------------------------ PHONE VERIFICATION ------------------------ */

@@ -616,10 +616,13 @@ html[dir="rtl"] .drawer-panel { --drawer-off: 100%; }
   margin-bottom: 10px; display: flex; gap: 12px; align-items: flex-start;
   text-align: start; width: 100%;
 }
-.price-card.selected { border-color: var(--gold); background: linear-gradient(140deg, rgba(198,161,91,0.14), var(--surface)); }
+.price-card.selected,
+.ad-card.selected > .price-card { border-color: var(--gold); background: linear-gradient(140deg, rgba(198,161,91,0.14), var(--surface)); }
 .price-radio { width: 20px; height: 20px; flex: 0 0 20px; border-radius: 50%; border: 2px solid var(--muted); margin-top: 2px; display: grid; place-items: center; }
-.price-card.selected .price-radio { border-color: var(--gold-bright); }
-.price-card.selected .price-radio::after { content: ''; width: 10px; height: 10px; border-radius: 50%; background: var(--gold-bright); }
+.price-card.selected .price-radio,
+.ad-card.selected .price-radio { border-color: var(--gold-bright); }
+.price-card.selected .price-radio::after,
+.ad-card.selected .price-radio::after { content: ''; width: 10px; height: 10px; border-radius: 50%; background: var(--gold-bright); }
 .price-name { font-size: 15.5px; font-weight: 700; }
 .price-desc { font-size: 12.5px; color: var(--muted); margin-top: 3px; }
 .price-amt { margin-inline-start: auto; color: var(--gold-bright); font-weight: 700; font-size: 16.5px; white-space: nowrap; }
@@ -888,6 +891,98 @@ input[inputmode="tel"], input[type="email"], input[inputmode="decimal"], #zipIn 
 .dr-invite-link {
   font-size: 12.5px; color: var(--gold-bright); font-weight: 600;
   text-align: center; padding: 6px 0 0; width: 100%;
+}
+
+/* ---------- commercial prices behind a free account ---------- */
+.price-gate {
+  margin-top: 14px; padding: 16px 15px;
+  border-radius: var(--r-md);
+  background: linear-gradient(140deg, rgba(198,161,91,0.13), var(--surface));
+  border: 1px solid var(--line);
+  display: flex; flex-direction: column; gap: 12px;
+}
+.price-gate > span {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 13px; color: var(--muted);
+}
+.price-gate svg { color: var(--gold); flex: 0 0 16px; }
+
+/* ---------- advertise: a package that opens where it stands ---------- */
+.ad-card { margin-bottom: 10px; }
+.ad-card .price-card { margin-bottom: 0; }
+.ad-card.selected .price-card { border-radius: var(--r-md) var(--r-md) 0 0; }
+.ad-more {
+  display: grid; grid-template-rows: 0fr;
+  transition: grid-template-rows .2s var(--ease);
+  background: var(--surface);
+  border-inline: 1px solid var(--line);
+  border-block-end: 1px solid var(--line);
+  border-radius: 0 0 var(--r-md) var(--r-md);
+}
+.ad-card.selected .ad-more {
+  grid-template-rows: 1fr;
+  border-color: var(--gold);
+  background: linear-gradient(140deg, rgba(198,161,91,0.14), var(--surface));
+}
+.ad-card:not(.selected) .ad-more { border-color: transparent; }
+.ad-more-inner { overflow: hidden; min-height: 0; }
+.ad-card.selected .ad-more-inner { padding: 0 14px 14px; }
+
+.ad-points { list-style: none; margin: 12px 0 0; padding: 0; }
+.ad-points li {
+  display: flex; gap: 8px; align-items: flex-start;
+  font-size: 12.5px; color: var(--muted); line-height: 1.6;
+  margin-bottom: 6px;
+}
+.ad-points svg { color: var(--gold); flex: 0 0 14px; margin-top: 3px; }
+
+/* the phone wireframe: plain rectangles, no images, no libraries */
+.ad-preview { display: flex; gap: 14px; align-items: center; padding-top: 14px; }
+.ph {
+  flex: 0 0 82px; height: 140px; padding: 5px;
+  border: 2px solid var(--line); border-radius: 12px;
+  background: var(--navy);
+  display: flex; flex-direction: column; gap: 4px;
+}
+.ph-row { display: block; border-radius: 3px; background: rgba(255,255,255,0.07); }
+.ph-bar { height: 10px; background: rgba(255,255,255,0.12); }
+.ph-line { height: 6px; width: 55%; background: rgba(255,255,255,0.14); }
+.ph-cats { display: flex; gap: 3px; background: none; }
+.ph-cats i { flex: 1; height: 9px; border-radius: 50%; background: rgba(255,255,255,0.09); }
+.ph-nav { margin-top: auto; height: 11px; border-radius: 3px; background: rgba(255,255,255,0.12); }
+.ph-ad {
+  background: linear-gradient(140deg, var(--gold-bright), var(--gold));
+  box-shadow: 0 0 0 2px rgba(198,161,91,0.28);
+}
+.ad-preview-key { display: flex; flex-direction: column; gap: 5px; align-items: flex-start; }
+.ad-here {
+  font-size: 11.5px; font-weight: 700; color: #14213d;
+  background: linear-gradient(145deg, var(--gold-bright), var(--gold));
+  padding: 4px 10px; border-radius: 999px;
+}
+.ad-where { font-size: 12px; color: var(--muted); line-height: 1.5; }
+
+.ad-guide-link {
+  width: 100%; margin-top: 4px; padding: 13px 6px;
+  display: flex; align-items: center; justify-content: center; gap: 7px;
+  font-size: 13.5px; font-weight: 600; color: var(--gold-bright);
+}
+.ad-guide-link svg { color: var(--gold); }
+
+.guide-row {
+  width: 100%; display: flex; align-items: center; gap: 12px;
+  padding: 13px 4px; text-align: start;
+  border-bottom: 1px solid var(--line-soft);
+}
+.guide-row .g-ico { color: var(--gold); flex: 0 0 22px; }
+.guide-row .g-txt { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.guide-row .g-txt b { font-size: 14px; }
+.guide-row .g-txt span { font-size: 12px; color: var(--gold-bright); }
+.guide-row .chev { color: var(--muted); }
+.guide-row:active { background: rgba(198,161,91,0.07); }
+
+@media (prefers-reduced-motion: reduce) {
+  .ad-more { transition: none; }
 }
 
 /* ---------- "which section am I looking at" ---------- */

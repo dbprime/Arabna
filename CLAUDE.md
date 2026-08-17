@@ -7,7 +7,7 @@ ARABNA · عربنا — a mobile-first web app for the Arab community in the U.
 **business directory + marketplace + events + magazine**, Arabic-first with a full English toggle.
 ("Classifieds / الإعلانات الشخصية" is now "Marketplace / السوق" — the old `#/classifieds`
 routes still resolve so shared links keep working.)
-Current version: **V.01.5 (prototype)**. Owner: Rai Elby (@dbprime). Deploys to Vercel (team DB Prime).
+Current version: **V.01.6 (prototype)**. Owner: Rai Elby (@dbprime). Deploys to Vercel (team DB Prime).
 
 ## Hard rules (from the product brief)
 1. **One repository, one Vercel project.** No duplicates, no stray preview projects.
@@ -172,6 +172,34 @@ naming the section and the count.
   phone with its verified mark, join date, a one-line "verify your number" prompt when the
   phone is unverified, three **tappable** counters (`#/my-ads`, `#/saved`, `#/my-reviews`)
   and the edit / change-password buttons. Sign-out lives in the drawer only.
+
+## Pricing visibility (V.01.6)
+**A visitor never sees a price we charge.** `showsPrices()` in `ui.js` (which is
+`isMember()`) gates every commercial figure: ad placements, the $29 directory
+subscription, marketplace boosts, the verification badge. The screen, the layout
+and the copy are identical for both — only the numbers appear or don't, so there
+is no second flow to keep in sync.
+
+- **`priceGate(returnRoute, labelKey)` + `wirePriceGates(root)`** render the line
+  and the gold button that stand where a price would be. The button calls
+  `requireTier(1, returnRoute, go)`, so signing up returns the user to the exact
+  screen — and, on `#/advertise`, to the exact package — they were looking at.
+- **The pending intent carries its tier** (`setPendingIntent(route, label, tier)`).
+  Guessing the tier from the route broke once `#/advertise` became browsable at
+  tier 1: the same URL means "read the prices" or "pay", so only the intent knows.
+- **The one exception is marketplace item prices** — a $14,500 car, a $650 sofa,
+  "مجاني". Those are content, not our pricing, and are never hidden.
+- **Ad packages sort cheapest-first** from `prices.week1` (`ORDERED` in
+  `advertise.js`), and the cheapest is preselected, so the first number a shop
+  owner sees is the smallest.
+- **A package opens where it stands** — one at a time, same accordion idiom as the
+  drawer — showing four benefit lines and a CSS phone wireframe (`placement()`)
+  with that product's slot lit in gold and labelled «إعلانك هنا». No separate
+  detail page and no comparison table: the flow is four sequential steps, and the
+  four products live in different places, so most comparison cells would read
+  "n/a".
+- **«مش عارف أيّهم يناسبك؟»** opens a four-line guide sheet; each line selects and
+  expands its package. It carries no prices, for visitor and member alike.
 
 ## Testing before you ship a change
 1. Serve locally (`python3 -m http.server`) and click through: home → directory → listing →

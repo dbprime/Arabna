@@ -115,7 +115,10 @@ export const isMember = () => tier() >= 1;
 
 /* ---------------- pending intent (resume after signup) ---------------- */
 let pendingIntent = null;
-export function setPendingIntent(route, label) { pendingIntent = { route, label }; }
+/* The intent remembers which tier the action actually needed. Guessing that
+   from the route stopped working once #/advertise became browsable at tier 1:
+   the route is the same whether the user wants to read prices or to pay. */
+export function setPendingIntent(route, label, tier = 2) { pendingIntent = { route, label, tier }; }
 export function takePendingIntent() { const p = pendingIntent; pendingIntent = null; return p; }
 export function peekPendingIntent() { return pendingIntent; }
 
@@ -125,7 +128,7 @@ export function peekPendingIntent() { return pendingIntent; }
  */
 export function requireTier(needed, route, go) {
   if (tier() >= needed) return true;
-  setPendingIntent(route);
+  setPendingIntent(route, undefined, needed);
   // Someone who already has an account must never be sent back to "create
   // account" — they only need to finish the step they are missing.
   if (!state.user) go('#/auth/signup');

@@ -277,6 +277,35 @@ export function wireRoutes(root) {
 
 export function fmtMoney(n) { return '$' + n.toLocaleString('en-US'); }
 
+/* ---------------- commercial prices are for account holders ----------------
+   What ARABNA charges — ad placements, the directory subscription, boosts,
+   the verification badge — is shown only to a signed-in user. The prices of
+   things people sell to each other are content, not our pricing, and are
+   never hidden: a marketplace with no prices is a blank screen.
+   The gate always keeps the visitor on the same screen and brings them back
+   to it, so nothing about the flow changes except whether numbers appear. */
+export const showsPrices = () => S.isMember();
+
+/**
+ * The line + button that stands where a price would be.
+ * @param {string} returnRoute where to resume after signing up
+ * @param {string} labelKey    'unlockPrices' (plural) or 'unlockPrice'
+ */
+export function priceGate(returnRoute, labelKey = 'unlockPrices') {
+  return `<div class="price-gate">
+    <span>${icon('lock', 16)} ${t('pricesAfterSignup')}</span>
+    <button class="btn btn-gold btn-block" data-pricegate="${returnRoute}">${t(labelKey)}</button>
+  </div>`;
+}
+
+/** Wire every gate inside `root`: remember the intent, then resume here. */
+export function wirePriceGates(root) {
+  $$('[data-pricegate]', root).forEach(b => b.addEventListener('click', (e) => {
+    e.stopPropagation();
+    S.requireTier(1, b.dataset.pricegate, go);
+  }));
+}
+
 /**
  * One filter sheet for both listing screens.
  * @param {object} o
