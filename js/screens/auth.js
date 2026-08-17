@@ -1,6 +1,7 @@
 /* ======================= AUTH & VERIFICATION ======================= */
 import { t, icon, $, $$, go, back, renderHeader, toast, wireRoutes } from '../ui.js';
 import * as S from '../store.js';
+import { passwordField, wirePasswordToggles } from './profile.js';
 
 function afterAuth() {
   const p = S.takePendingIntent();
@@ -23,7 +24,7 @@ export function SignUpScreen(root) {
     <div class="pad mt-16">
       <div class="field"><label class="label">${t('fullName')}</label><input class="input" id="sName" /></div>
       <div class="field"><label class="label">${t('email')}</label><input class="input" id="sEmail" type="email" inputmode="email" placeholder="name@email.com" /></div>
-      <div class="field"><label class="label">${t('password')}</label><input class="input" id="sPass" type="password" /></div>
+      ${passwordField('sPass', t('password'))}
 
       <label class="setting-row" style="padding:8px 0;border:none;cursor:pointer">
         <input type="checkbox" id="agree1" style="width:18px;height:18px;accent-color:#C6A15B" />
@@ -40,6 +41,7 @@ export function SignUpScreen(root) {
       <button class="btn btn-ghost btn-block mt-8" data-route="#/auth/signin">${t('haveAccount')}</button>
     </div>`;
 
+  wirePasswordToggles(root);
   $('#suBtn').addEventListener('click', async (e) => {
     const name = $('#sName').value.trim();
     const email = $('#sEmail').value.trim();
@@ -49,7 +51,7 @@ export function SignUpScreen(root) {
     if (!$('#agree1').checked || !$('#agree2').checked) { toast(t('required'), 'err'); return; }
 
     e.target.innerHTML = `<span class="spinner"></span>`;
-    S.signUp({ name, email });
+    S.signUp({ name, email, password: pass });
     await S.sendEmailCode(email);
     go('#/auth/email');
   });
@@ -63,16 +65,18 @@ export function SignInScreen(root) {
     <div class="pad mt-16 center-col"><img src="assets/logo-sm.png" style="height:56px" alt="ARABNA" /></div>
     <div class="pad mt-16">
       <div class="field"><label class="label">${t('email')}</label><input class="input" id="iEmail" type="email" /></div>
-      <div class="field"><label class="label">${t('password')}</label><input class="input" id="iPass" type="password" /></div>
+      ${passwordField('iPass', t('password'))}
       <button class="btn btn-gold btn-block" id="siBtn">${t('signIn')}</button>
       <button class="btn btn-ghost btn-block mt-8" data-route="#/auth/forgot">${t('forgotPassword')}</button>
       <button class="btn btn-ghost btn-block mt-8" data-route="#/auth/signup">${t('noAccount')}</button>
     </div>`;
 
+  wirePasswordToggles(root);
   $('#siBtn').addEventListener('click', () => {
     const email = $('#iEmail').value.trim();
+    const pass = $('#iPass').value;
     if (!email) { toast(t('required'), 'err'); return; }
-    S.signUp({ name: email.split('@')[0], email });
+    S.signUp({ name: email.split('@')[0], email, password: pass });
     S.confirmEmail();
     toast(t('done'), 'ok');
     afterAuth();

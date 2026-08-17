@@ -4,12 +4,16 @@
    the same shape — screens never talk to storage directly.
    ============================================================ */
 
+/* The first five are what Home shows as its summary strip.
+   "events" is not a business category — it carries an explicit route to the
+   Events screen; every other entry filters the directory. */
 export const CATEGORIES = [
   { id: 'restaurants', key: 'catRestaurants', icon: 'utensils' },
   { id: 'doctors',     key: 'catDoctors',     icon: 'stethoscope' },
-  { id: 'lawyers',     key: 'catLawyers',     icon: 'scale' },
+  { id: 'events',      key: 'catEvents',      icon: 'calendar', route: '#/events' },
   { id: 'home',        key: 'catHome',        icon: 'wrench' },
   { id: 'beauty',      key: 'catBeauty',      icon: 'sparkles' },
+  { id: 'lawyers',     key: 'catLawyers',     icon: 'scale' },
   { id: 'auto',        key: 'catAuto',        icon: 'car' },
   { id: 'grocery',     key: 'catGrocery',     icon: 'bag' },
   { id: 'realestate',  key: 'catRealEstate',  icon: 'building' },
@@ -21,14 +25,14 @@ export const CATEGORIES = [
    maxActive / days / freeOnly override the account-wide defaults
    (5 active listings, 30 days) for that one section. */
 export const MARKET_CATS = [
-  { id: 'cars',       key: 'filterCars',       icon: 'car' },
-  { id: 'furniture',  key: 'filterFurniture',  icon: 'sofa' },
-  { id: 'realestate', key: 'filterRealEstate', icon: 'key' },
-  { id: 'jobs',       key: 'filterJobs',       icon: 'briefcase' },
-  { id: 'pets',       key: 'filterPets',       icon: 'paw' },
-  { id: 'handyman',   key: 'filterHandyman',   icon: 'hammer', maxActive: 1, days: 14, upsell: true },
-  { id: 'free',       key: 'filterFree',       icon: 'gift',   freeOnly: true },
-  { id: 'other',      key: 'filterOther',      icon: 'bag' },
+  { id: 'cars',       key: 'filterCars',       icon: 'car',       emptyKey: 'emptyCars' },
+  { id: 'furniture',  key: 'filterFurniture',  icon: 'sofa',      emptyKey: 'emptyFurniture' },
+  { id: 'realestate', key: 'filterRealEstate', icon: 'key',       emptyKey: 'emptyRealEstate' },
+  { id: 'jobs',       key: 'filterJobs',       icon: 'briefcase', emptyKey: 'emptyJobs' },
+  { id: 'pets',       key: 'filterPets',       icon: 'paw',       emptyKey: 'emptyPets' },
+  { id: 'handyman',   key: 'filterHandyman',   icon: 'hammer',    emptyKey: 'emptyHandyman', maxActive: 1, days: 14, upsell: true },
+  { id: 'free',       key: 'filterFree',       icon: 'gift',      emptyKey: 'emptyFree',     freeOnly: true },
+  { id: 'other',      key: 'filterOther',      icon: 'bag',       emptyKey: 'emptyOther' },
 ];
 
 /** Section rules — screens read limits from here, never hardcode them. */
@@ -305,11 +309,77 @@ export const ARTICLES = [
   },
 ];
 
+/* ============================================================
+   EVENTS
+   `source` / `externalId` / `sourceUrl` are populated in V.02 by the
+   automatic importers (Ticketmaster Discovery API, and ICS calendar feeds
+   from masjids and community centers). They stay empty for anything typed
+   in by hand, and `source: 'manual'` marks a human-entered event.
+   ============================================================ */
+export const EVENTS = [
+  {
+    id: 'e1', status: 'live',
+    title: { ar: 'مهرجان الأكل العربي — هيوستن', en: 'Arab Food Festival — Houston' },
+    startsAt: '2026-10-24T17:00', endsAt: '2026-10-25T22:00',
+    venue: { ar: 'مركز جورج آر براون', en: 'George R. Brown Convention Center' },
+    city: 'Houston, TX',
+    desc: { ar: 'أكثر من ٤٠ مطعماً وكشكاً، وبرنامج موسيقي على مدى يومين، وركن للأطفال.',
+            en: 'More than 40 restaurants and booths, a two-day music program and a kids corner.' },
+    organizer: { ar: 'جمعية التجار العرب', en: 'Arab Merchants Association' },
+    ticketUrl: 'https://example.com/tickets/arab-food-festival',
+    icon: 'utensils', photo: '', featured: true,
+    source: '', externalId: '', sourceUrl: '',
+  },
+  {
+    id: 'e2', status: 'live',
+    title: { ar: 'أمسية شعر عربي', en: 'Arabic Poetry Evening' },
+    startsAt: '2026-09-12T19:30', endsAt: '2026-09-12T22:00',
+    venue: { ar: 'المركز الثقافي العربي', en: 'Arab Cultural Center' },
+    city: 'Houston, TX',
+    desc: { ar: 'أمسية مفتوحة مع شعراء من الجالية، والدخول مجاني مع التسجيل المسبق.',
+            en: 'An open evening with community poets. Free entry with prior registration.' },
+    organizer: { ar: 'المركز الثقافي العربي', en: 'Arab Cultural Center' },
+    ticketUrl: 'https://example.com/register/poetry-night',
+    icon: 'newspaper', photo: '', featured: false,
+    source: '', externalId: '', sourceUrl: '',
+  },
+  {
+    id: 'e3', status: 'live',
+    title: { ar: 'سوق رمضان الخيري', en: 'Ramadan Charity Bazaar' },
+    startsAt: '2027-02-20T16:00', endsAt: '2027-02-20T23:00',
+    venue: { ar: 'مسجد الهدى', en: 'Al Huda Masjid' },
+    city: 'Stafford, TX',
+    desc: { ar: 'بازار عائلي لدعم صندوق الطلاب، مع مأكولات ومنتجات يدوية.',
+            en: 'A family bazaar supporting the student fund, with food and handmade goods.' },
+    organizer: { ar: 'مسجد الهدى', en: 'Al Huda Masjid' },
+    ticketUrl: '', icon: 'users', photo: '', featured: false,
+    source: '', externalId: '', sourceUrl: '',
+  },
+];
+
+/** A brand-new event record — one place that defines the shape. */
+export function blankEvent() {
+  return {
+    id: '', status: 'pending',
+    title: { ar: '', en: '' }, startsAt: '', endsAt: '',
+    venue: { ar: '', en: '' }, city: '',
+    desc: { ar: '', en: '' }, organizer: { ar: '', en: '' },
+    ticketUrl: '', icon: 'calendar', photo: '', featured: false,
+    source: '', externalId: '', sourceUrl: '',
+  };
+}
+
+/* ---- paid verification badge ----
+   Owner sets the real number later; 0 means "not priced yet" and the app
+   shows the request flow without charging. */
+export const VERIFY_BADGE_PRICE = 0;
+
 /* ---- ad products & pricing (wired for Stripe in V.02) ---- */
 export const AD_PRODUCTS = [
   { id: 'slider', nameKey: 'prodSlider', descKey: 'prodSliderDesc', icon: 'megaphone', prices: { week1: 149, week2: 269, month1: 449 } },
   { id: 'mini',   nameKey: 'prodMini',   descKey: 'prodMiniDesc',   icon: 'bolt',      prices: { week1: 49,  week2: 89,  month1: 149 } },
   { id: 'story',  nameKey: 'prodStory',  descKey: 'prodStoryDesc',  icon: 'newspaper', prices: { week1: 199, week2: 349, month1: 549 } },
+  { id: 'event',  nameKey: 'prodEvent',  descKey: 'prodEventDesc',  icon: 'calendar',  prices: { week1: 99,  week2: 179, month1: 299 } },
 ];
 
 export const BOOST_PRICES = [
@@ -326,9 +396,6 @@ export const NOTIFICATIONS = [
   { id: 'n3', icon: 'star', unread: false, title: { ar: 'مراجعة جديدة', en: 'New review' }, body: { ar: 'وصلتك مراجعة ٥ نجوم على صفحة نشاطك.', en: 'You received a 5-star review on your business page.' }, when: { ar: 'قبل ٣ أيام', en: '3 days ago' } },
 ];
 
-/* ---- admin: moderation queue ---- */
-export const MOD_QUEUE = [
-  { id: 'q1', type: 'classified', reason: { ar: 'لغة تجارية: "توصيل يومي، أسعار جملة"', en: 'Business language: "daily delivery, wholesale pricing"' }, item: { ar: 'حلويات منزلية — طلبات يومية', en: 'Homemade sweets — daily orders' }, risk: 'high' },
-  { id: 'q2', type: 'review', reason: { ar: 'بلاغ مستخدم: مراجعة مسيئة', en: 'User report: abusive review' }, item: { ar: 'مراجعة على "الأمانة للسيارات"', en: 'Review on "Al Amana Auto"' }, risk: 'medium' },
-  { id: 'q3', type: 'classified', reason: { ar: 'نفس رقم الجوال على ٤ حسابات', en: 'Same phone on 4 accounts' }, item: { ar: 'آيفون ١٥ جديد — كمية', en: 'New iPhone 15 — bulk' }, risk: 'high' },
-];
+/* The moderation queue has no seed data on purpose: it is built entirely
+   from real pending listings, avatars, badge requests and scan reports, so
+   an "approve" in the admin panel always publishes something real. */

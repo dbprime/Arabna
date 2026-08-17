@@ -64,9 +64,16 @@ export function MarketplaceScreen(root) {
                    || (b.boosted === true) - (a.boosted === true)
                    || (b.created || 0) - (a.created || 0));
 
+    const section = MARKET_CATS.find(c => c.id === cat);
     $('#clGrid').innerHTML = list.length
       ? `<div class="grid2">${list.map(c => cardHtml(c, c.id === highlight)).join('')}</div>`
-      : emptyState('bag', t('emptyClTitle'), t('emptyClSub'), t('post'), '#/post');
+      // every section has its own designed empty state, not one generic message
+      : emptyState(
+          section ? section.icon : 'bag',
+          section ? t(section.emptyKey) : t('emptyClTitle'),
+          section ? t(section.emptyKey + 'Sub') : t('emptyClSub'),
+          t('post'),
+          section ? `#/post?cat=${section.id}` : '#/post');
     wireRoutes($('#clGrid'));
   };
 
@@ -301,13 +308,25 @@ export function mountPhotoPicker(host, initial = [], initialMain = 0, limit = S.
 const BIZ_KEYWORDS = ['توصيل يومي', 'أسعار جملة', 'جملة', 'wholesale', 'delivery available', 'daily delivery', 'bulk'];
 
 export function PostScreen(root) {
-  const editId = query().edit || '';
+  const q = query();
+  const editId = q.edit || '';
   const editing = editId ? S.classifiedById(editId) : null;
   renderHeader({ simple: true, title: editing ? t('editListing') : t('postTitle') });
 
-  if (!S.isLoggedIn()) { S.setPendingIntent(location.hash); go('#/auth/signup'); return; }
+  // A draft parked before a verification detour comes back with everything
+  // the user had typed and every photo they had picked.
+  const draft = !editing ? S.takeDraft() : null;
 
-  const startCat = editing ? editing.cat : MARKET_CATS[0].id;
+  if (!S.isLoggedIn()) {
+    if (draft) S.saveDraft(draft);          // keep it for the trip through verification
+    // requireTier routes to signup / email / phone depending on what is
+    // actually missing — an existing account is never sent back to signup.
+    S.requireTier(1, location.hash, go);
+    return;
+  }
+
+  const startCat = editing ? editing.cat
+    : (draft && draft.cat) || q.cat || MARKET_CATS[0].id;
 
   root.innerHTML = `
     <div class="pad mt-16">
@@ -317,14 +336,14 @@ export function PostScreen(root) {
         <select class="select" id="pCat">${MARKET_CATS.map(c =>
           `<option value="${c.id}" ${c.id === startCat ? 'selected' : ''}>${t(c.key)}</option>`).join('')}</select></div>
       <div class="field"><label class="label">${t('titleLabel')}</label>
-        <input class="input" id="pTitle" value="${editing ? escapeAttr(L(editing.title)) : ''}" /></div>
+        <input class="input" id="pTitle" value="${escapeAttr(editing ? L(editing.title) : (draft && draft.title) || '')}" /></div>
       <div class="field" id="priceField"><label class="label">${t('priceLabel')}</label>
         <input class="input" id="pPrice" inputmode="decimal" placeholder="$"
-               value="${editing && editing.price !== FREE_PRICE ? escapeAttr(editing.price) : ''}" /></div>
+               value="${escapeAttr(editing ? (editing.price !== FREE_PRICE ? editing.price : '') : (draft && draft.price) || '')}" /></div>
       <div class="field"><label class="label">${t('cityLabel')}</label>
-        <input class="input" id="pCity" value="${editing ? escapeAttr(editing.city) : escapeAttr(S.state.location.city + ', ' + S.state.location.state)}" /></div>
+        <input class="input" id="pCity" value="${escapeAttr(editing ? editing.city : (draft && draft.city) || (S.state.location.city + ', ' + S.state.location.state))}" /></div>
       <div class="field"><label class="label">${t('descLabel')}</label>
-        <textarea class="textarea" id="pDesc">${editing ? escapeHtml(L(editing.desc || '')) : ''}</textarea></div>
+        <textarea class="textarea" id="pDesc">${escapeHtml(editing ? L(editing.desc || '') : (draft && draft.desc) || '')}</textarea></div>
 
       <div class="field"><label class="label">${t('photosLabel')}</label><div id="phHost"></div></div>
 
@@ -334,7 +353,9 @@ export function PostScreen(root) {
       <div class="hint" style="text-align:center;margin-top:10px">${t('needPhoneSub')}</div>
     </div>`;
 
-  const pics = mountPhotoPicker($('#phHost'), editing ? (editing.photos || []) : [], editing ? (editing.mainPhoto || 0) : 0);
+  const pics = mountPhotoPicker($('#phHost'),
+    editing ? (editing.photos || []) : (draft && draft.photos) || [],
+    editing ? (editing.mainPhoto || 0) : (draft && draft.mainPhoto) || 0);
   const catSel = $('#pCat');
   const priceIn = $('#pPrice');
 
@@ -391,7 +412,15 @@ export function PostScreen(root) {
     if (!editing && S.myActiveListings().length >= S.MAX_ACTIVE_LISTINGS && rule.maxActive === S.MAX_ACTIVE_LISTINGS) {
       toast(t('limitReached'), 'err'); return;
     }
-    if (!S.requireTier(2, location.hash, go)) return;
+    // Park the entire draft — text *and* compressed photos — before any
+    // redirect, then resume automatically once verification is done.
+    if (S.tier() < 2) {
+      S.saveDraft({ cat, title: rawTitle, price: rawPrice, city: $('#pCity').value.trim(),
+                    desc: rawDesc, photos: pics.photos, mainPhoto: pics.main });
+      if (!S.lastSaveOk) toast(t('storageFull'), 'err');
+      S.requireTier(2, '#/post', go);
+      return;
+    }
 
     // Phone numbers never make it into stored content.
     const title = S.stripPhones(rawTitle, lang);
@@ -434,6 +463,14 @@ export function PostScreen(root) {
     // straight to the section it belongs to, with the new listing pinned on top
     go(`#/marketplace?cat=${rec.cat}&new=${rec.id}`);
   });
+
+  // Came back from verification with a rescued draft and now have the tier —
+  // finish the publish the user already asked for instead of making them
+  // press the button a second time.
+  if (draft && S.tier() >= 2 && draft.title) {
+    toast(t('resumedAction'), 'ok');
+    setTimeout(() => { const b = $('#pubBtn'); if (b) b.click(); }, 80);
+  }
 }
 
 function escapeHtml(s) {
@@ -486,7 +523,8 @@ export function MessagesScreen(root, params) {
     const res = S.sendMessage(listingId, text, getLang());
     input.value = '';
     paint();
-    if (res.removed) toast(t('phoneStripped'), 'err');
+    // Tell the sender exactly what was removed and why.
+    if (res.removed) toast(t('contactRemoved'), 'err');
     else if (res.flagged) toast(t('scanFlagged'), 'err');
     else toast(t('messageSent'), 'ok');
   });

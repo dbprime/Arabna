@@ -5,6 +5,7 @@ import { SUBSCRIPTION_PRICE } from '../data.js';
 import * as S from '../store.js';
 import { catIcon } from './home.js';
 import { openReviewSheet } from './directory.js';
+import { mountPhotoPicker } from './marketplace.js';
 
 /* ------------------------------ PROFILE ------------------------------ */
 export function ProfileScreen(root) {
@@ -12,20 +13,73 @@ export function ProfileScreen(root) {
   const u = S.state.user;
   const tierLabel = S.tier() === 2 ? t('tier2') : S.tier() === 1 ? t('tier1') : t('guest');
 
+  /* --- signed out: one clear call to action, nothing pretending to be data --- */
+  if (!u) {
+    root.innerHTML = `
+      <div class="pad mt-20 center-col">
+        <div class="avatar" style="width:66px;height:66px;font-size:24px">${icon('user', 31)}</div>
+        <b style="font-size:18px;margin-top:10px">${t('guest')}</b>
+        <span class="muted fs-13">${t('needAccountSub')}</span>
+        <button class="btn btn-gold mt-16" data-route="#/auth/signup">${t('signUp')}</button>
+        <button class="btn btn-ghost btn-sm mt-8" data-route="#/auth/signin">${t('haveAccount')}</button>
+      </div>
+      <div class="mt-20">
+        ${row('heart', t('savedFav'), '#/saved')}
+        ${row('settings', t('settings'), '#/settings')}
+        ${row('help', t('help'), '#/help')}
+        ${row('info', t('about'), '#/about')}
+      </div>`;
+    wireRoutes(root);
+    return;
+  }
+
+  const avatarUrl = S.visibleAvatar();
+  const joined = u.joined ? new Date(u.joined).toLocaleDateString(
+    S.state.lang === 'en' ? 'en-US' : 'ar-EG', { month: 'long', year: 'numeric' }) : '—';
+
   root.innerHTML = `
     <div class="pad mt-16 center-col">
-      <div class="avatar" style="width:66px;height:66px;font-size:24px">${u ? u.name[0].toUpperCase() : icon('user', 31)}</div>
-      <b style="font-size:18px;margin-top:10px">${u ? u.name : t('guest')}</b>
-      <span class="muted fs-13">${u ? u.email : t('needAccountSub')}</span>
+      <div class="avatar" style="width:66px;height:66px;font-size:24px;overflow:hidden">
+        ${avatarUrl ? `<img src="${avatarUrl}" alt="" style="width:100%;height:100%;object-fit:cover" />`
+                    : u.name[0].toUpperCase()}
+      </div>
+      <b style="font-size:18px;margin-top:10px">${u.name}
+        ${S.hasBadge() ? `<span class="badge-check" title="${t('verifiedBadge')}">${icon('check', 12)}</span>` : ''}</b>
       <span class="badge ${S.tier() === 2 ? 'badge-verified' : 'badge-free'} mt-8">${tierLabel}</span>
-      ${!u ? `<button class="btn btn-gold mt-12" data-route="#/auth/signup">${t('signUp')}</button>` : ''}
-      ${u && S.tier() < 2 ? `<button class="btn btn-outline-gold btn-sm mt-12" data-route="#/auth/phone">${icon('phone', 17)} ${t('verifyPhone')}</button>` : ''}
+      ${u.avatar && u.avatar.status === 'pending' ? `<span class="hint">${t('photoPendingReview')}</span>` : ''}
     </div>
 
-    <div class="stat-row mt-20">
-      <div class="stat"><b>${S.myActiveListings().length}</b><span>${t('myAds')}</span></div>
+    <div class="pad mt-16">
+      <div class="info-row"><span class="i-ico">${icon('mail', 21)}</span>
+        <div class="i-txt"><b class="ltr">${u.email}</b><span>${t('email')}</span></div></div>
+
+      <div class="info-row"><span class="i-ico">${icon('phone', 21)}</span>
+        <div class="i-txt">
+          <b class="ltr">${u.phone || '—'}</b>
+          <span>${u.phone
+            ? (u.phoneVerified
+                ? `<span class="ok-inline">${icon('check', 12)} ${t('verified')}</span>`
+                : `<span style="color:#E79A9C">${t('phoneNotVerified')}</span>`)
+            : t('phoneNumber')}</span>
+        </div>
+        ${!u.phoneVerified ? `<button class="mini-btn gold" data-route="#/auth/phone">${t('verifyBtn')}</button>` : ''}
+      </div>
+
+      <div class="info-row"><span class="i-ico">${icon('calendar', 21)}</span>
+        <div class="i-txt"><b>${joined}</b><span>${t('joinedOn')}</span></div></div>
+    </div>
+
+    <div class="stat-row mt-16">
+      <div class="stat"><b>${S.myActiveListings().length}</b><span>${t('activeListings')}</span></div>
       <div class="stat"><b>${S.state.saved.length}</b><span>${t('savedFav')}</span></div>
-      <div class="stat"><b>${S.state.myAds.length}</b><span>${t('advertiseWithUs')}</span></div>
+      <div class="stat"><b>${S.myReviews().length}</b><span>${t('myReviews')}</span></div>
+    </div>
+
+    <div class="pad mt-16">
+      <div class="action-grid">
+        <button class="btn btn-ghost btn-sm" data-route="#/profile/edit">${icon('edit', 18)} ${t('editProfile')}</button>
+        <button class="btn btn-ghost btn-sm" data-route="#/profile/password">${icon('lock', 18)} ${t('changePassword')}</button>
+      </div>
     </div>
 
     <div class="mt-20">
@@ -41,7 +95,7 @@ export function ProfileScreen(root) {
       ${row('help', t('help'), '#/help')}
       ${row('shield', t('privacy'), '#/privacy')}
       ${row('file', t('terms'), '#/terms')}
-      ${u ? `<button class="dr-item" id="outBtn" style="color:#E79A9C">${icon('logout', 22)}<span>${t('signOut')}</span></button>` : ''}
+      <button class="dr-item" id="outBtn" style="color:#E79A9C">${icon('logout', 22)}<span>${t('signOut')}</span></button>
     </div>
     <div style="height:20px"></div>`;
 
@@ -51,6 +105,137 @@ export function ProfileScreen(root) {
     onConfirm: () => { S.signOut(); toast(t('done'), 'ok'); go('#/home'); }
   }));
   wireRoutes(root);
+}
+
+/* --------------------------- EDIT PROFILE --------------------------- */
+export function EditProfileScreen(root) {
+  renderHeader({ simple: true, title: t('editProfile') });
+  const u = S.state.user;
+  if (!u) { go('#/auth/signup'); return; }
+
+  root.innerHTML = `
+    <div class="pad mt-16">
+      <div class="field"><label class="label">${t('profilePhoto')}</label>
+        <div id="avHost"></div>
+        <div class="hint">${t('photoOptional')} · ${t('photoPendingReview')}</div>
+      </div>
+
+      <div class="field"><label class="label">${t('fullName')}</label>
+        <input class="input" id="pName" value="${attr(u.name)}" /></div>
+      <div class="field"><label class="label">${t('email')}</label>
+        <input class="input" id="pEmail" type="email" value="${attr(u.email)}" /></div>
+      <div class="field"><label class="label">${t('phoneNumber')}</label>
+        <input class="input" id="pPhone" inputmode="tel" value="${attr(u.phone || '')}" />
+        <div class="hint">${u.phoneVerified ? t('verified') : t('phoneNotVerified')} — ${t('phoneChangedReverify')}</div></div>
+
+      <button class="btn btn-gold btn-block mt-8" id="pSave">${icon('check', 19)} ${t('saveChanges')}</button>
+
+      <div class="dr-group-label mt-20">${t('verifiedBadge')}</div>
+      <div class="setting-row">
+        <span class="s-txt"><b>${t('verifiedBadgeSub')}</b>
+          <span>${S.hasBadge() ? t('badgeActive')
+                : (u.badge && u.badge.status === 'pending') ? t('badgePending')
+                : (S.VERIFY_BADGE_PRICE > 0 ? fmtMoney(S.VERIFY_BADGE_PRICE) + ' ' + t('month') : t('badgeFreeNow'))}</span></span>
+        ${S.hasBadge() || (u.badge && u.badge.status === 'pending')
+          ? `<span class="badge ${S.hasBadge() ? 'badge-verified' : 'badge-pending'}">${S.hasBadge() ? t('verified') : t('statusPending')}</span>`
+          : `<button class="mini-btn gold" id="badgeBtn">${t('requestBadge')}</button>`}
+      </div>
+    </div>`;
+
+  const pic = mountPhotoPicker($('#avHost'), u.avatar ? [u.avatar.url] : [], 0, 1);
+
+  $('#pSave').addEventListener('click', () => {
+    const name = $('#pName').value.trim();
+    const email = $('#pEmail').value.trim();
+    const phone = $('#pPhone').value.trim();
+    if (!name || !email) { toast(t('required'), 'err'); return; }
+
+    const phoneChanged = phone !== (u.phone || '');
+    S.updateProfile({ name, email, phone });
+
+    // photo: only re-queue it when it actually changed
+    const newPhoto = pic.photos[0] || '';
+    const hadPhoto = u.avatar ? u.avatar.url : '';
+    if (newPhoto && newPhoto !== hadPhoto) S.setAvatar(newPhoto);
+    else if (!newPhoto && hadPhoto) { S.state.user.avatar = null; S.save(); }
+
+    if (!S.lastSaveOk) { toast(t('storageFull'), 'err'); return; }
+    toast(phoneChanged ? t('phoneChangedReverify') : t('profileSaved'), phoneChanged ? 'err' : 'ok');
+    go(phoneChanged ? '#/auth/phone' : '#/profile');
+  });
+
+  const bb = $('#badgeBtn');
+  if (bb) bb.addEventListener('click', async () => {
+    if (!S.requireTier(2, '#/profile/edit', go)) return;
+    if (S.VERIFY_BADGE_PRICE > 0) {
+      bb.innerHTML = `<span class="spinner"></span>`;
+      await S.chargeCard(S.VERIFY_BADGE_PRICE, 'ARABNA verification badge');
+    }
+    S.requestBadge();
+    toast(t('badgeRequested'), 'ok');
+    go('#/profile/edit');
+  });
+  wireRoutes(root);
+}
+
+/* -------------------------- CHANGE PASSWORD -------------------------- */
+export function ChangePasswordScreen(root) {
+  renderHeader({ simple: true, title: t('changePassword') });
+  if (!S.state.user) { go('#/auth/signup'); return; }
+
+  root.innerHTML = `
+    <div class="pad mt-16">
+      ${passwordField('cpCur', t('currentPassword'))}
+      ${passwordField('cpNew', t('newPassword'))}
+      ${passwordField('cpConf', t('confirmPassword'))}
+      <div id="cpErr"></div>
+      <button class="btn btn-gold btn-block mt-8" id="cpSave">${icon('lock', 19)} ${t('changePassword')}</button>
+    </div>`;
+
+  wirePasswordToggles(root);
+
+  $('#cpSave').addEventListener('click', () => {
+    const cur = $('#cpCur').value;
+    const next = $('#cpNew').value;
+    const conf = $('#cpConf').value;
+    const err = $('#cpErr');
+    err.innerHTML = '';
+
+    if (next.length < 6) { err.innerHTML = errMsg(t('passwordTooShort')); return; }
+    if (next !== conf) { err.innerHTML = errMsg(t('passwordsDontMatch')); return; }
+
+    const res = S.changePassword(cur, next);
+    if (!res.ok) { err.innerHTML = errMsg(t('wrongPassword')); return; }
+    toast(t('passwordChanged'), 'ok');
+    go('#/profile');
+  });
+}
+
+function errMsg(m) { return `<div class="err-msg">${icon('alert', 15)} ${m}</div>`; }
+
+/** A password input with a working show / hide eye. */
+export function passwordField(id, label) {
+  return `<div class="field"><label class="label">${label}</label>
+    <div class="pass-wrap">
+      <input class="input" id="${id}" type="password" autocomplete="off" />
+      <button type="button" class="pass-eye" data-eye="${id}" aria-label="${t('showPassword')}">${icon('eye', 19)}</button>
+    </div></div>`;
+}
+export function wirePasswordToggles(root) {
+  $$('[data-eye]', root).forEach(btn => btn.addEventListener('click', () => {
+    const input = $('#' + btn.dataset.eye, root);
+    if (!input) return;
+    const show = input.type === 'password';
+    input.type = show ? 'text' : 'password';
+    btn.classList.toggle('on', show);
+    btn.setAttribute('aria-label', show ? t('hidePassword') : t('showPassword'));
+  }));
+}
+
+function attr(s) {
+  return String(s == null ? '' : s)
+    .replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]))
+    .replace(/"/g, '&quot;');
 }
 
 function row(ico, label, route) {

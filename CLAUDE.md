@@ -4,9 +4,9 @@
 
 ## What this is
 ARABNA · عربنا — a mobile-first web app for the Arab community in the U.S.:
-**business directory + marketplace + magazine**, Arabic-first with a full English toggle.
-("Classifieds / الإعلانات الشخصية" was renamed to "Marketplace / ماركت بليس" — the old
-`#/classifieds` routes still resolve so shared links keep working.)
+**business directory + marketplace + events + magazine**, Arabic-first with a full English toggle.
+("Classifieds / الإعلانات الشخصية" is now "Marketplace / السوق" — the old `#/classifieds`
+routes still resolve so shared links keep working.)
 Current version: **V.01 (prototype)**. Owner: Rai Elby (@dbprime). Deploys to Vercel (team DB Prime).
 
 ## Hard rules (from the product brief)
@@ -36,7 +36,11 @@ js/data.js            seed data — replaced by Supabase queries in V.02
 js/store.js           state, entitlements, and ALL backend seams
 js/ui.js              toast / sheet / drawer / header / nav primitives
 js/icons.js           inline SVG icons
-js/screens/*.js       home · directory · classifieds · magazine · auth · advertise · profile · admin
+js/screens/*.js       home · categories · directory · marketplace · events · magazine ·
+                      auth · advertise · profile · admin
+manifest.json         PWA manifest (installable; NO service worker until V.02)
+assets/icons/         32 · 180 · 192 · 512 · 1024 icons generated from logo.png,
+                      solid navy background (iOS rejects transparency)
 index-single-file.html  generated single-file build (backup / offline demo)
 ```
 
@@ -54,6 +58,8 @@ Icons are sized inline via `icon('name', size)`.
 | Directory | $29/month business subscription (reviews, 10 photos, 3 videos, verified badge) |
 | Marketplace | free + paid "Boost" ($2–8); the Handyman section caps at 1 listing / 14 days and upsells the directory subscription |
 | Magazine | native banners between articles + sponsored stories ($199+) |
+| Events | "Featured Event" pin at the top of the section ($99+/week, `AD_PRODUCTS.event`) |
+| Accounts | paid blue verification badge — price lives in `VERIFY_BADGE_PRICE` (currently 0 = free while unpriced) |
 
 ## Auth tiers (do not weaken these)
 - Tier 1 — email + verification code: browse, save favorites, write a review.
@@ -73,13 +79,32 @@ Icons are sized inline via `icon('name', size)`.
 | Geocoding | `lookupZip` + `reverseGeocode` in `screens/home.js` (ZIP table + api.zippopotam.us; coordinates via BigDataCloud → Nominatim) |
 | Moderation service | `scanMessage`, `violatesFreeRule`, `stripPhones` in `store.js` — on-device now, same call signature against the real service later |
 
+### Events
+Seed events in `data.js`; admin edits layer on top via `state.eventEdits` so the seed file
+stays a clean import target. Every event carries **`source` / `externalId` / `sourceUrl`** —
+empty today, filled in V.02 by the Ticketmaster Discovery API and ICS calendar feeds from
+masjids and centers. Organizers propose (`status: 'pending'`), the admin approves, edits,
+features or deletes. Finished events hide themselves (`eventIsPast`), and the list is sorted
+soonest-first with any featured event pinned.
+
+### Accounts
+`state.user` carries `joined`, `password`, `avatar {url,status}` and `badge {status}`.
+The profile photo and the verification badge both go through the admin queue; until a photo
+is approved the user's initial is shown. Changing the phone number is the only edit that
+resets `phoneVerified`.
+
 ### Marketplace rules (enforced in `store.js`, never hardcoded in screens)
 `catRule(catId)` returns the per-section limits. Handyman = 1 active listing / 14 days.
 Free stuff = price pinned to "مجاني"; a **new** listing with price wording is refused outright,
 while an **edit** that adds a price is published back into the review queue with a flag.
 Phone numbers are stripped from marketplace titles, descriptions and private messages
 (`stripPhones`, Arabic-Indic digits included) — the business directory is exempt on purpose.
-Every user listing starts `status: 'pending'` and is visible to its owner immediately.
+Every user listing starts `status: 'pending'`: visible to its owner immediately, invisible to
+everyone else until `approveClassified`. `rejectClassified(id, reason)` delivers the admin's
+written reason to the owner. A half-finished post (text *and* compressed photos) is parked in
+`state.draft` before any verification detour and the publish resumes automatically afterwards.
+Private messages run through `scrubContact`, which removes digits, digits spelled out as words
+("seven one three"), email addresses and WhatsApp links, and reports repeat offenders.
 
 Screens never touch storage directly — they only call `store.js`.
 
@@ -87,7 +112,9 @@ Screens never touch storage directly — they only call `store.js`.
 Verification code `123456` (the verify screen shows it and has a "fill demo code" button) ·
 accepted mobile `(713) 466-9182` · rejected as VOIP: anything starting 555/800/888 ·
 admin panel reachable **only** by typing `#/admin` (not linked from the drawer or profile),
-username `arabna.admin` password `Arabna@2026!` — both in `js/store.js` ·
+username `arabna.admin` password `Arabna@2026!` — defaults in `js/store.js`, and the owner can
+change the password from the panel's Settings tab (stored in `state.adminAuth`). The username
+compare is case-insensitive + trimmed so iOS auto-capitalisation cannot lock you out ·
 payments are simulated.
 
 ## Testing before you ship a change

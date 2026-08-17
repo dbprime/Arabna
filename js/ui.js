@@ -147,6 +147,7 @@ export function openDrawer() {
       ${item('home', t('navHome'), '#/home')}
       ${item('compass', t('navExplore'), '#/directory')}
       ${item('grid', t('allCategories'), '#/categories')}
+      ${item('calendar', t('eventsTitle'), '#/events')}
       ${item('newspaper', t('magazineTitle'), '#/magazine')}
 
       <div class="dr-group-label">${t('classifiedsTitle')}</div>

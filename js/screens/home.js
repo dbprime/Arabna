@@ -41,7 +41,7 @@ export function HomeScreen(root) {
         <button class="link-gold" data-route="#/categories">${t('seeAll')}</button></div>
       <div class="hscroll" id="cats">
         ${CATEGORIES.slice(0, 5).map(c => `
-          <button class="cat-item" data-cat="${c.id}">
+          <button class="cat-item" data-cat="${c.id}" ${c.route ? `data-dest="${c.route}"` : ''}>
             <span class="cat-circle">${icon(c.icon, 26)}</span>
             <span class="cat-label">${t(c.key)}</span>
           </button>`).join('')}
@@ -110,7 +110,8 @@ export function HomeScreen(root) {
   });
   $('#locBtn').addEventListener('click', openLocationSheet);
   $('#radBtn').addEventListener('click', openRadiusSheet);
-  $$('#cats .cat-item').forEach(b => b.addEventListener('click', () => go('#/directory?cat=' + b.dataset.cat)));
+  $$('#cats .cat-item').forEach(b => b.addEventListener('click', () =>
+    go(b.dataset.dest || ('#/directory?cat=' + b.dataset.cat))));
 }
 
 function slideHtml(a, i) {

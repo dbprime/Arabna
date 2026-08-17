@@ -5,10 +5,18 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1" />
   <meta name="theme-color" content="#0B1526" />
   <title>ARABNA · عربنا</title>
-  <meta name="description" content="ARABNA · عربنا — دليل الأعمال العربية، إعلانات شخصية، ومجلة المجتمع العربي في أمريكا." />
+  <meta name="description" content="ARABNA · عربنا — دليل الأعمال العربية، السوق، والفعاليات، ومجلة المجتمع العربي في أمريكا." />
 
-  <link rel="icon" href="assets/icon.png" type="image/png" />
-  <link rel="apple-touch-icon" href="assets/icon.png" />
+  <!-- installable on the home screen. No service worker yet (V.02) so the
+       app never serves a stale build during heavy editing. -->
+  <link rel="manifest" href="manifest.json" />
+  <link rel="icon" href="assets/icons/icon-32.png" sizes="32x32" type="image/png" />
+  <link rel="icon" href="assets/icons/icon-192.png" sizes="192x192" type="image/png" />
+  <link rel="apple-touch-icon" href="assets/icons/icon-180.png" sizes="180x180" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="عربنا" />
+  <meta name="mobile-web-app-capable" content="yes" />
 
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />

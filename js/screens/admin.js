@@ -5,6 +5,8 @@
 import { t, L, icon, $, $$, go, renderHeader, toast, wireRoutes, emptyState, fmtMoney, priceLabel } from '../ui.js';
 import { MAG_CATS, ARTICLES, CATEGORIES } from '../data.js';
 import * as S from '../store.js';
+import { passwordField, wirePasswordToggles } from './profile.js';
+import { fmtEventDate } from './events.js';
 
 let unlocked = false;
 
@@ -23,9 +25,9 @@ function lockView(root) {
     </div>
     <div class="pad mt-16">
       <div class="field"><label class="label">${t('adminUser')}</label>
-        <input class="input" id="aUser" autocomplete="off" /></div>
-      <div class="field"><label class="label">${t('password')}</label>
-        <input class="input" id="aPass" type="password" /></div>
+        <input class="input" id="aUser" autocomplete="off" autocapitalize="none"
+               autocorrect="off" spellcheck="false" inputmode="email" /></div>
+      ${passwordField('aPass', t('password'))}
       <div id="aErr"></div>
       <button class="btn btn-gold btn-block mt-8" id="aGo">${t('signIn')}</button>
     </div>`;
@@ -39,6 +41,7 @@ function lockView(root) {
     unlocked = true;
     go('#/admin');
   };
+  wirePasswordToggles(root);
   $('#aGo').addEventListener('click', submit);
   $('#aPass').addEventListener('keydown', e => { if (e.key === 'Enter') submit(); });
 }
@@ -53,7 +56,9 @@ function panelView(root) {
         <button class="tab ${tab === 'queue' ? 'active' : ''}" data-t="queue">${S.state.lang === 'en' ? 'Moderation' : 'المراجعة'}${n ? ` (${n})` : ''}</button>
         <button class="tab ${tab === 'mag' ? 'active' : ''}" data-t="mag">${t('magazineTitle')}</button>
         <button class="tab ${tab === 'ads' ? 'active' : ''}" data-t="ads">${t('advertiseWithUs')}</button>
+        <button class="tab ${tab === 'events' ? 'active' : ''}" data-t="events">${t('eventsTitle')}</button>
         <button class="tab ${tab === 'dir' ? 'active' : ''}" data-t="dir">${t('directoryTitle')}</button>
+        <button class="tab ${tab === 'set' ? 'active' : ''}" data-t="set">${t('settings')}</button>
       </div>`;
   };
 
@@ -63,6 +68,8 @@ function panelView(root) {
     if (tab === 'queue') body.innerHTML = queueHtml();
     else if (tab === 'mag') body.innerHTML = magHtml();
     else if (tab === 'ads') body.innerHTML = adsHtml();
+    else if (tab === 'events') body.innerHTML = eventsHtml();
+    else if (tab === 'set') body.innerHTML = setHtml();
     else body.innerHTML = dirHtml();
 
     wireRoutes(body);
@@ -74,10 +81,52 @@ function panelView(root) {
       paint();
     }));
     $$('#aBody [data-reject]').forEach(b => b.addEventListener('click', () => {
-      S.rejectClassified(b.dataset.reject);
+      const box = $('#why-' + b.dataset.reject);
+      S.rejectClassified(b.dataset.reject, box ? box.value : '');
       toast(t('itemRejected'), 'ok');
       paint();
     }));
+    // --- events awaiting approval ---
+    $$('#aBody [data-evok]').forEach(b => b.addEventListener('click', () => {
+      S.approveEvent(b.dataset.evok); toast(t('eventApproved'), 'ok'); paint();
+    }));
+    $$('#aBody [data-evno]').forEach(b => b.addEventListener('click', () => {
+      const box = $('#why-' + b.dataset.evno);
+      S.rejectEvent(b.dataset.evno, box ? box.value : '');
+      toast(t('eventRejected'), 'ok'); paint();
+    }));
+    $$('#aBody [data-evdel]').forEach(b => b.addEventListener('click', () => {
+      S.deleteEvent(b.dataset.evdel); toast(t('eventDeleted'), 'ok'); paint();
+    }));
+    $$('#aBody [data-evfeat]').forEach(b => b.addEventListener('click', () => {
+      const ev = S.eventById(b.dataset.evfeat);
+      S.featureEvent(b.dataset.evfeat, !(ev && ev.featured));
+      toast(t('eventSaved'), 'ok'); paint();
+    }));
+    // --- profile photos + verification badges ---
+    $$('#aBody [data-avok]').forEach(b => b.addEventListener('click', () => {
+      S.approveAvatar(); toast(t('done'), 'ok'); paint();
+    }));
+    $$('#aBody [data-avno]').forEach(b => b.addEventListener('click', () => {
+      S.rejectAvatar(); toast(t('itemRejected'), 'ok'); paint();
+    }));
+    $$('#aBody [data-bgok]').forEach(b => b.addEventListener('click', () => {
+      S.approveBadge(); toast(t('done'), 'ok'); paint();
+    }));
+    $$('#aBody [data-bgno]').forEach(b => b.addEventListener('click', () => {
+      S.rejectBadge(); toast(t('itemRejected'), 'ok'); paint();
+    }));
+    // --- admin password ---
+    const apw = $('#apSave');
+    if (apw) apw.addEventListener('click', () => {
+      const a = $('#apNew').value, b2 = $('#apConf').value;
+      if (a.length < 6) { toast(t('passwordTooShort'), 'err'); return; }
+      if (a !== b2) { toast(t('passwordsDontMatch'), 'err'); return; }
+      S.setAdminPass(a);
+      toast(t('adminPassChanged'), 'ok');
+      paint();
+    });
+    wirePasswordToggles(body);
     // --- flags raised by the app (reports, free-section edits, scanned DMs) ---
     $$('#aBody [data-flagok]').forEach(b => b.addEventListener('click', () => {
       S.resolveFlag(b.dataset.flagok);
@@ -90,13 +139,6 @@ function panelView(root) {
       S.resolveFlag(b.dataset.flagdel);
       toast(t('itemRejected'), 'ok');
       paint();
-    }));
-    // --- seeded queue rows ---
-    $$('#aBody [data-seedok]').forEach(b => b.addEventListener('click', () => {
-      S.resolveSeedMod(b.dataset.seedok); toast(t('done'), 'ok'); paint();
-    }));
-    $$('#aBody [data-seeddel]').forEach(b => b.addEventListener('click', () => {
-      S.resolveSeedMod(b.dataset.seeddel); toast(t('itemRejected'), 'ok'); paint();
     }));
     // --- paid ad orders ---
     $$('#aBody [data-adok]').forEach(b => b.addEventListener('click', () => {
@@ -131,11 +173,17 @@ function panelView(root) {
 }
 
 /* ------------------------------ QUEUE ------------------------------ */
+function rejectBox(id) {
+  return `<div class="reject-box"><input class="input" id="why-${id}" placeholder="${t('rejectReasonPlaceholder')}" /></div>`;
+}
+
 function queueHtml() {
   const pending = S.pendingListings();
+  const events = S.pendingEvents();
   const flags = S.state.flags;
-  const seeds = S.seedQueue();
-  const total = pending.length + flags.length + seeds.length;
+  const avatar = S.pendingAvatar();
+  const badge = S.pendingBadge();
+  const total = pending.length + events.length + flags.length + (avatar ? 1 : 0) + (badge ? 1 : 0);
 
   if (!total) {
     return `<div class="pad mt-16">${emptyState('checkCircle', t('noPending'), t('noPendingSub'))}</div>`;
@@ -144,15 +192,16 @@ function queueHtml() {
   return `<div class="pad mt-16">
     <div class="list-note" style="margin:0 0 12px">${icon('shield', 18)}
       <span>${S.state.lang === 'en'
-        ? 'Flagged content and user reports land here for a human decision — the automated scan scores risk, it never auto-rejects.'
-        : 'المحتوى المشبوه وبلاغات المستخدمين تظهر هنا لقرار بشري — الفحص الآلي يعطي درجة خطورة فقط ولا يرفض تلقائياً.'}</span></div>
+        ? 'Everything here is real user content waiting on a human decision — the automated scan scores risk, it never auto-rejects.'
+        : 'كل ما هنا محتوى حقيقي من المستخدمين بانتظار قرار بشري — الفحص الآلي يعطي درجة خطورة فقط ولا يرفض تلقائياً.'}</span></div>
 
     <div class="stat-row" style="padding:0 0 12px">
-      <div class="stat"><b>${pending.length}</b><span>${t('pendingReview')}</span></div>
-      <div class="stat"><b>${flags.length}</b><span>${t('report')}</span></div>
-      <div class="stat"><b>${total}</b><span>${t('total')}</span></div>
+      <div class="stat"><b>${pending.length}</b><span>${t('queueListings')}</span></div>
+      <div class="stat"><b>${events.length}</b><span>${t('queueEvents')}</span></div>
+      <div class="stat"><b>${flags.length}</b><span>${t('queueReports')}</span></div>
     </div>
 
+    ${pending.length ? `<div class="dr-group-label">${t('queueListings')}</div>` : ''}
     ${pending.map(c => `
       <div class="list-row">
         <span class="row-ico" style="overflow:hidden;padding:0">${c.photos && c.photos.length
@@ -164,6 +213,7 @@ function queueHtml() {
           <div class="row-sub gold"><span class="ltr">${priceLabel(c.price)}</span> · ${t(catKeyOf(c.cat))}</div>
           <div class="row-sub">${L(c.desc || '')}</div>
           <div class="row-sub">${icon('user', 13)} ${(S.state.user && S.state.user.name) || t('guest')} · ${(c.photos || []).length} ${t('photosCount')}</div>
+          ${rejectBox(c.id)}
           <div class="row-actions">
             <button class="mini-btn gold" data-approve="${c.id}">${icon('check', 15)} ${t('approve')}</button>
             <button class="mini-btn" data-reject="${c.id}">${icon('x', 15)} ${t('reject')}</button>
@@ -172,11 +222,59 @@ function queueHtml() {
         </div>
       </div>`).join('')}
 
+    ${events.length ? `<div class="dr-group-label">${t('queueEvents')}</div>` : ''}
+    ${events.map(e => `
+      <div class="list-row">
+        <span class="row-ico" style="overflow:hidden;padding:0">${e.photo
+          ? `<img src="${e.photo}" style="width:100%;height:100%;object-fit:cover" alt="" />`
+          : icon('calendar', 24)}</span>
+        <div class="row-main">
+          <div class="row-title">${L(e.title)}<span class="badge badge-pending">${t('statusPending')}</span></div>
+          <div class="row-sub">${icon('clock', 13)} ${fmtEventDate(e.startsAt)}</div>
+          <div class="row-sub">${icon('mapPin', 13)} ${L(e.venue)} · <span class="ltr">${e.city}</span></div>
+          <div class="row-sub">${icon('users', 13)} ${L(e.organizer)}</div>
+          ${rejectBox(e.id)}
+          <div class="row-actions">
+            <button class="mini-btn gold" data-evok="${e.id}">${icon('check', 15)} ${t('approve')}</button>
+            <button class="mini-btn" data-evno="${e.id}">${icon('x', 15)} ${t('reject')}</button>
+          </div>
+        </div>
+      </div>`).join('')}
+
+    ${avatar ? `<div class="dr-group-label">${t('queueAvatars')}</div>
+      <div class="list-row">
+        <span class="row-ico" style="overflow:hidden;padding:0"><img src="${avatar.url}" style="width:100%;height:100%;object-fit:cover" alt="" /></span>
+        <div class="row-main">
+          <div class="row-title">${(S.state.user && S.state.user.name) || ''}
+            <span class="badge badge-pending">${t('statusPending')}</span></div>
+          <div class="row-sub">${t('profilePhoto')}</div>
+          <div class="row-actions">
+            <button class="mini-btn gold" data-avok="1">${icon('check', 15)} ${t('approve')}</button>
+            <button class="mini-btn" data-avno="1">${icon('x', 15)} ${t('reject')}</button>
+          </div>
+        </div>
+      </div>` : ''}
+
+    ${badge ? `<div class="dr-group-label">${t('queueBadges')}</div>
+      <div class="list-row">
+        <span class="row-ico">${icon('check', 24)}</span>
+        <div class="row-main">
+          <div class="row-title">${(S.state.user && S.state.user.name) || ''}
+            <span class="badge badge-pending">${t('statusPending')}</span></div>
+          <div class="row-sub">${t('verifiedBadge')} · ${S.state.user && S.state.user.email}</div>
+          <div class="row-actions">
+            <button class="mini-btn gold" data-bgok="1">${icon('check', 15)} ${t('approve')}</button>
+            <button class="mini-btn" data-bgno="1">${icon('x', 15)} ${t('reject')}</button>
+          </div>
+        </div>
+      </div>` : ''}
+
+    ${flags.length ? `<div class="dr-group-label">${t('queueReports')}</div>` : ''}
     ${flags.map(f => `
       <div class="list-row">
         <span class="row-ico" style="color:${f.risk === 'high' ? '#E79A9C' : 'var(--gold-bright)'}">${icon(f.kind === 'message' ? 'message' : 'alert', 24)}</span>
         <div class="row-main">
-          <div class="row-title">${f.item ? L(f.item) : t(f.kind === 'message' ? 'messagesTitle' : 'report')}
+          <div class="row-title">${f.item ? L(f.item) : t(f.kind === 'contact-attempts' ? 'contactAttemptReport' : 'report')}
             <span class="badge badge-free" style="color:#E79A9C;background:rgba(196,89,92,.14);border-color:rgba(196,89,92,.35)">${f.risk}</span></div>
           <div class="row-sub">${L(f.reason)}</div>
           <div class="row-actions">
@@ -185,20 +283,48 @@ function queueHtml() {
           </div>
         </div>
       </div>`).join('')}
+  </div>`;
+}
 
-    ${seeds.map(q => `
-      <div class="list-row">
-        <span class="row-ico" style="color:${q.risk === 'high' ? '#E79A9C' : 'var(--gold-bright)'}">${icon('alert', 24)}</span>
-        <div class="row-main">
-          <div class="row-title">${L(q.item)}
-            <span class="badge ${q.risk === 'high' ? 'badge-free' : 'badge-sponsored'}" style="${q.risk === 'high' ? 'color:#E79A9C;background:rgba(196,89,92,.14);border-color:rgba(196,89,92,.35)' : ''}">${q.risk}</span></div>
-          <div class="row-sub">${L(q.reason)}</div>
-          <div class="row-actions">
-            <button class="mini-btn gold" data-seedok="${q.id}">${icon('check', 15)} ${t('approve')}</button>
-            <button class="mini-btn" data-seeddel="${q.id}">${icon('x', 15)} ${t('reject')}</button>
+/* ------------------------------ EVENTS ------------------------------ */
+function eventsHtml() {
+  const all = S.allEvents();
+  return `<div class="pad mt-16">
+    <button class="btn btn-gold btn-block" data-route="#/events/propose?admin=1">${icon('plus', 19)} ${t('addEvent')}</button>
+    <div class="hint">${t('eventImportNote')}</div>
+    <div class="mt-16">
+      ${all.length ? all.map(e => `
+        <div class="list-row">
+          <span class="row-ico" style="overflow:hidden;padding:0">${e.photo
+            ? `<img src="${e.photo}" style="width:100%;height:100%;object-fit:cover" alt="" />`
+            : icon(e.icon || 'calendar', 24)}</span>
+          <div class="row-main">
+            <div class="row-title">${L(e.title)}
+              ${e.featured ? `<span class="badge badge-boost">${t('featuredEvent')}</span>` : ''}
+              <span class="badge ${e.status === 'live' ? 'badge-verified' : 'badge-pending'}">${e.status === 'live' ? t('statusLive') : t('statusPending')}</span>
+              ${S.eventIsPast(e) ? `<span class="badge badge-free">${t('eventPast')}</span>` : ''}</div>
+            <div class="row-sub">${icon('clock', 13)} ${fmtEventDate(e.startsAt)}</div>
+            <div class="row-sub">${icon('mapPin', 13)} ${L(e.venue)} · <span class="ltr">${e.city}</span></div>
+            <div class="row-actions">
+              <button class="mini-btn gold" data-route="#/events/edit/${e.id}?admin=1">${icon('edit', 15)} ${t('edit')}</button>
+              <button class="mini-btn" data-evfeat="${e.id}">${icon('bolt', 15)} ${e.featured ? t('cancel') : t('featuredEvent')}</button>
+              <button class="mini-btn" data-evdel="${e.id}">${icon('trash', 15)}</button>
+              <button class="mini-btn" data-route="#/events/${e.id}">${icon('eye', 15)}</button>
+            </div>
           </div>
-        </div>
-      </div>`).join('')}
+        </div>`).join('') : emptyState('calendar', t('emptyEventsTitle'), t('emptyEventsSub'))}
+    </div>
+  </div>`;
+}
+
+/* ----------------------------- SETTINGS ----------------------------- */
+function setHtml() {
+  return `<div class="pad mt-16">
+    <div class="section-title">${t('changePassword')}</div>
+    <div class="hint" style="margin-bottom:10px">${t('adminUser')}: <b class="gold ltr">${S.adminCreds().user}</b></div>
+    ${passwordField('apNew', t('newPassword'))}
+    ${passwordField('apConf', t('confirmPassword'))}
+    <button class="btn btn-gold btn-block" id="apSave">${icon('lock', 19)} ${t('changePassword')}</button>
   </div>`;
 }
 

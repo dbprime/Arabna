@@ -8,11 +8,13 @@ import { $, renderHeader, renderNav, hideNav, closeSheet, closeDrawer } from './
 
 import { HomeScreen } from './screens/home.js';
 import { CategoriesScreen } from './screens/categories.js';
+import { EventsScreen, EventScreen, EventFormScreen } from './screens/events.js';
 import { DirectoryScreen, ListingScreen, AddBusinessScreen, ClaimScreen, SubscribeScreen } from './screens/directory.js';
 import { MarketplaceScreen, ListingDetailScreen, PostScreen, BoostScreen, MessagesScreen } from './screens/marketplace.js';
 import { MagazineScreen, ArticleScreen } from './screens/magazine.js';
-import { ProfileScreen, SavedScreen, MyAdsScreen, MyBusinessScreen, MyReviewsScreen, SettingsScreen,
-         NotificationsScreen, HelpScreen, AboutScreen, PrivacyScreen, TermsScreen } from './screens/profile.js';
+import { ProfileScreen, EditProfileScreen, ChangePasswordScreen, SavedScreen, MyAdsScreen,
+         MyBusinessScreen, MyReviewsScreen, SettingsScreen, NotificationsScreen,
+         HelpScreen, AboutScreen, PrivacyScreen, TermsScreen } from './screens/profile.js';
 import { SignUpScreen, SignInScreen, EmailVerifyScreen, PhoneVerifyScreen, ForgotScreen } from './screens/auth.js';
 import { AdvertiseScreen } from './screens/advertise.js';
 import { AdminScreen } from './screens/admin.js';
@@ -20,6 +22,10 @@ import { AdminScreen } from './screens/admin.js';
 const ROUTES = [
   { re: /^#\/home$/,              screen: HomeScreen,        nav: 'home' },
   { re: /^#\/categories$/,        screen: CategoriesScreen,  nav: 'home' },
+  { re: /^#\/events$/,            screen: EventsScreen,      nav: 'home' },
+  { re: /^#\/events\/propose$/,   screen: EventFormScreen,   nav: 'home' },
+  { re: /^#\/events\/edit\/(.+)$/, screen: EventFormScreen, nav: null },
+  { re: /^#\/events\/(.+)$/,      screen: EventScreen,       nav: 'home' },
   { re: /^#\/directory$/,         screen: DirectoryScreen,   nav: 'directory' },
   { re: /^#\/directory\/(.+)$/,   screen: ListingScreen,     nav: 'directory' },
   { re: /^#\/add-business$/,      screen: AddBusinessScreen, nav: 'directory' },
@@ -37,6 +43,8 @@ const ROUTES = [
   { re: /^#\/messages$/,          screen: MessagesScreen,    nav: 'classifieds' },
   { re: /^#\/messages\/(.+)$/,    screen: MessagesScreen,    nav: 'classifieds' },
   { re: /^#\/profile$/,           screen: ProfileScreen,     nav: 'profile' },
+  { re: /^#\/profile\/edit$/,     screen: EditProfileScreen, nav: 'profile' },
+  { re: /^#\/profile\/password$/, screen: ChangePasswordScreen, nav: 'profile' },
   { re: /^#\/saved$/,             screen: SavedScreen,       nav: 'profile' },
   { re: /^#\/my-ads$/,            screen: MyAdsScreen,       nav: 'profile' },
   { re: /^#\/my-reviews$/,        screen: MyReviewsScreen,   nav: 'profile' },
