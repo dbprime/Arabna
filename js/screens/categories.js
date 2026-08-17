@@ -39,8 +39,10 @@ export function CategoriesScreen(root) {
     <div class="cat-grid">
       ${CATEGORIES.map(c => cell(
         c.icon, t(c.key),
-        businesses.filter(b => b.cat === c.id).length,
-        '#/directory?cat=' + c.id
+        // a category that is really a section of its own (Events) counts and
+        // opens that section, not an empty directory filter
+        c.route === '#/events' ? S.upcomingEvents().length : businesses.filter(b => b.cat === c.id).length,
+        c.route || ('#/directory?cat=' + c.id)
       )).join('')}
     </div>
     <div style="height:22px"></div>`;

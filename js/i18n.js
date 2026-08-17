@@ -187,6 +187,11 @@ export const STRINGS = {
     filtersCleared: 'تم مسح الفلاتر',
     // --- drawer groups
     grpSections: 'أقسام التطبيق', grpAccount: 'أعلن معنا وحسابك', grpHelp: 'المساعدة والقوانين',
+    grpMyAccount: 'حسابي',
+    joinTitle: 'أنشئ حساباً مجانياً',
+    joinSub: 'عشان تنشر إعلانك وتحفظ مفضلاتك وتتواصل مع البائعين.',
+    resultsWord: 'نتيجة',
+    verifyPhoneToPost: 'وثّق رقمك لتنشر إعلاناتك',
     // --- notifications
     notifNew: 'جديد', notifOlder: 'أقدم',
     emptyNotifTitle2: 'ما في إشعارات بعد',
@@ -451,6 +456,11 @@ export const STRINGS = {
     priceRange: 'Price range', priceFrom: 'From', priceTo: 'To',
     filtersCleared: 'Filters cleared',
     grpSections: 'App sections', grpAccount: 'Advertise & your account', grpHelp: 'Help & policies',
+    grpMyAccount: 'My account',
+    joinTitle: 'Create a free account',
+    joinSub: 'To post listings, save favorites and message sellers.',
+    resultsWord: 'results',
+    verifyPhoneToPost: 'Verify your number to post listings',
     notifNew: 'New', notifOlder: 'Earlier',
     emptyNotifTitle2: 'No notifications yet',
     marketRules: 'Posting rules',

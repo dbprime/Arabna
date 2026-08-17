@@ -1,7 +1,7 @@
 /* ======================= DIRECTORY + LISTING ======================= */
 import { t, L, icon, $, $$, go, back, renderHeader, openSheet, closeSheet, confirmSheet,
          toast, stars, wireRoutes, emptyState, query, openMaps, shareItem, fmtMoney,
-         openFilterSheet, activeFilterCount } from '../ui.js';
+         openFilterSheet, activeFilterCount, sectionNote } from '../ui.js';
 import { CATEGORIES, SUBSCRIPTION_PRICE } from '../data.js';
 import * as S from '../store.js';
 import { catIcon } from './home.js';
@@ -26,6 +26,7 @@ export function DirectoryScreen(root) {
       ${CATEGORIES.filter(c => !c.route).map(c => `<button class="chip ${cat === c.id ? 'active' : ''}" data-cat="${c.id}">${icon(c.icon, 15)} ${t(c.key)}</button>`).join('')}
     </div>
 
+    <div id="dirNote"></div>
     <div class="pad mt-12" id="dirList"></div>
 
     <div class="list-note" style="margin-bottom:18px">${icon('info', 18)}
@@ -45,6 +46,9 @@ export function DirectoryScreen(root) {
     } else {
       list.sort((a, b) => (S.businessPlan(b) === 'paid') - (S.businessPlan(a) === 'paid') || a.dist - b.dist);
     }
+
+    const sec = CATEGORIES.find(c => c.id === cat);
+    $('#dirNote').innerHTML = sectionNote(sec ? t(sec.key) : '', list.length);
 
     const el = $('#dirList');
     if (!list.length) {

@@ -7,7 +7,7 @@ ARABNA · عربنا — a mobile-first web app for the Arab community in the U.
 **business directory + marketplace + events + magazine**, Arabic-first with a full English toggle.
 ("Classifieds / الإعلانات الشخصية" is now "Marketplace / السوق" — the old `#/classifieds`
 routes still resolve so shared links keep working.)
-Current version: **V.01 (prototype)**. Owner: Rai Elby (@dbprime). Deploys to Vercel (team DB Prime).
+Current version: **V.01.5 (prototype)**. Owner: Rai Elby (@dbprime). Deploys to Vercel (team DB Prime).
 
 ## Hard rules (from the product brief)
 1. **One repository, one Vercel project.** No duplicates, no stray preview projects.
@@ -133,12 +133,45 @@ rare opens with one tap.
   directions button live on the detail page.
 - **`openFilterSheet()` in `ui.js`** is the single filter surface (category · radius ·
   sort · price on the marketplace) with apply / clear-all and a count on the button.
-- **Drawer** = exploration + language + policies, in three collapsible groups
-  (one open at a time). Everything personal lives on `#/profile`; no row appears in
-  both. A collapsed group shows the sum of its children's badges.
 - **Notifications** split into "جديد / New" and "أقدم / Earlier"; opening the screen
   never bulk-marks them read — a notification is read when it is tapped, and every
   one carries a `route` so no tap is a dead end.
+
+## Navigation rules (V.01.5 — the drawer, the visitor, and branching)
+Two rules govern **every** menu, chip row and category grid, not just the drawer.
+
+**1. A group head opens, it never navigates.** Tapping the head of a drawer group
+expands it in place; the head carries no `data-route`. It follows that no screen may
+exist just to re-print a list that is already in the drawer — that is why the profile
+screen no longer holds link rows.
+
+**2. Every leaf lands on itself, pre-filtered.** "Cars" opens the marketplace already
+on Cars, not on "All". Three details make a filtered arrival believable and all three
+are required: the section chip is `active`, it is brought into view with a horizontal
+`scrollIntoView`, and `sectionNote()` in `ui.js` prints one line above the results
+naming the section and the count.
+
+- **`isMember()` in `store.js` is the single source of truth** for account holder vs.
+  visitor. The drawer, the profile screen and the nav all ask it; no screen decides
+  for itself, so they can never disagree.
+- **The drawer has two versions.** Member: user head · language · **notifications as a
+  standalone row with its own badge** · ▸حسابي · ▸أقسام التطبيق · أعلن معنا · ▸المساعدة
+  والقوانين · تسجيل الخروج — seven rows, no scrolling, all groups folded, one open at a
+  time. Visitor: guest head · one invite card (sign up + "have an account?") · language ·
+  ▸أقسام التطبيق · أعلن معنا · ▸المساعدة والقوانين.
+- **A visitor never sees an account tool.** Notifications, the حسابي group, settings and
+  sign-out are *removed from the tree*, not greyed out — a row that only bounces you to
+  a sign-up screen makes the app feel broken. أعلن معنا stays visible on purpose: it is a
+  pricing page, and the gate is at payment.
+- **أقسام التطبيق lists الرئيسية and الدليل too.** They are in the bottom bar as well, but
+  the drawer has to be a complete index; the group is folded, so it costs no screen space.
+- **Personal screens guard themselves** (`memberOnly` in `screens/profile.js`, `requireTier`
+  in `MessagesScreen`): a session that ends while one is open redirects to the missing
+  step and resumes there, instead of painting an empty list.
+- **`#/profile` is an identity card, not a link list**: avatar, name + badge, tier, email,
+  phone with its verified mark, join date, a one-line "verify your number" prompt when the
+  phone is unverified, three **tappable** counters (`#/my-ads`, `#/saved`, `#/my-reviews`)
+  and the edit / change-password buttons. Sign-out lives in the drawer only.
 
 ## Testing before you ship a change
 1. Serve locally (`python3 -m http.server`) and click through: home → directory → listing →

@@ -1,5 +1,6 @@
 /* ======================= MAGAZINE ======================= */
-import { t, L, icon, $, $$, go, back, renderHeader, toast, wireRoutes, emptyState, shareItem } from '../ui.js';
+import { t, L, icon, $, $$, go, back, renderHeader, toast, wireRoutes, emptyState, shareItem,
+         query, sectionNote } from '../ui.js';
 import { ARTICLES, MAG_CATS, MINI_ADS } from '../data.js';
 import * as S from '../store.js';
 import { catKeyOf } from './home.js';
@@ -8,7 +9,10 @@ function allArticles() { return S.state.extraArticles.concat(ARTICLES); }
 
 export function MagazineScreen(root) {
   renderHeader({});
-  let cat = 'all';
+  // Arriving from a chip elsewhere in the app must land on that section, the
+  // same way the directory and the marketplace already do.
+  const q = query();
+  let cat = q.cat || 'all';
 
   root.innerHTML = `
     <div class="tabs">
@@ -19,14 +23,17 @@ export function MagazineScreen(root) {
       <div class="section-title">${t('magazineTitle')}<small>${t('magazineSub')}</small></div>
     </div>
     <div class="hscroll" id="magChips">
-      <button class="chip active" data-cat="all">${t('catAll')}</button>
-      ${MAG_CATS.map(c => `<button class="chip" data-cat="${c.id}">${t(c.key)}</button>`).join('')}
+      <button class="chip ${cat === 'all' ? 'active' : ''}" data-cat="all">${t('catAll')}</button>
+      ${MAG_CATS.map(c => `<button class="chip ${cat === c.id ? 'active' : ''}" data-cat="${c.id}">${t(c.key)}</button>`).join('')}
     </div>
+    <div id="magNote"></div>
     <div class="pad mt-12" id="magList"></div>
     <div style="height:16px"></div>`;
 
   const paint = () => {
     const list = allArticles().filter(a => cat === 'all' || a.cat === cat);
+    const sec = MAG_CATS.find(c => c.id === cat);
+    $('#magNote').innerHTML = sectionNote(sec ? t(sec.key) : '', list.length);
     const out = [];
     list.forEach((a, i) => {
       out.push(articleCard(a));
@@ -43,6 +50,10 @@ export function MagazineScreen(root) {
     wireRoutes($('#magList'));
   };
   paint();
+
+  // an active chip the user cannot see reads as "the filter did not apply"
+  const activeChip = $('#magChips .chip.active');
+  if (activeChip && cat !== 'all') activeChip.scrollIntoView({ inline: 'center', block: 'nearest' });
 
   $$('#magChips .chip').forEach(c => c.addEventListener('click', () => {
     cat = c.dataset.cat;

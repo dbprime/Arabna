@@ -7,10 +7,13 @@ import { catIcon } from './home.js';
 import { openReviewSheet } from './directory.js';
 import { mountPhotoPicker } from './marketplace.js';
 
-/* ------------------------------ PROFILE ------------------------------ */
+/* ------------------------------ PROFILE ------------------------------
+   This screen is the user's identity, not a second copy of the drawer.
+   Everything that is listed in the drawer was removed from here; the three
+   counters are the quick way in, and each one opens its own list. */
 export function ProfileScreen(root) {
   renderHeader({});
-  const u = S.state.user;
+  const u = S.isMember() ? S.state.user : null;
   const tierLabel = S.tier() === 2 ? t('tier2') : S.tier() === 1 ? t('tier1') : t('guest');
 
   /* --- signed out: one clear call to action, nothing pretending to be data --- */
@@ -22,12 +25,6 @@ export function ProfileScreen(root) {
         <span class="muted fs-13">${t('needAccountSub')}</span>
         <button class="btn btn-gold mt-16" data-route="#/auth/signup">${t('signUp')}</button>
         <button class="btn btn-ghost btn-sm mt-8" data-route="#/auth/signin">${t('haveAccount')}</button>
-      </div>
-      <div class="mt-20">
-        ${row('heart', t('savedFav'), '#/saved')}
-        ${row('settings', t('settings'), '#/settings')}
-        ${row('help', t('help'), '#/help')}
-        ${row('info', t('about'), '#/about')}
       </div>`;
     wireRoutes(root);
     return;
@@ -62,17 +59,24 @@ export function ProfileScreen(root) {
                 : `<span style="color:#E79A9C">${t('phoneNotVerified')}</span>`)
             : t('phoneNumber')}</span>
         </div>
-        ${!u.phoneVerified ? `<button class="mini-btn gold" data-route="#/auth/phone">${t('verifyBtn')}</button>` : ''}
       </div>
 
       <div class="info-row"><span class="i-ico">${icon('calendar', 21)}</span>
         <div class="i-txt"><b>${joined}</b><span>${t('joinedOn')}</span></div></div>
     </div>
 
+    ${!u.phoneVerified ? `
+    <div class="pad mt-16">
+      <div class="list-note">${icon('shield', 18)}
+        <span>${t('verifyPhoneToPost')}</span>
+        <button class="mini-btn gold" data-route="#/auth/phone" style="margin-inline-start:auto">${t('verifyBtn')}</button>
+      </div>
+    </div>` : ''}
+
     <div class="stat-row mt-16">
-      <div class="stat"><b>${S.myActiveListings().length}</b><span>${t('activeListings')}</span></div>
-      <div class="stat"><b>${S.state.saved.length}</b><span>${t('savedFav')}</span></div>
-      <div class="stat"><b>${S.myReviews().length}</b><span>${t('myReviews')}</span></div>
+      <button class="stat" data-route="#/my-ads"><b>${S.myActiveListings().length}</b><span>${t('activeListings')}</span></button>
+      <button class="stat" data-route="#/saved"><b>${S.state.saved.length}</b><span>${t('savedFav')}</span></button>
+      <button class="stat" data-route="#/my-reviews"><b>${S.myReviews().length}</b><span>${t('myReviews')}</span></button>
     </div>
 
     <div class="pad mt-16">
@@ -81,29 +85,8 @@ export function ProfileScreen(root) {
         <button class="btn btn-ghost btn-sm" data-route="#/profile/password">${icon('lock', 18)} ${t('changePassword')}</button>
       </div>
     </div>
-
-    <div class="mt-20">
-      ${row('bag', t('myAds'), '#/my-ads')}
-      ${row('star', t('myReviews'), '#/my-reviews')}
-      ${row('message', t('myMessages'), '#/messages')}
-      ${row('heart', t('savedFav'), '#/saved')}
-      ${row('briefcase', t('myBusiness'), '#/my-business')}
-      ${row('crown', t('subscription'), '#/subscribe')}
-      ${row('megaphone', t('advertiseWithUs'), '#/advertise')}
-      ${row('bell', t('notifications'), '#/notifications')}
-      ${row('settings', t('settings'), '#/settings')}
-      ${row('help', t('help'), '#/help')}
-      ${row('shield', t('privacy'), '#/privacy')}
-      ${row('file', t('terms'), '#/terms')}
-      <button class="dr-item" id="outBtn" style="color:#E79A9C">${icon('logout', 22)}<span>${t('signOut')}</span></button>
-    </div>
     <div style="height:20px"></div>`;
 
-  const ob = $('#outBtn');
-  if (ob) ob.addEventListener('click', () => confirmSheet({
-    title: t('signOut'), sub: '', confirmText: t('signOut'), danger: true,
-    onConfirm: () => { S.signOut(); toast(t('done'), 'ok'); go('#/home'); }
-  }));
   wireRoutes(root);
 }
 
@@ -238,13 +221,15 @@ function attr(s) {
     .replace(/"/g, '&quot;');
 }
 
-function row(ico, label, route) {
-  return `<button class="dr-item" data-route="${route}">${icon(ico, 22)}<span>${label}</span>
-    <span class="chev">${icon(document.documentElement.dir === 'rtl' ? 'chevronL' : 'chevronR', 19)}</span></button>`;
-}
+
+/** Personal screens are for account holders only. If the session ended while
+    one was open, send the user to the step they are missing instead of
+    painting an empty list — and resume them here afterwards. */
+function memberOnly(hash) { return S.requireTier(1, hash, go); }
 
 /* ------------------------------ SAVED ------------------------------ */
 export function SavedScreen(root) {
+  if (!memberOnly('#/saved')) return;
   renderHeader({ simple: true, title: t('savedFav') });
   const biz = S.allBusinesses().filter(b => S.isSaved(b.id));
   const cls = S.allClassifieds().filter(c => S.isSaved(c.id));
@@ -266,6 +251,7 @@ export function SavedScreen(root) {
 
 /* ------------------------------ MY ADS ------------------------------ */
 export function MyAdsScreen(root) {
+  if (!memberOnly('#/my-ads')) return;
   renderHeader({ simple: true, title: t('myAds') });
   const mine = S.myActiveListings();
   const orders = S.state.myAds;
@@ -318,6 +304,7 @@ export function MyAdsScreen(root) {
 
 /* ---------------------------- MY REVIEWS ---------------------------- */
 export function MyReviewsScreen(root) {
+  if (!memberOnly('#/my-reviews')) return;
   renderHeader({ simple: true, title: t('myReviews') });
   const mine = S.myReviews();
 
@@ -350,6 +337,7 @@ export function MyReviewsScreen(root) {
 
 /* --------------------------- MY BUSINESS --------------------------- */
 export function MyBusinessScreen(root) {
+  if (!memberOnly('#/my-business')) return;
   renderHeader({ simple: true, title: t('myBusiness') });
   const b = S.state.myBusinessId ? S.businessById(S.state.myBusinessId) : null;
 
@@ -379,6 +367,7 @@ export function MyBusinessScreen(root) {
 
 /* ------------------------------ SETTINGS ------------------------------ */
 export function SettingsScreen(root) {
+  if (!memberOnly('#/settings')) return;
   renderHeader({ simple: true, title: t('settings') });
   const p = S.state.notifPrefs;
 
@@ -431,6 +420,7 @@ function sw(key, label, on) {
 
 /* --------------------------- NOTIFICATIONS --------------------------- */
 export function NotificationsScreen(root) {
+  if (!memberOnly('#/notifications')) return;
   renderHeader({ simple: true, title: t('notifications') });
   const list = S.notifications();
   const unread = list.filter(n => n.unread);

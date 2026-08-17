@@ -81,7 +81,7 @@ export function renderHeader(opts = {}) {
     // menu + logo only. The spacer opposite the menu button keeps the logo
     // optically centred instead of crowded against a stack of icons.
     head.innerHTML = `
-      <button class="icon-btn" id="hMenu" aria-label="menu">${icon('menu', 24)}${S.unreadCount() ? '<span class="dot"></span>' : ''}</button>
+      <button class="icon-btn" id="hMenu" aria-label="menu">${icon('menu', 24)}${S.isMember() && S.unreadCount() ? '<span class="dot"></span>' : ''}</button>
       <img class="h-logo" src="assets/logo-sm.png" alt="ARABNA عربنا" />
       <span class="h-spacer" aria-hidden="true"></span>`;
     $('#hMenu').addEventListener('click', openDrawer);
@@ -116,17 +116,19 @@ export function renderNav(active) {
 export function hideNav() { $('#bottomNav').style.display = 'none'; }
 
 /* ---------------- drawer ----------------
-   The drawer is exploration + language + policies only. Anything that belongs
-   to the user personally lives on the profile screen, so no row appears twice.
-   Groups are collapsed by default (one open at a time) and a collapsed group
-   carries the sum of its children's badges — otherwise folding would hide the
-   unread count entirely. */
+   The drawer is the app's full index, built in two versions from the single
+   source of truth in store.js (`isMember`). A visitor never sees an account
+   tool: the rows are removed from the tree, not greyed out, so no tap can
+   bounce them into a sign-up screen. A group head only opens its group — it
+   never navigates — and every leaf lands on its own destination, so nothing
+   that lives in this list is repeated as a row inside a screen. */
 let drawerSeq = 0;
 let openGroup = null;          // remembered while the drawer is on screen
 
 export function openDrawer() {
   drawerSeq++;
   const root = $('#drawer');
+  const member = S.isMember();
   const u = S.state.user;
   const tierLabel = S.tier() === 2 ? t('tier2') : S.tier() === 1 ? t('tier1') : t('guest');
   const chev = () => icon(document.documentElement.dir === 'rtl' ? 'chevronL' : 'chevronR', 19);
@@ -139,54 +141,76 @@ export function openDrawer() {
     `<button class="dr-item" data-route="${route}">${icon(ico, 22)}<span>${label}</span>
       ${badge(count)}<span class="chev">${chev()}</span></button>`;
 
-  const group = (id, label, count, rows) => `
+  // A group head carries no route: it toggles its own group and nothing else.
+  const group = (id, label, rows) => `
     <div class="dr-group ${openGroup === id ? 'open' : ''}" data-group="${id}">
       <button class="dr-item dr-head" data-toggle="${id}" aria-expanded="${openGroup === id}">
         ${icon('chevronD', 20, 'grp-arrow')}<span>${label}</span>
-        ${badge(count)}
       </button>
       <div class="dr-sub"><div class="dr-sub-inner">${rows}</div></div>
     </div>`;
 
-  const sections = [
-    item('grid', t('allCategories'), '#/categories'),
-    item('calendar', t('eventsTitle'), '#/events'),
-    item('newspaper', t('magazineTitle'), '#/magazine'),
-    item('bag', t('classifiedsTitle'), '#/marketplace'),
+  const account = [
+    item('briefcase', t('myBusiness'), '#/my-business'),
+    item('bag', t('myAds'), '#/my-ads'),
+    item('star', t('myReviews'), '#/my-reviews'),
+    item('message', t('myMessages'), '#/messages'),
+    item('heart', t('savedFav'), '#/saved'),
+    item('crown', t('subscription'), '#/subscribe'),
+    item('settings', t('settings'), '#/settings'),
   ].join('');
 
-  const account = [
-    item('megaphone', t('advertiseWithUs'), '#/advertise'),
-    item('bell', t('notifications'), '#/notifications', unread),
-    item('user', t('navProfile'), '#/profile'),
+  // Home and Directory are back: the drawer has to be a complete index of the
+  // app, and not every user reads the bottom bar. The group is folded by
+  // default, so two more rows cost nothing on screen.
+  const sections = [
+    item('home', t('navHome'), '#/home'),
+    item('compass', t('navExplore'), '#/directory'),
+    item('bag', t('classifiedsTitle'), '#/marketplace'),
+    item('calendar', t('eventsTitle'), '#/events'),
+    item('newspaper', t('magazineTitle'), '#/magazine'),
+    item('grid', t('allCategories'), '#/categories'),
   ].join('');
 
   const help = [
-    item('settings', t('settings'), '#/settings'),
     item('help', t('help'), '#/help'),
     item('info', t('about'), '#/about'),
     item('shield', t('privacy'), '#/privacy'),
     item('file', t('terms'), '#/terms'),
   ].join('');
 
+  const head = member ? `
+      <div class="drawer-head">
+        <img src="assets/logo-sm.png" alt="ARABNA" />
+        <div style="font-weight:700">${u.name}</div>
+        <div class="drawer-user">${u.email} · ${tierLabel}</div>
+      </div>` : `
+      <div class="drawer-head">
+        <img src="assets/logo-sm.png" alt="ARABNA" />
+        <div style="font-weight:700">${t('guest')}</div>
+      </div>
+      <div class="dr-invite">
+        <b>${t('joinTitle')}</b>
+        <span>${t('joinSub')}</span>
+        <button class="btn btn-gold btn-sm" data-route="#/auth/signup">${t('signUp')}</button>
+        <button class="dr-invite-link" data-route="#/auth/signin">${t('haveAccount')}</button>
+      </div>`;
+
+  const langRow = `
+      <button class="dr-item" id="drLang">${icon('globe', 22)}<span>${t('language')}</span>
+        <span class="lang-pill" style="margin-inline-start:auto">${getLang() === 'ar' ? 'العربية' : 'English'}</span></button>`;
+
   root.innerHTML = `
     <div class="drawer-scrim" data-close></div>
     <aside class="drawer-panel">
-      <div class="drawer-head">
-        <img src="assets/logo-sm.png" alt="ARABNA" />
-        <div style="font-weight:700">${u ? u.name : t('guest')}</div>
-        <div class="drawer-user">${u ? u.email + ' · ' + tierLabel : t('needAccountSub')}</div>
-        ${!u ? `<button class="btn btn-gold btn-sm mt-12" data-route="#/auth/signup" style="width:100%">${t('signUp')}</button>` : ''}
-      </div>
-
-      <button class="dr-item" id="drLang">${icon('globe', 22)}<span>${t('language')}</span>
-        <span class="lang-pill" style="margin-inline-start:auto">${getLang() === 'ar' ? 'العربية' : 'English'}</span></button>
-
-      ${group('sections', t('grpSections'), 0, sections)}
-      ${group('account', t('grpAccount'), unread, account)}
-      ${group('help', t('grpHelp'), 0, help)}
-
-      ${u ? `<button class="dr-item" id="drOut" style="color:#E79A9C">${icon('logout', 22)}<span>${t('signOut')}</span></button>` : ''}
+      ${head}
+      ${langRow}
+      ${member ? item('bell', t('notifications'), '#/notifications', unread) : ''}
+      ${member ? group('account', t('grpMyAccount'), account) : ''}
+      ${group('sections', t('grpSections'), sections)}
+      ${item('megaphone', t('advertiseWithUs'), '#/advertise')}
+      ${group('help', t('grpHelp'), help)}
+      ${member ? `<button class="dr-item" id="drOut" style="color:#E79A9C">${icon('logout', 22)}<span>${t('signOut')}</span></button>` : ''}
       <div style="padding:18px;text-align:center;color:var(--muted);font-size:11px">ARABNA · عربنا — ${t('version')} 0.1</div>
     </aside>`;
 
@@ -349,6 +373,16 @@ export function statusBadge(c, showLive = false) {
 }
 
 /** query params from the hash: #/directory?cat=cars → { cat: 'cars' } */
+/**
+ * One line above the results naming the section the user is looking at.
+ * Without it a pre-filtered arrival looks like the whole list, just shorter.
+ * Returns '' for the unfiltered view — there is no section to name.
+ */
+export function sectionNote(label, count) {
+  if (!label) return '';
+  return `<div class="sec-note"><b>${label}</b><span>${count} ${t('resultsWord')}</span></div>`;
+}
+
 export function query() {
   const q = (location.hash.split('?')[1] || '');
   const out = {};

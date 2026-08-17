@@ -106,6 +106,13 @@ export function tier() {
 export function isLoggedIn() { return tier() >= 1; }
 export function isPhoneVerified() { return tier() >= 2; }
 
+/**
+ * The single source of truth for "account holder vs. visitor".
+ * Every screen, the drawer and the nav ask this — no screen decides for
+ * itself, so they can never disagree about who is signed in.
+ */
+export const isMember = () => tier() >= 1;
+
 /* ---------------- pending intent (resume after signup) ---------------- */
 let pendingIntent = null;
 export function setPendingIntent(route, label) { pendingIntent = { route, label }; }

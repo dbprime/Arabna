@@ -629,7 +629,8 @@ html[dir="rtl"] .drawer-panel { --drawer-off: 100%; }
 .step-dot.done { background: var(--gold); }
 
 .stat-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 9px; padding: 0 14px; }
-.stat { background: var(--surface); border: 1px solid var(--line-soft); border-radius: var(--r-md); padding: 12px 10px; text-align: center; }
+.stat { background: var(--surface); border: 1px solid var(--line-soft); border-radius: var(--r-md); padding: 12px 10px; text-align: center; width: 100%; }
+button.stat:active { border-color: var(--gold); background: rgba(198,161,91,0.08); }
 .stat b { display: block; font-size: 22px; color: var(--gold-bright); }
 .stat span { font-size: 11.5px; color: var(--muted); }
 
@@ -870,6 +871,32 @@ input[inputmode="tel"], input[type="email"], input[inputmode="decimal"], #zipIn 
   .dr-sub { transition: none; }
   .dr-head .grp-arrow { transition: none; }
 }
+
+/* ---------- drawer: the visitor's invite card ----------
+   A visitor sees one invitation instead of a list of account tools that
+   would only bounce every tap into a sign-up screen. */
+.dr-invite {
+  margin: 14px; padding: 16px 15px;
+  border-radius: var(--r-md);
+  background: linear-gradient(140deg, rgba(198,161,91,0.15), var(--surface));
+  border: 1px solid var(--line);
+  display: flex; flex-direction: column; gap: 6px; text-align: start;
+}
+.dr-invite b { font-size: 15px; }
+.dr-invite > span { font-size: 12.5px; color: var(--muted); line-height: 1.55; }
+.dr-invite .btn { margin-top: 6px; width: 100%; }
+.dr-invite-link {
+  font-size: 12.5px; color: var(--gold-bright); font-weight: 600;
+  text-align: center; padding: 6px 0 0; width: 100%;
+}
+
+/* ---------- "which section am I looking at" ---------- */
+.sec-note {
+  margin: 12px 14px 0;
+  display: flex; align-items: baseline; gap: 8px;
+}
+.sec-note b { font-size: 14.5px; color: var(--gold-bright); }
+.sec-note span { font-size: 12px; color: var(--muted); }
 
 /* ---------- notifications: new vs earlier ---------- */
 .notif-group-label {

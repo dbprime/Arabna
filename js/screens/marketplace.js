@@ -1,7 +1,7 @@
 /* ======================= MARKETPLACE ======================= */
 import { t, L, icon, $, $$, go, back, renderHeader, confirmSheet, toast, wireRoutes,
          emptyState, query, shareItem, fmtMoney, priceLabel, statusBadge,
-         openSheet, closeSheet, openFilterSheet, activeFilterCount } from '../ui.js';
+         openSheet, closeSheet, openFilterSheet, activeFilterCount, sectionNote } from '../ui.js';
 import { MARKET_CATS, BOOST_PRICES, FREE_PRICE } from '../data.js';
 import { getLang } from '../i18n.js';
 import * as S from '../store.js';
@@ -40,6 +40,7 @@ export function MarketplaceScreen(root) {
       ${MARKET_CATS.map(c => `<button class="chip ${cat === c.id ? 'active' : ''}" data-cat="${c.id}">${icon(c.icon, 15)} ${t(c.key)}</button>`).join('')}
     </div>
 
+    <div id="secNote"></div>
     <div id="catNote"></div>
     <div class="mt-12" id="clGrid"></div>
     <div style="height:16px"></div>`;
@@ -76,6 +77,7 @@ export function MarketplaceScreen(root) {
                    || (b.created || 0) - (a.created || 0));
 
     const section = MARKET_CATS.find(c => c.id === cat);
+    $('#secNote').innerHTML = sectionNote(section ? t(section.key) : '', list.length);
     $('#clGrid').innerHTML = list.length
       ? `<div class="grid2">${list.map(c => cardHtml(c, c.id === highlight)).join('')}</div>`
       // every section has its own designed empty state, not one generic message
@@ -517,6 +519,8 @@ function escapeAttr(s) {
 /* --------------------------- MESSAGES --------------------------- */
 export function MessagesScreen(root, params) {
   const listingId = params[0];
+  // Messages belong to an account: a session that ended mid-thread resumes here.
+  if (!S.requireTier(1, location.hash, go)) return;
 
   if (!listingId) { threadListView(root); return; }
 
