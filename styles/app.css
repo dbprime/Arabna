@@ -978,8 +978,7 @@ input[inputmode="tel"], input[type="email"], input[inputmode="decimal"], #zipIn 
   overflow: hidden; min-height: 0;
   visibility: hidden; transition: visibility .2s var(--ease);
 }
-.ad-card.selected .ad-more-inner { visibility: visible; }
-.ad-card.selected .ad-more-inner { padding: 0 14px 14px; }
+.ad-card.selected .ad-more-inner { visibility: visible; padding: 0 14px 14px; }
 
 .ad-points { list-style: none; margin: 12px 0 0; padding: 0; }
 .ad-points li {
