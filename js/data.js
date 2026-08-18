@@ -8,7 +8,7 @@
    "events" is not a business category — it carries an explicit route to the
    Events screen; every other entry filters the directory. */
 /* ============================================================
-   The twenty directory categories (V.02.0)
+   The twenty-one directory categories (V.02.1)
    ------------------------------------------------------------
    Frozen shape: the owner enters shops by hand against these ids,
    so renaming one means re-entering its shops. `homeservices` and
@@ -40,6 +40,11 @@ export const CATEGORIES = [
   { id: "realestate",   key: "catRealestate",       icon: "building" },
   { id: "homeservices", key: "catHomeservices",     icon: "wrench",      shortKey: "catShortHome" },
   { id: "gyms",         key: "catGyms",             icon: "dumbbell" },
+  // Not a category we sell to the way the others are: many of these are
+  // municipal parks and public preserves, which is what `nonCommercial`
+  // is for. The ticketed half — trampolines, museums, water parks — are
+  // ordinary businesses and keep every button.
+  { id: "outings",      key: "catOutings",          icon: "trees" },
   // Not a business category: a shortcut that opens the Events screen. It is
   // filtered out of every directory chip row by `!c.route`.
   { id: "events",       key: "catEvents",           icon: "calendar",    shortKey: "catShortEvents", route: "#/events" },
@@ -230,6 +235,8 @@ export const ATTR_GROUPS = [
   { id: "elecSvc",      key: "attrGrpElecSvc" },
   { id: "communitySvc", key: "attrGrpCommunitySvc" },
   { id: "gymSvc",       key: "attrGrpGymSvc" },
+  { id: "outingKind",   key: "attrGrpOutingKind" },
+  { id: "outingFeature", key: "attrGrpOutingFeature" },
   { id: "newcomer",     key: "attrGrpNewcomer" },
   { id: "language",     key: "attrGrpLanguage" },
   { id: "practical",    key: "attrGrpPractical" },
@@ -563,6 +570,44 @@ export const ATTRIBUTES = withKey([
   { id: "gySwimming", group: "gymSvc", cats: ["gyms"], icon: "dumbbell" },
   { id: "gyYoga", group: "gymSvc", cats: ["gyms"], icon: "dumbbell" },
   { id: "gyPersonalTrainer", group: "gymSvc", cats: ["gyms"], icon: "dumbbell" },
+  /* --- outingKind --- */
+  { id: "outPark", group: "outingKind", cats: ["outings"], icon: "trees" },
+  { id: "outBigPark", group: "outingKind", cats: ["outings"], icon: "trees" },
+  { id: "outNature", group: "outingKind", cats: ["outings"], icon: "trees" },
+  { id: "outPlayground", group: "outingKind", cats: ["outings"], icon: "users" },
+  { id: "outIndoorPlay", group: "outingKind", cats: ["outings"], icon: "users" },
+  { id: "outSplashPad", group: "outingKind", cats: ["outings"], icon: "droplet" },
+  { id: "outWaterPark", group: "outingKind", cats: ["outings"], icon: "droplet" },
+  { id: "outTrampoline", group: "outingKind", cats: ["outings"], icon: "bolt" },
+  { id: "outIceSkating", group: "outingKind", cats: ["outings"], icon: "sparkles" },
+  { id: "outKarting", group: "outingKind", cats: ["outings"], icon: "car" },
+  { id: "outBowling", group: "outingKind", cats: ["outings"], icon: "play" },
+  { id: "outArcade", group: "outingKind", cats: ["outings"], icon: "play" },
+  { id: "outMuseum", group: "outingKind", cats: ["outings"], icon: "landmark" },
+  { id: "outZoo", group: "outingKind", cats: ["outings"], icon: "paw" },
+  { id: "outAquarium", group: "outingKind", cats: ["outings"], icon: "droplet" },
+  { id: "outBeach", group: "outingKind", cats: ["outings"], icon: "droplet" },
+  { id: "outScience", group: "outingKind", cats: ["outings"], icon: "graduation" },
+  { id: "outTrails", group: "outingKind", cats: ["outings"], icon: "navigation" },
+  /* --- outingFeature ---
+     "outside food allowed" and "there is a BBQ pit" are the first two
+     questions an Arab family asks before a day out, and no American
+     app carries either one. */
+  { id: "outFreeEntry", group: "outingFeature", cats: ["outings"], icon: "check", exclusive: true },
+  { id: "outTicketed", group: "outingFeature", cats: ["outings"], icon: "ticket", exclusive: true },
+  { id: "outOwnFood", group: "outingFeature", cats: ["outings"], icon: "utensils" },
+  { id: "outBbq", group: "outingFeature", cats: ["outings"], icon: "flame" },
+  { id: "outPrayerNearby", group: "outingFeature", cats: ["outings"], icon: "landmark" },
+  { id: "outBigFamily", group: "outingFeature", cats: ["outings"], icon: "users" },
+  { id: "outKidsPlay", group: "outingFeature", cats: ["outings"], icon: "users" },
+  { id: "outShaded", group: "outingFeature", cats: ["outings"], icon: "trees" },
+  { id: "outFreeParking", group: "outingFeature", cats: ["outings"], icon: "car" },
+  { id: "outBirthdays", group: "outingFeature", cats: ["outings"], icon: "gift" },
+  { id: "outIndoor", group: "outingFeature", cats: ["outings"], icon: "home" },
+  { id: "outOutdoor", group: "outingFeature", cats: ["outings"], icon: "trees" },
+  { id: "outSeasonal", group: "outingFeature", cats: ["outings"], icon: "sunrise" },
+  { id: "outLake", group: "outingFeature", cats: ["outings"], icon: "droplet" },
+  { id: "outBoats", group: "outingFeature", cats: ["outings"], icon: "navigation" },
   /* --- newcomer --- */
   { id: "certTranslation", group: "newcomer", cats: "*", icon: "languages" },
   { id: "moneyTransfer", group: "newcomer", cats: "*", icon: "languages" },
@@ -922,6 +967,60 @@ export const BUSINESSES = [
                  'halalMeat', 'noAlcohol', 'arabicSpoken', 'acceptsCard', 'delivery'],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 1.1, claimed: false,
     desc: { ar: 'كنافة وبقلاوة ومكسرات محمّصة يومياً.', en: 'Knafeh, baklava and nuts roasted daily.' },
+    photos: 0, videos: 0,
+  },
+
+  /* --- V.02.1: the outings category, in both of its halves. The free
+         public places carry `nonCommercial`, so no claim button, no
+         subscription offer and no upgrade card ever appears on them; the
+         ticketed ones are ordinary businesses and keep all three. --- */
+  {
+    id: 'b26', name: { ar: 'حديقة الواحة', en: 'Oasis City Park' }, cat: 'outings',
+    phone: '(713) 555-0501', address: '1500 Hermann Dr, Houston, TX 77004',
+    hours: week({ all: '06:00-23:00' }),
+    tags: ['حديقة', 'شواء', 'مشي', 'بحيرة', 'park', 'bbq', 'walking', 'lake'],
+    attributes: ['outPark', 'outFreeEntry', 'outOwnFood', 'outBbq', 'outShaded',
+                 'outFreeParking', 'outOutdoor', 'outKidsPlay', 'outBigFamily', 'outTrails',
+                 'outLake', 'accessible'],
+    plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 2.6, claimed: false,
+    nonCommercial: true,
+    desc: { ar: 'حديقة بلدية فيها أماكن شواء وملعب أطفال ومسار مشي حول البحيرة.', en: 'City park with BBQ pits, a playground and a lakeside walking trail.' },
+    photos: 0, videos: 0,
+  },
+  {
+    id: 'b27', name: { ar: 'محمية بايو الطبيعية', en: 'Bayou Nature Preserve' }, cat: 'outings',
+    phone: '(281) 555-0512', address: '4501 Woodway Dr, Houston, TX 77024',
+    hours: week({ all: '07:00-19:00' }),
+    tags: ['محمية', 'طبيعة', 'مسارات', 'دراجات', 'preserve', 'nature', 'trails', 'bike'],
+    attributes: ['outNature', 'outTrails', 'outFreeEntry', 'outOwnFood', 'outShaded',
+                 'outFreeParking', 'outOutdoor', 'outSeasonal'],
+    plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 6.4, claimed: false,
+    nonCommercial: true,
+    desc: { ar: 'محمية طبيعية بمسارات مشي ودراجات ومراقبة طيور.', en: 'Nature preserve with walking and bike trails and bird watching.' },
+    photos: 0, videos: 0,
+  },
+  {
+    id: 'b28', name: { ar: 'عالم القفز', en: 'Jump Zone Trampoline Park' }, cat: 'outings',
+    phone: '(713) 555-0523', address: '7900 Westheimer Rd, Houston, TX 77063',
+    hours: week({ all: '10:00-20:00', fri: '10:00-22:00', sat: '10:00-22:00' }),
+    tags: ['ترامبولين', 'أعياد ميلاد', 'ألعاب', 'trampoline', 'birthday', 'arcade'],
+    attributes: ['outTrampoline', 'outIndoorPlay', 'outArcade', 'outTicketed', 'outIndoor',
+                 'outBirthdays', 'outBigFamily', 'outPrayerNearby', 'acceptsCard', 'parking'],
+    plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 3.3, claimed: false,
+    entryPrice: '$18 / hour',
+    desc: { ar: 'ترامبولين داخلي وألعاب، وحجوزات أعياد ميلاد.', en: 'Indoor trampolines and arcade games, with birthday bookings.' },
+    photos: 0, videos: 0,
+  },
+  {
+    id: 'b29', name: { ar: 'متحف الصغار للعلوم', en: 'Little Science Museum' }, cat: 'outings',
+    phone: '(281) 555-0534', address: '1601 Binz St, Houston, TX 77004',
+    hours: week({ all: '10:00-17:00', mon: null }),
+    tags: ['متحف', 'علوم', 'أطفال', 'museum', 'science', 'kids'],
+    attributes: ['outMuseum', 'outScience', 'outTicketed', 'outIndoor', 'outKidsPlay',
+                 'outBirthdays', 'arabicSpoken', 'acceptsCard', 'accessible'],
+    plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 2.9, claimed: false,
+    entryPrice: '$14 / person',
+    desc: { ar: 'متحف علوم تفاعلي للأطفال مع ورش أسبوعية.', en: 'Hands-on science museum for children with weekly workshops.' },
     photos: 0, videos: 0,
   },
 ];

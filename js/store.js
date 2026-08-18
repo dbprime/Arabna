@@ -886,6 +886,30 @@ export function deleteReply(reviewId) {
  * talk to each other, so "pay to bury your rivals" would cost more in
  * reputation than it could ever earn.
  */
+/**
+ * A city park is not a business. Without this flag Hermann Park would carry
+ * "is this yours? claim it" and an "upgrade your page" card, which reads as a
+ * plain bug. The ticketed half of the outings category — trampolines, museums,
+ * water parks — are real businesses and real advertisers, so they keep every
+ * button; the flag is only for the places nobody owns.
+ */
+export function isNonCommercial(b) { return !!(b && b.nonCommercial); }
+export function setNonCommercial(bizId, on) { applyBusinessEdit(bizId, { nonCommercial: !!on }); }
+
+/**
+ * Halal restaurants near an outing. A family heading out has to eat, and this
+ * costs us nothing while giving every restaurant in the directory — paying or
+ * not — somewhere else to be seen. Sorted by how close they are to the place
+ * being looked at, never by who paid.
+ */
+export function nearbyHalal(b, n = 3) {
+  const pool = allBusinesses().filter(x => x.cat === 'restaurants' && x.id !== b.id);
+  const halal = pool.filter(x => hasAttr(x, 'halalMeat'));
+  return (halal.length ? halal : pool)
+    .sort((x, y) => Math.abs(x.dist - b.dist) - Math.abs(y.dist - b.dist))
+    .slice(0, n);
+}
+
 export function similarTo(b, n = 4) {
   return allBusinesses()
     .filter(x => x.id !== b.id && x.cat === b.cat)
@@ -1502,6 +1526,9 @@ export const CSV_COLUMNS = [
   'name_en', 'name_ar', 'category', 'phone', 'address',
   'desc_ar', 'desc_en', 'tags', 'attributes',
   'hours_sun', 'hours_mon', 'hours_tue', 'hours_wed', 'hours_thu', 'hours_fri', 'hours_sat',
+  // both optional: `noncommercial` is 1 / yes / true for a public place,
+  // `entry_price` is free text because "about $12" is the honest answer
+  'noncommercial', 'entry_price',
 ];
 
 /** A sample file with the right columns and one filled row. */
@@ -1511,12 +1538,28 @@ export function sampleCsv() {
     ['Al Nakheel Restaurant', 'مطعم النخيل', 'restaurants', '(713) 555-0101',
      '123 Hillcroft Ave, Houston, TX 77081', 'مشاوي ومقبلات', 'Grills and mezze',
      'مشاوي;كباب;grill;kebab', 'cuisLebanese;dishGrill;halalMeat;noAlcohol;delivery',
-     '11:00-23:00', '11:00-23:00', '11:00-23:00', '11:00-23:00', '11:00-23:00', '11:00-02:00', 'closed'],
+     '11:00-23:00', '11:00-23:00', '11:00-23:00', '11:00-23:00', '11:00-23:00', '11:00-02:00', 'closed',
+     '', ''],
     // English name only, which is how most shops here actually trade
     ["Abdallah's Bakery", '', 'sweets', '(713) 555-0102',
      '456 Westheimer Rd, Houston, TX 77042', '', 'Knafeh and Arabic sweets',
      'كنافة;بقلاوة;knafeh;baklava', 'swKnafeh;swBaklava;halalMeat',
-     '09:00-21:00', '09:00-21:00', '09:00-21:00', '09:00-21:00', '09:00-21:00', '09:00-22:00', '09:00-22:00'],
+     '09:00-21:00', '09:00-21:00', '09:00-21:00', '09:00-21:00', '09:00-21:00', '09:00-22:00', '09:00-22:00',
+     '', ''],
+    // a city park: free, nobody owns it, so `noncommercial` is set and the
+    // claim / subscribe / upgrade invitations never appear on its page
+    ['Cedar Grove Park', 'حديقة السرو', 'outings', '(713) 555-0605',
+     '2200 Braeswood Blvd, Houston, TX 77030', '', 'City park with BBQ pits and a playground',
+     'حديقة;شواء;park;bbq', 'outPark;outFreeEntry;outOwnFood;outBbq;outShaded;outFreeParking;outOutdoor',
+     '06:00-23:00', '06:00-23:00', '06:00-23:00', '06:00-23:00', '06:00-23:00', '06:00-23:00', '06:00-23:00',
+     '1', ''],
+    // a ticketed indoor place in the same category: a real business, so it is
+    // left commercial and carries an entry price instead
+    ['Sky High Trampoline', '', 'outings', '(281) 555-0616',
+     '3300 Gessner Rd, Houston, TX 77063', '', 'Indoor trampoline park',
+     'ترامبولين;trampoline', 'outTrampoline;outIndoor;outTicketed;outBirthdays;outIndoorPlay',
+     '10:00-20:00', '10:00-20:00', '10:00-20:00', '10:00-20:00', '10:00-21:00', '10:00-22:00', '10:00-22:00',
+     '', '$18 / hour'],
   ];
   return CSV_COLUMNS.join(',') + '\n'
        + rows.map(r => r.map(csvCell).join(',')).join('\n') + '\n';
@@ -1618,6 +1661,12 @@ export function parseBusinessCsv(text) {
       hours.push(parsed.ok ? parsed.value : null);
     });
 
+    // A public place is not a business: the column is optional, absent or
+    // empty means an ordinary commercial listing.
+    const ncRaw = col(raw, 'noncommercial').toLowerCase();
+    const nonCommercial = ['1', 'yes', 'true', 'y', 'نعم'].includes(ncRaw);
+    const entryPrice = col(raw, 'entry_price');
+
     if (hours.every(d => d === null)) warnings.push({ field: 'hours', code: 'noHours' });
     if (!col(raw, 'desc_ar') && !col(raw, 'desc_en')) warnings.push({ field: 'desc', code: 'noDesc' });
 
@@ -1648,6 +1697,7 @@ export function parseBusinessCsv(text) {
         name: { ar: nameAr, en: nameEn }, cat, phone, address,
         desc: { ar: col(raw, 'desc_ar'), en: col(raw, 'desc_en') || col(raw, 'desc_ar') },
         hours, tags, attributes,
+        nonCommercial, entryPrice,
       },
     });
   }
@@ -1677,7 +1727,7 @@ export function toDataFile(list, startIndex = 1) {
     hours: ${hoursLine(b.hours)},
     tags: [${(b.tags || []).map(q).join(', ')}],
     attributes: [${(b.attributes || []).map(q).join(', ')}],
-    plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
+    plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,${b.nonCommercial ? '\n    nonCommercial: true,' : ''}${b.entryPrice ? '\n    entryPrice: ' + q(b.entryPrice) + ',' : ''}
     desc: { ar: ${q(b.desc.ar)}, en: ${q(b.desc.en)} },
     photos: 0, videos: 0,
   },`).join('\n');
@@ -1692,7 +1742,7 @@ export function toDataFile(list, startIndex = 1) {
  */
 export function exportBackup() {
   return JSON.stringify({
-    app: 'ARABNA', version: 'V.01.9', exportedAt: new Date().toISOString(),
+    app: 'ARABNA', version: 'V.02.1', exportedAt: new Date().toISOString(),
     seedCounts: { businesses: BUSINESSES.length, events: EVENTS.length },
     state,
   }, null, 2);

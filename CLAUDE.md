@@ -7,7 +7,7 @@ ARABNA · عربنا — a mobile-first web app for the Arab community in the U.
 **business directory + marketplace + events + magazine**, Arabic-first with a full English toggle.
 ("Classifieds / الإعلانات الشخصية" is now "Marketplace / السوق" — the old `#/classifieds`
 routes still resolve so shared links keep working.)
-Current version: **V.02.0 (prototype)**. Owner: Rai Elby (@dbprime). Deploys to Vercel (team DB Prime).
+Current version: **V.02.1 (prototype)**. Owner: Rai Elby (@dbprime). Deploys to Vercel (team DB Prime).
 
 ## Hard rules (from the product brief)
 1. **One repository, one Vercel project.** No duplicates, no stray preview projects.
@@ -60,6 +60,7 @@ Icons are sized inline via `icon('name', size)`.
 | Magazine | native banners between articles + sponsored stories ($199+) |
 | Events | "Featured Event" pin at the top of the section ($99+/week, `AD_PRODUCTS.event`) |
 | Accounts | paid blue verification badge — price lives in `VERIFY_BADGE_PRICE` (currently 0 = free while unpriced) |
+| Outings | the ticketed half — trampolines, indoor playgrounds, rinks, museums, water parks — pays the same $29 directory subscription; the free public places carry `nonCommercial` and are deliberately outside every commercial surface |
 
 ## Auth tiers (do not weaken these)
 - Tier 1 — email + verification code: browse, save favorites, write a review.
@@ -261,6 +262,7 @@ means re-entering 300 shops, so treat it as frozen unless there is no choice.
   tags: ['شاورما', 'shawarma', …],                 // both languages in one flat list
   attributes: ['halalMeat', 'noAlcohol', …],       // ids only, never booleans
   worship: { kind, prayers, jumuah, mass, lang },  // places of worship only
+  nonCommercial, entryPrice,                       // outings; both optional (V.02.1)
   plan, verified, rating, reviewCount, dist, claimed, photos, videos,
 }
 ```
@@ -296,7 +298,7 @@ means re-entering 300 shops, so treat it as frozen unless there is no choice.
   directory tab moves reviews, favourites, ownership, tags and attributes across.
 - **Seasonal groups** (`season: 'ramadan'`) are hidden until the owner flips one
   switch in admin → settings; `state.seasons` holds it.
-- **Twenty categories (V.02.0), frozen** — see the list below. Arabic schooling
+- **Twenty-one categories (V.02.1), frozen** — see the list below. Arabic schooling
   and newcomer services stay attribute groups rather than categories, for the
   anti-duplication reason above.
 
@@ -363,11 +365,11 @@ means re-entering 300 shops, so treat it as frozen unless there is no choice.
   the same screen writes to the database and step three disappears.
   `exportBackup()` dumps the whole state as JSON.
 
-## The twenty categories and the speciality tree (V.02.0)
+## The twenty-one categories and the speciality tree (V.02.1)
 ```
 restaurants · grocery · worship · cafe · beauty · shopping · community ·
 education · sweets · finance · occasions · doctors · auto · homegoods ·
-lawyers · travel · electronics · realestate · homeservices · gyms
+lawyers · travel · electronics · realestate · homeservices · gyms · outings
 ```
 Plus `events`, which is **not** a business category: it carries `route: '#/events'`
 and every directory chip row filters it out with `!c.route`. `HOME_CATS` names the
@@ -382,11 +384,11 @@ five circles on Home.
   `hsHandyman` is a speciality *inside* `homeservices`. Not to be confused with
   the marketplace's `handyman` section, which is a free 14-day classified for a
   private individual; the directory page is a permanent listing for a business.
-- **309 specialities** live in `ATTRIBUTES`, generated from one table so the
+- **342 specialities** live in `ATTRIBUTES`, generated from one table so the
   i18n key is derived from the id (`attr` + Id) and cannot drift. Adding one is a
   line in `data.js` and two in `i18n.js`.
 
-### Three layers of visibility — the rule that keeps 309 specialities usable
+### Three layers of visibility — the rule that keeps 342 specialities usable
 | Layer | Shows |
 |---|---|
 | Quick chips above the results | attributes with **`CHIP_MIN` (5) or more** businesses in the current category, counted live |
@@ -396,6 +398,42 @@ five circles on Home.
 `quickAttrsForCat` / `filterAttrsForCat` / `attrGroupsForCat(cat, {all:true})` in
 `store.js`. **Nothing is hand-listed**: a user never meets a filter that returns
 nothing, and a new speciality surfaces by itself the day it has content.
+
+## Outings, and the places nobody owns (V.02.1)
+`outings` — «ترفيه ونزهات / Outings & Fun» — is the twenty-first category:
+parks, preserves, playgrounds indoor and out, splash pads, trampolines, ice
+rinks, karting, bowling, arcades, museums, the zoo, the aquarium, beaches,
+science centres and trails. Two attribute groups carry it: `outingKind` (18)
+and `outingFeature` (15).
+
+- **`outOwnFood` and `outBbq` are the reason the category exists.** "Can we
+  bring our own food" and "is there a pit we can grill on" are the first two
+  questions an Arab family asks before a day out, and no American listing app
+  answers either. They are ordinary attributes, so they filter, chip and
+  search like everything else.
+- **`nonCommercial` on a business hides every commercial surface from its
+  page** — the claim button, the subscription offer, the upgrade card. A city
+  park has no owner to claim it and nobody to sell $29 a month to; leaving
+  those on Hermann Park reads as a plain bug. `isNonCommercial()` /
+  `setNonCommercial()` in `store.js`, a checkbox in the add/edit form, a
+  `noncommercial` column in the importer (`1` / `yes` / `true`), and a
+  marker in admin → directory that flips an existing listing either way.
+- **Paid places stay commercial.** Of the 74 Houston outings ready to import,
+  46 are ticketed — trampolines, indoor playgrounds, rinks, museums, water
+  parks — and those are real businesses and real advertisers. The flag is for
+  the ~28 free ones. Never derive it from the category.
+- **`entryPrice` is free text and only shown when entry is not free**, beside
+  a standing «الأسعار والأوقات تتغيّر — تأكّد قبل الزيارة». Half of these
+  places are seasonal and change their gate price between spring and summer,
+  so the app prints roughly what it costs and tells you to check rather than
+  claiming to know today's number. It is a separate axis from
+  `nonCommercial`: a public park can charge at a gate, a business can be free
+  to walk into.
+- **Every outings page ends with three halal restaurants nearby**
+  (`nearbyHalal` in `store.js`), sorted by distance and never by who paid. A
+  family on a day out has to eat; it costs us nothing and gives the
+  restaurants in the directory another doorway. It is not a slot anyone can
+  buy — same rule as `similarTo`.
 
 ## Events: types, concerts, and the yearly ones (V.02.0)
 - `EVENT_TYPES` holds eleven types; the chip row on `#/events` shows only the

@@ -233,6 +233,51 @@ function worshipBlock(b) {
   return `<div class="worship-block">${rows.join('')}</div>`;
 }
 
+/**
+ * The entry price and the warning that has to sit beside it. Many of these
+ * places are seasonal and half of them change their gate price between
+ * spring and summer, so the app never claims to know today's number: it
+ * prints roughly what it costs and tells you to check.
+ */
+function outingBlock(b) {
+  if (b.cat !== 'outings') return '';
+  // The price row appears only when there is something to pay: the
+  // "free entry" attribute already says so in the chip row above, and
+  // printing it twice is the duplication banned everywhere else.
+  const free = S.hasAttr(b, 'outFreeEntry');
+  const price = String(b.entryPrice || '').trim();
+  return `${!free && price
+      ? `<div class="info-row"><span class="i-ico">${icon('ticket', 21)}</span>
+           <div class="i-txt"><b class="ltr">${attr(price)}</b><span>${t('entryPrice')}</span></div></div>`
+      : ''}
+    <div class="list-note" style="margin-inline:0">${icon('alert', 18)}<span>${t('outingsWarn')}</span></div>`;
+}
+
+/**
+ * Halal restaurants near an outing, at the foot of the page. A family on a
+ * day out has to eat, and the question comes up every single time. It costs
+ * us nothing and hands the restaurants in the directory another doorway;
+ * the order is by distance, never by who paid.
+ */
+function halalNearbyBlock(b) {
+  if (b.cat !== 'outings') return '';
+  const list = S.nearbyHalal(b, 3);
+  if (!list.length) return '';
+  return `<div class="similar">
+    <div class="section-head" style="padding:0 14px"><div class="section-title">${t('nearbyHalal')}
+      <small>${t('nearbyHalalSub')}</small></div></div>
+    <div class="pad">
+      ${list.map(x => `<div class="list-row" data-route="#/directory/${x.id}">
+        <span class="row-ico">${icon(catIcon(x.cat), 20)}</span>
+        <div class="row-main">
+          <div class="row-title">${L(x.name)}${bizBadge(x)}</div>
+          <div class="row-sub"><span>${icon('mapPin', 13)} ${x.dist} ${t('miles')}</span>${openBadge(x)}</div>
+        </div>
+      </div>`).join('')}
+    </div>
+  </div>`;
+}
+
 /** the subscription upsell, sized like a business row.
     A visitor gets the same offer with the number replaced by the gate. */
 function upsellHtml() {
@@ -294,6 +339,7 @@ export function ListingScreen(root, params) {
       ${hoursBlock(b)}
       ${worshipBlock(b)}
       <div class="info-row">${`<span class="i-ico">${icon('bookmark', 21)}</span>`}<div class="i-txt"><b>${t(catKey(b.cat))}</b><span>${t('category')}</span></div></div>
+      ${outingBlock(b)}
 
       ${photos.length ? `
         <div class="section-head" style="padding:0;margin-top:20px"><div class="section-title">${t('photos')}</div></div>
@@ -323,6 +369,7 @@ export function ListingScreen(root, params) {
       </div>
     </div>
 
+    ${halalNearbyBlock(b)}
     ${similarBlock(b, paid)}`;
 
   $('#bk').addEventListener('click', () => back());
@@ -386,6 +433,12 @@ function reviewsEmpty() {
  * their own page from a link or a search, never from a claim screen.
  */
 function ownerBlock(b, mine, paid, claim) {
+  /* A city park has no owner to claim it and nobody to sell a subscription
+     to. Leaving those on would read as a plain bug on the page of a place
+     everybody knows is public — so the commercial half goes, while whoever
+     entered the record keeps the controls that maintain it. */
+  const publicPlace = S.isNonCommercial(b);
+  const publicNote = `<div class="list-note" style="margin-inline:0">${icon('landmark', 18)}<span>${t('nonCommercialNote')}</span></div>`;
   if (mine) {
     const verified = S.businessVerified(b);
     const vs = S.bizVerifyState(b.id);
@@ -395,7 +448,7 @@ function ownerBlock(b, mine, paid, claim) {
         <button class="btn btn-ghost btn-sm" data-route="#/business/edit/${b.id}">${icon('edit', 18)} ${t('editBusiness')}</button>
         <button class="btn btn-ghost btn-sm" data-route="#/business/photos/${b.id}">${icon('camera', 18)} ${t('managePhotos')}</button>
       </div>
-      ${verified
+      ${publicPlace ? '' : verified
         ? `<div class="ok-msg" style="text-align:center">${t('bizVerifiedOn')}</div>`
         : vs && vs.status === 'pending'
           ? `<div class="hint" style="text-align:center">${t('bizVerifyPending')}</div>`
@@ -403,13 +456,14 @@ function ownerBlock(b, mine, paid, claim) {
             ? `<button class="btn btn-outline-gold btn-block mt-8" id="verifyBtn">${icon('checkCircle', 19)} ${t('verifyBusiness')}</button>
                ${vs && vs.status === 'rejected' && vs.reason ? `<div class="err-msg">${icon('alert', 15)} ${vs.reason}</div>` : ''}`
             : `<div class="hint" style="text-align:center">${t('verifyNeedsPlan')}</div>`}
-      ${!paid ? `<div class="upsell" style="margin:12px 0 0">
+      ${publicPlace ? publicNote : !paid ? `<div class="upsell" style="margin:12px 0 0">
         <div class="upsell-txt"><b>${t('upgradeBanner')}</b><span>${showsPrices()
           ? fmtMoney(SUBSCRIPTION_PRICE) + ' ' + t('month') : t('pricesAfterSignup')}</span></div>
         <button class="btn btn-gold btn-sm" data-route="#/subscribe/${b.id}">${t('upgradeBtn')}</button>
       </div>` : ''}
     </div>`;
   }
+  if (publicPlace) return publicNote;
   if (claim && claim.status === 'pending') {
     return `<div class="list-note" style="margin-inline:0">${icon('clock', 18)}<span>${t('claimPending')}</span></div>`;
   }
@@ -576,7 +630,16 @@ export function AddBusinessScreen(root) {
       <div class="field"><label class="label">${t('features')}</label>
         <div id="bAttrs"></div></div>
 
-      <div class="field"><label class="label">${t('descLabel')} <span class="muted">(${t('optional')})</span></label><textarea class="textarea" id="bDesc"></textarea></div>
+      <div class="field" id="bEntryField" hidden><label class="label">${t('entryPrice')} <span class="muted">(${t('optional')})</span></label>
+        <input class="input ltr" id="bEntry" dir="ltr" placeholder="$12 / person" />
+        <div class="hint">${t('entryPriceHint')}</div></div>
+
+      <label class="consent-row mt-12">
+        <input type="checkbox" id="bNonComm" />
+        <span><b>${t('nonCommercial')}</b><br><span class="muted fs-12">${t('nonCommercialHint')}</span></span>
+      </label>
+
+      <div class="field mt-12"><label class="label">${t('descLabel')} <span class="muted">(${t('optional')})</span></label><textarea class="textarea" id="bDesc"></textarea></div>
       <div id="bDup"></div>
       <button class="btn btn-gold btn-block" id="bSave">${t('addBusiness')}</button>
       <div class="hint" style="text-align:center;margin-top:10px">${t('lockedSub')}</div>
@@ -614,11 +677,17 @@ export function AddBusinessScreen(root) {
   };
   paintAttrs();
 
+  /* the entry price is only a question for an outing — nobody asks a
+     dentist what it costs to walk in */
+  const paintEntry = () => { $('#bEntryField').hidden = cat !== 'outings'; };
+  paintEntry();
+
   $('#bCat').addEventListener('change', (e) => {
     cat = e.target.value;
     const valid = S.attrsForCat(cat).map(a => a.id);
     picked = picked.filter(id => valid.includes(id));
     paintAttrs();
+    paintEntry();
   });
 
   /** the seven day rows → the canonical hours array */
@@ -644,6 +713,8 @@ export function AddBusinessScreen(root) {
       // an Arabic one, the English name stands in both fields.
       name: { ar: nameAr || name, en: name }, cat, phone, address,
       hours: readHours(), tags, attributes: picked.slice(),
+      nonCommercial: $('#bNonComm').checked,
+      entryPrice: cat === 'outings' ? $('#bEntry').value.trim() : '',
       desc: { ar: $('#bDesc').value, en: $('#bDesc').value },
     });
     toast(t('done'), 'ok');
@@ -812,6 +883,13 @@ export function BusinessEditScreen(root, params) {
         <input class="input" id="eTags" value="${attr((b.tags || []).join('، '))}" />
         <div class="hint">${t('keywordsHint')}</div></div>
       <div class="field"><label class="label">${t('features')}</label><div id="eAttrs"></div></div>
+      ${cat === 'outings' ? `<div class="field"><label class="label">${t('entryPrice')} <span class="muted">(${t('optional')})</span></label>
+        <input class="input ltr" id="eEntry" dir="ltr" value="${attr(b.entryPrice || '')}" placeholder="$12 / person" />
+        <div class="hint">${t('entryPriceHint')}</div></div>` : ''}
+      <label class="consent-row" style="margin:4px 0 16px">
+        <input type="checkbox" id="eNonComm" ${b.nonCommercial ? 'checked' : ''} />
+        <span><b>${t('nonCommercial')}</b><br><span class="muted fs-12">${t('nonCommercialHint')}</span></span>
+      </label>
       <button class="btn btn-gold btn-block" id="eSave">${icon('check', 19)} ${t('saveChanges')}</button>
     </div>`;
 
@@ -849,6 +927,8 @@ export function BusinessEditScreen(root, params) {
       desc: { ar: $('#eDesc').value, en: $('#eDesc').value },
       tags: $('#eTags').value.split(/[,\u060C\n]/).map(x => x.trim()).filter(Boolean),
       attributes: picked.slice(),
+      nonCommercial: $('#eNonComm').checked,
+      entryPrice: cat === 'outings' ? $('#eEntry').value.trim() : (b.entryPrice || ''),
     });
     toast(t('done'), 'ok');
     go('#/directory/' + b.id);

@@ -185,6 +185,19 @@ function panelView(root) {
       });
     }
 
+    // --- a public place is not a business: flag it either way ---
+    const flip = (id, on) => {
+      S.setNonCommercial(id, on);
+      toast(t('done'), 'ok');
+      paint();
+    };
+    const ncOn = $('#ncOn');
+    if (ncOn) ncOn.addEventListener('click', () => flip($('#ncPick').value, true));
+    const ncOff = $('#ncOff');
+    if (ncOff) ncOff.addEventListener('click', () => flip($('#ncPick').value, false));
+    $$('#aBody [data-ncoff]').forEach(b =>
+      b.addEventListener('click', () => flip(b.dataset.ncoff, false)));
+
     const mg = $('#mgGo');
     if (mg) mg.addEventListener('click', () => {
       const keep = $('#mgKeep').value, drop = $('#mgDrop').value;
@@ -556,8 +569,17 @@ function repeatsHtml() {
     </div>`;
 }
 
+/** the i18n key of a directory category — the admin list prints where a
+    place sits. Not to be confused with catKeyOf above, which maps the
+    marketplace sections. */
+function dirCatKey(id) {
+  const c = CATEGORIES.find(x => x.id === id);
+  return c ? c.key : 'catAll';
+}
+
 function dirHtml() {
   const all = S.allBusinesses();
+  const marked = all.filter(b => S.isNonCommercial(b));
   const paid = all.filter(b => S.businessPlan(b) === 'paid').length;
   return `<div class="pad mt-16">
     <div class="stat-row" style="padding:0">
@@ -571,6 +593,7 @@ function dirHtml() {
 
     <div class="section-title mt-20">${t('importTitle')}</div>
     <div class="hint" style="margin-bottom:10px">${t('importWhy')}</div>
+    <div class="hint" style="margin-bottom:10px">${t('importNcNote')}</div>
     <div class="action-grid">
       <button class="btn btn-ghost btn-sm" id="csvSample">${icon('file', 18)} ${t('importSample')}</button>
       <button class="btn btn-ghost btn-sm" id="csvPick">${icon('inbox', 18)} ${t('importPick')}</button>
@@ -581,6 +604,20 @@ function dirHtml() {
     <div class="section-title mt-20">${t('backupTitle')}</div>
     <div class="hint" style="margin-bottom:10px">${t('backupWhy')}</div>
     <button class="btn btn-ghost btn-block" id="bkExport">${icon('file', 19)} ${t('backupExport')}</button>
+
+    <div class="section-title mt-20">${t('nonCommercial')}</div>
+    <div class="hint" style="margin-bottom:10px">${t('nonCommercialHint')}</div>
+    <div class="field"><label class="label">${t('nonCommercialPick')}</label>
+      <select class="select" id="ncPick">${all.map(b => `<option value="${b.id}">${L(b.name)} — ${t(dirCatKey(b.cat))}</option>`).join('')}</select></div>
+    <div class="action-grid">
+      <button class="btn btn-ghost btn-sm" id="ncOn">${icon('landmark', 18)} ${t('nonCommercialMark')}</button>
+      <button class="btn btn-ghost btn-sm" id="ncOff">${icon('briefcase', 18)} ${t('nonCommercialUnmark')}</button>
+    </div>
+    ${marked.length ? `<div class="mt-12">
+      ${marked.map(b => `<div class="setting-row"><span class="s-txt"><b>${L(b.name)}</b>
+        <span class="muted fs-12">${t(dirCatKey(b.cat))}</span></span>
+        <button class="mini-btn" data-ncoff="${b.id}">${icon('x', 15)}</button></div>`).join('')}
+    </div>` : `<div class="hint" style="margin-top:8px">${t('nonCommercialCount')}: 0</div>`}
 
     <div class="section-title mt-20">${t('mergeDuplicates')}</div>
     <div class="hint" style="margin-bottom:10px">${t('mergePick')}</div>
@@ -656,6 +693,8 @@ function showImport(result, repaint) {
             <div class="imp-body">
               <b>${r.biz.name.en || r.biz.name.ar || '—'}</b>
               <span class="ltr muted fs-12">${r.biz.phone || '—'}</span>
+              ${r.biz.nonCommercial ? `<span class="imp-tag">${t('importNcTag')}</span>` : ''}
+              ${r.biz.entryPrice ? `<span class="ltr muted fs-12">${r.biz.entryPrice}</span>` : ''}
               ${r.errors.length ? `<div class="imp-why err">${icon('alert', 12)} ${r.errors.map(problem).join(' · ')}</div>` : ''}
               ${r.warnings.length ? `<div class="imp-why warn">${icon('info', 12)} ${r.warnings.map(caution).join(' · ')}</div>` : ''}
               ${!r.errors.length && r.dupOf ? `<div class="imp-why dup">${r.dupOf.kind === 'file'

@@ -1238,6 +1238,13 @@ input[inputmode="tel"], input[type="email"], input[inputmode="decimal"], #zipIn 
 .imp-why.err { color: #E79A9C; }
 .imp-why.warn { color: var(--gold-bright); }
 .imp-why.dup { color: var(--gold-bright); }
+/* a public place in the preview: marked, not warned about */
+.imp-tag {
+  display: inline-block; margin-inline-start: 6px;
+  padding: 1px 7px; border-radius: 999px;
+  font-size: 11px; line-height: 1.7;
+  color: var(--gold-bright); border: 1px solid rgba(198,161,91,.4);
+}
 
 /* ---------- "which section am I looking at" ---------- */
 .sec-note {
