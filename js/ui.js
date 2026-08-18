@@ -479,6 +479,18 @@ export function fmtDay(spans) {
  * when it is about to shut, opening time when it is closed.
  * Returns '' when the business carries no hours — better nothing than a guess.
  */
+/**
+ * How far away, or nothing at all. The 486 real listings came in through
+ * the importer with no coordinates yet, so their distance is unknown —
+ * and "0 mi" on every row would be a number the app invented. Geocoding
+ * fills these in at V.02; until then the line is simply absent, the same
+ * way a missing phone number leaves no call button.
+ */
+export function distLabel(biz) {
+  const d = biz && biz.dist;
+  return d ? `<span>${icon('mapPin', 13)} ${d} ${t('miles')}</span>` : '';
+}
+
 export function openBadge(biz, now = new Date()) {
   const st = S.openState(biz, now);
   if (!st) return '';

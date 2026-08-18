@@ -1,5 +1,6 @@
 /* ============================ HOME ============================ */
-import { t, L, icon, $, $$, go, renderHeader, openSheet, closeSheet, toast, stars, wireRoutes } from '../ui.js';
+import { t, L, icon, $, $$, go, renderHeader, openSheet, closeSheet, toast, stars, wireRoutes,
+         distLabel } from '../ui.js';
 import { CATEGORIES, HOME_CATS, MINI_ADS, ARTICLES, ZIPS, CITY_SUGGESTIONS } from '../data.js';
 import * as S from '../store.js';
 
@@ -60,7 +61,7 @@ export function HomeScreen(root) {
             <div class="feat-body">
               <div class="feat-name">${L(b.name)}</div>
               <div class="feat-meta">${stars(b.rating)} <span>· ${b.reviewCount} ${t('reviews')}</span></div>
-              <div class="feat-meta">${icon('mapPin', 13)} ${b.dist} ${t('miles')}</div>
+              ${distLabel(b) ? `<div class="feat-meta">${distLabel(b)}</div>` : ''}
             </div>
           </div>`).join('')}
       </div>

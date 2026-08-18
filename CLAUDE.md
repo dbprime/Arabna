@@ -252,8 +252,9 @@ wrapped in `.ltr`), `شوف السعر وابدأ` plus a one-line note for a vi
 an all-folded screen would be a dead end; the cheapest opens by default.
 
 ## The business record (V.01.8) — read this before touching `data.js`
-The owner is entering **300 shops by hand**. A change to this shape after that
-means re-entering 300 shops, so treat it as frozen unless there is no choice.
+**The 486 real listings are now in the file** (V.02.1), so this shape is no
+longer merely frozen by intent — changing it means re-entering 486 records by
+hand. Treat it as immovable unless there is no choice.
 
 ```js
 {
@@ -481,8 +482,46 @@ and `outingFeature` (15).
 3. Confirm the logo renders and no console errors.
 4. Regenerate the single-file build if you changed any source file.
 
+## What is actually in `data.js` now (V.02.1)
+**515 businesses**: 29 invented development seeds (`b1`–`b29`) and **486 real
+Houston listings** entered by the owner and brought in through the admin
+importer — 412 businesses as `b30`–`b441` and 74 outings as `b442`–`b515`.
+Both export files began at `b30`, so the outings ids were shifted by 412
+rather than renumbered by hand.
+
+| | | | |
+|---|---|---|---|
+| restaurants 139 | grocery 42 | worship 35 | cafe 32 |
+| beauty 24 | shopping 21 | community 21 | sweets 16 |
+| education 16 | finance 13 | occasions 12 | doctors 11 |
+| auto 11 | lawyers 10 | homegoods 9 | electronics 8 |
+| travel 7 | realestate 6 | homeservices 3 | gyms 1 |
+| outings 78 | | | |
+
+- **The seeds stay until launch** — they are the only records with reviews,
+  ratings, photos, a paid plan and a real distance, so half the app has
+  nothing to demonstrate without them. They go together with the seed
+  reviews, in one deletion, before the app is public.
+- **`dist` is 0 on every imported record** because the importer has no
+  geocoding yet. `distLabel()` in `ui.js` prints nothing rather than "0 mi":
+  the app never invents a number it does not have. Geocoding at V.02 fills
+  these in and the line appears by itself.
+- **The specialities are thin outside outings.** 278 of the 412 businesses
+  carry only `arabicSpoken`, so most categories show one quick chip; the
+  outings rows average five attributes each and produce seventeen. Nothing in
+  the code limits this — filling `attributes` in the source rows is all it
+  takes, and the three-layer rule surfaces them the day they arrive.
+- **Nine phone numbers are shared** between listings (the ISGH central line,
+  a parks department, a driving school's two branches, two shops in one
+  plaza). They are not duplicates and must not be merged; the importer will
+  flag any future row against them, which is the correct behaviour.
+
 ## Known open items
 - Legal pages are first drafts — a lawyer must review before public launch.
 - Push notifications: triggers are defined in Settings but not wired to a real service.
 - Admin panel is intentionally minimal (moderation queue, magazine editor, ad approval).
 - Prices are placeholders chosen by Claude — the owner will set final pricing.
+- The 29 development seeds and every seed review in `data.js` must be deleted
+  before launch (FTC rule of October 2024 on reviews).
+- `dist` is 0 on all 486 imported listings until geocoding lands, so "nearest"
+  sorting and the radius filter do nothing for them.

@@ -3,7 +3,7 @@ import { t, L, icon, $, $$, go, back, renderHeader, openSheet, closeSheet, confi
          toast, stars, wireRoutes, emptyState, query, openMaps, shareItem, fmtMoney,
          openFilterSheet, activeFilterCount, sectionNote,
          showsPrices, priceGate, wirePriceGates,
-         openBadge, attrChips, fmtDay, fmtTime, bizBadge } from '../ui.js';
+         openBadge, distLabel, attrChips, fmtDay, fmtTime, bizBadge } from '../ui.js';
 import { CATEGORIES, SUBSCRIPTION_PRICE, DAY_KEYS } from '../data.js';
 import * as S from '../store.js';
 import { catIcon } from './home.js';
@@ -167,7 +167,7 @@ function rowHtml(b) {
     <div class="row-main">
       <div class="row-title">${L(b.name)}${bizBadge(b)}</div>
       <div class="row-sub">${r.count ? stars(r.avg) + `<span>· ${r.count} ${t('reviews')}</span> · ` : ''}
-        <span>${icon('mapPin', 13)} ${b.dist} ${t('miles')}</span>
+        ${distLabel(b)}
         ${openBadge(b)}
       </div>
       ${b.phone ? `<div class="row-actions">
@@ -271,7 +271,7 @@ function halalNearbyBlock(b) {
         <span class="row-ico">${icon(catIcon(x.cat), 20)}</span>
         <div class="row-main">
           <div class="row-title">${L(x.name)}${bizBadge(x)}</div>
-          <div class="row-sub"><span>${icon('mapPin', 13)} ${x.dist} ${t('miles')}</span>${openBadge(x)}</div>
+          <div class="row-sub">${distLabel(x)}${openBadge(x)}</div>
         </div>
       </div>`).join('')}
     </div>
@@ -344,7 +344,7 @@ export function ListingScreen(root, params) {
           ? `<div class="info-row"><span class="i-ico">${icon('phone', 21)}</span><div class="i-txt"><b class="muted">${t('noPhoneUseMap')}</b><span>${t('phoneLabel')}</span></div></div>`
           : ''}
       ${b.address
-        ? `<div class="info-row"><span class="i-ico">${icon('mapPin', 21)}</span><div class="i-txt"><b class="ltr">${b.address}</b><span>${t('address')} · ${b.dist} ${t('miles')} ${t('distanceAway')}</span></div></div>`
+        ? `<div class="info-row"><span class="i-ico">${icon('mapPin', 21)}</span><div class="i-txt"><b class="ltr">${b.address}</b><span>${t('address')}${b.dist ? ` · ${b.dist} ${t('miles')} ${t('distanceAway')}` : ''}</span></div></div>`
         : ''}
       ${hoursBlock(b)}
       ${worshipBlock(b)}
@@ -504,7 +504,7 @@ function similarBlock(b, paid) {
         <span class="row-ico">${icon(catIcon(x.cat), 20)}</span>
         <div class="row-main">
           <div class="row-title">${L(x.name)}${bizBadge(x)}</div>
-          <div class="row-sub"><span>${icon('mapPin', 13)} ${x.dist} ${t('miles')}</span>${openBadge(x)}</div>
+          <div class="row-sub">${distLabel(x)}${openBadge(x)}</div>
         </div>
       </div>`).join('')}
     </div>
