@@ -7,7 +7,7 @@ ARABNA · عربنا — a mobile-first web app for the Arab community in the U.
 **business directory + marketplace + events + magazine**, Arabic-first with a full English toggle.
 ("Classifieds / الإعلانات الشخصية" is now "Marketplace / السوق" — the old `#/classifieds`
 routes still resolve so shared links keep working.)
-Current version: **V.01.6 (prototype)**. Owner: Rai Elby (@dbprime). Deploys to Vercel (team DB Prime).
+Current version: **V.01.7 (prototype)**. Owner: Rai Elby (@dbprime). Deploys to Vercel (team DB Prime).
 
 ## Hard rules (from the product brief)
 1. **One repository, one Vercel project.** No duplicates, no stray preview projects.
@@ -200,6 +200,55 @@ is no second flow to keep in sync.
   "n/a".
 - **«مش عارف أيّهم يناسبك؟»** opens a four-line guide sheet; each line selects and
   expands its package. It carries no prices, for visitor and member alike.
+
+## Installed-app chrome (V.01.7)
+`viewport-fit=cover` plus `black-translucent` means the installed app owns the
+whole screen, clock row included, so the page reserves that strip itself.
+`--safe-top` / `--safe-bottom` in `:root` resolve to `0px` in a browser, so
+nothing about the browser layout changes.
+
+- `.app-header` is `height: calc(var(--header-h) + var(--safe-top))` with the
+  inset as top padding; the absolutely-placed logo centres on
+  `calc(var(--safe-top) + var(--header-h) / 2)` so it sits in the visible half,
+  not the middle of the padded box.
+- `@media (display-mode: standalone)` drops `--header-h` to 72px (logo 54px), so
+  installed the bar totals 72 + 59 = 131px instead of 151px. **It must stay after
+  the base `.h-logo` rule** — equal specificity, so source order decides.
+- `.drawer-panel` and `.toast-root` reserve the same inset; `.dr-version` reserves
+  `--safe-bottom`. Chromium cannot emulate `display-mode`, so this is verified by
+  applying the same variables and checking the geometry.
+
+## Drawer look (V.01.7)
+The rule the drawer kept breaking: **an accent that marks everything marks
+nothing.** Gold appears in exactly two places — the invite card's sign-up button
+and the `.dr-accent` icon on «أعلن معنا», the revenue row. Everything else is
+`rgba(243,241,236,.55)`.
+
+- **No `Home` row.** The app opens on it and it holds a permanent bottom-bar tab;
+  listing it made the drawer read like a website menu. (A deliberate reversal of
+  V.01.5 — do not restore it.) The group is «أقسام عربنا» and its last leaf is
+  «كل التصنيفات», so the word "أقسام" appears once.
+- **No chevron on leaf rows** — a chevron promises depth, and a column of them is
+  noise. `.grp-arrow` on a group head stays: it is the fold indicator.
+- **No rule under every row.** One hairline between top-level blocks only. Inside
+  an open group, `.dr-sub-inner::before` draws a gold-to-transparent vertical rule
+  at `inset-inline-start: 26px` and the rows indent to 40px — that line does the
+  grouping work separators used to.
+- An open head takes `rgba(255,255,255,.035)` and a turned arrow, never gold text.
+- Sub-items step down: 13.8px / 500 / `.72` alpha, 18px icons.
+- Panel `min(360px, 86%)`, scrim `rgba(4,8,16,.74)`, version line pinned with
+  `margin-block-start: auto` under a hairline.
+- **A folded panel is inert**, not merely clipped: `.dr-sub-inner` and
+  `.ad-more-inner` carry `visibility: hidden`, because `overflow: hidden` alone
+  leaves the children in the tab order and the accessibility tree.
+
+## Advertise: the price is the button (V.01.7)
+There is no screen-wide "next" any more — the same action in two places is the
+duplication banned everywhere else. Each package's own button lives inside it,
+under the benefits and the wireframe: `ابدأ — يبدأ من $49` for a member (number
+wrapped in `.ltr`), `شوف السعر وابدأ` plus a one-line note for a visitor.
+**Selecting never deselects** — the way forward lives inside the open package, so
+an all-folded screen would be a dead end; the cheapest opens by default.
 
 ## Testing before you ship a change
 1. Serve locally (`python3 -m http.server`) and click through: home → directory → listing →

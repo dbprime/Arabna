@@ -1,6 +1,6 @@
 /* ======================= ADVERTISE PURCHASE FLOW ======================= */
 import { t, icon, $, $$, go, renderHeader, toast, wireRoutes, fmtMoney,
-         openSheet, closeSheet, showsPrices, priceGate, wirePriceGates } from '../ui.js';
+         openSheet, closeSheet, showsPrices, wirePriceGates } from '../ui.js';
 import { AD_PRODUCTS } from '../data.js';
 import * as S from '../store.js';
 import { mountPhotoPicker } from './marketplace.js';
@@ -102,18 +102,21 @@ export function AdvertiseScreen(root, params) {
                 <div class="ad-more"><div class="ad-more-inner">
                   ${placement(p.id)}
                   ${points(p.id)}
+                  ${paid
+                    ? `<button class="btn btn-gold btn-block mt-12" data-start="${p.id}">${t('startFrom')}
+                         <span class="ltr">${fmtMoney(p.prices.week1)}</span></button>`
+                    : `<button class="btn btn-gold btn-block mt-12" data-pricegate="#/advertise/${p.id}">${t('seePriceStart')}</button>
+                       <div class="ad-gate-note">${t('seePriceNote')}</div>`}
                 </div></div>
               </div>`).join('')}
           </div>
 
           <button class="ad-guide-link" id="guideBtn">${icon('help', 17)} ${t('whichSuitsMe')}</button>
-
-          ${paid
-            ? `<button class="btn btn-gold btn-block mt-12" id="next1">${t('next')}</button>`
-            : priceGate('#/advertise/' + product.id)}
         </div>`;
 
-      // tapping a card selects it and opens it in place; the others fold
+      // Tapping a card selects it and opens it in place; the others fold.
+      // Selecting never deselects: the button that moves the flow forward lives
+      // inside the open package, so an all-folded screen would be a dead end.
       const select = (id) => {
         product = AD_PRODUCTS.find(p => p.id === id) || product;
         $$('#prods .ad-card').forEach(c => {
@@ -121,11 +124,12 @@ export function AdvertiseScreen(root, params) {
           c.classList.toggle('selected', on);
           c.querySelector('.price-card').setAttribute('aria-expanded', String(on));
         });
-        // the gate carries the chosen package, so signing up returns to it
-        const g = $('[data-pricegate]');
-        if (g) g.dataset.pricegate = '#/advertise/' + product.id;
       };
       $$('#prods .price-card').forEach(b => b.addEventListener('click', () => select(b.dataset.p)));
+      $$('#prods [data-start]').forEach(b => b.addEventListener('click', () => {
+        select(b.dataset.start);
+        step = 2; render();
+      }));
 
       $('#guideBtn').addEventListener('click', () => openSheet(`
         <div class="sheet-title">${t('guideTitle')}</div>
@@ -148,8 +152,6 @@ export function AdvertiseScreen(root, params) {
         panel.querySelector('[data-close]').addEventListener('click', closeSheet);
       }));
 
-      const n1 = $('#next1');
-      if (n1) n1.addEventListener('click', () => { step = 2; render(); });
       wirePriceGates(shell);
 
     } else if (step === 2) {

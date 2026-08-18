@@ -131,15 +131,14 @@ export function openDrawer() {
   const member = S.isMember();
   const u = S.state.user;
   const tierLabel = S.tier() === 2 ? t('tier2') : S.tier() === 1 ? t('tier1') : t('guest');
-  const chev = () => icon(document.documentElement.dir === 'rtl' ? 'chevronL' : 'chevronR', 19);
-
   /** unread badge, hidden at zero, capped at 9+ */
   const badge = (n) => n > 0 ? `<span class="dr-badge">${n > 9 ? '+9' : n}</span>` : '';
 
   const unread = S.unreadCount();
-  const item = (ico, label, route, count = 0) =>
-    `<button class="dr-item" data-route="${route}">${icon(ico, 22)}<span>${label}</span>
-      ${badge(count)}<span class="chev">${chev()}</span></button>`;
+  /** `accent` marks the one row allowed to keep the gold icon. */
+  const item = (ico, label, route, count = 0, accent = false) =>
+    `<button class="dr-item ${accent ? 'dr-accent' : ''}" data-route="${route}">${icon(ico, 22)}<span>${label}</span>
+      ${badge(count)}</button>`;
 
   // A group head carries no route: it toggles its own group and nothing else.
   const group = (id, label, rows) => `
@@ -160,11 +159,10 @@ export function openDrawer() {
     item('settings', t('settings'), '#/settings'),
   ].join('');
 
-  // Home and Directory are back: the drawer has to be a complete index of the
-  // app, and not every user reads the bottom bar. The group is folded by
-  // default, so two more rows cost nothing on screen.
+  // Home is deliberately absent: the app opens on it and it holds a permanent
+  // tab in the bottom bar, so listing it here made the drawer read like a
+  // website menu. Directory stays — it is a destination people look for.
   const sections = [
-    item('home', t('navHome'), '#/home'),
     item('compass', t('navExplore'), '#/directory'),
     item('bag', t('classifiedsTitle'), '#/marketplace'),
     item('calendar', t('eventsTitle'), '#/events'),
@@ -208,10 +206,10 @@ export function openDrawer() {
       ${member ? item('bell', t('notifications'), '#/notifications', unread) : ''}
       ${member ? group('account', t('grpMyAccount'), account) : ''}
       ${group('sections', t('grpSections'), sections)}
-      ${item('megaphone', t('advertiseWithUs'), '#/advertise')}
+      ${item('megaphone', t('advertiseWithUs'), '#/advertise', 0, true)}
       ${group('help', t('grpHelp'), help)}
       ${member ? `<button class="dr-item" id="drOut" style="color:#E79A9C">${icon('logout', 22)}<span>${t('signOut')}</span></button>` : ''}
-      <div style="padding:18px;text-align:center;color:var(--muted);font-size:11px">ARABNA · عربنا — ${t('version')} 0.1</div>
+      <div class="dr-version">ARABNA · عربنا — ${t('version')} 0.1</div>
     </aside>`;
 
   root.setAttribute('aria-hidden', 'false');
