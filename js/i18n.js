@@ -524,6 +524,11 @@ export const STRINGS = {
     nonCommercialCount: "أماكن معلّمة غير تجارية",
     importNcNote: "عمودان اختياريان: noncommercial (1 أو yes للمكان العام) و entry_price (نص حر مثل \"$12 للشخص\").",
     importNcTag: "غير تجاري",
+    // --- a listing without a number (V.02.1)
+    noPhoneUseMap: "لا يوجد رقم — استخدم الاتجاهات",
+    phoneOptionalHint: "اتركه فارغاً إذا لم يكن للمكان رقم منشور — الحدائق العامة مثلاً.",
+    importWarnNoPhone: "بلا رقم هاتف",
+    importWarnNoAddress: "بلا عنوان",
     // --- attribute groups
     attrGrpCuisine: "المطبخ",
     attrGrpDish: "نوع الأكل",
@@ -1394,6 +1399,11 @@ export const STRINGS = {
     nonCommercialCount: "Marked non-commercial",
     importNcNote: "Two optional columns: noncommercial (1 or yes for a public place) and entry_price (free text such as \"$12 per person\").",
     importNcTag: "non-commercial",
+    // --- a listing without a number (V.02.1)
+    noPhoneUseMap: "No number — use directions",
+    phoneOptionalHint: "Leave it blank when the place has no published number — a public park, for instance.",
+    importWarnNoPhone: "no phone number",
+    importWarnNoAddress: "no address",
     // --- attribute groups
     attrGrpCuisine: "Cuisine",
     attrGrpDish: "What they serve",

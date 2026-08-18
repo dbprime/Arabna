@@ -170,9 +170,9 @@ function rowHtml(b) {
         <span>${icon('mapPin', 13)} ${b.dist} ${t('miles')}</span>
         ${openBadge(b)}
       </div>
-      <div class="row-actions">
+      ${b.phone ? `<div class="row-actions">
         <button class="mini-btn gold" data-call="${b.phone}">${icon('phone', 15)} ${t('call')}</button>
-      </div>
+      </div>` : ''}
     </div>
   </div>`;
 }
@@ -329,13 +329,23 @@ export function ListingScreen(root, params) {
       <p class="fs-13 muted mt-12">${L(b.desc || '')}</p>
       ${attrChips(b)}
 
-      <div class="action-grid">
-        <button class="btn btn-gold" id="callBtn">${icon('phone', 20)} ${t('call')}</button>
-        <button class="btn btn-ghost" id="mapBtn">${icon('navigation', 20)} ${t('directions')}</button>
+      ${/* A button that cannot do anything is worse than no button: nine of
+            these parks have no line at all, so the call button is removed
+            rather than shown greyed out. The grid collapses to one column
+            so the survivor is full width, not half of a missing pair. */''}
+      <div class="action-grid" ${b.phone && b.address ? '' : 'style="grid-template-columns:1fr"'}>
+        ${b.phone ? `<button class="btn btn-gold" id="callBtn">${icon('phone', 20)} ${t('call')}</button>` : ''}
+        ${b.address ? `<button class="btn ${b.phone ? 'btn-ghost' : 'btn-gold'}" id="mapBtn">${icon('navigation', 20)} ${t('directions')}</button>` : ''}
       </div>
 
-      <div class="info-row">${`<span class="i-ico">${icon('phone', 21)}</span>`}<div class="i-txt"><b class="ltr">${b.phone}</b><span>${t('phoneLabel')}</span></div></div>
-      <div class="info-row">${`<span class="i-ico">${icon('mapPin', 21)}</span>`}<div class="i-txt"><b class="ltr">${b.address}</b><span>${t('address')} · ${b.dist} ${t('miles')} ${t('distanceAway')}</span></div></div>
+      ${b.phone
+        ? `<div class="info-row"><span class="i-ico">${icon('phone', 21)}</span><div class="i-txt"><b class="ltr">${b.phone}</b><span>${t('phoneLabel')}</span></div></div>`
+        : b.address
+          ? `<div class="info-row"><span class="i-ico">${icon('phone', 21)}</span><div class="i-txt"><b class="muted">${t('noPhoneUseMap')}</b><span>${t('phoneLabel')}</span></div></div>`
+          : ''}
+      ${b.address
+        ? `<div class="info-row"><span class="i-ico">${icon('mapPin', 21)}</span><div class="i-txt"><b class="ltr">${b.address}</b><span>${t('address')} · ${b.dist} ${t('miles')} ${t('distanceAway')}</span></div></div>`
+        : ''}
       ${hoursBlock(b)}
       ${worshipBlock(b)}
       <div class="info-row">${`<span class="i-ico">${icon('bookmark', 21)}</span>`}<div class="i-txt"><b>${t(catKey(b.cat))}</b><span>${t('category')}</span></div></div>
@@ -373,8 +383,10 @@ export function ListingScreen(root, params) {
     ${similarBlock(b, paid)}`;
 
   $('#bk').addEventListener('click', () => back());
-  $('#callBtn').addEventListener('click', () => { location.href = 'tel:' + b.phone; });
-  $('#mapBtn').addEventListener('click', () => openMaps(b.address));
+  const callBtn = $('#callBtn');
+  if (callBtn) callBtn.addEventListener('click', () => { location.href = 'tel:' + b.phone; });
+  const mapBtn = $('#mapBtn');
+  if (mapBtn) mapBtn.addEventListener('click', () => openMaps(b.address));
   $('#shareBtn').addEventListener('click', () => shareItem(L(b.name), location.href));
   $('#repBtn').addEventListener('click', () => { S.reportItem(b.id); toast(t('reported'), 'ok'); });
 
@@ -617,8 +629,10 @@ export function AddBusinessScreen(root) {
         <div class="hint">${t('nameArHint')}</div></div>
       <div class="field"><label class="label">${t('category')}</label>
         <select class="select" id="bCat">${CATEGORIES.filter(c => !c.route).map(c => `<option value="${c.id}">${t(c.key)}</option>`).join('')}</select></div>
-      <div class="field"><label class="label">${t('phoneLabel')}</label><input class="input" id="bPhone" inputmode="tel" placeholder="(713) 555-0000" /></div>
-      <div class="field"><label class="label">${t('address')}</label><input class="input" id="bAddr" /></div>
+      <div class="field"><label class="label">${t('phoneLabel')} <span class="muted">(${t('optional')})</span></label>
+        <input class="input" id="bPhone" inputmode="tel" placeholder="(713) 555-0000" />
+        <div class="hint">${t('phoneOptionalHint')}</div></div>
+      <div class="field"><label class="label">${t('address')} <span class="muted">(${t('optional')})</span></label><input class="input" id="bAddr" /></div>
 
       <div class="field"><label class="label">${t('keywords')}</label>
         <input class="input" id="bTags" placeholder="شاورما، مشاوي، shawarma" />
@@ -723,7 +737,8 @@ export function AddBusinessScreen(root) {
 
   $('#bSave').addEventListener('click', () => {
     const { name, phone, address } = collect();
-    if (!name || !phone || !address) { toast(t('required'), 'err'); return; }
+    // the name is the only thing a listing cannot do without
+    if (!name) { toast(t('required'), 'err'); return; }
     if (!S.requireTier(2, '#/add-business', go)) return;
 
     /* 300 shops go in by hand and their owners will add themselves later
@@ -876,8 +891,11 @@ export function BusinessEditScreen(root, params) {
       <div class="field"><label class="label">${t('nameAr')} <span class="muted">(${t('optional')})</span></label>
         <input class="input" id="eNameAr" value="${attr((b.name && b.name.ar) || '')}" />
         <div class="hint">${t('nameArHint')}</div></div>
-      <div class="field"><label class="label">${t('phoneLabel')}</label><input class="input" id="ePhone" inputmode="tel" value="${attr(b.phone)}" /></div>
-      <div class="field"><label class="label">${t('address')}</label><input class="input" id="eAddr" value="${attr(b.address)}" /></div>
+      <div class="field"><label class="label">${t('phoneLabel')} <span class="muted">(${t('optional')})</span></label>
+        <input class="input" id="ePhone" inputmode="tel" value="${attr(b.phone || '')}" />
+        <div class="hint">${t('phoneOptionalHint')}</div></div>
+      <div class="field"><label class="label">${t('address')} <span class="muted">(${t('optional')})</span></label>
+        <input class="input" id="eAddr" value="${attr(b.address || '')}" /></div>
       <div class="field"><label class="label">${t('descLabel')}</label><textarea class="textarea" id="eDesc">${L(b.desc || '')}</textarea></div>
       <div class="field"><label class="label">${t('keywords')}</label>
         <input class="input" id="eTags" value="${attr((b.tags || []).join('، '))}" />

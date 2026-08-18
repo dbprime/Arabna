@@ -622,9 +622,9 @@ function dirHtml() {
     <div class="section-title mt-20">${t('mergeDuplicates')}</div>
     <div class="hint" style="margin-bottom:10px">${t('mergePick')}</div>
     <div class="field"><label class="label">${t('mergeKeep')}</label>
-      <select class="select" id="mgKeep">${all.map(b => `<option value="${b.id}">${L(b.name)} — ${b.phone}</option>`).join('')}</select></div>
+      <select class="select" id="mgKeep">${all.map(b => `<option value="${b.id}">${L(b.name)} — ${b.phone || b.address || '—'}</option>`).join('')}</select></div>
     <div class="field"><label class="label">${t('mergeDrop')}</label>
-      <select class="select" id="mgDrop">${all.map(b => `<option value="${b.id}">${L(b.name)} — ${b.phone}</option>`).join('')}</select></div>
+      <select class="select" id="mgDrop">${all.map(b => `<option value="${b.id}">${L(b.name)} — ${b.phone || b.address || '—'}</option>`).join('')}</select></div>
     <button class="btn btn-danger btn-block" id="mgGo">${icon('refresh', 19)} ${t('mergeDuplicates')}</button>
 
     <div class="mt-16">
@@ -668,7 +668,8 @@ function showImport(result, repaint) {
   };
   const caution = (w) => {
     const label = { noNameAr: t('importWarnNoNameAr'), noHours: t('importWarnNoHours'),
-                    noDesc: t('importWarnNoDesc'), unknownAttr: t('importWarnUnknownAttr') }[w.code] || w.code;
+                    noDesc: t('importWarnNoDesc'), unknownAttr: t('importWarnUnknownAttr'),
+                    noPhone: t('importWarnNoPhone'), noAddress: t('importWarnNoAddress') }[w.code] || w.code;
     return `${label}${w.got ? `: ${w.got}` : ''}`;
   };
 
@@ -681,6 +682,8 @@ function showImport(result, repaint) {
         <div class="stat"><b>${result.counts.bad}</b><span>${t('importBad')}</span></div>
         <div class="stat"><b>${result.counts.dup}</b><span>${t('importDup')}</span></div>
       </div>
+      ${result.counts.noPhone ? `<div class="hint" style="margin:8px 0 0">${icon('phone', 13)}
+        ${t('importWarnNoPhone')}: <b>${result.counts.noPhone}</b></div>` : ''}
       <div class="hint" style="margin:8px 0 0">${t('importLegend')}</div>
       <div class="mt-12">
         ${result.rows.map(r => `

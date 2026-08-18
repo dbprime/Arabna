@@ -1548,7 +1548,9 @@ export function sampleCsv() {
      '', ''],
     // a city park: free, nobody owns it, so `noncommercial` is set and the
     // claim / subscribe / upgrade invitations never appear on its page
-    ['Cedar Grove Park', 'حديقة السرو', 'outings', '(713) 555-0605',
+    // no phone on purpose: a city park has no direct line, and the row must
+    // still import — it publishes with directions and no call button
+    ['Cedar Grove Park', 'حديقة السرو', 'outings', '',
      '2200 Braeswood Blvd, Houston, TX 77030', '', 'City park with BBQ pits and a playground',
      'حديقة;شواء;park;bbq', 'outPark;outFreeEntry;outOwnFood;outBbq;outShaded;outFreeParking;outOutdoor',
      '06:00-23:00', '06:00-23:00', '06:00-23:00', '06:00-23:00', '06:00-23:00', '06:00-23:00', '06:00-23:00',
@@ -1612,15 +1614,17 @@ const pad = (t) => { const [h, m] = t.split(':'); return String(h).padStart(2, '
  */
 export function parseBusinessCsv(text) {
   const table = parseCsv(text);
-  if (!table.length) return { header: [], rows: [], counts: { ok: 0, bad: 0, dup: 0, warn: 0 }, fatal: 'empty' };
+  if (!table.length) return { header: [], rows: [], counts: { ok: 0, bad: 0, dup: 0, warn: 0, noPhone: 0 }, fatal: 'empty' };
 
   const header = table[0].map(h => h.trim().toLowerCase());
-  // The English name is the required one. Most Arab-owned shops in Houston
-  // trade under an English name — Abdallah's, Fadi's, Dimassi's — and it is
-  // the name on the shopfront that people search for. Inventing an Arabic
-  // one for them would be worse than having none.
-  const missing = ['name_en', 'category', 'phone', 'address'].filter(c => !header.includes(c));
-  if (missing.length) return { header, rows: [], counts: { ok: 0, bad: 0, dup: 0, warn: 0 }, fatal: 'columns', missing };
+  // Only two columns have to be there. The English name is the required one
+  // — most Arab-owned shops in Houston trade under an English name, and it
+  // is the name on the shopfront that people search for — and the category
+  // decides where the listing lives. A phone or an address that is missing
+  // is a fact about the place, not a fault in the file: nine city parks and
+  // preserves here have no direct line at all.
+  const missing = ['name_en', 'category'].filter(c => !header.includes(c));
+  if (missing.length) return { header, rows: [], counts: { ok: 0, bad: 0, dup: 0, warn: 0, noPhone: 0 }, fatal: 'columns', missing };
 
   const col = (r, name) => {
     const i = header.indexOf(name);
@@ -1629,6 +1633,7 @@ export function parseBusinessCsv(text) {
   const catIds = CATEGORIES.filter(c => !c.route).map(c => c.id);
   const attrIds = ATTRIBUTES.map(a => a.id);
   const seenPhones = {};
+  const seenNameAddr = {};
   const rows = [];
 
   for (let i = 1; i < table.length; i++) {
@@ -1650,9 +1655,13 @@ export function parseBusinessCsv(text) {
     else if (!catIds.includes(cat)) errors.push({ field: 'category', code: 'unknown', got: cat });
     // an unknown category is fatal on purpose: guessing where a shop belongs
     // would put it somewhere nobody looks. The preview prints the valid ids.
-    if (!phone) errors.push({ field: 'phone', code: 'required' });
+    // A missing phone is a warning: a park is useful without one — name,
+    // address, map, hours, category and specialities are all still there,
+    // and whoever wants a park wants its location, not its number. A phone
+    // that is *present but unusable* is still an error: that is a typo.
+    if (!phone) warnings.push({ field: 'phone', code: 'noPhone' });
     else if (phoneKey(phone).length !== 10) errors.push({ field: 'phone', code: 'badPhone', got: phone });
-    if (!address) errors.push({ field: 'address', code: 'required' });
+    if (!address) warnings.push({ field: 'address', code: 'noAddress' });
 
     const hours = [];
     ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'].forEach(d => {
@@ -1679,16 +1688,23 @@ export function parseBusinessCsv(text) {
     const attributes = rawAttrs.filter(a => attrIds.includes(a));
     if (unknownAttrs.length) warnings.push({ field: 'attributes', code: 'unknownAttr', got: unknownAttrs.join(' · ') });
 
-    // duplicates: inside the file first, then against what is already listed
+    /* Duplicates: the phone is the first key, but it is no longer always
+       there. Without one, name + address decides — and the absence of a
+       phone is never itself a match, or every listing without a number
+       would duplicate every other one. */
     let dupOf = null;
     const key = phoneKey(phone);
-    if (key.length === 10) {
-      if (seenPhones[key]) dupOf = { kind: 'file', line: seenPhones[key] };
-      else {
-        seenPhones[key] = i + 1;
-        const hit = findDuplicates({ phone, name: nameEn, address })[0];
-        if (hit) dupOf = { kind: 'directory', name: hit.biz.name, id: hit.biz.id, reason: hit.reason };
-      }
+    const naKey = (normalize(nameEn) + '|' + normalize(address).replace(/[.,]/g, '')).trim();
+    let seenAt = null;
+    if (key.length === 10) seenAt = seenPhones[key] || null;
+    else if (nameEn && address) seenAt = seenNameAddr[naKey] || null;
+
+    if (seenAt) dupOf = { kind: 'file', line: seenAt };
+    else {
+      if (key.length === 10) seenPhones[key] = i + 1;
+      else if (nameEn && address) seenNameAddr[naKey] = i + 1;
+      const hit = findDuplicates({ phone, name: nameEn, address })[0];
+      if (hit) dupOf = { kind: 'directory', name: hit.biz.name, id: hit.biz.id, reason: hit.reason };
     }
 
     rows.push({
@@ -1712,6 +1728,10 @@ export function parseBusinessCsv(text) {
       // a subset of `ok`: how many of the rows that will import carry a note.
       // Duplicates are counted under `dup` alone, never twice.
       warn: rows.filter(r => !r.errors.length && !r.dupOf && r.warnings.length).length,
+      // …and how many of those will publish with no call button at all, which
+      // is the one the operator actually wants to know before pressing go
+      noPhone: rows.filter(r => !r.errors.length && !r.dupOf
+        && r.warnings.some(w => w.code === 'noPhone')).length,
     },
   };
 }

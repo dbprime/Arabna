@@ -293,7 +293,10 @@ means re-entering 300 shops, so treat it as frozen unless there is no choice.
   alef/ya/ta-marbuta variants. `app.js` hands i18n's tables to the store at boot
   via `registerStrings` so the store never imports i18n back.
 - **Duplicates** are caught at the door: `findDuplicates()` keys on the last ten
-  phone digits first, then name + address. The add form shows the match and
+  phone digits first, then name + address. **A missing phone is never a match**
+  — if it were, every listing without a number would duplicate every other one,
+  so a phoneless row falls through to name + address (in the file and against
+  the directory alike) and a row with neither matches nothing. The add form shows the match and
   offers both honest answers. `mergeBusinesses(keep, drop)` in the admin
   directory tab moves reviews, favourites, ownership, tags and attributes across.
 - **Seasonal groups** (`season: 'ramadan'`) are hidden until the owner flips one
@@ -350,13 +353,15 @@ means re-entering 300 shops, so treat it as frozen unless there is no choice.
   Inventing an Arabic name for them would be worse than having none, so
   `name.ar` falls back to `name.en`, in the importer and in the add/edit form
   alike, and `L()` falls back on an empty side rather than rendering a blank.
-- **The importer distinguishes an error from a warning.** An error blocks the
-  row (no English name · no category · unknown category · unusable phone · no
-  address); a warning does not (no Arabic name · no hours · no description ·
-  an attribute this build has not defined yet, which is dropped with a note).
-  Treating everything as an error once made a clean file of 413 shops read as a
-  total failure. **Never make an unknown attribute id fatal** — new ones keep
-  being defined, and a file must not fail because it is ahead of the code.
+- **The importer distinguishes an error from a warning.** Only two columns
+  are required: **`name_en` and `category`**. An error blocks the row (no
+  English name · no category · unknown category · a phone that is *present
+  but unusable*, which is a typo); a warning does not (no phone · no address
+  · no Arabic name · no hours · no description · an attribute this build has
+  not defined yet, which is dropped with a note). Treating everything as an
+  error once made a clean file of 413 shops read as a total failure.
+  **Never make an unknown attribute id fatal** — new ones keep being defined,
+  and a file must not fail because it is ahead of the code.
 - **Bulk import is three steps, because of one constraint:** seed businesses
   live in `js/data.js` (deployed, everyone sees them) while anything saved in
   the app lives in the owner's own localStorage (nobody else ever sees it).
@@ -398,6 +403,26 @@ five circles on Home.
 `quickAttrsForCat` / `filterAttrsForCat` / `attrGroupsForCat(cat, {all:true})` in
 `store.js`. **Nothing is hand-listed**: a user never meets a filter that returns
 nothing, and a new speciality surfaces by itself the day it has content.
+
+## A listing without a phone number (V.02.1)
+**The phone is optional, in the importer and in the add/edit form.** Nine of
+the 74 Houston outings are city parks and preserves with no direct line at
+all (they answer to the parks department), and two shops trade with no
+published number. Their absence is a fact about the place, not a fault in
+the file — the name, address, map, hours, category and specialities are all
+still there, and whoever wants a park wants its location, not its number.
+
+- **No number means no call button** — on the row card and on the detail page
+  alike. Never a disabled button and never an empty phone line: a control
+  that cannot do anything is worse than no control. The detail page prints a
+  quiet «لا يوجد رقم — استخدم الاتجاهات» in the phone row's place.
+- The address is optional on the same grounds, and the **directions** button
+  and the address row disappear with it. `.action-grid` collapses to a single
+  column when only one of the two buttons survives, so it is full width
+  rather than half of a missing pair.
+- The import preview counts the phoneless rows separately, under the four
+  totals, so the operator knows how many listings will publish with no call
+  button before pressing go.
 
 ## Outings, and the places nobody owns (V.02.1)
 `outings` — «ترفيه ونزهات / Outings & Fun» — is the twenty-first category:
