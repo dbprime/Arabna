@@ -1,6 +1,6 @@
 /* ============================ HOME ============================ */
 import { t, L, icon, $, $$, go, renderHeader, openSheet, closeSheet, toast, stars, wireRoutes } from '../ui.js';
-import { CATEGORIES, MINI_ADS, ARTICLES, ZIPS, CITY_SUGGESTIONS } from '../data.js';
+import { CATEGORIES, HOME_CATS, MINI_ADS, ARTICLES, ZIPS, CITY_SUGGESTIONS } from '../data.js';
 import * as S from '../store.js';
 
 let sliderTimer = null;
@@ -29,7 +29,7 @@ export function HomeScreen(root) {
       <div class="section-head"><div class="section-title">${t('categories')}</div>
         <button class="link-gold" data-route="#/categories">${t('seeAll')}</button></div>
       <div class="hscroll" id="cats">
-        ${CATEGORIES.slice(0, 5).map(c => `
+        ${HOME_CATS.map(id => CATEGORIES.find(c => c.id === id)).filter(Boolean).map(c => `
           <button class="cat-item" data-cat="${c.id}" ${c.route ? `data-dest="${c.route}"` : ''}>
             <span class="cat-circle">${icon(c.icon, 24)}</span>
             <span class="cat-label">${t(c.shortKey || c.key)}</span>

@@ -69,7 +69,7 @@ function panelView(root) {
     if (tab === 'queue') body.innerHTML = claimsHtml() + verifyHtml() + bizPhotoHtml() + queueHtml();
     else if (tab === 'mag') body.innerHTML = magHtml();
     else if (tab === 'ads') body.innerHTML = adsHtml();
-    else if (tab === 'events') body.innerHTML = eventsHtml();
+    else if (tab === 'events') body.innerHTML = repeatsHtml() + eventsHtml();
     else if (tab === 'set') body.innerHTML = setHtml();
     else body.innerHTML = dirHtml();
 
@@ -144,6 +144,13 @@ function panelView(root) {
       const box = $('#why-' + b.dataset.bvno);
       S.rejectBizVerify(b.dataset.bvno, box ? box.value : '');
       toast(t('itemRejected'), 'ok'); paint();
+    }));
+
+    // --- a yearly event due to come round ---
+    $$('#aBody [data-spawn]').forEach(b => b.addEventListener('click', () => {
+      const copy = S.spawnRepeat(b.dataset.spawn);
+      toast(copy ? t('evDraftMade') : t('required'), copy ? 'ok' : 'err');
+      paint();
     }));
 
     const ram = $('#ramSw');
@@ -525,6 +532,30 @@ function verifyHtml() {
     }).join('')}`;
 }
 
+/**
+ * A yearly event coming round. Never republished automatically: the venue,
+ * the price and the line-up all change, so the admin gets a draft to fix.
+ */
+function repeatsHtml() {
+  const due = S.dueRepeats();
+  if (!due.length) return '';
+  return `<div class="dr-group-label">${t('evRepeatDue')} (${due.length})</div>
+    <div class="pad">${due.map(({ ev, nextAt }) => `
+      <div class="list-row">
+        <span class="row-ico">${icon(ev.icon || 'calendar', 20)}</span>
+        <div class="row-main">
+          <div class="row-title">${L(ev.title)}</div>
+          <div class="row-sub">${t('evNextEdition')} ${fmtEventDate(nextAt, false)}
+            · ${ev.repeat.kind === 'hijri' ? t('evRepeatHijri') : t('evRepeatGreg')}</div>
+          <div class="row-actions">
+            <button class="mini-btn gold" data-spawn="${ev.id}">${icon('refresh', 15)} ${t('evMakeDraft')}</button>
+          </div>
+        </div>
+      </div>`).join('')}
+      <div class="hint">${t('evRepeatNote')}</div>
+    </div>`;
+}
+
 function dirHtml() {
   const all = S.allBusinesses();
   const paid = all.filter(b => S.businessPlan(b) === 'paid').length;
@@ -633,6 +664,10 @@ function showImport(result, repaint) {
             </div>
           </div>`).join('')}
       </div>
+      ${result.rows.some(r => r.errors.some(e => e.code === 'unknown'))
+        ? `<div class="list-note" style="margin-inline:0">${icon('info', 18)}
+             <span>${t('importValidCats')}<br><b class="ltr">${result.validCats.join(' · ')}</b></span></div>`
+        : ''}
       <button class="btn btn-gold btn-block mt-12" id="impExport" ${chosen.length ? '' : 'disabled'}>
         ${icon('file', 19)} ${t('importExport')} (${chosen.length})</button>
       <div class="hint" style="text-align:center;margin-top:8px">${t('importExportNote')}</div>`;

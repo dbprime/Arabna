@@ -7,23 +7,46 @@
 /* The first five are what Home shows as its summary strip.
    "events" is not a business category — it carries an explicit route to the
    Events screen; every other entry filters the directory. */
+/* ============================================================
+   The twenty directory categories (V.02.0)
+   ------------------------------------------------------------
+   Frozen shape: the owner enters shops by hand against these ids,
+   so renaming one means re-entering its shops. `homeservices` and
+   `homegoods` are deliberately apart — someone buying a sofa is
+   browsing, someone looking for a plumber has a problem right now,
+   and home services is the highest-earning column in any local
+   directory, so it gets found rather than buried.
+   ============================================================ */
 export const CATEGORIES = [
-  { id: 'restaurants', key: 'catRestaurants', shortKey: 'catShortRestaurants', icon: 'utensils' },
-  { id: 'doctors',     key: 'catDoctors',     shortKey: 'catShortDoctors',     icon: 'stethoscope' },
-  { id: 'events',      key: 'catEvents',      shortKey: 'catShortEvents',      icon: 'calendar', route: '#/events' },
-  { id: 'home',        key: 'catHome',        shortKey: 'catShortHome',        icon: 'wrench' },
-  { id: 'beauty',      key: 'catBeauty',      shortKey: 'catShortBeauty',      icon: 'sparkles' },
-  { id: 'lawyers',     key: 'catLawyers',     icon: 'scale' },
-  { id: 'auto',        key: 'catAuto',        icon: 'car' },
-  { id: 'grocery',     key: 'catGrocery',     icon: 'bag' },
-  { id: 'realestate',  key: 'catRealEstate',  icon: 'building' },
-  { id: 'education',   key: 'catEducation',   icon: 'file' },
-  { id: 'travel',      key: 'catTravel',      icon: 'navigation' },
-  { id: 'gyms',        key: 'catGyms',        icon: 'dumbbell' },
-  // "Places of worship", never "mosques": the Arab community in Houston is
-  // Muslim and Christian, and a name that excludes half of it is not an option.
-  { id: 'worship',     key: 'catWorship',     icon: 'landmark' },
+  // 'events' is not a business category: it is a shortcut that opens the
+  // Events screen. Every other entry filters the directory.
+  { id: "restaurants",  key: "catRestaurants",      icon: "utensils",    shortKey: "catShortRestaurants" },
+  { id: "grocery",      key: "catGrocery",          icon: "bag" },
+  { id: "worship",      key: "catWorship",          icon: "landmark" },
+  { id: "cafe",         key: "catCafe",             icon: "coffee" },
+  { id: "beauty",       key: "catBeauty",           icon: "sparkles" },
+  { id: "shopping",     key: "catShopping",         icon: "shirt",       shortKey: "catShortBeauty" },
+  { id: "community",    key: "catCommunity",        icon: "users" },
+  { id: "education",    key: "catEducation",        icon: "graduation" },
+  { id: "sweets",       key: "catSweets",           icon: "cake" },
+  { id: "finance",      key: "catFinance",          icon: "banknote" },
+  { id: "occasions",    key: "catOccasions",        icon: "sparkles" },
+  { id: "doctors",      key: "catDoctors",          icon: "stethoscope", shortKey: "catShortDoctors" },
+  { id: "auto",         key: "catAuto",             icon: "car" },
+  { id: "homegoods",    key: "catHomegoods",        icon: "sofa" },
+  { id: "lawyers",      key: "catLawyers",          icon: "scale" },
+  { id: "travel",       key: "catTravel",           icon: "navigation" },
+  { id: "electronics",  key: "catElectronics",      icon: "smartphone" },
+  { id: "realestate",   key: "catRealestate",       icon: "building" },
+  { id: "homeservices", key: "catHomeservices",     icon: "wrench",      shortKey: "catShortHome" },
+  { id: "gyms",         key: "catGyms",             icon: "dumbbell" },
+  // Not a business category: a shortcut that opens the Events screen. It is
+  // filtered out of every directory chip row by `!c.route`.
+  { id: "events",       key: "catEvents",           icon: "calendar",    shortKey: "catShortEvents", route: "#/events" },
 ];
+
+/* The five circles on Home, in order. */
+export const HOME_CATS = ['restaurants', 'doctors', 'events', 'homeservices', 'shopping'];
 
 /* ---- Marketplace sections ----
    maxActive / days / freeOnly override the account-wide defaults
@@ -180,91 +203,416 @@ export const MINI_ADS = [
    exclusive  one value at most may be picked from the group
    ============================================================ */
 export const ATTR_GROUPS = [
-  { id: 'gender',    key: 'attrGrpGender' },
-  { id: 'halal',     key: 'attrGrpHalal' },
-  { id: 'alcohol',   key: 'attrGrpAlcohol' },
-  { id: 'language',  key: 'attrGrpLanguage' },
-  { id: 'insurance', key: 'attrGrpInsurance' },
-  { id: 'schooling', key: 'attrGrpSchooling' },
-  { id: 'newcomer',  key: 'attrGrpNewcomer' },
-  { id: 'worship',   key: 'attrGrpWorship' },
-  { id: 'practical', key: 'attrGrpPractical' },
-  { id: 'ramadan',   key: 'attrGrpRamadan', season: 'ramadan' },
+  { id: "cuisine",      key: "attrGrpCuisine" },
+  { id: "dish",         key: "attrGrpDish" },
+  { id: "service",      key: "attrGrpService" },
+  { id: "halal",        key: "attrGrpHalal" },
+  { id: "alcohol",      key: "attrGrpAlcohol" },
+  { id: "health",       key: "attrGrpHealth" },
+  { id: "gender",       key: "attrGrpGender" },
+  { id: "insurance",    key: "attrGrpInsurance" },
+  { id: "legal",        key: "attrGrpLegal" },
+  { id: "finance",      key: "attrGrpFinance" },
+  { id: "beautySvc",    key: "attrGrpBeautySvc" },
+  { id: "autoSvc",      key: "attrGrpAutoSvc" },
+  { id: "reSvc",        key: "attrGrpReSvc" },
+  { id: "homeSvc",      key: "attrGrpHomeSvc" },
+  { id: "homeGoods",    key: "attrGrpHomeGoods" },
+  { id: "schooling",    key: "attrGrpSchooling" },
+  { id: "travelSvc",    key: "attrGrpTravelSvc" },
+  { id: "worshipKind",  key: "attrGrpWorshipKind" },
+  { id: "worship",      key: "attrGrpWorship" },
+  { id: "grocerySvc",   key: "attrGrpGrocerySvc" },
+  { id: "cafeSvc",      key: "attrGrpCafeSvc" },
+  { id: "sweetsSvc",    key: "attrGrpSweetsSvc" },
+  { id: "shopSvc",      key: "attrGrpShopSvc" },
+  { id: "occasionSvc",  key: "attrGrpOccasionSvc" },
+  { id: "elecSvc",      key: "attrGrpElecSvc" },
+  { id: "communitySvc", key: "attrGrpCommunitySvc" },
+  { id: "gymSvc",       key: "attrGrpGymSvc" },
+  { id: "newcomer",     key: "attrGrpNewcomer" },
+  { id: "language",     key: "attrGrpLanguage" },
+  { id: "practical",    key: "attrGrpPractical" },
+  { id: "ramadan",      key: "attrGrpRamadan", season: 'ramadan' },
 ];
 
-export const ATTRIBUTES = [
-  /* --- who the place serves -------------------------------------------
-     Deliberately attributes and not separate categories: one salon often
-     serves everyone, and two categories would mean listing it twice. A
-     family salon shows up under "women" and under "men" alike. */
-  { id: 'women',        key: 'attrWomen',        icon: 'user',      group: 'gender', cats: ['beauty'], quick: true, exclusive: false },
-  { id: 'men',          key: 'attrMen',          icon: 'user',      group: 'gender', cats: ['beauty'], quick: true },
-  { id: 'familyPlace',  key: 'attrFamilyPlace',  icon: 'users',     group: 'gender', cats: ['beauty'], quick: true },
+/* The i18n key is derived from the id, never written out: they cannot drift
+   apart, and a new speciality is one line here plus two lines in i18n.js. */
+const withKey = (list) => list.map(a => Object.assign(
+  { key: 'attr' + a.id[0].toUpperCase() + a.id.slice(1) }, a));
 
-  { id: 'femaleDoctor', key: 'attrFemaleDoctor', icon: 'stethoscope', group: 'gender', cats: ['doctors'], quick: true },
-  { id: 'maleDoctor',   key: 'attrMaleDoctor',   icon: 'stethoscope', group: 'gender', cats: ['doctors'], quick: true },
+export const ATTRIBUTES = withKey([
+  /* --- cuisine --- */
+  { id: "cuisLebanese", group: "cuisine", cats: ["restaurants"], icon: "utensils" },
+  { id: "cuisSyrian", group: "cuisine", cats: ["restaurants"], icon: "utensils" },
+  { id: "cuisPalestinian", group: "cuisine", cats: ["restaurants"], icon: "utensils" },
+  { id: "cuisJordanian", group: "cuisine", cats: ["restaurants"], icon: "utensils" },
+  { id: "cuisEgyptian", group: "cuisine", cats: ["restaurants"], icon: "utensils" },
+  { id: "cuisIraqi", group: "cuisine", cats: ["restaurants"], icon: "utensils" },
+  { id: "cuisYemeni", group: "cuisine", cats: ["restaurants"], icon: "utensils" },
+  { id: "cuisGulf", group: "cuisine", cats: ["restaurants"], icon: "utensils" },
+  { id: "cuisSaudi", group: "cuisine", cats: ["restaurants"], icon: "utensils" },
+  { id: "cuisSudanese", group: "cuisine", cats: ["restaurants"], icon: "utensils" },
+  { id: "cuisMoroccan", group: "cuisine", cats: ["restaurants"], icon: "utensils" },
+  { id: "cuisTunisian", group: "cuisine", cats: ["restaurants"], icon: "utensils" },
+  { id: "cuisLibyan", group: "cuisine", cats: ["restaurants"], icon: "utensils" },
+  { id: "cuisTurkish", group: "cuisine", cats: ["restaurants"], icon: "utensils" },
+  { id: "cuisPakistani", group: "cuisine", cats: ["restaurants"], icon: "utensils" },
+  { id: "cuisIndian", group: "cuisine", cats: ["restaurants"], icon: "utensils" },
+  { id: "cuisBengali", group: "cuisine", cats: ["restaurants"], icon: "utensils" },
+  { id: "cuisAfghan", group: "cuisine", cats: ["restaurants"], icon: "utensils" },
+  { id: "cuisPersian", group: "cuisine", cats: ["restaurants"], icon: "utensils" },
+  { id: "cuisMalay", group: "cuisine", cats: ["restaurants"], icon: "utensils" },
+  { id: "cuisChineseHalal", group: "cuisine", cats: ["restaurants"], icon: "utensils" },
+  { id: "cuisAmericanHalal", group: "cuisine", cats: ["restaurants"], icon: "utensils" },
+  { id: "cuisMediterranean", group: "cuisine", cats: ["restaurants"], icon: "utensils" },
+  { id: "cuisMiddleEastern", group: "cuisine", cats: ["restaurants"], icon: "utensils" },
+  /* --- dish --- */
+  { id: "dishShawarma", group: "dish", cats: ["restaurants"], icon: "utensils" },
+  { id: "dishGrill", group: "dish", cats: ["restaurants"], icon: "utensils" },
+  { id: "dishMandi", group: "dish", cats: ["restaurants"], icon: "utensils" },
+  { id: "dishFalafel", group: "dish", cats: ["restaurants"], icon: "utensils" },
+  { id: "dishManakish", group: "dish", cats: ["restaurants"], icon: "utensils" },
+  { id: "dishBurger", group: "dish", cats: ["restaurants"], icon: "utensils" },
+  { id: "dishPizza", group: "dish", cats: ["restaurants"], icon: "utensils" },
+  { id: "dishBiryani", group: "dish", cats: ["restaurants"], icon: "utensils" },
+  { id: "dishFriedChicken", group: "dish", cats: ["restaurants"], icon: "utensils" },
+  { id: "dishSeafood", group: "dish", cats: ["restaurants"], icon: "utensils" },
+  { id: "dishVegetarian", group: "dish", cats: ["restaurants"], icon: "utensils" },
+  /* --- service --- */
+  { id: "svcBreakfast", group: "service", cats: ["restaurants"], icon: "clock" },
+  { id: "svcBuffet", group: "service", cats: ["restaurants"], icon: "clock" },
+  { id: "svcCatering", group: "service", cats: ["restaurants"], icon: "clock" },
+  { id: "svcHookah", group: "service", cats: ["restaurants"], icon: "clock" },
+  { id: "svcFoodTruck", group: "service", cats: ["restaurants"], icon: "clock" },
+  { id: "svcTakeout", group: "service", cats: ["restaurants"], icon: "clock" },
+  { id: "svcWomenSection", group: "service", cats: ["restaurants"], icon: "clock" },
+  { id: "svcGroupBooking", group: "service", cats: ["restaurants"], icon: "clock" },
+  { id: "svcLateNight", group: "service", cats: ["restaurants"], icon: "clock" },
+  /* --- halal --- */
+  { id: "halalMeat", group: "halal", cats: ["restaurants", "grocery", "cafe", "sweets"], icon: "checkCircle", exclusive: true },
+  { id: "halalWithAlc", group: "halal", cats: ["restaurants", "grocery", "cafe", "sweets"], icon: "checkCircle", exclusive: true },
+  { id: "notHalal", group: "halal", cats: ["restaurants", "grocery", "cafe", "sweets"], icon: "checkCircle", exclusive: true },
+  /* --- alcohol --- */
+  { id: "noAlcohol", group: "alcohol", cats: ["restaurants", "grocery", "cafe", "sweets"], icon: "droplet", exclusive: true },
+  { id: "servesAlcohol", group: "alcohol", cats: ["restaurants", "grocery", "cafe", "sweets"], icon: "droplet", exclusive: true },
+  /* --- health --- */
+  { id: "medFamily", group: "health", cats: ["doctors"], icon: "stethoscope" },
+  { id: "medDental", group: "health", cats: ["doctors"], icon: "stethoscope" },
+  { id: "medOrthodontics", group: "health", cats: ["doctors"], icon: "stethoscope" },
+  { id: "medPediatric", group: "health", cats: ["doctors"], icon: "stethoscope" },
+  { id: "medObgyn", group: "health", cats: ["doctors"], icon: "stethoscope" },
+  { id: "medDerma", group: "health", cats: ["doctors"], icon: "stethoscope" },
+  { id: "medEye", group: "health", cats: ["doctors"], icon: "stethoscope" },
+  { id: "medBones", group: "health", cats: ["doctors"], icon: "stethoscope" },
+  { id: "medCardio", group: "health", cats: ["doctors"], icon: "stethoscope" },
+  { id: "medInternal", group: "health", cats: ["doctors"], icon: "stethoscope" },
+  { id: "medEnt", group: "health", cats: ["doctors"], icon: "stethoscope" },
+  { id: "medUrology", group: "health", cats: ["doctors"], icon: "stethoscope" },
+  { id: "medNeuro", group: "health", cats: ["doctors"], icon: "stethoscope" },
+  { id: "medEndo", group: "health", cats: ["doctors"], icon: "stethoscope" },
+  { id: "medMental", group: "health", cats: ["doctors"], icon: "stethoscope" },
+  { id: "medNutrition", group: "health", cats: ["doctors"], icon: "stethoscope" },
+  { id: "medPhysio", group: "health", cats: ["doctors"], icon: "stethoscope" },
+  { id: "medUrgent", group: "health", cats: ["doctors"], icon: "stethoscope" },
+  { id: "medLab", group: "health", cats: ["doctors"], icon: "stethoscope" },
+  { id: "medImaging", group: "health", cats: ["doctors"], icon: "stethoscope" },
+  { id: "medPharmacy", group: "health", cats: ["doctors"], icon: "stethoscope" },
+  { id: "medOptical", group: "health", cats: ["doctors"], icon: "stethoscope" },
+  { id: "medHearing", group: "health", cats: ["doctors"], icon: "stethoscope" },
+  /* --- gender --- */
+  { id: "femaleDoctor", group: "gender", cats: ["doctors"], icon: "user" },
+  { id: "maleDoctor", group: "gender", cats: ["doctors"], icon: "user" },
+  /* --- insurance --- */
+  { id: "insMedicaid", group: "insurance", cats: ["doctors"], icon: "shield" },
+  { id: "insMedicare", group: "insurance", cats: ["doctors"], icon: "shield" },
+  { id: "insMajor", group: "insurance", cats: ["doctors"], icon: "shield" },
+  { id: "insSelfPay", group: "insurance", cats: ["doctors"], icon: "shield" },
+  /* --- service --- */
+  { id: "medSameDay", group: "service", cats: ["doctors"], icon: "clock" },
+  { id: "medTelehealth", group: "service", cats: ["doctors"], icon: "clock" },
+  /* --- legal --- */
+  { id: "immigrationLaw", group: "legal", cats: ["lawyers"], icon: "scale" },
+  { id: "lawGreenCard", group: "legal", cats: ["lawyers"], icon: "scale" },
+  { id: "lawCitizenship", group: "legal", cats: ["lawyers"], icon: "scale" },
+  { id: "lawAsylum", group: "legal", cats: ["lawyers"], icon: "scale" },
+  { id: "lawDeportation", group: "legal", cats: ["lawyers"], icon: "scale" },
+  { id: "lawFamily", group: "legal", cats: ["lawyers"], icon: "scale" },
+  { id: "lawCustody", group: "legal", cats: ["lawyers"], icon: "scale" },
+  { id: "lawCriminal", group: "legal", cats: ["lawyers"], icon: "scale" },
+  { id: "lawInjury", group: "legal", cats: ["lawyers"], icon: "scale" },
+  { id: "lawContracts", group: "legal", cats: ["lawyers"], icon: "scale" },
+  { id: "lawIncorporation", group: "legal", cats: ["lawyers"], icon: "scale" },
+  { id: "lawRealEstate", group: "legal", cats: ["lawyers"], icon: "scale" },
+  { id: "lawBankruptcy", group: "legal", cats: ["lawyers"], icon: "scale" },
+  { id: "lawEmployment", group: "legal", cats: ["lawyers"], icon: "scale" },
+  { id: "lawWills", group: "legal", cats: ["lawyers"], icon: "scale" },
+  { id: "lawTraffic", group: "legal", cats: ["lawyers"], icon: "scale" },
+  { id: "lawIp", group: "legal", cats: ["lawyers"], icon: "scale" },
+  { id: "lawFreeConsult", group: "legal", cats: ["lawyers"], icon: "scale" },
+  /* --- finance --- */
+  { id: "finTaxPersonal", group: "finance", cats: ["finance"], icon: "banknote" },
+  { id: "finTaxBusiness", group: "finance", cats: ["finance"], icon: "banknote" },
+  { id: "finBookkeeping", group: "finance", cats: ["finance"], icon: "banknote" },
+  { id: "finLlc", group: "finance", cats: ["finance"], icon: "banknote" },
+  { id: "finPayroll", group: "finance", cats: ["finance"], icon: "banknote" },
+  { id: "finAudit", group: "finance", cats: ["finance"], icon: "banknote" },
+  { id: "finConsulting", group: "finance", cats: ["finance"], icon: "banknote" },
+  { id: "finItin", group: "finance", cats: ["finance"], icon: "banknote" },
+  { id: "finIrs", group: "finance", cats: ["finance"], icon: "banknote" },
+  { id: "insAuto", group: "finance", cats: ["finance"], icon: "banknote" },
+  { id: "insHome", group: "finance", cats: ["finance"], icon: "banknote" },
+  { id: "insHealth", group: "finance", cats: ["finance"], icon: "banknote" },
+  { id: "insLife", group: "finance", cats: ["finance"], icon: "banknote" },
+  { id: "insCommercial", group: "finance", cats: ["finance"], icon: "banknote" },
+  { id: "insTravel", group: "finance", cats: ["finance"], icon: "banknote" },
+  { id: "insRenters", group: "finance", cats: ["finance"], icon: "banknote" },
+  /* --- beautySvc --- */
+  { id: "bsBarber", group: "beautySvc", cats: ["beauty"], icon: "sparkles" },
+  { id: "bsWomenSalon", group: "beautySvc", cats: ["beauty"], icon: "sparkles" },
+  { id: "bsBrows", group: "beautySvc", cats: ["beauty"], icon: "sparkles" },
+  { id: "bsHenna", group: "beautySvc", cats: ["beauty"], icon: "sparkles" },
+  { id: "bsBridalMakeup", group: "beautySvc", cats: ["beauty"], icon: "sparkles" },
+  { id: "bsBridalHair", group: "beautySvc", cats: ["beauty"], icon: "sparkles" },
+  { id: "bsSkincare", group: "beautySvc", cats: ["beauty"], icon: "sparkles" },
+  { id: "bsNails", group: "beautySvc", cats: ["beauty"], icon: "sparkles" },
+  { id: "bsLaser", group: "beautySvc", cats: ["beauty"], icon: "sparkles" },
+  { id: "bsSpa", group: "beautySvc", cats: ["beauty"], icon: "sparkles" },
+  { id: "bsKidsCut", group: "beautySvc", cats: ["beauty"], icon: "sparkles" },
+  /* --- gender --- */
+  { id: "women", group: "gender", cats: ["beauty"], icon: "user" },
+  { id: "men", group: "gender", cats: ["beauty"], icon: "user" },
+  { id: "familyPlace", group: "gender", cats: ["beauty"], icon: "user" },
+  /* --- autoSvc --- */
+  { id: "autoMechanic", group: "autoSvc", cats: ["auto"], icon: "car" },
+  { id: "autoElectric", group: "autoSvc", cats: ["auto"], icon: "car" },
+  { id: "autoBody", group: "autoSvc", cats: ["auto"], icon: "car" },
+  { id: "autoGlass", group: "autoSvc", cats: ["auto"], icon: "car" },
+  { id: "autoTires", group: "autoSvc", cats: ["auto"], icon: "car" },
+  { id: "autoWash", group: "autoSvc", cats: ["auto"], icon: "car" },
+  { id: "autoAudio", group: "autoSvc", cats: ["auto"], icon: "car" },
+  { id: "autoAc", group: "autoSvc", cats: ["auto"], icon: "car" },
+  { id: "autoInspection", group: "autoSvc", cats: ["auto"], icon: "car" },
+  { id: "autoParts", group: "autoSvc", cats: ["auto"], icon: "car" },
+  { id: "autoUsed", group: "autoSvc", cats: ["auto"], icon: "car" },
+  { id: "autoNew", group: "autoSvc", cats: ["auto"], icon: "car" },
+  { id: "autoFinance", group: "autoSvc", cats: ["auto"], icon: "car" },
+  { id: "autoTow", group: "autoSvc", cats: ["auto"], icon: "car" },
+  /* --- reSvc --- */
+  { id: "reSales", group: "reSvc", cats: ["realestate"], icon: "building" },
+  { id: "reRent", group: "reSvc", cats: ["realestate"], icon: "building" },
+  { id: "rePropertyMgmt", group: "reSvc", cats: ["realestate"], icon: "building" },
+  { id: "reCommercial", group: "reSvc", cats: ["realestate"], icon: "building" },
+  { id: "reMortgage", group: "reSvc", cats: ["realestate"], icon: "building" },
+  { id: "reContracting", group: "reSvc", cats: ["realestate"], icon: "building" },
+  { id: "reAppraisal", group: "reSvc", cats: ["realestate"], icon: "building" },
+  /* --- homeSvc --- */
+  { id: "hsHandyman", group: "homeSvc", cats: ["homeservices"], icon: "wrench" },
+  { id: "hsPlumbing", group: "homeSvc", cats: ["homeservices"], icon: "wrench" },
+  { id: "hsElectric", group: "homeSvc", cats: ["homeservices"], icon: "wrench" },
+  { id: "hsHvac", group: "homeSvc", cats: ["homeservices"], icon: "wrench" },
+  { id: "hsCarpentry", group: "homeSvc", cats: ["homeservices"], icon: "wrench" },
+  { id: "hsPainting", group: "homeSvc", cats: ["homeservices"], icon: "wrench" },
+  { id: "hsFlooring", group: "homeSvc", cats: ["homeservices"], icon: "wrench" },
+  { id: "hsStone", group: "homeSvc", cats: ["homeservices"], icon: "wrench" },
+  { id: "hsRoofing", group: "homeSvc", cats: ["homeservices"], icon: "wrench" },
+  { id: "hsCleaning", group: "homeSvc", cats: ["homeservices"], icon: "wrench" },
+  { id: "hsPest", group: "homeSvc", cats: ["homeservices"], icon: "wrench" },
+  { id: "hsMoving", group: "homeSvc", cats: ["homeservices"], icon: "wrench" },
+  { id: "hsIronDoors", group: "homeSvc", cats: ["homeservices"], icon: "wrench" },
+  { id: "hsCameras", group: "homeSvc", cats: ["homeservices"], icon: "wrench" },
+  { id: "hsLandscaping", group: "homeSvc", cats: ["homeservices"], icon: "wrench" },
+  { id: "hsPools", group: "homeSvc", cats: ["homeservices"], icon: "wrench" },
+  { id: "hsAppliance", group: "homeSvc", cats: ["homeservices"], icon: "wrench" },
+  /* --- homeGoods --- */
+  { id: "hgRugs", group: "homeGoods", cats: ["homegoods"], icon: "sofa" },
+  { id: "hgFurniture", group: "homeGoods", cats: ["homegoods"], icon: "sofa" },
+  { id: "hgHousewares", group: "homeGoods", cats: ["homegoods"], icon: "sofa" },
+  { id: "hgMajlis", group: "homeGoods", cats: ["homegoods"], icon: "sofa" },
+  { id: "hgCurtains", group: "homeGoods", cats: ["homegoods"], icon: "sofa" },
+  { id: "hgLighting", group: "homeGoods", cats: ["homegoods"], icon: "sofa" },
+  { id: "hgKitchens", group: "homeGoods", cats: ["homegoods"], icon: "sofa" },
+  { id: "hgCookware", group: "homeGoods", cats: ["homegoods"], icon: "sofa" },
+  /* --- schooling --- */
+  { id: "eduIslamicSchool", group: "schooling", cats: ["education"], icon: "graduation" },
+  { id: "schoolArabic", group: "schooling", cats: ["education"], icon: "graduation" },
+  { id: "eduDaycare", group: "schooling", cats: ["education"], icon: "graduation" },
+  { id: "quranSchool", group: "schooling", cats: ["education"], icon: "graduation" },
+  { id: "eduArabicLang", group: "schooling", cats: ["education"], icon: "graduation" },
+  { id: "tutoring", group: "schooling", cats: ["education"], icon: "graduation" },
+  { id: "eduRemedial", group: "schooling", cats: ["education"], icon: "graduation" },
+  { id: "eduDriving", group: "schooling", cats: ["education"], icon: "graduation" },
+  { id: "eduEnglish", group: "schooling", cats: ["education"], icon: "graduation" },
+  { id: "eduComputer", group: "schooling", cats: ["education"], icon: "graduation" },
+  { id: "eduTestPrep", group: "schooling", cats: ["education"], icon: "graduation" },
+  { id: "eduCollegePrep", group: "schooling", cats: ["education"], icon: "graduation" },
+  { id: "eduVocational", group: "schooling", cats: ["education"], icon: "graduation" },
+  { id: "weekendClass", group: "schooling", cats: ["education"], icon: "graduation" },
+  /* --- travelSvc --- */
+  { id: "trvHajj", group: "travelSvc", cats: ["travel"], icon: "navigation" },
+  { id: "trvTickets", group: "travelSvc", cats: ["travel"], icon: "navigation" },
+  { id: "trvVisas", group: "travelSvc", cats: ["travel"], icon: "navigation" },
+  { id: "trvGroupTours", group: "travelSvc", cats: ["travel"], icon: "navigation" },
+  { id: "trvHotels", group: "travelSvc", cats: ["travel"], icon: "navigation" },
+  { id: "trvInsurance", group: "travelSvc", cats: ["travel"], icon: "navigation" },
+  /* --- worshipKind --- */
+  { id: "wkMosque", group: "worshipKind", cats: ["worship"], icon: "landmark" },
+  { id: "wkMusalla", group: "worshipKind", cats: ["worship"], icon: "landmark" },
+  { id: "wkIslamicCenter", group: "worshipKind", cats: ["worship"], icon: "landmark" },
+  { id: "wkCoptic", group: "worshipKind", cats: ["worship"], icon: "landmark" },
+  { id: "wkAntiochian", group: "worshipKind", cats: ["worship"], icon: "landmark" },
+  { id: "wkCatholic", group: "worshipKind", cats: ["worship"], icon: "landmark" },
+  { id: "wkMelkite", group: "worshipKind", cats: ["worship"], icon: "landmark" },
+  { id: "wkEvangelical", group: "worshipKind", cats: ["worship"], icon: "landmark" },
+  { id: "wkBaptist", group: "worshipKind", cats: ["worship"], icon: "landmark" },
+  { id: "wkCultural", group: "worshipKind", cats: ["worship"], icon: "landmark" },
+  /* --- worship --- */
+  { id: "womensPrayer", group: "worship", cats: ["worship"], icon: "users" },
+  { id: "arabicClasses", group: "worship", cats: ["worship"], icon: "users" },
+  { id: "wfMultiJumuah", group: "worship", cats: ["worship"], icon: "users" },
+  { id: "wfKhutbahAr", group: "worship", cats: ["worship"], icon: "users" },
+  { id: "wfKhutbahEn", group: "worship", cats: ["worship"], icon: "users" },
+  { id: "wfMassAr", group: "worship", cats: ["worship"], icon: "users" },
+  { id: "wfFuneral", group: "worship", cats: ["worship"], icon: "users" },
+  /* --- grocerySvc --- */
+  { id: "grHalalButcher", group: "grocerySvc", cats: ["grocery"], icon: "bag" },
+  { id: "grArabGrocery", group: "grocerySvc", cats: ["grocery"], icon: "bag" },
+  { id: "grSupermarket", group: "grocerySvc", cats: ["grocery"], icon: "bag" },
+  { id: "grBakery", group: "grocerySvc", cats: ["grocery"], icon: "bag" },
+  { id: "grSpices", group: "grocerySvc", cats: ["grocery"], icon: "bag" },
+  { id: "grFish", group: "grocerySvc", cats: ["grocery"], icon: "bag" },
+  { id: "grProduce", group: "grocerySvc", cats: ["grocery"], icon: "bag" },
+  { id: "grTurkish", group: "grocerySvc", cats: ["grocery"], icon: "bag" },
+  { id: "grEgyptian", group: "grocerySvc", cats: ["grocery"], icon: "bag" },
+  { id: "grLevantine", group: "grocerySvc", cats: ["grocery"], icon: "bag" },
+  { id: "grMaghrebi", group: "grocerySvc", cats: ["grocery"], icon: "bag" },
+  { id: "grDesi", group: "grocerySvc", cats: ["grocery"], icon: "bag" },
+  { id: "grQurbani", group: "grocerySvc", cats: ["grocery"], icon: "bag" },
+  { id: "grNuts", group: "grocerySvc", cats: ["grocery"], icon: "bag" },
+  { id: "grHoneyDates", group: "grocerySvc", cats: ["grocery"], icon: "bag" },
+  { id: "grWholesale", group: "grocerySvc", cats: ["grocery"], icon: "bag" },
+  /* --- cafeSvc --- */
+  { id: "cfCafe", group: "cafeSvc", cats: ["cafe"], icon: "coffee" },
+  { id: "cfYemeniCoffee", group: "cafeSvc", cats: ["cafe"], icon: "coffee" },
+  { id: "cfTurkishCoffee", group: "cafeSvc", cats: ["cafe"], icon: "coffee" },
+  { id: "cfSpecialty", group: "cafeSvc", cats: ["cafe"], icon: "coffee" },
+  { id: "cfHookahLounge", group: "cafeSvc", cats: ["cafe"], icon: "coffee" },
+  { id: "cfHookahShop", group: "cafeSvc", cats: ["cafe"], icon: "coffee" },
+  { id: "cfTeaSnacks", group: "cafeSvc", cats: ["cafe"], icon: "coffee" },
+  { id: "cfMatches", group: "cafeSvc", cats: ["cafe"], icon: "coffee" },
+  /* --- sweetsSvc --- */
+  { id: "swKnafeh", group: "sweetsSvc", cats: ["sweets"], icon: "cake" },
+  { id: "swBaklava", group: "sweetsSvc", cats: ["sweets"], icon: "cake" },
+  { id: "swMoroccan", group: "sweetsSvc", cats: ["sweets"], icon: "cake" },
+  { id: "swArabBakery", group: "sweetsSvc", cats: ["sweets"], icon: "cake" },
+  { id: "swManakish", group: "sweetsSvc", cats: ["sweets"], icon: "cake" },
+  { id: "swCakes", group: "sweetsSvc", cats: ["sweets"], icon: "cake" },
+  { id: "swIceCream", group: "sweetsSvc", cats: ["sweets"], icon: "cake" },
+  { id: "swChocolate", group: "sweetsSvc", cats: ["sweets"], icon: "cake" },
+  { id: "swNutRoastery", group: "sweetsSvc", cats: ["sweets"], icon: "cake" },
+  /* --- shopSvc --- */
+  { id: "shAbaya", group: "shopSvc", cats: ["shopping"], icon: "shirt" },
+  { id: "shModest", group: "shopSvc", cats: ["shopping"], icon: "shirt" },
+  { id: "shOccasionDress", group: "shopSvc", cats: ["shopping"], icon: "shirt" },
+  { id: "shMenswear", group: "shopSvc", cats: ["shopping"], icon: "shirt" },
+  { id: "shKidswear", group: "shopSvc", cats: ["shopping"], icon: "shirt" },
+  { id: "shTailoring", group: "shopSvc", cats: ["shopping"], icon: "shirt" },
+  { id: "shAlterations", group: "shopSvc", cats: ["shopping"], icon: "shirt" },
+  { id: "shJewelry", group: "shopSvc", cats: ["shopping"], icon: "shirt" },
+  { id: "shWatches", group: "shopSvc", cats: ["shopping"], icon: "shirt" },
+  { id: "shPerfume", group: "shopSvc", cats: ["shopping"], icon: "shirt" },
+  { id: "shCosmetics", group: "shopSvc", cats: ["shopping"], icon: "shirt" },
+  { id: "shGifts", group: "shopSvc", cats: ["shopping"], icon: "shirt" },
+  /* --- occasionSvc --- */
+  { id: "ocHall", group: "occasionSvc", cats: ["occasions"], icon: "sparkles" },
+  { id: "ocPartyPlanning", group: "occasionSvc", cats: ["occasions"], icon: "sparkles" },
+  { id: "ocDecor", group: "occasionSvc", cats: ["occasions"], icon: "sparkles" },
+  { id: "ocPhotoVideo", group: "occasionSvc", cats: ["occasions"], icon: "sparkles" },
+  { id: "ocRentals", group: "occasionSvc", cats: ["occasions"], icon: "sparkles" },
+  { id: "ocStageLighting", group: "occasionSvc", cats: ["occasions"], icon: "sparkles" },
+  { id: "ocDjBand", group: "occasionSvc", cats: ["occasions"], icon: "sparkles" },
+  { id: "ocZaffa", group: "occasionSvc", cats: ["occasions"], icon: "sparkles" },
+  { id: "ocCatering", group: "occasionSvc", cats: ["occasions"], icon: "sparkles" },
+  { id: "ocInvitations", group: "occasionSvc", cats: ["occasions"], icon: "sparkles" },
+  { id: "ocDressRental", group: "occasionSvc", cats: ["occasions"], icon: "sparkles" },
+  /* --- elecSvc --- */
+  { id: "elPhoneSales", group: "elecSvc", cats: ["electronics"], icon: "smartphone" },
+  { id: "elPhoneRepair", group: "elecSvc", cats: ["electronics"], icon: "smartphone" },
+  { id: "elUnlock", group: "elecSvc", cats: ["electronics"], icon: "smartphone" },
+  { id: "elPlans", group: "elecSvc", cats: ["electronics"], icon: "smartphone" },
+  { id: "elComputers", group: "elecSvc", cats: ["electronics"], icon: "smartphone" },
+  { id: "elAppliances", group: "elecSvc", cats: ["electronics"], icon: "smartphone" },
+  { id: "elArabTv", group: "elecSvc", cats: ["electronics"], icon: "smartphone" },
+  { id: "elCameras", group: "elecSvc", cats: ["electronics"], icon: "smartphone" },
+  /* --- communitySvc --- */
+  { id: "cmCharity", group: "communitySvc", cats: ["community"], icon: "users" },
+  { id: "cmRefugee", group: "communitySvc", cats: ["community"], icon: "users" },
+  { id: "cmFuneral", group: "communitySvc", cats: ["community"], icon: "users" },
+  { id: "cmIslamicBookstore", group: "communitySvc", cats: ["community"], icon: "users" },
+  { id: "cmCulturalClub", group: "communitySvc", cats: ["community"], icon: "users" },
+  { id: "cmProfessional", group: "communitySvc", cats: ["community"], icon: "users" },
+  { id: "cmNotary", group: "communitySvc", cats: ["community"], icon: "users" },
+  { id: "cmMailParcel", group: "communitySvc", cats: ["community"], icon: "users" },
+  { id: "cmPrinting", group: "communitySvc", cats: ["community"], icon: "users" },
+  /* --- gymSvc --- */
+  { id: "gymWomenOnly", group: "gymSvc", cats: ["gyms"], icon: "dumbbell" },
+  { id: "gymWomenHours", group: "gymSvc", cats: ["gyms"], icon: "dumbbell" },
+  { id: "gymMen", group: "gymSvc", cats: ["gyms"], icon: "dumbbell" },
+  { id: "gymMixed", group: "gymSvc", cats: ["gyms"], icon: "dumbbell" },
+  { id: "gyBoxing", group: "gymSvc", cats: ["gyms"], icon: "dumbbell" },
+  { id: "gySwimming", group: "gymSvc", cats: ["gyms"], icon: "dumbbell" },
+  { id: "gyYoga", group: "gymSvc", cats: ["gyms"], icon: "dumbbell" },
+  { id: "gyPersonalTrainer", group: "gymSvc", cats: ["gyms"], icon: "dumbbell" },
+  /* --- newcomer --- */
+  { id: "certTranslation", group: "newcomer", cats: "*", icon: "languages" },
+  { id: "moneyTransfer", group: "newcomer", cats: "*", icon: "languages" },
+  { id: "shipAbroad", group: "newcomer", cats: "*", icon: "languages" },
+  /* --- language --- */
+  { id: "arabicSpoken", group: "language", cats: "*", icon: "languages" },
+  /* --- practical --- */
+  { id: "delivery", group: "practical", cats: "*", icon: "check" },
+  { id: "parking", group: "practical", cats: "*", icon: "check" },
+  { id: "wifi", group: "practical", cats: "*", icon: "check" },
+  { id: "accessible", group: "practical", cats: "*", icon: "check" },
+  { id: "familySeating", group: "practical", cats: "*", icon: "check" },
+  { id: "prByAppt", group: "practical", cats: "*", icon: "check" },
+  { id: "prOpenSat", group: "practical", cats: "*", icon: "check" },
+  { id: "prOpenSun", group: "practical", cats: "*", icon: "check" },
+  { id: "acceptsCard", group: "practical", cats: "*", icon: "creditCard", exclusive: true },
+  { id: "cashOnly", group: "practical", cats: "*", icon: "creditCard", exclusive: true },
+  /* --- ramadan --- */
+  { id: "ramadanHours", group: "ramadan", cats: "*", icon: "moon", season: "ramadan" },
+  { id: "iftar", group: "ramadan", cats: ["restaurants", "worship", "cafe"], icon: "utensils", season: "ramadan" },
+  { id: "suhoor", group: "ramadan", cats: ["restaurants", "worship", "cafe"], icon: "sunrise", season: "ramadan" },
+]);
 
-  { id: 'gymWomenOnly',  key: 'attrGymWomenOnly',  icon: 'dumbbell', group: 'gender', cats: ['gyms'], quick: true },
-  { id: 'gymWomenHours', key: 'attrGymWomenHours', icon: 'clock',    group: 'gender', cats: ['gyms'], quick: true },
-  { id: 'gymMen',        key: 'attrGymMen',        icon: 'dumbbell', group: 'gender', cats: ['gyms'], quick: true },
-  { id: 'gymMixed',      key: 'attrGymMixed',      icon: 'users',    group: 'gender', cats: ['gyms'], quick: true },
+/* ============================================================
+   Three layers of visibility
+   ------------------------------------------------------------
+   With three hundred specialities defined, showing them all would
+   bury the screen. So: a chip above the results only once the
+   attribute actually has CHIP_MIN businesses in the category being
+   viewed; the filter sheet whenever it has at least one; and the
+   add/edit form always, empty or not.
 
-  /* --- halal, and alcohol, kept apart on purpose ------------------------
-     A large part of the community will not eat in a restaurant that serves
-     alcohol even when the meat is halal, so one flag could not answer the
-     question they are actually asking. */
-  { id: 'halalMeat',    key: 'attrHalalMeat',    icon: 'checkCircle', group: 'halal', cats: ['restaurants', 'grocery'], quick: true, exclusive: true },
-  { id: 'halalWithAlc', key: 'attrHalalWithAlc', icon: 'info',        group: 'halal', cats: ['restaurants', 'grocery'], exclusive: true },
-  { id: 'notHalal',     key: 'attrNotHalal',     icon: 'x',           group: 'halal', cats: ['restaurants', 'grocery'], exclusive: true },
+   The consequence is the point of it: a user never meets a filter
+   that returns nothing, and a new speciality surfaces by itself the
+   day it has content — with no code change at all.
+   ============================================================ */
+export const CHIP_MIN = 5;
 
-  { id: 'noAlcohol',    key: 'attrNoAlcohol',    icon: 'droplet', group: 'alcohol', cats: ['restaurants', 'grocery'], quick: true, exclusive: true },
-  { id: 'servesAlcohol', key: 'attrServesAlcohol', icon: 'droplet', group: 'alcohol', cats: ['restaurants', 'grocery'], exclusive: true },
-
-  /* --- language --------------------------------------------------------
-     Crosses every category: plenty of Arab-owned shops have no Arabic
-     speaker on the floor, and plenty of non-Arab ones do and want to be
-     found by the community. */
-  { id: 'arabicSpoken', key: 'attrArabicSpoken', icon: 'languages', group: 'language', cats: '*',
-    quick: ['doctors', 'lawyers', 'worship'] },
-
-  /* --- insurance, doctors and dental ----------------------------------- */
-  { id: 'insMedicaid', key: 'attrInsMedicaid', icon: 'shield',    group: 'insurance', cats: ['doctors'] },
-  { id: 'insMedicare', key: 'attrInsMedicare', icon: 'shield',    group: 'insurance', cats: ['doctors'] },
-  { id: 'insMajor',    key: 'attrInsMajor',    icon: 'shield',    group: 'insurance', cats: ['doctors'] },
-  { id: 'insSelfPay',  key: 'attrInsSelfPay',  icon: 'banknote',  group: 'insurance', cats: ['doctors'] },
-
-  /* --- Arabic schooling, a section inside education built out of the
-         general system rather than a bespoke sub-category ---------------- */
-  { id: 'schoolArabic',  key: 'attrSchoolArabic',  icon: 'graduation', group: 'schooling', cats: ['education'], quick: true },
-  { id: 'tutoring',      key: 'attrTutoring',      icon: 'file',       group: 'schooling', cats: ['education'], quick: true },
-  { id: 'quranSchool',   key: 'attrQuranSchool',   icon: 'moon',       group: 'schooling', cats: ['education', 'worship'], quick: true },
-  { id: 'weekendClass',  key: 'attrWeekendClass',  icon: 'calendar',   group: 'schooling', cats: ['education'], quick: true },
-
-  /* --- what a newcomer looks for first ---------------------------------
-     Attributes rather than a category of their own: a travel agency that
-     also wires money must not be listed twice to be found twice. */
-  { id: 'certTranslation', key: 'attrCertTranslation', icon: 'languages', group: 'newcomer', cats: '*', quick: ['lawyers', 'travel'] },
-  { id: 'immigrationLaw',  key: 'attrImmigrationLaw',  icon: 'scale',     group: 'newcomer', cats: '*', quick: ['lawyers'] },
-  { id: 'moneyTransfer',   key: 'attrMoneyTransfer',   icon: 'banknote',  group: 'newcomer', cats: '*', quick: ['travel'] },
-  { id: 'shipAbroad',      key: 'attrShipAbroad',      icon: 'truck',     group: 'newcomer', cats: '*', quick: ['travel'] },
-
-  /* --- places of worship ------------------------------------------------ */
-  { id: 'womensPrayer',  key: 'attrWomensPrayer',  icon: 'users',      group: 'worship', cats: ['worship'], quick: true },
-  { id: 'arabicClasses', key: 'attrArabicClasses', icon: 'graduation', group: 'worship', cats: ['worship'], quick: true },
-
-  /* --- practical, everywhere -------------------------------------------- */
-  { id: 'delivery',      key: 'attrDelivery',      icon: 'truck',      group: 'practical', cats: '*', quick: ['restaurants', 'grocery'] },
-  { id: 'parking',       key: 'attrParking',       icon: 'car',        group: 'practical', cats: '*' },
-  { id: 'acceptsCard',   key: 'attrAcceptsCard',   icon: 'creditCard', group: 'practical', cats: '*', exclusive: true },
-  { id: 'cashOnly',      key: 'attrCashOnly',      icon: 'banknote',   group: 'practical', cats: '*', exclusive: true },
-  { id: 'familySeating', key: 'attrFamilySeating', icon: 'users',      group: 'practical', cats: ['restaurants'] },
-  { id: 'accessible',    key: 'attrAccessible',    icon: 'accessible', group: 'practical', cats: '*' },
-  { id: 'wifi',          key: 'attrWifi',          icon: 'wifi',       group: 'practical', cats: '*' },
-
-  /* --- one month a year, and the busiest filter in it -------------------- */
-  { id: 'ramadanHours', key: 'attrRamadanHours', icon: 'moon',    group: 'ramadan', season: 'ramadan', cats: '*', quick: ['restaurants', 'worship'] },
-  { id: 'iftar',        key: 'attrIftar',        icon: 'utensils', group: 'ramadan', season: 'ramadan', cats: ['restaurants', 'worship'], quick: true },
-  { id: 'suhoor',       key: 'attrSuhoor',       icon: 'sunrise',  group: 'ramadan', season: 'ramadan', cats: ['restaurants', 'worship'], quick: true },
+export const EVENT_TYPES = [
+  { id: "concert",    key: "evTypeConcert",     icon: "play" },
+  { id: "festival",   key: "evTypeFestival",    icon: "sparkles" },
+  { id: "lecture",    key: "evTypeLecture",     icon: "graduation" },
+  { id: "iftar",      key: "evTypeIftar",       icon: "moon" },
+  { id: "bazaar",     key: "evTypeBazaar",      icon: "bag" },
+  { id: "sports",     key: "evTypeSports",      icon: "dumbbell" },
+  { id: "kids",       key: "evTypeKids",        icon: "users" },
+  { id: "charity",    key: "evTypeCharity",     icon: "heart" },
+  { id: "community",  key: "evTypeCommunity",   icon: "users" },
+  { id: "national",   key: "evTypeNational",    icon: "flag" },
+  { id: "conference", key: "evTypeConference",  icon: "message" },
 ];
 
 export function attrById(id) { return ATTRIBUTES.find(a => a.id === id) || null; }
@@ -274,12 +622,8 @@ export function attrInCat(attr, cat) {
   return attr.cats === '*' || (Array.isArray(attr.cats) && attr.cats.includes(cat));
 }
 
-/** does it earn a chip above the results in `cat`? */
-export function attrIsQuick(attr, cat) {
-  if (attr.quick === true) return attrInCat(attr, cat);
-  if (Array.isArray(attr.quick)) return attr.quick.includes(cat);
-  return false;
-}
+/* Which attributes earn a chip is no longer declared here: it is counted from
+   the data by `quickAttrsForCat` in store.js against CHIP_MIN. */
 
 export const BUSINESSES = [
   {
@@ -289,18 +633,19 @@ export const BUSINESSES = [
     hours: week({ all: '11:00-23:00', fri: '11:00-02:00', sat: '11:00-02:00' }),
     tags: ['شاورما', 'مشاوي', 'فلافل', 'حمص', 'مقبلات', 'توصيل',
            'shawarma', 'grill', 'falafel', 'hummus', 'mezze', 'delivery'],
-    attributes: ['halalMeat', 'noAlcohol', 'arabicSpoken', 'delivery', 'familySeating', 'acceptsCard', 'parking', 'iftar', 'ramadanHours'],
+    attributes: ['cuisSyrian', 'cuisLebanese', 'dishShawarma', 'dishGrill', 'svcCatering', 'svcLateNight',
+                 'halalMeat', 'noAlcohol', 'arabicSpoken', 'delivery', 'familySeating', 'acceptsCard', 'parking', 'iftar', 'ramadanHours'],
     plan: 'paid', verified: true, rating: 4.8, reviewCount: 126, dist: 1.2, claimed: true,
     desc: { ar: 'مطبخ شامي أصيل من ٢٠٠٤ — مشاوي، شاورما، ومقبلات بيتية.', en: 'Authentic Levantine kitchen since 2004 — grills, shawarma and homemade mezze.' },
     photos: 8, videos: 2,
   },
   {
-    id: 'b2', name: { ar: 'فرن بيروت', en: 'Beirut Bakery' }, cat: 'restaurants',
+    id: 'b2', name: { ar: 'فرن بيروت', en: 'Beirut Bakery' }, cat: 'sweets',
     phone: '(281) 555-0198', address: '10920 Westheimer Rd, Houston, TX 77042',
     hours: week({ all: '07:00-21:00', sun: '08:00-15:00' }),
     tags: ['مناقيش', 'زعتر', 'معجنات', 'حلويات', 'كنافة', 'خبز',
            'manakish', 'zaatar', 'pastries', 'sweets', 'knafeh', 'bread'],
-    attributes: ['halalMeat', 'noAlcohol', 'arabicSpoken', 'acceptsCard', 'suhoor'],
+    attributes: ['swArabBakery', 'swManakish', 'swKnafeh', 'halalMeat', 'noAlcohol', 'arabicSpoken', 'acceptsCard', 'suhoor'],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 3.4, claimed: false,
     desc: { ar: 'مناقيش، معجنات، وحلويات عربية طازجة.', en: 'Manakish, pastries and fresh Arabic sweets.' },
     photos: 0, videos: 0,
@@ -311,7 +656,8 @@ export const BUSINESSES = [
     hours: week({ all: '09:00-18:00', fri: null }),
     tags: ['طب عائلي', 'باطنية', 'أطفال', 'تطعيمات', 'فحص سنوي',
            'family medicine', 'internal', 'pediatrics', 'vaccines', 'checkup'],
-    attributes: ['femaleDoctor', 'maleDoctor', 'arabicSpoken', 'insMedicaid', 'insMajor', 'insSelfPay', 'acceptsCard', 'parking', 'accessible'],
+    attributes: ['medFamily', 'medInternal', 'medPediatric', 'medSameDay',
+                 'femaleDoctor', 'maleDoctor', 'arabicSpoken', 'insMedicaid', 'insMajor', 'insSelfPay', 'acceptsCard', 'parking', 'accessible'],
     plan: 'paid', verified: true, rating: 4.9, reviewCount: 88, dist: 2.3, claimed: true,
     desc: { ar: 'طب عائلي وباطنية — الطاقم يتكلم عربي وإنجليزي.', en: 'Family & internal medicine — Arabic and English speaking staff.' },
     photos: 5, videos: 1,
@@ -322,7 +668,8 @@ export const BUSINESSES = [
     hours: week({ mon: '09:00-17:00', tue: '09:00-17:00', wed: '09:00-17:00', thu: '09:00-17:00', fri: '09:00-13:00' }),
     tags: ['هجرة', 'جرين كارد', 'جنسية', 'لجوء', 'ترجمة معتمدة', 'قضايا أسرة',
            'immigration', 'green card', 'citizenship', 'asylum', 'certified translation', 'family law'],
-    attributes: ['arabicSpoken', 'immigrationLaw', 'certTranslation', 'acceptsCard', 'parking', 'wifi'],
+    attributes: ['immigrationLaw', 'lawGreenCard', 'lawCitizenship', 'lawAsylum', 'lawFamily', 'lawFreeConsult',
+                 'arabicSpoken', 'certTranslation', 'acceptsCard', 'parking', 'wifi'],
     plan: 'paid', verified: true, rating: 4.7, reviewCount: 41, dist: 4.1, claimed: true,
     desc: { ar: 'هجرة، أعمال، وقضايا الأسرة.', en: 'Immigration, business and family law.' },
     photos: 3, videos: 0,
@@ -333,7 +680,8 @@ export const BUSINESSES = [
     hours: week({ all: '08:00-22:00' }),
     tags: ['لحوم حلال', 'ذبيحة', 'خضار', 'بهارات', 'جبنة', 'زيتون', 'تمر',
            'halal meat', 'butcher', 'produce', 'spices', 'cheese', 'olives', 'dates'],
-    attributes: ['halalMeat', 'noAlcohol', 'arabicSpoken', 'delivery', 'acceptsCard', 'parking', 'accessible', 'ramadanHours'],
+    attributes: ['grHalalButcher', 'grArabGrocery', 'grSpices', 'grNuts', 'grHoneyDates',
+                 'halalMeat', 'noAlcohol', 'arabicSpoken', 'delivery', 'acceptsCard', 'parking', 'accessible', 'ramadanHours'],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0.8, claimed: false,
     desc: { ar: 'لحوم حلال، خضار، ومنتجات مستوردة.', en: 'Halal meat, produce and imported goods.' },
     photos: 0, videos: 0,
@@ -344,7 +692,8 @@ export const BUSINESSES = [
     hours: week({ all: '08:00-19:00', sun: null }),
     tags: ['ميكانيكا', 'زيت', 'فرامل', 'كهرباء سيارات', 'سيارات مستعملة', 'فحص',
            'mechanic', 'oil change', 'brakes', 'auto electric', 'used cars', 'inspection'],
-    attributes: ['arabicSpoken', 'acceptsCard', 'parking'],
+    attributes: ['autoMechanic', 'autoElectric', 'autoAc', 'autoUsed', 'autoInspection',
+                 'arabicSpoken', 'acceptsCard', 'parking'],
     plan: 'paid', verified: true, rating: 4.5, reviewCount: 63, dist: 5.6, claimed: true,
     desc: { ar: 'صيانة، ميكانيكا، وبيع سيارات مستعملة مضمونة.', en: 'Service, mechanics and warrantied used cars.' },
     photos: 6, videos: 3,
@@ -356,18 +705,19 @@ export const BUSINESSES = [
     hours: week({ all: ['10:00-14:00', '16:00-20:00'], mon: null }),
     tags: ['قص شعر', 'صبغة', 'مكياج', 'عرايس', 'حناء', 'عناية بالبشرة', 'أظافر',
            'haircut', 'color', 'makeup', 'bridal', 'henna', 'skincare', 'nails'],
-    attributes: ['women', 'familyPlace', 'arabicSpoken', 'acceptsCard', 'parking'],
+    attributes: ['bsWomenSalon', 'bsBrows', 'bsHenna', 'bsBridalMakeup', 'bsNails',
+                 'women', 'familyPlace', 'arabicSpoken', 'acceptsCard', 'parking'],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 2.9, claimed: false,
     desc: { ar: 'قص، صبغة، مكياج مناسبات، وعناية بالبشرة.', en: 'Cuts, color, event makeup and skincare.' },
     photos: 0, videos: 0,
   },
   {
-    id: 'b8', name: { ar: 'تكييف وتبريد أبو خالد', en: 'Abu Khaled A/C & Heating' }, cat: 'home',
+    id: 'b8', name: { ar: 'تكييف وتبريد أبو خالد', en: 'Abu Khaled A/C & Heating' }, cat: 'homeservices',
     phone: '(713) 555-0188', address: '7100 Regency Square Blvd, Houston, TX 77036',
     hours: week({ all: '24h' }),
     tags: ['تكييف', 'تبريد', 'تدفئة', 'صيانة', 'طوارئ', 'تركيب',
            'ac', 'air conditioning', 'heating', 'repair', 'emergency', 'install'],
-    attributes: ['arabicSpoken', 'cashOnly'],
+    attributes: ['hsHvac', 'hsHandyman', 'arabicSpoken', 'cashOnly'],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 1.9, claimed: false,
     desc: { ar: 'تركيب وصيانة تكييف — خدمة سريعة.', en: 'A/C install and repair — fast service.' },
     photos: 0, videos: 0,
@@ -378,7 +728,7 @@ export const BUSINESSES = [
     hours: week({ sat: '09:00-14:00', sun: '09:00-14:00' }),
     tags: ['لغة عربية', 'قرآن', 'تحفيظ', 'أطفال', 'دروس', 'نهاية الأسبوع',
            'arabic language', 'quran', 'memorization', 'kids', 'lessons', 'weekend'],
-    attributes: ['schoolArabic', 'quranSchool', 'weekendClass', 'tutoring', 'arabicSpoken', 'parking', 'accessible'],
+    attributes: ['schoolArabic', 'eduArabicLang', 'quranSchool', 'weekendClass', 'tutoring', 'arabicSpoken', 'parking', 'accessible'],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 6.7, claimed: false,
     desc: { ar: 'تعليم اللغة العربية والقرآن للأطفال.', en: 'Arabic language and Quran classes for children.' },
     photos: 0, videos: 0,
@@ -389,7 +739,7 @@ export const BUSINESSES = [
     hours: week({ all: '09:00-18:00', sun: null }),
     tags: ['بيع', 'إيجار', 'شقق', 'بيوت', 'تجاري', 'استثمار',
            'buy', 'rent', 'apartments', 'homes', 'commercial', 'investment'],
-    attributes: ['arabicSpoken', 'acceptsCard', 'parking', 'wifi'],
+    attributes: ['reSales', 'reRent', 'rePropertyMgmt', 'arabicSpoken', 'acceptsCard', 'parking', 'wifi'],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 9.2, claimed: false,
     desc: { ar: 'بيع وشراء وتأجير عقارات سكنية وتجارية.', en: 'Residential and commercial sales and leasing.' },
     photos: 0, videos: 0,
@@ -400,7 +750,8 @@ export const BUSINESSES = [
     hours: week({ all: '05:00-22:00' }),
     tags: ['مسجد', 'صلاة', 'جمعة', 'تراويح', 'تحفيظ', 'جنازة',
            'mosque', 'masjid', 'prayer', 'jumuah', 'friday', 'quran'],
-    attributes: ['womensPrayer', 'quranSchool', 'arabicClasses', 'arabicSpoken', 'parking', 'accessible', 'iftar', 'ramadanHours'],
+    attributes: ['wkMosque', 'wkIslamicCenter', 'wfMultiJumuah', 'wfKhutbahAr', 'wfKhutbahEn',
+                 'womensPrayer', 'quranSchool', 'arabicClasses', 'arabicSpoken', 'parking', 'accessible', 'iftar', 'ramadanHours'],
     worship: {
       kind: 'mosque',
       prayers: { fajr: '05:35', dhuhr: '13:15', asr: '16:45', maghrib: '19:52', isha: '21:10' },
@@ -417,7 +768,7 @@ export const BUSINESSES = [
     hours: week({ all: '09:00-20:00', mon: null }),
     tags: ['كنيسة', 'قداس', 'قبطية', 'أرثوذكسية', 'مدارس أحد', 'تعميد',
            'church', 'mass', 'coptic', 'orthodox', 'sunday school', 'baptism'],
-    attributes: ['arabicClasses', 'arabicSpoken', 'parking', 'accessible'],
+    attributes: ['wkCoptic', 'wfMassAr', 'wfFuneral', 'arabicClasses', 'arabicSpoken', 'parking', 'accessible'],
     worship: {
       kind: 'church',
       mass: [{ day: 0, time: '08:00' }, { day: 3, time: '18:30' }, { day: 6, time: '09:00' }],
@@ -433,9 +784,144 @@ export const BUSINESSES = [
     hours: week({ all: '05:00-23:00', fri: '05:00-12:00' }),
     tags: ['نادي', 'رياضة', 'حديد', 'لياقة', 'أوقات نسائية', 'مدرب',
            'gym', 'fitness', 'weights', 'training', 'women hours', 'coach'],
-    attributes: ['gymWomenHours', 'gymMen', 'arabicSpoken', 'acceptsCard', 'parking', 'wifi', 'accessible'],
+    attributes: ['gymWomenHours', 'gymMen', 'gyBoxing', 'gyPersonalTrainer', 'arabicSpoken', 'acceptsCard', 'parking', 'wifi', 'accessible'],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 1.5, claimed: false,
     desc: { ar: 'نادي رياضي بأوقات نسائية مخصّصة ومدربين معتمدين.', en: 'Fitness club with dedicated women-only hours and certified trainers.' },
+    photos: 0, videos: 0,
+  },
+
+  /* --- V.02.0: one shop in each of the new categories, and enough
+         restaurants for the CHIP_MIN threshold to mean something --- */
+  {
+    id: 'b14', name: { ar: 'مطعم زيتونة', en: 'Zaytouna Grill' }, cat: 'restaurants',
+    phone: '(713) 555-0301', address: '9720 Bissonnet St, Houston, TX 77036',
+    hours: week({ all: '11:00-23:00' }),
+    tags: ['مشاوي', 'كباب', 'شاورما', 'grill', 'kebab', 'shawarma'],
+    attributes: ['cuisLebanese', 'dishGrill', 'dishShawarma', 'svcCatering',
+                 'halalMeat', 'noAlcohol', 'arabicSpoken', 'delivery', 'acceptsCard', 'parking', 'familySeating'],
+    plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 2.1, claimed: false,
+    desc: { ar: 'مشاوي لبنانية على الفحم وتموين مناسبات.', en: 'Lebanese charcoal grills and event catering.' },
+    photos: 0, videos: 0,
+  },
+  {
+    id: 'b15', name: { ar: 'مندي الديرة', en: 'Al Deera Mandi' }, cat: 'restaurants',
+    phone: '(281) 555-0312', address: '6100 Hillcroft Ave, Houston, TX 77081',
+    hours: week({ all: '12:00-23:00', fri: '13:00-00:30' }),
+    tags: ['مندي', 'كبسة', 'يمني', 'mandi', 'kabsa', 'yemeni'],
+    attributes: ['cuisYemeni', 'cuisGulf', 'dishMandi', 'svcGroupBooking', 'svcWomenSection',
+                 'halalMeat', 'noAlcohol', 'arabicSpoken', 'delivery', 'familySeating', 'acceptsCard'],
+    plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 3.0, claimed: false,
+    desc: { ar: 'مندي وكبسة على الطريقة اليمنية، وجلسات عائلية.', en: 'Yemeni-style mandi and kabsa, with family seating.' },
+    photos: 0, videos: 0,
+  },
+  {
+    id: 'b16', name: { ar: 'فلافل القدس', en: 'Al Quds Falafel' }, cat: 'restaurants',
+    phone: '(713) 555-0323', address: '5645 Beechnut St, Houston, TX 77096',
+    hours: week({ all: '09:00-21:00', sun: null }),
+    tags: ['فلافل', 'حمص', 'فطور', 'falafel', 'hummus', 'breakfast'],
+    attributes: ['cuisPalestinian', 'dishFalafel', 'svcBreakfast', 'svcTakeout',
+                 'halalMeat', 'noAlcohol', 'arabicSpoken', 'cashOnly', 'parking'],
+    plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 4.2, claimed: false,
+    desc: { ar: 'فلافل وحمص وفطور فلسطيني كل صباح.', en: 'Falafel, hummus and a Palestinian breakfast every morning.' },
+    photos: 0, videos: 0,
+  },
+  {
+    id: 'b25', name: { ar: 'بيتزا وبرجر الرافدين', en: 'Rafidain Pizza & Burger' }, cat: 'restaurants',
+    phone: '(281) 555-0356', address: '11220 Bellaire Blvd, Houston, TX 77072',
+    hours: week({ all: '11:00-23:00', fri: '11:00-01:00', sat: '11:00-01:00' }),
+    tags: ['بيتزا', 'برجر', 'عراقي', 'pizza', 'burger', 'iraqi'],
+    attributes: ['cuisIraqi', 'dishPizza', 'dishBurger', 'svcTakeout', 'svcLateNight',
+                 'halalMeat', 'noAlcohol', 'arabicSpoken', 'delivery', 'acceptsCard', 'familySeating'],
+    plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 3.8, claimed: false,
+    desc: { ar: 'بيتزا وبرجر بلحم حلال، ودوام متأخر آخر الأسبوع.', en: 'Halal pizza and burgers, open late at weekends.' },
+    photos: 0, videos: 0,
+  },
+  {
+    id: 'b17', name: { ar: 'مقهى صنعاء', en: 'Sanaa Coffee House' }, cat: 'cafe',
+    phone: '(832) 555-0334', address: '10555 Westheimer Rd, Houston, TX 77042',
+    hours: week({ all: '08:00-01:00' }),
+    tags: ['قهوة يمنية', 'أرجيلة', 'شاي', 'yemeni coffee', 'hookah', 'tea'],
+    attributes: ['cfYemeniCoffee', 'cfHookahLounge', 'cfTeaSnacks', 'cfMatches',
+                 'noAlcohol', 'arabicSpoken', 'wifi', 'acceptsCard', 'parking', 'familySeating'],
+    plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 2.6, claimed: false,
+    desc: { ar: 'قهوة يمنية وأرجيلة وبث المباريات.', en: 'Yemeni coffee, hookah and live matches.' },
+    photos: 0, videos: 0,
+  },
+  {
+    id: 'b18', name: { ar: 'أزياء نور', en: 'Noor Modest Fashion' }, cat: 'shopping',
+    phone: '(713) 555-0345', address: '6464 Hillcroft Ave, Houston, TX 77081',
+    hours: week({ all: '11:00-20:00', sun: '13:00-18:00' }),
+    tags: ['عبايات', 'حجاب', 'فساتين', 'abaya', 'hijab', 'dresses'],
+    attributes: ['shAbaya', 'shModest', 'shOccasionDress', 'shAlterations',
+                 'arabicSpoken', 'acceptsCard', 'parking'],
+    plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 2.2, claimed: false,
+    desc: { ar: 'عبايات وحجابات وفساتين مناسبات مع خدمة تعديل.', en: 'Abayas, hijabs and occasion dresses with alterations.' },
+    photos: 0, videos: 0,
+  },
+  {
+    id: 'b19', name: { ar: 'مركز الجالية العربية', en: 'Arab Community Center' }, cat: 'community',
+    phone: '(713) 555-0356', address: '7212 Wynnwood Ln, Houston, TX 77008',
+    hours: week({ all: '09:00-17:00', sat: null, sun: null }),
+    tags: ['جمعية', 'ترجمة', 'لاجئين', 'charity', 'translation', 'refugee'],
+    attributes: ['cmCharity', 'cmRefugee', 'cmNotary', 'certTranslation',
+                 'arabicSpoken', 'parking', 'accessible', 'wifi'],
+    plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 5.4, claimed: false,
+    desc: { ar: 'دعم الوافدين الجدد، ترجمة معتمدة، وخدمات كاتب عدل.', en: 'Newcomer support, certified translation and notary services.' },
+    photos: 0, videos: 0,
+  },
+  {
+    id: 'b20', name: { ar: 'مكتب الأمين للضرائب', en: 'Al Amin Tax & Accounting' }, cat: 'finance',
+    phone: '(281) 555-0367', address: '3050 Post Oak Blvd, Houston, TX 77056',
+    hours: week({ mon: '09:00-18:00', tue: '09:00-18:00', wed: '09:00-18:00', thu: '09:00-18:00', fri: '09:00-15:00' }),
+    tags: ['ضرائب', 'محاسبة', 'LLC', 'tax', 'accounting', 'bookkeeping'],
+    attributes: ['finTaxPersonal', 'finTaxBusiness', 'finBookkeeping', 'finLlc', 'finItin',
+                 'arabicSpoken', 'acceptsCard', 'parking', 'wifi'],
+    plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 6.8, claimed: false,
+    desc: { ar: 'ضرائب أفراد وشركات، مسك دفاتر، وتأسيس شركات.', en: 'Personal and business tax, bookkeeping and company formation.' },
+    photos: 0, videos: 0,
+  },
+  {
+    id: 'b21', name: { ar: 'قاعة الأندلس للأفراح', en: 'Andalus Wedding Hall' }, cat: 'occasions',
+    phone: '(832) 555-0378', address: '12000 Bellaire Blvd, Houston, TX 77072',
+    hours: week({ all: '10:00-22:00' }),
+    tags: ['قاعة أفراح', 'زفة', 'تصوير', 'wedding hall', 'zaffa', 'photography'],
+    attributes: ['ocHall', 'ocDecor', 'ocPhotoVideo', 'ocZaffa', 'ocCatering',
+                 'halalMeat', 'noAlcohol', 'arabicSpoken', 'parking', 'accessible'],
+    plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 4.8, claimed: false,
+    desc: { ar: 'قاعة أفراح تتسع ٤٠٠ ضيف مع تموين وزفة وتصوير.', en: 'A 400-guest wedding hall with catering, zaffa and photography.' },
+    photos: 0, videos: 0,
+  },
+  {
+    id: 'b22', name: { ar: 'جوالات الخليج', en: 'Gulf Mobiles' }, cat: 'electronics',
+    phone: '(713) 555-0389', address: '8200 S Gessner Rd, Houston, TX 77036',
+    hours: week({ all: '10:00-20:00' }),
+    tags: ['جوالات', 'صيانة', 'رسيفر', 'phones', 'repair', 'receiver'],
+    attributes: ['elPhoneSales', 'elPhoneRepair', 'elUnlock', 'elPlans', 'elArabTv',
+                 'arabicSpoken', 'acceptsCard', 'parking'],
+    plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 1.7, claimed: false,
+    desc: { ar: 'بيع وصيانة الجوالات وخطوط وقنوات عربية.', en: 'Phone sales and repair, plans and Arabic TV.' },
+    photos: 0, videos: 0,
+  },
+  {
+    id: 'b23', name: { ar: 'بيت السجاد', en: 'The Rug House' }, cat: 'homegoods',
+    phone: '(281) 555-0390', address: '14100 Westheimer Rd, Houston, TX 77077',
+    hours: week({ all: '10:00-19:00', sun: null }),
+    tags: ['سجاد', 'أثاث', 'مجالس', 'rugs', 'furniture', 'majlis'],
+    attributes: ['hgRugs', 'hgMajlis', 'hgFurniture', 'hgCurtains',
+                 'arabicSpoken', 'acceptsCard', 'parking', 'delivery'],
+    plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 8.1, claimed: false,
+    desc: { ar: 'سجاد شرقي وفارسي وأطقم مجالس عربية.', en: 'Oriental and Persian rugs and Arabic majlis sets.' },
+    photos: 0, videos: 0,
+  },
+  {
+    id: 'b24', name: { ar: 'حلويات دمشق', en: 'Damascus Sweets' }, cat: 'sweets',
+    phone: '(713) 555-0401', address: '5711 Hillcroft St, Houston, TX 77036',
+    hours: week({ all: '09:00-22:00' }),
+    tags: ['كنافة', 'بقلاوة', 'حلويات', 'knafeh', 'baklava', 'sweets'],
+    attributes: ['swKnafeh', 'swBaklava', 'swChocolate', 'swNutRoastery',
+                 'halalMeat', 'noAlcohol', 'arabicSpoken', 'acceptsCard', 'delivery'],
+    plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 1.1, claimed: false,
+    desc: { ar: 'كنافة وبقلاوة ومكسرات محمّصة يومياً.', en: 'Knafeh, baklava and nuts roasted daily.' },
     photos: 0, videos: 0,
   },
 ];
@@ -558,7 +1044,7 @@ export const ARTICLES = [
    ============================================================ */
 export const EVENTS = [
   {
-    id: 'e1', status: 'live',
+    id: 'e1', type: 'festival', status: 'live',
     title: { ar: 'مهرجان الأكل العربي — هيوستن', en: 'Arab Food Festival — Houston' },
     startsAt: '2026-10-24T17:00', endsAt: '2026-10-25T22:00',
     venue: { ar: 'مركز جورج آر براون', en: 'George R. Brown Convention Center' },
@@ -568,10 +1054,12 @@ export const EVENTS = [
     organizer: { ar: 'جمعية التجار العرب', en: 'Arab Merchants Association' },
     ticketUrl: 'https://example.com/tickets/arab-food-festival',
     icon: 'utensils', photo: '', featured: true,
+    // a fixed Gregorian date every year
+    repeat: { kind: 'gregorian', spawned: [] },
     source: '', externalId: '', sourceUrl: '',
   },
   {
-    id: 'e2', status: 'live',
+    id: 'e2', type: 'lecture', status: 'live',
     title: { ar: 'أمسية شعر عربي', en: 'Arabic Poetry Evening' },
     startsAt: '2026-09-12T19:30', endsAt: '2026-09-12T22:00',
     venue: { ar: 'المركز الثقافي العربي', en: 'Arab Cultural Center' },
@@ -584,7 +1072,7 @@ export const EVENTS = [
     source: '', externalId: '', sourceUrl: '',
   },
   {
-    id: 'e3', status: 'live',
+    id: 'e3', type: 'bazaar', status: 'live',
     title: { ar: 'سوق رمضان الخيري', en: 'Ramadan Charity Bazaar' },
     startsAt: '2027-02-20T16:00', endsAt: '2027-02-20T23:00',
     venue: { ar: 'مسجد الهدى', en: 'Al Huda Masjid' },
@@ -593,6 +1081,8 @@ export const EVENTS = [
             en: 'A family bazaar supporting the student fund, with food and handmade goods.' },
     organizer: { ar: 'مسجد الهدى', en: 'Al Huda Masjid' },
     ticketUrl: '', icon: 'users', photo: '', featured: false,
+    // Ramadan moves about eleven days earlier each Gregorian year
+    repeat: { kind: 'hijri', spawned: [] },
     source: '', externalId: '', sourceUrl: '',
   },
 ];
@@ -600,13 +1090,36 @@ export const EVENTS = [
 /** A brand-new event record — one place that defines the shape. */
 export function blankEvent() {
   return {
-    id: '', status: 'pending',
+    id: '', status: 'pending', type: 'community',
     title: { ar: '', en: '' }, startsAt: '', endsAt: '',
     venue: { ar: '', en: '' }, city: '',
     desc: { ar: '', en: '' }, organizer: { ar: '', en: '' },
     ticketUrl: '', icon: 'calendar', photo: '', featured: false,
+    // filled in only for type 'concert'
+    concert: null,          // { artist, doorsAt, priceFrom, ageLimit, familySeating }
+    // an event that comes round every year, by one calendar or the other
+    repeat: null,           // { kind: 'gregorian' | 'hijri', spawned: [year, …] }
     source: '', externalId: '', sourceUrl: '',
   };
+}
+
+/**
+ * A yearly event moves differently depending on which calendar it belongs to:
+ * Independence Day is on the same Gregorian date every year, while Ramadan and
+ * the two Eids arrive about eleven days earlier each Gregorian year. Getting
+ * that wrong by a fortnight would be worse than not repeating at all.
+ */
+export const HIJRI_YEAR_DAYS = 354.367;
+export function nextOccurrence(iso, kind) {
+  const base = new Date(iso);
+  if (isNaN(base)) return '';
+  const next = new Date(base);
+  if (kind === 'hijri') next.setDate(next.getDate() + Math.round(HIJRI_YEAR_DAYS));
+  else next.setFullYear(next.getFullYear() + 1);
+  // keep the local wall-clock time rather than drifting with the timezone
+  const pad = (n) => String(n).padStart(2, '0');
+  return `${next.getFullYear()}-${pad(next.getMonth() + 1)}-${pad(next.getDate())}`
+       + `T${pad(next.getHours())}:${pad(next.getMinutes())}`;
 }
 
 /* ---- paid verification badge ----

@@ -7,7 +7,7 @@ ARABNA · عربنا — a mobile-first web app for the Arab community in the U.
 **business directory + marketplace + events + magazine**, Arabic-first with a full English toggle.
 ("Classifieds / الإعلانات الشخصية" is now "Marketplace / السوق" — the old `#/classifieds`
 routes still resolve so shared links keep working.)
-Current version: **V.01.9 (prototype)**. Owner: Rai Elby (@dbprime). Deploys to Vercel (team DB Prime).
+Current version: **V.02.0 (prototype)**. Owner: Rai Elby (@dbprime). Deploys to Vercel (team DB Prime).
 
 ## Hard rules (from the product brief)
 1. **One repository, one Vercel project.** No duplicates, no stray preview projects.
@@ -296,10 +296,9 @@ means re-entering 300 shops, so treat it as frozen unless there is no choice.
   directory tab moves reviews, favourites, ownership, tags and attributes across.
 - **Seasonal groups** (`season: 'ramadan'`) are hidden until the owner flips one
   switch in admin → settings; `state.seasons` holds it.
-- Two new categories: **`worship`** — named "places of worship", never "mosques",
-  because the community is Muslim and Christian — and **`gyms`**. Arabic
-  schooling and newcomer services are attribute groups rather than categories,
-  for the anti-duplication reason above.
+- **Twenty categories (V.02.0), frozen** — see the list below. Arabic schooling
+  and newcomer services stay attribute groups rather than categories, for the
+  anti-duplication reason above.
 
 ## What the $29 buys, and what it must never buy (V.01.9)
 - **Reviews are free on every listing, subscribed or not.** If twenty of three
@@ -363,6 +362,54 @@ means re-entering 300 shops, so treat it as frozen unless there is no choice.
   row, and `toDataFile()` emits text to paste into `data.js` and push. In V.02
   the same screen writes to the database and step three disappears.
   `exportBackup()` dumps the whole state as JSON.
+
+## The twenty categories and the speciality tree (V.02.0)
+```
+restaurants · grocery · worship · cafe · beauty · shopping · community ·
+education · sweets · finance · occasions · doctors · auto · homegoods ·
+lawyers · travel · electronics · realestate · homeservices · gyms
+```
+Plus `events`, which is **not** a business category: it carries `route: '#/events'`
+and every directory chip row filters it out with `!c.route`. `HOME_CATS` names the
+five circles on Home.
+
+- **`homeservices` and `homegoods` never merge.** Someone buying a sofa is
+  browsing; someone looking for a plumber has a problem right now. Home services
+  is the highest-earning column in any local directory, so it gets chased to be
+  filled, not buried in a bigger one.
+- **The category is never called "handyman".** A licensed HVAC company will not
+  see itself in that word and will not sign up — and those are the ones who pay.
+  `hsHandyman` is a speciality *inside* `homeservices`. Not to be confused with
+  the marketplace's `handyman` section, which is a free 14-day classified for a
+  private individual; the directory page is a permanent listing for a business.
+- **309 specialities** live in `ATTRIBUTES`, generated from one table so the
+  i18n key is derived from the id (`attr` + Id) and cannot drift. Adding one is a
+  line in `data.js` and two in `i18n.js`.
+
+### Three layers of visibility — the rule that keeps 309 specialities usable
+| Layer | Shows |
+|---|---|
+| Quick chips above the results | attributes with **`CHIP_MIN` (5) or more** businesses in the current category, counted live |
+| Filter sheet | anything with **at least one** business in that category |
+| Add / edit form | **every** attribute defined for the category, empty ones included |
+
+`quickAttrsForCat` / `filterAttrsForCat` / `attrGroupsForCat(cat, {all:true})` in
+`store.js`. **Nothing is hand-listed**: a user never meets a filter that returns
+nothing, and a new speciality surfaces by itself the day it has content.
+
+## Events: types, concerts, and the yearly ones (V.02.0)
+- `EVENT_TYPES` holds eleven types; the chip row on `#/events` shows only the
+  types that actually have something upcoming, the same rule as the directory.
+- **Concert-only fields** (`e.concert`) appear when the type is `concert`:
+  artist, doors, price from, age limit, family seating. **Ticketing is never
+  built in** — the button opens the organiser's site. Selling tickets means
+  payments, refunds and liability on a cancellation, and that is not this
+  business.
+- **A yearly event is never republished automatically.** `repeat.kind` is
+  `gregorian` (a fixed date) or `hijri` (~11 days earlier each Gregorian year,
+  `HIJRI_YEAR_DAYS`). `dueRepeats()` warns the admin `REPEAT_LEAD_DAYS` ahead and
+  `spawnRepeat()` makes a **draft** — the venue, the price and the line-up change
+  every year, so a human checks before it goes live.
 
 ## Testing before you ship a change
 1. Serve locally (`python3 -m http.server`) and click through: home → directory → listing →

@@ -6,10 +6,11 @@
 
 import { CLASSIFIEDS, BUSINESSES, NOTIFICATIONS, SLIDER_ADS, REVIEWS,
          MARKET_CATS, FREE_PRICE, EVENTS, VERIFY_BADGE_PRICE, blankEvent,
-         ATTRIBUTES, ATTR_GROUPS, CATEGORIES, DAY_KEYS, attrById, attrInCat, attrIsQuick,
-         isAllDay, week } from './data.js';
+         ATTRIBUTES, ATTR_GROUPS, CATEGORIES, DAY_KEYS, CHIP_MIN, EVENT_TYPES,
+         attrById, attrInCat, isAllDay, week, nextOccurrence } from './data.js';
 
-export { ATTRIBUTES, ATTR_GROUPS, DAY_KEYS, attrById, attrInCat, attrIsQuick, isAllDay, week };
+export { ATTRIBUTES, ATTR_GROUPS, DAY_KEYS, CHIP_MIN, EVENT_TYPES,
+         attrById, attrInCat, isAllDay, week, nextOccurrence };
 
 export { blankEvent };
 
@@ -409,21 +410,46 @@ export function setSeason(season, on) {
   save();
 }
 
-/** every attribute that applies to `cat` and is in season */
+/* ------------------------------------------------------------
+   Three layers, one rule: an attribute is offered where it has
+   enough content to be worth offering. Nothing is hand-listed, so
+   a speciality appears on its own the day the data arrives.
+   ------------------------------------------------------------ */
+
+/** every attribute defined for `cat` and in season — the add/edit form */
 export function attrsForCat(cat) {
   return ATTRIBUTES.filter(a => attrInCat(a, cat) && seasonOn(a.season));
 }
-/** …grouped, in registry order, for the add form and the filter sheet */
-export function attrGroupsForCat(cat) {
-  const list = attrsForCat(cat);
+
+/** how many listed businesses in `cat` actually carry each attribute */
+export function attrCounts(cat) {
+  const pool = allBusinesses().filter(b => cat === 'all' || cat === '*' || b.cat === cat);
+  const out = {};
+  pool.forEach(b => (b.attributes || []).forEach(id => { out[id] = (out[id] || 0) + 1; }));
+  return out;
+}
+
+/** the filter sheet: anything with at least one business behind it */
+export function filterAttrsForCat(cat) {
+  const counts = attrCounts(cat);
+  return attrsForCat(cat).filter(a => (counts[a.id] || 0) >= 1);
+}
+
+/** …grouped, in registry order. `all` shows every defined attribute. */
+export function attrGroupsForCat(cat, { all = false } = {}) {
+  const list = all ? attrsForCat(cat) : filterAttrsForCat(cat);
   return ATTR_GROUPS
     .filter(g => seasonOn(g.season))
     .map(g => ({ group: g, attrs: list.filter(a => a.group === g.id) }))
     .filter(g => g.attrs.length);
 }
-/** the ones that earn a chip above the results */
+
+/** chips above the results: only once CHIP_MIN businesses share the attribute */
 export function quickAttrsForCat(cat) {
-  return ATTRIBUTES.filter(a => attrIsQuick(a, cat) && seasonOn(a.season));
+  const counts = attrCounts(cat);
+  return attrsForCat(cat)
+    .filter(a => (counts[a.id] || 0) >= CHIP_MIN)
+    .sort((a, b) => (counts[b.id] || 0) - (counts[a.id] || 0));
 }
 export function hasAttr(biz, id) {
   return Array.isArray(biz && biz.attributes) && biz.attributes.includes(id);
@@ -1397,6 +1423,66 @@ export function addArticle(a) {
 
 
 /* ============================================================
+   Yearly events
+   ------------------------------------------------------------
+   A festival repeats but its details do not: the hall changes, the
+   price changes, the line-up changes. So the app never republishes
+   last year's event — it tells the admin the date is coming round
+   and offers a *draft* copy to bring up to date first.
+   ============================================================ */
+
+/** how many days ahead an admin is warned that a yearly event is due */
+export const REPEAT_LEAD_DAYS = 60;
+
+/** repeating events whose next edition is due and not yet drafted */
+export function dueRepeats(now = Date.now()) {
+  return allEvents()
+    .filter(e => e.repeat && e.repeat.kind)
+    .map(e => ({ ev: e, nextAt: nextOccurrence(e.startsAt, e.repeat.kind) }))
+    .filter(({ ev, nextAt }) => {
+      if (!nextAt) return false;
+      const year = new Date(nextAt).getFullYear();
+      if ((ev.repeat.spawned || []).includes(year)) return false;
+      const days = (new Date(nextAt).getTime() - now) / 86400000;
+      // only once this year's edition is behind us and the next is near
+      return days > 0 && days <= REPEAT_LEAD_DAYS;
+    });
+}
+
+/** copy a repeating event into next year as a DRAFT for the admin to update */
+export function spawnRepeat(eventId) {
+  const src = eventById(eventId);
+  if (!src || !src.repeat) return null;
+  const nextAt = nextOccurrence(src.startsAt, src.repeat.kind);
+  if (!nextAt) return null;
+  const year = new Date(nextAt).getFullYear();
+
+  const copy = Object.assign({}, src, {
+    id: 'ev' + Date.now() + '-' + year,
+    // a draft, never live: the venue and the price have to be checked first
+    status: 'pending',
+    startsAt: nextAt,
+    endsAt: src.endsAt ? nextOccurrence(src.endsAt, src.repeat.kind) : '',
+    featured: false,
+    repeat: { kind: src.repeat.kind, spawned: [] },
+  });
+  state.extraEvents = [copy].concat(state.extraEvents);
+
+  // remember that this year has been handled, on the original
+  const stamp = { spawned: ((src.repeat.spawned) || []).concat([year]), kind: src.repeat.kind };
+  if (state.extraEvents.some(e => e.id === src.id)) {
+    const own = state.extraEvents.find(e => e.id === src.id);
+    own.repeat = stamp;
+  } else {
+    state.eventEdits = Object.assign({}, state.eventEdits, {
+      [src.id]: Object.assign({}, state.eventEdits[src.id] || {}, { repeat: stamp }),
+    });
+  }
+  save();
+  return copy;
+}
+
+/* ============================================================
    Bulk import and backup
    ------------------------------------------------------------
    The constraint that shapes this: seed businesses live in
@@ -1420,14 +1506,20 @@ export const CSV_COLUMNS = [
 
 /** A sample file with the right columns and one filled row. */
 export function sampleCsv() {
-  const example = [
-    'Al Nakheel Restaurant', 'مطعم النخيل', 'restaurants', '(713) 555-0101',
-    '123 Hillcroft Ave, Houston, TX 77081',
-    'مشاوي ومقبلات', 'Grills and mezze',
-    'مشاوي;كباب;grill;kebab', 'halalMeat;noAlcohol;delivery',
-    '11:00-23:00', '11:00-23:00', '11:00-23:00', '11:00-23:00', '11:00-23:00', '11:00-02:00', 'closed',
+  const rows = [
+    // both names, a late Friday, several specialities
+    ['Al Nakheel Restaurant', 'مطعم النخيل', 'restaurants', '(713) 555-0101',
+     '123 Hillcroft Ave, Houston, TX 77081', 'مشاوي ومقبلات', 'Grills and mezze',
+     'مشاوي;كباب;grill;kebab', 'cuisLebanese;dishGrill;halalMeat;noAlcohol;delivery',
+     '11:00-23:00', '11:00-23:00', '11:00-23:00', '11:00-23:00', '11:00-23:00', '11:00-02:00', 'closed'],
+    // English name only, which is how most shops here actually trade
+    ["Abdallah's Bakery", '', 'sweets', '(713) 555-0102',
+     '456 Westheimer Rd, Houston, TX 77042', '', 'Knafeh and Arabic sweets',
+     'كنافة;بقلاوة;knafeh;baklava', 'swKnafeh;swBaklava;halalMeat',
+     '09:00-21:00', '09:00-21:00', '09:00-21:00', '09:00-21:00', '09:00-21:00', '09:00-22:00', '09:00-22:00'],
   ];
-  return CSV_COLUMNS.join(',') + '\n' + example.map(csvCell).join(',') + '\n';
+  return CSV_COLUMNS.join(',') + '\n'
+       + rows.map(r => r.map(csvCell).join(',')).join('\n') + '\n';
 }
 function csvCell(v) {
   const s2 = String(v == null ? '' : v);
@@ -1513,6 +1605,8 @@ export function parseBusinessCsv(text) {
     if (!col(raw, 'name_ar') && nameEn) warnings.push({ field: 'name_ar', code: 'noNameAr' });
     if (!cat) errors.push({ field: 'category', code: 'required' });
     else if (!catIds.includes(cat)) errors.push({ field: 'category', code: 'unknown', got: cat });
+    // an unknown category is fatal on purpose: guessing where a shop belongs
+    // would put it somewhere nobody looks. The preview prints the valid ids.
     if (!phone) errors.push({ field: 'phone', code: 'required' });
     else if (phoneKey(phone).length !== 10) errors.push({ field: 'phone', code: 'badPhone', got: phone });
     if (!address) errors.push({ field: 'address', code: 'required' });
@@ -1560,6 +1654,7 @@ export function parseBusinessCsv(text) {
 
   return {
     header, rows,
+    validCats: catIds,
     counts: {
       ok: rows.filter(r => !r.errors.length && !r.dupOf).length,
       bad: rows.filter(r => r.errors.length).length,

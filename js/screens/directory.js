@@ -586,7 +586,7 @@ export function AddBusinessScreen(root) {
      nothing about "halal" or "women only" is written here, so a new attribute
      appears in this form the moment it is added to data.js. */
   const paintAttrs = () => {
-    $('#bAttrs').innerHTML = S.attrGroupsForCat(cat).map(g => `
+    $('#bAttrs').innerHTML = S.attrGroupsForCat(cat, { all: true }).map(g => `
       <div class="attr-group">
         <div class="attr-group-label">${t(g.group.key)}</div>
         <div class="attr-pick">
@@ -816,7 +816,7 @@ export function BusinessEditScreen(root, params) {
     </div>`;
 
   const paintAttrs = () => {
-    $('#eAttrs').innerHTML = S.attrGroupsForCat(cat).map(g => `
+    $('#eAttrs').innerHTML = S.attrGroupsForCat(cat, { all: true }).map(g => `
       <div class="attr-group">
         <div class="attr-group-label">${t(g.group.key)}</div>
         <div class="attr-pick">
