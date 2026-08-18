@@ -2,7 +2,8 @@
    Reachable only by typing #/admin — it is intentionally absent from the drawer
    and the profile screen. Credentials live in store.js (V.02: a real staff
    account behind Supabase row-level security). */
-import { t, L, icon, $, $$, go, renderHeader, toast, wireRoutes, emptyState, fmtMoney, priceLabel } from '../ui.js';
+import { t, L, icon, $, $$, go, renderHeader, toast, wireRoutes, emptyState, fmtMoney, priceLabel,
+         confirmSheet } from '../ui.js';
 import { MAG_CATS, ARTICLES, CATEGORIES } from '../data.js';
 import * as S from '../store.js';
 import { passwordField, wirePasswordToggles } from './profile.js';
@@ -117,6 +118,26 @@ function panelView(root) {
       S.rejectBadge(); toast(t('itemRejected'), 'ok'); paint();
     }));
     // --- admin password ---
+    const ram = $('#ramSw');
+    if (ram) ram.addEventListener('click', () => {
+      // one switch turns the whole Ramadan group on: attributes, chips, filters
+      S.setSeason('ramadan', !S.seasonOn('ramadan'));
+      ram.classList.toggle('on', S.seasonOn('ramadan'));
+      toast(t('done'), 'ok');
+    });
+
+    const mg = $('#mgGo');
+    if (mg) mg.addEventListener('click', () => {
+      const keep = $('#mgKeep').value, drop = $('#mgDrop').value;
+      if (keep === drop) { toast(t('mergeNeedTwo'), 'err'); return; }
+      confirmSheet({
+        title: t('mergeDuplicates'),
+        sub: `${L(S.businessById(drop).name)} → ${L(S.businessById(keep).name)}`,
+        confirmText: t('mergeDrop'), danger: true,
+        onConfirm: () => { S.mergeBusinesses(keep, drop); toast(t('mergeDone'), 'ok'); paint(); },
+      });
+    });
+
     const apw = $('#apSave');
     if (apw) apw.addEventListener('click', () => {
       const a = $('#apNew').value, b2 = $('#apConf').value;
@@ -320,7 +341,13 @@ function eventsHtml() {
 /* ----------------------------- SETTINGS ----------------------------- */
 function setHtml() {
   return `<div class="pad mt-16">
-    <div class="section-title">${t('changePassword')}</div>
+    <div class="section-title">${t('attrGrpRamadan')}</div>
+    <div class="setting-row" style="padding-inline:0">
+      <span class="s-txt"><b>${t('seasonRamadan')}</b><span>${t('seasonRamadanSub')}</span></span>
+      <button class="switch ${S.seasonOn('ramadan') ? 'on' : ''}" id="ramSw"></button>
+    </div>
+
+    <div class="section-title mt-20">${t('changePassword')}</div>
     <div class="hint" style="margin-bottom:10px">${t('adminUser')}: <b class="gold ltr">${S.adminCreds().user}</b></div>
     ${passwordField('apNew', t('newPassword'))}
     ${passwordField('apConf', t('confirmPassword'))}
@@ -391,6 +418,14 @@ function dirHtml() {
     <div class="list-note mt-16" style="margin-inline:0">${icon('info', 18)}
       <span>${S.state.lang === 'en' ? 'Bulk import (CSV / PDF list) seeds unclaimed free listings — V.02 with the real database.' : 'الاستيراد الجماعي (من ملف PDF/CSV) يضيف الأنشطة كإدراج مجاني غير مُطالَب به — في V.02 مع قاعدة البيانات الحقيقية.'}</span></div>
     <button class="btn btn-ghost btn-block mt-12" disabled>${icon('file', 19)} ${S.state.lang === 'en' ? 'Import list' : 'استيراد قائمة'} — ${t('comingSoon')}</button>
+    <div class="section-title mt-20">${t('mergeDuplicates')}</div>
+    <div class="hint" style="margin-bottom:10px">${t('mergePick')}</div>
+    <div class="field"><label class="label">${t('mergeKeep')}</label>
+      <select class="select" id="mgKeep">${all.map(b => `<option value="${b.id}">${L(b.name)} — ${b.phone}</option>`).join('')}</select></div>
+    <div class="field"><label class="label">${t('mergeDrop')}</label>
+      <select class="select" id="mgDrop">${all.map(b => `<option value="${b.id}">${L(b.name)} — ${b.phone}</option>`).join('')}</select></div>
+    <button class="btn btn-danger btn-block" id="mgGo">${icon('refresh', 19)} ${t('mergeDuplicates')}</button>
+
     <div class="mt-16">
       ${CATEGORIES.slice(0, 6).map(c => `<div class="setting-row"><span class="s-txt"><b>${t(c.key)}</b></span>
         <span class="muted fs-12">${all.filter(b => b.cat === c.id).length}</span></div>`).join('')}

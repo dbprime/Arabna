@@ -7,7 +7,7 @@ ARABNA · عربنا — a mobile-first web app for the Arab community in the U.
 **business directory + marketplace + events + magazine**, Arabic-first with a full English toggle.
 ("Classifieds / الإعلانات الشخصية" is now "Marketplace / السوق" — the old `#/classifieds`
 routes still resolve so shared links keep working.)
-Current version: **V.01.7 (prototype)**. Owner: Rai Elby (@dbprime). Deploys to Vercel (team DB Prime).
+Current version: **V.01.8 (prototype)**. Owner: Rai Elby (@dbprime). Deploys to Vercel (team DB Prime).
 
 ## Hard rules (from the product brief)
 1. **One repository, one Vercel project.** No duplicates, no stray preview projects.
@@ -249,6 +249,57 @@ under the benefits and the wireframe: `ابدأ — يبدأ من $49` for a mem
 wrapped in `.ltr`), `شوف السعر وابدأ` plus a one-line note for a visitor.
 **Selecting never deselects** — the way forward lives inside the open package, so
 an all-folded screen would be a dead end; the cheapest opens by default.
+
+## The business record (V.01.8) — read this before touching `data.js`
+The owner is entering **300 shops by hand**. A change to this shape after that
+means re-entering 300 shops, so treat it as frozen unless there is no choice.
+
+```js
+{
+  id, name: {ar,en}, cat, phone, address, desc: {ar,en},
+  hours: [ null | [['11:00','23:00'], …], …7 ],   // 0 = Sunday, Date#getDay order
+  tags: ['شاورما', 'shawarma', …],                 // both languages in one flat list
+  attributes: ['halalMeat', 'noAlcohol', …],       // ids only, never booleans
+  worship: { kind, prayers, jumuah, mass, lang },  // places of worship only
+  plan, verified, rating, reviewCount, dist, claimed, photos, videos,
+}
+```
+
+- **Hours are data, not prose.** Seven entries; `null` is closed, two spans cover
+  a midday break, `['00:00','24:00']` is round the clock, and a close earlier
+  than its open runs past midnight. `week({all:'11:00-23:00', fri:'11:00-02:00'})`
+  in `data.js` builds the canonical array from something readable.
+  `openState()` in `store.js` is the only place the maths lives: it inspects
+  **yesterday as well as today**, because at 00:30 on Saturday it is Friday's
+  span that is still running. Everything else — the pill, "closes within the
+  hour", "opens 9am", the `open now` filter, the `open first` sort — reads it.
+- **Attributes are a registry, not fields.** `ATTRIBUTES` in `data.js` gives each
+  one `cats` (where it applies), `quick` (where it earns a chip above the
+  results), `group`, `exclusive` and `season`. The add/edit form, the filter
+  sheet and the quick-chip row all build themselves from it, so **a new
+  attribute is one line in `data.js` and no code anywhere else**. Never add a
+  bespoke boolean column to a business.
+- **Never split an attribute into its own category.** One salon serves women and
+  men; two categories would list it twice. A family salon must appear under
+  "women" and under "men" alike, and the tests assert exactly that.
+- **Halal and alcohol are two attributes on purpose.** Much of the community will
+  not eat where alcohol is served even when the meat is halal, so one flag could
+  not answer the question being asked.
+- **Search** matches name + description + address + `tags` + the category name,
+  **in both languages whatever the interface is set to** (`matchesSearch` /
+  `searchHaystack`). `normalize()` folds case, tatweel, diacritics and
+  alef/ya/ta-marbuta variants. `app.js` hands i18n's tables to the store at boot
+  via `registerStrings` so the store never imports i18n back.
+- **Duplicates** are caught at the door: `findDuplicates()` keys on the last ten
+  phone digits first, then name + address. The add form shows the match and
+  offers both honest answers. `mergeBusinesses(keep, drop)` in the admin
+  directory tab moves reviews, favourites, ownership, tags and attributes across.
+- **Seasonal groups** (`season: 'ramadan'`) are hidden until the owner flips one
+  switch in admin → settings; `state.seasons` holds it.
+- Two new categories: **`worship`** — named "places of worship", never "mosques",
+  because the community is Muslim and Christian — and **`gyms`**. Arabic
+  schooling and newcomer services are attribute groups rather than categories,
+  for the anti-duplication reason above.
 
 ## Testing before you ship a change
 1. Serve locally (`python3 -m http.server`) and click through: home → directory → listing →

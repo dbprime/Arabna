@@ -2,8 +2,9 @@
 import { t, L, icon, $, $$, go, back, renderHeader, openSheet, closeSheet, confirmSheet,
          toast, stars, wireRoutes, emptyState, query, openMaps, shareItem, fmtMoney,
          openFilterSheet, activeFilterCount, sectionNote,
-         showsPrices, priceGate, wirePriceGates } from '../ui.js';
-import { CATEGORIES, SUBSCRIPTION_PRICE } from '../data.js';
+         showsPrices, priceGate, wirePriceGates,
+         openBadge, attrChips, fmtDay, fmtTime } from '../ui.js';
+import { CATEGORIES, SUBSCRIPTION_PRICE, DAY_KEYS } from '../data.js';
 import * as S from '../store.js';
 import { catIcon } from './home.js';
 
@@ -13,7 +14,7 @@ export function DirectoryScreen(root) {
   const q = query();
   let cat = q.cat || 'all';
   let term = q.q || '';
-  let filters = { cat, radius: S.state.radius, sort: 'newest' };
+  let filters = { cat, radius: S.state.radius, sort: 'newest', openNow: false, attrs: [] };
 
   root.innerHTML = `
     <div class="search-row">
@@ -27,6 +28,7 @@ export function DirectoryScreen(root) {
       ${CATEGORIES.filter(c => !c.route).map(c => `<button class="chip ${cat === c.id ? 'active' : ''}" data-cat="${c.id}">${icon(c.icon, 15)} ${t(c.key)}</button>`).join('')}
     </div>
 
+    <div class="hscroll mt-8" id="attrChips"></div>
     <div id="dirNote"></div>
     <div class="pad mt-12" id="dirList"></div>
 
@@ -34,16 +36,44 @@ export function DirectoryScreen(root) {
       <span>${t('isThisYours')} <b class="gold" data-route="#/claim" style="cursor:pointer">${t('claimIt')}</b> · <b class="gold" data-route="#/add-business" style="cursor:pointer">${t('addBusiness')}</b></span>
     </div>`;
 
+  /* The quick chips are generated from the attribute registry for whichever
+     category is showing, so a new attribute needs no code here at all.
+     "Open now" always leads: it is the question people ask most. */
+  const paintChips = () => {
+    const quick = S.quickAttrsForCat(cat);
+    $('#attrChips').innerHTML =
+      `<button class="chip ${filters.openNow ? 'active' : ''}" data-attr="__open">${icon('clock', 14)} ${t('filterOpenNow')}</button>`
+      + quick.map(a => `<button class="chip ${filters.attrs.includes(a.id) ? 'active' : ''}" data-attr="${a.id}">
+          ${icon(a.icon, 14)} ${t(a.key)}</button>`).join('');
+    $('#attrChips').style.display = 'flex';
+    $$('#attrChips .chip').forEach(b => b.addEventListener('click', () => {
+      const id = b.dataset.attr;
+      if (id === '__open') filters.openNow = !filters.openNow;
+      else {
+        const i = filters.attrs.indexOf(id);
+        if (i >= 0) filters.attrs.splice(i, 1); else filters.attrs.push(id);
+      }
+      // chips combine rather than replace one another
+      b.classList.toggle('active', id === '__open' ? filters.openNow : filters.attrs.includes(id));
+      paint();
+    }));
+  };
+
   const paint = () => {
+    const now = new Date();
     let list = S.allBusinesses()
       .filter(b => cat === 'all' || b.cat === cat)
       .filter(b => b.dist <= S.state.radius)
-      .filter(b => !term || L(b.name).toLowerCase().includes(term.toLowerCase()) || L(b.desc || '').toLowerCase().includes(term.toLowerCase()));
+      .filter(b => S.matchesSearch(b, term))
+      .filter(b => !filters.openNow || S.isOpenNow(b, now))
+      .filter(b => S.matchesAttrs(b, filters.attrs));
 
     if (filters.sort === 'rated') {
       list.sort((a, b) => S.ratingFor(b).avg - S.ratingFor(a).avg);
     } else if (filters.sort === 'nearest') {
       list.sort((a, b) => a.dist - b.dist);
+    } else if (filters.sort === 'open') {
+      list.sort((a, b) => (S.isOpenNow(b, now) - S.isOpenNow(a, now)) || a.dist - b.dist);
     } else {
       list.sort((a, b) => (S.businessPlan(b) === 'paid') - (S.businessPlan(a) === 'paid') || a.dist - b.dist);
     }
@@ -52,6 +82,24 @@ export function DirectoryScreen(root) {
     $('#dirNote').innerHTML = sectionNote(sec ? t(sec.key) : '', list.length);
 
     const el = $('#dirList');
+    const filtered = filters.openNow || filters.attrs.length || term;
+    if (!list.length && filtered) {
+      // a filtered dead end needs its own way out, not a radius suggestion
+      el.innerHTML = emptyState('filter', t('noFilterResults'), t('noFilterResultsSub'));
+      el.querySelector('.empty').insertAdjacentHTML('beforeend',
+        `<button class="btn btn-gold" id="clrF">${t('clearFiltersBtn')}</button>`);
+      el.querySelector('#clrF').addEventListener('click', () => {
+        filters.openNow = false; filters.attrs = []; term = '';
+        $('#dirSearch').value = '';
+        paintChips(); paint();
+      });
+      const fc0 = $('#fCount');
+      const n0 = activeFilterCount(filters);
+      fc0.className = n0 ? 'f-count' : '';
+      fc0.textContent = n0 || '';
+      $('#dirFilter').classList.toggle('on', n0 > 0);
+      return;
+    }
     if (!list.length) {
       el.innerHTML = emptyState('search', t('emptyDirTitle'), t('emptyDirSub'), t('radius'), '#/directory');
     } else {
@@ -71,6 +119,7 @@ export function DirectoryScreen(root) {
     fc.textContent = n || '';
     $('#dirFilter').classList.toggle('on', n > 0);
   };
+  paintChips();
   paint();
 
   const activeChip = $('#catChips .chip.active');
@@ -79,6 +128,11 @@ export function DirectoryScreen(root) {
   $$('#catChips .chip').forEach(c => c.addEventListener('click', () => {
     cat = c.dataset.cat;
     $$('#catChips .chip').forEach(x => x.classList.toggle('active', x === c));
+    // the quick chips belong to the category — drop any that no longer apply
+    const valid = S.attrsForCat(cat === 'all' ? '*' : cat).map(a => a.id);
+    filters.attrs = filters.attrs.filter(id => valid.includes(id));
+    filters.cat = cat;
+    paintChips();
     paint();
   }));
   $('#dirSearch').addEventListener('input', e => { term = e.target.value; paint(); });
@@ -87,9 +141,11 @@ export function DirectoryScreen(root) {
     cats: CATEGORIES.filter(c => !c.route).map(c => ({ id: c.id, label: t(c.key) })),
     value: filters,
     withPrice: false,
+    withAttrs: true,
     onApply: (v) => {
       filters = v; cat = v.cat;
       $$('#catChips .chip').forEach(x => x.classList.toggle('active', x.dataset.cat === cat));
+      paintChips();
       paint();
     },
   }));
@@ -110,12 +166,69 @@ function rowHtml(b) {
       </div>
       <div class="row-sub">${paid && r.count ? stars(r.avg) + `<span>· ${r.count} ${t('reviews')}</span> · ` : ''}
         <span>${icon('mapPin', 13)} ${b.dist} ${t('miles')}</span>
+        ${openBadge(b)}
       </div>
       <div class="row-actions">
         <button class="mini-btn gold" data-call="${b.phone}">${icon('phone', 15)} ${t('call')}</button>
       </div>
     </div>
   </div>`;
+}
+
+/**
+ * The week, with today picked out and the live open/closed pill above it.
+ * A row of prose could not answer "are they open now", which is the only
+ * question most people have.
+ */
+function hoursBlock(b) {
+  if (!Array.isArray(b.hours) || b.hours.length !== 7) {
+    return `<div class="info-row"><span class="i-ico">${icon('clock', 21)}</span>
+      <div class="i-txt"><b>${t('noHours')}</b><span>${t('hoursTitle')}</span></div></div>`;
+  }
+  const today = new Date().getDay();
+  return `<div class="hours-block">
+    <div class="hours-head">
+      <span class="i-ico">${icon('clock', 21)}</span>
+      <b>${t('hoursTitle')}</b>
+      ${openBadge(b)}
+    </div>
+    <div class="hours-week">
+      ${b.hours.map((spans, i) => `
+        <div class="hours-row ${i === today ? 'today' : ''}">
+          <span>${t(DAY_KEYS[i])}</span>
+          <span class="${spans && spans.length ? 'ltr' : 'muted'}">${fmtDay(spans)}</span>
+        </div>`).join('')}
+    </div>
+  </div>`;
+}
+
+/** prayer, Jumuah or mass times — only ever rendered for a place of worship */
+function worshipBlock(b) {
+  const w = b.worship;
+  if (!w) return '';
+  const langLabel = w.lang === 'ar' ? t('langAr') : w.lang === 'en' ? t('langEn') : t('langBoth');
+  const rows = [];
+
+  if (w.prayers) {
+    rows.push(`<div class="wor-head">${icon('moon', 17)} ${t('prayerTimes')}</div>
+      <div class="wor-grid">
+        ${['fajr', 'dhuhr', 'asr', 'maghrib', 'isha'].filter(k => w.prayers[k]).map(k =>
+          `<div class="wor-cell"><b>${t('pr' + k[0].toUpperCase() + k.slice(1))}</b><span class="ltr">${fmtTime(w.prayers[k])}</span></div>`).join('')}
+      </div>`);
+  }
+  if (w.jumuah && w.jumuah.length) {
+    rows.push(`<div class="info-row"><span class="i-ico">${icon('users', 21)}</span>
+      <div class="i-txt"><b class="ltr">${w.jumuah.map(fmtTime).join(' · ')}</b><span>${t('jumuahTime')}</span></div></div>`);
+  }
+  if (w.mass && w.mass.length) {
+    rows.push(`<div class="info-row"><span class="i-ico">${icon('landmark', 21)}</span>
+      <div class="i-txt"><b>${w.mass.map(m => `${t(DAY_KEYS[m.day])} <span class="ltr">${fmtTime(m.time)}</span>`).join(' · ')}</b>
+      <span>${t('massTimes')}</span></div></div>`);
+  }
+  rows.push(`<div class="info-row"><span class="i-ico">${icon('languages', 21)}</span>
+    <div class="i-txt"><b>${langLabel}</b><span>${w.kind === 'church' ? t('massLang') : t('sermonLang')}</span></div></div>`);
+
+  return `<div class="worship-block">${rows.join('')}</div>`;
 }
 
 /** the subscription upsell, sized like a business row.
@@ -162,6 +275,7 @@ export function ListingScreen(root, params) {
       </div>
 
       <p class="fs-13 muted mt-12">${L(b.desc || '')}</p>
+      ${attrChips(b)}
 
       <div class="action-grid">
         <button class="btn btn-gold" id="callBtn">${icon('phone', 20)} ${t('call')}</button>
@@ -170,7 +284,8 @@ export function ListingScreen(root, params) {
 
       <div class="info-row">${`<span class="i-ico">${icon('phone', 21)}</span>`}<div class="i-txt"><b class="ltr">${b.phone}</b><span>${t('phoneLabel')}</span></div></div>
       <div class="info-row">${`<span class="i-ico">${icon('mapPin', 21)}</span>`}<div class="i-txt"><b class="ltr">${b.address}</b><span>${t('address')} · ${b.dist} ${t('miles')} ${t('distanceAway')}</span></div></div>
-      <div class="info-row">${`<span class="i-ico">${icon('clock', 21)}</span>`}<div class="i-txt"><b>${L(b.hours || '')}</b><span>${t('hours')}</span></div></div>
+      ${hoursBlock(b)}
+      ${worshipBlock(b)}
       <div class="info-row">${`<span class="i-ico">${icon('bookmark', 21)}</span>`}<div class="i-txt"><b>${t(catKey(b.cat))}</b><span>${t('category')}</span></div></div>
 
       <div class="section-head" style="padding:0;margin-top:20px"><div class="section-title">${t('photos')} · ${t('videos')}</div></div>
@@ -303,34 +418,143 @@ function catKey(id) {
 /* --------------------- ADD / CLAIM BUSINESS --------------------- */
 export function AddBusinessScreen(root) {
   renderHeader({ simple: true, title: t('addBusiness') });
+  let cat = CATEGORIES.filter(c => !c.route)[0].id;
+  let picked = [];
+
+  const dayRow = (i) => `
+    <div class="hrs-row" data-day="${i}">
+      <label class="hrs-day"><input type="checkbox" data-open="${i}" checked /> <span>${t(DAY_KEYS[i])}</span></label>
+      <input class="input hrs-t" type="time" data-from="${i}" value="09:00" />
+      <span class="hrs-dash">–</span>
+      <input class="input hrs-t" type="time" data-to="${i}" value="18:00" />
+    </div>`;
+
   root.innerHTML = `
     <div class="pad mt-16">
       <div class="list-note" style="margin:0 0 14px">${icon('info', 18)}<span>${t('needPhoneSub')}</span></div>
       <div class="field"><label class="label">${t('adBizName')}</label><input class="input" id="bName" /></div>
       <div class="field"><label class="label">${t('category')}</label>
-        <select class="select" id="bCat">${CATEGORIES.map(c => `<option value="${c.id}">${t(c.key)}</option>`).join('')}</select></div>
+        <select class="select" id="bCat">${CATEGORIES.filter(c => !c.route).map(c => `<option value="${c.id}">${t(c.key)}</option>`).join('')}</select></div>
       <div class="field"><label class="label">${t('phoneLabel')}</label><input class="input" id="bPhone" inputmode="tel" placeholder="(713) 555-0000" /></div>
       <div class="field"><label class="label">${t('address')}</label><input class="input" id="bAddr" /></div>
-      <div class="field"><label class="label">${t('hours')} <span class="muted">(${t('optional')})</span></label><input class="input" id="bHours" /></div>
+
+      <div class="field"><label class="label">${t('keywords')}</label>
+        <input class="input" id="bTags" placeholder="شاورما، مشاوي، shawarma" />
+        <div class="hint">${t('keywordsHint')}</div></div>
+
+      <div class="field"><label class="label">${t('hoursTitle')}</label>
+        <div class="hrs-grid">${[0, 1, 2, 3, 4, 5, 6].map(dayRow).join('')}</div></div>
+
+      <div class="field"><label class="label">${t('features')}</label>
+        <div id="bAttrs"></div></div>
+
       <div class="field"><label class="label">${t('descLabel')} <span class="muted">(${t('optional')})</span></label><textarea class="textarea" id="bDesc"></textarea></div>
+      <div id="bDup"></div>
       <button class="btn btn-gold btn-block" id="bSave">${t('addBusiness')}</button>
       <div class="hint" style="text-align:center;margin-top:10px">${t('lockedSub')}</div>
     </div>`;
 
-  $('#bSave').addEventListener('click', () => {
-    const name = $('#bName').value.trim();
-    const phone = $('#bPhone').value.trim();
-    const addr = $('#bAddr').value.trim();
-    if (!name || !phone || !addr) { toast(t('required'), 'err'); return; }
-    if (!S.requireTier(2, '#/add-business', go)) return;
+  /* The checkboxes are generated from the registry for the chosen category —
+     nothing about "halal" or "women only" is written here, so a new attribute
+     appears in this form the moment it is added to data.js. */
+  const paintAttrs = () => {
+    $('#bAttrs').innerHTML = S.attrGroupsForCat(cat).map(g => `
+      <div class="attr-group">
+        <div class="attr-group-label">${t(g.group.key)}</div>
+        <div class="attr-pick">
+          ${g.attrs.map(a => `<button type="button" class="chip ${picked.includes(a.id) ? 'active' : ''}" data-a="${a.id}">
+            ${icon(a.icon, 14)} ${t(a.key)}</button>`).join('')}
+        </div>
+      </div>`).join('') || `<div class="hint">${t('noHours')}</div>`;
+    $$('#bAttrs .chip').forEach(b => b.addEventListener('click', () => {
+      const id = b.dataset.a;
+      const attr = S.attrById(id);
+      const i = picked.indexOf(id);
+      if (i >= 0) picked.splice(i, 1);
+      else {
+        // an exclusive group holds one answer: halal or not, cards or cash
+        if (attr && attr.exclusive) {
+          picked = picked.filter(x => {
+            const o = S.attrById(x);
+            return !(o && o.exclusive && o.group === attr.group);
+          });
+        }
+        picked.push(id);
+      }
+      $$('#bAttrs .chip').forEach(x => x.classList.toggle('active', picked.includes(x.dataset.a)));
+    }));
+  };
+  paintAttrs();
+
+  $('#bCat').addEventListener('change', (e) => {
+    cat = e.target.value;
+    const valid = S.attrsForCat(cat).map(a => a.id);
+    picked = picked.filter(id => valid.includes(id));
+    paintAttrs();
+  });
+
+  /** the seven day rows → the canonical hours array */
+  const readHours = () => [0, 1, 2, 3, 4, 5, 6].map(i => {
+    if (!$(`[data-open="${i}"]`).checked) return null;
+    const from = $(`[data-from="${i}"]`).value || '09:00';
+    const to = $(`[data-to="${i}"]`).value || '18:00';
+    return [[from, to]];
+  });
+
+  const collect = () => ({
+    name: $('#bName').value.trim(),
+    phone: $('#bPhone').value.trim(),
+    address: $('#bAddr').value.trim(),
+  });
+
+  const save = () => {
+    const { name, phone, address } = collect();
+    const tags = $('#bTags').value.split(/[,\u060C\n]/).map(x => x.trim()).filter(Boolean);
     const rec = S.addBusiness({
-      name: { ar: name, en: name }, cat: $('#bCat').value, phone, address: addr,
-      hours: { ar: $('#bHours').value, en: $('#bHours').value },
+      name: { ar: name, en: name }, cat, phone, address,
+      hours: readHours(), tags, attributes: picked.slice(),
       desc: { ar: $('#bDesc').value, en: $('#bDesc').value },
     });
     toast(t('done'), 'ok');
     go('#/directory/' + rec.id);
+  };
+
+  $('#bSave').addEventListener('click', () => {
+    const { name, phone, address } = collect();
+    if (!name || !phone || !address) { toast(t('required'), 'err'); return; }
+    if (!S.requireTier(2, '#/add-business', go)) return;
+
+    /* 300 shops go in by hand and their owners will add themselves later
+       because they could not find their own listing. Catch it at the door. */
+    const dups = S.findDuplicates({ phone, name, address });
+    if (dups.length) { showDuplicate(dups, save); return; }
+    save();
   });
+}
+
+/** the duplicate warning: name the match, and offer both honest answers */
+function showDuplicate(dups, proceed) {
+  const el = $('#bDup');
+  el.innerHTML = `
+    <div class="dup-warn">
+      <div class="dup-head">${icon('alert', 18)} <b>${t('dupTitle')}</b></div>
+      ${dups.slice(0, 3).map(d => `
+        <div class="dup-row">
+          <span class="row-ico">${icon(catIcon(d.biz.cat), 18)}</span>
+          <div class="row-main">
+            <div class="row-title">${L(d.biz.name)}</div>
+            <div class="row-sub"><span class="ltr">${d.biz.address}</span></div>
+            <div class="row-sub gold">${d.reason === 'phone' ? t('dupByPhone') : t('dupByName')}</div>
+          </div>
+          <button class="mini-btn" data-see="${d.biz.id}">${icon('eye', 15)}</button>
+        </div>`).join('')}
+      <button class="btn btn-ghost btn-block mt-8" id="dupCancel">${t('dupSame')}</button>
+      <button class="btn btn-gold btn-block mt-8" id="dupGo">${t('dupDifferent')}</button>
+    </div>`;
+  el.scrollIntoView({ block: 'center', behavior: 'smooth' });
+  $$('#bDup [data-see]').forEach(b => b.addEventListener('click', () => go('#/directory/' + b.dataset.see)));
+  $('#dupCancel').addEventListener('click', () => { el.innerHTML = ''; go('#/directory'); });
+  $('#dupGo').addEventListener('click', () => { el.innerHTML = ''; proceed(); });
 }
 
 export function ClaimScreen(root) {

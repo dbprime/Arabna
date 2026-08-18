@@ -1042,6 +1042,103 @@ input[inputmode="tel"], input[type="email"], input[inputmode="decimal"], #zipIn 
   .ad-more, .ad-more-inner { transition: none; }
 }
 
+/* ============================================================
+   V.01.8 — hours, attributes, duplicates
+   ============================================================ */
+
+/* the open / closed pill, on the card and on the detail page */
+.open-pill {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-size: 11.5px; font-weight: 700;
+  padding: 3px 8px; border-radius: 7px;
+  white-space: nowrap;
+}
+.open-pill svg { flex: 0 0 12px; }
+.open-pill.open   { background: rgba(78,139,107,0.16);  color: #7FC3A1; border: 1px solid rgba(78,139,107,0.35); }
+/* a quiet warning, not an alarm — they are still open */
+.open-pill.soon   { background: rgba(198,161,91,0.16);  color: var(--gold-bright); border: 1px solid var(--line); }
+.open-pill.closed { background: rgba(255,255,255,0.05); color: var(--muted); border: 1px solid var(--line-soft); }
+
+/* the week table on a business page */
+.hours-block { border-block-end: 1px solid var(--line-soft); padding: 14px 0; }
+.hours-head { display: flex; align-items: center; gap: 12px; }
+.hours-head .i-ico { color: var(--gold-bright); flex: 0 0 20px; }
+.hours-head b { font-size: 15px; }
+.hours-head .open-pill { margin-inline-start: auto; }
+.hours-week { margin-block-start: 10px; padding-inline-start: 32px; }
+.hours-row {
+  display: flex; justify-content: space-between; gap: 10px;
+  font-size: 13px; padding: 4px 0; color: var(--muted);
+}
+.hours-row.today {
+  color: var(--ivory); font-weight: 700;
+}
+.hours-row.today span:first-child::before {
+  content: ''; display: inline-block;
+  width: 5px; height: 5px; border-radius: 50%;
+  background: var(--gold-bright); margin-inline-end: 6px; vertical-align: middle;
+}
+
+/* prayer / mass times */
+.worship-block { padding-block-start: 4px; }
+.wor-head {
+  display: flex; align-items: center; gap: 7px;
+  font-size: 14px; font-weight: 700; color: var(--gold-bright);
+  padding: 14px 0 8px;
+}
+.wor-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; padding-block-end: 12px; }
+.wor-cell {
+  background: var(--surface); border: 1px solid var(--line-soft);
+  border-radius: 10px; padding: 8px 4px; text-align: center;
+}
+.wor-cell b { display: block; font-size: 11.5px; font-weight: 700; }
+.wor-cell span { font-size: 11.5px; color: var(--gold-bright); }
+
+/* the attribute pills under a description */
+.attr-chips { display: flex; flex-wrap: wrap; gap: 7px; margin-block-start: 12px; }
+.attr-chip {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 12px; font-weight: 600;
+  padding: 5px 10px; border-radius: 999px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid var(--line-soft);
+  color: #C9C8C4;
+}
+.attr-chip svg { color: var(--gold); flex: 0 0 14px; }
+
+/* multi-select attribute pickers: the filter sheet and the add form */
+.attr-pick { display: flex; flex-wrap: wrap; gap: 8px; }
+.attr-pick .chip { height: 38px; }
+.attr-group { margin-block-end: 14px; }
+.attr-group-label { font-size: 12.5px; font-weight: 700; color: var(--muted); margin-block-end: 7px; }
+
+/* seven-day hours editor */
+.hrs-grid { display: flex; flex-direction: column; gap: 7px; }
+.hrs-row { display: flex; align-items: center; gap: 7px; }
+.hrs-day { flex: 0 0 40%; display: flex; align-items: center; gap: 7px; font-size: 13.5px; }
+.hrs-day input { width: 17px; height: 17px; accent-color: #C6A15B; flex: 0 0 17px; }
+.hrs-t { height: 40px; padding: 0 8px; font-size: 13px; flex: 1; min-width: 0; direction: ltr; }
+.hrs-dash { color: var(--muted); }
+.hrs-row:has(input[type="checkbox"]:not(:checked)) .hrs-t,
+.hrs-row:has(input[type="checkbox"]:not(:checked)) .hrs-dash { opacity: .35; pointer-events: none; }
+
+/* the duplicate warning */
+.dup-warn {
+  margin-block-end: 14px; padding: 14px;
+  border-radius: var(--r-md);
+  background: rgba(196,89,92,0.08);
+  border: 1px solid rgba(196,89,92,0.4);
+}
+.dup-head { display: flex; align-items: center; gap: 8px; font-size: 14.5px; margin-block-end: 10px; }
+.dup-head svg { color: #E79A9C; flex: 0 0 18px; }
+.dup-row {
+  display: flex; gap: 11px; align-items: flex-start;
+  padding: 10px; margin-block-end: 8px;
+  background: var(--surface); border: 1px solid var(--line-soft); border-radius: 10px;
+}
+.dup-row .row-ico { width: 38px; height: 38px; flex: 0 0 38px; }
+.dup-row .row-title { font-size: 14px; }
+
 /* ---------- "which section am I looking at" ---------- */
 .sec-note {
   margin: 12px 14px 0;

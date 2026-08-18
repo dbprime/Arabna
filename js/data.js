@@ -19,6 +19,10 @@ export const CATEGORIES = [
   { id: 'realestate',  key: 'catRealEstate',  icon: 'building' },
   { id: 'education',   key: 'catEducation',   icon: 'file' },
   { id: 'travel',      key: 'catTravel',      icon: 'navigation' },
+  { id: 'gyms',        key: 'catGyms',        icon: 'dumbbell' },
+  // "Places of worship", never "mosques": the Arab community in Houston is
+  // Muslim and Christian, and a name that excludes half of it is not an option.
+  { id: 'worship',     key: 'catWorship',     icon: 'landmark' },
 ];
 
 /* ---- Marketplace sections ----
@@ -52,6 +56,47 @@ export const MAG_CATS = [
   { id: 'immigration', key: 'magImmigration' },
   { id: 'events',      key: 'magEvents' },
 ];
+
+/* ============================================================
+   Opening hours — structured, not prose
+   ------------------------------------------------------------
+   Storage is one array of seven entries indexed the way
+   Date#getDay() indexes: 0 = Sunday … 6 = Saturday. Each entry is
+   either null (closed all day) or a list of [open, close] spans in
+   24-hour "HH:MM". Two spans cover a shop that shuts at midday.
+   A close earlier than its open means the span runs past midnight
+   (11:00 → 02:00), which is how late restaurants actually trade.
+   ============================================================ */
+
+export const DAY_KEYS = ['daySun', 'dayMon', 'dayTue', 'dayWed', 'dayThu', 'dayFri', 'daySat'];
+const DAY_IDS = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
+
+/** the whole day, used both as a value and as a marker for "24 hours" */
+export const ALL_DAY = ['00:00', '24:00'];
+
+/**
+ * Readable spec → canonical array. Accepts per day:
+ *   null / omitted        closed
+ *   '11:00-23:00'         one span
+ *   ['09:00-14:00', …]    several spans
+ *   '24h'                 open around the clock
+ * `all` sets every day at once and the named days override it.
+ */
+export function week(spec = {}) {
+  const parse = (v) => {
+    if (v === null || v === undefined) return null;
+    if (v === '24h') return [ALL_DAY.slice()];
+    const list = Array.isArray(v) ? v : [v];
+    const spans = list.map(x => x.split('-').map(t => t.trim()));
+    return spans.length ? spans : null;
+  };
+  return DAY_IDS.map(d => (d in spec ? parse(spec[d]) : parse(spec.all)));
+}
+
+/** true when the day is a single 00:00–24:00 span */
+export function isAllDay(spans) {
+  return !!spans && spans.length === 1 && spans[0][0] === '00:00' && spans[0][1] === '24:00';
+}
 
 /* ---- tiny ZIP dataset for the prototype (V.02: geocoding API) ---- */
 export const ZIPS = {
@@ -117,11 +162,134 @@ export const MINI_ADS = [
 ];
 
 /* ---- directory listings (seeded like an admin bulk import) ---- */
+/* ============================================================
+   Directory attributes — one registry, no bespoke fields
+   ------------------------------------------------------------
+   Adding "women only" or "halal" as columns on the business model
+   would mean opening the code, the add form and the filter sheet
+   every time a new one is wanted. Instead every attribute is a row
+   here and a business just carries a list of ids. The add/edit
+   form, the filter sheet and the quick chips all build themselves
+   from this table, so a new attribute is one line and nothing else.
+
+   cats   '*' or a list of category ids where the attribute applies
+   quick  true, or a list of category ids, where it earns a chip
+          above the results instead of living in the filter sheet
+   group  how the add form and the filter sheet cluster the options
+   season shown only while that season is switched on in admin
+   exclusive  one value at most may be picked from the group
+   ============================================================ */
+export const ATTR_GROUPS = [
+  { id: 'gender',    key: 'attrGrpGender' },
+  { id: 'halal',     key: 'attrGrpHalal' },
+  { id: 'alcohol',   key: 'attrGrpAlcohol' },
+  { id: 'language',  key: 'attrGrpLanguage' },
+  { id: 'insurance', key: 'attrGrpInsurance' },
+  { id: 'schooling', key: 'attrGrpSchooling' },
+  { id: 'newcomer',  key: 'attrGrpNewcomer' },
+  { id: 'worship',   key: 'attrGrpWorship' },
+  { id: 'practical', key: 'attrGrpPractical' },
+  { id: 'ramadan',   key: 'attrGrpRamadan', season: 'ramadan' },
+];
+
+export const ATTRIBUTES = [
+  /* --- who the place serves -------------------------------------------
+     Deliberately attributes and not separate categories: one salon often
+     serves everyone, and two categories would mean listing it twice. A
+     family salon shows up under "women" and under "men" alike. */
+  { id: 'women',        key: 'attrWomen',        icon: 'user',      group: 'gender', cats: ['beauty'], quick: true, exclusive: false },
+  { id: 'men',          key: 'attrMen',          icon: 'user',      group: 'gender', cats: ['beauty'], quick: true },
+  { id: 'familyPlace',  key: 'attrFamilyPlace',  icon: 'users',     group: 'gender', cats: ['beauty'], quick: true },
+
+  { id: 'femaleDoctor', key: 'attrFemaleDoctor', icon: 'stethoscope', group: 'gender', cats: ['doctors'], quick: true },
+  { id: 'maleDoctor',   key: 'attrMaleDoctor',   icon: 'stethoscope', group: 'gender', cats: ['doctors'], quick: true },
+
+  { id: 'gymWomenOnly',  key: 'attrGymWomenOnly',  icon: 'dumbbell', group: 'gender', cats: ['gyms'], quick: true },
+  { id: 'gymWomenHours', key: 'attrGymWomenHours', icon: 'clock',    group: 'gender', cats: ['gyms'], quick: true },
+  { id: 'gymMen',        key: 'attrGymMen',        icon: 'dumbbell', group: 'gender', cats: ['gyms'], quick: true },
+  { id: 'gymMixed',      key: 'attrGymMixed',      icon: 'users',    group: 'gender', cats: ['gyms'], quick: true },
+
+  /* --- halal, and alcohol, kept apart on purpose ------------------------
+     A large part of the community will not eat in a restaurant that serves
+     alcohol even when the meat is halal, so one flag could not answer the
+     question they are actually asking. */
+  { id: 'halalMeat',    key: 'attrHalalMeat',    icon: 'checkCircle', group: 'halal', cats: ['restaurants', 'grocery'], quick: true, exclusive: true },
+  { id: 'halalWithAlc', key: 'attrHalalWithAlc', icon: 'info',        group: 'halal', cats: ['restaurants', 'grocery'], exclusive: true },
+  { id: 'notHalal',     key: 'attrNotHalal',     icon: 'x',           group: 'halal', cats: ['restaurants', 'grocery'], exclusive: true },
+
+  { id: 'noAlcohol',    key: 'attrNoAlcohol',    icon: 'droplet', group: 'alcohol', cats: ['restaurants', 'grocery'], quick: true, exclusive: true },
+  { id: 'servesAlcohol', key: 'attrServesAlcohol', icon: 'droplet', group: 'alcohol', cats: ['restaurants', 'grocery'], exclusive: true },
+
+  /* --- language --------------------------------------------------------
+     Crosses every category: plenty of Arab-owned shops have no Arabic
+     speaker on the floor, and plenty of non-Arab ones do and want to be
+     found by the community. */
+  { id: 'arabicSpoken', key: 'attrArabicSpoken', icon: 'languages', group: 'language', cats: '*',
+    quick: ['doctors', 'lawyers', 'worship'] },
+
+  /* --- insurance, doctors and dental ----------------------------------- */
+  { id: 'insMedicaid', key: 'attrInsMedicaid', icon: 'shield',    group: 'insurance', cats: ['doctors'] },
+  { id: 'insMedicare', key: 'attrInsMedicare', icon: 'shield',    group: 'insurance', cats: ['doctors'] },
+  { id: 'insMajor',    key: 'attrInsMajor',    icon: 'shield',    group: 'insurance', cats: ['doctors'] },
+  { id: 'insSelfPay',  key: 'attrInsSelfPay',  icon: 'banknote',  group: 'insurance', cats: ['doctors'] },
+
+  /* --- Arabic schooling, a section inside education built out of the
+         general system rather than a bespoke sub-category ---------------- */
+  { id: 'schoolArabic',  key: 'attrSchoolArabic',  icon: 'graduation', group: 'schooling', cats: ['education'], quick: true },
+  { id: 'tutoring',      key: 'attrTutoring',      icon: 'file',       group: 'schooling', cats: ['education'], quick: true },
+  { id: 'quranSchool',   key: 'attrQuranSchool',   icon: 'moon',       group: 'schooling', cats: ['education', 'worship'], quick: true },
+  { id: 'weekendClass',  key: 'attrWeekendClass',  icon: 'calendar',   group: 'schooling', cats: ['education'], quick: true },
+
+  /* --- what a newcomer looks for first ---------------------------------
+     Attributes rather than a category of their own: a travel agency that
+     also wires money must not be listed twice to be found twice. */
+  { id: 'certTranslation', key: 'attrCertTranslation', icon: 'languages', group: 'newcomer', cats: '*', quick: ['lawyers', 'travel'] },
+  { id: 'immigrationLaw',  key: 'attrImmigrationLaw',  icon: 'scale',     group: 'newcomer', cats: '*', quick: ['lawyers'] },
+  { id: 'moneyTransfer',   key: 'attrMoneyTransfer',   icon: 'banknote',  group: 'newcomer', cats: '*', quick: ['travel'] },
+  { id: 'shipAbroad',      key: 'attrShipAbroad',      icon: 'truck',     group: 'newcomer', cats: '*', quick: ['travel'] },
+
+  /* --- places of worship ------------------------------------------------ */
+  { id: 'womensPrayer',  key: 'attrWomensPrayer',  icon: 'users',      group: 'worship', cats: ['worship'], quick: true },
+  { id: 'arabicClasses', key: 'attrArabicClasses', icon: 'graduation', group: 'worship', cats: ['worship'], quick: true },
+
+  /* --- practical, everywhere -------------------------------------------- */
+  { id: 'delivery',      key: 'attrDelivery',      icon: 'truck',      group: 'practical', cats: '*', quick: ['restaurants', 'grocery'] },
+  { id: 'parking',       key: 'attrParking',       icon: 'car',        group: 'practical', cats: '*' },
+  { id: 'acceptsCard',   key: 'attrAcceptsCard',   icon: 'creditCard', group: 'practical', cats: '*', exclusive: true },
+  { id: 'cashOnly',      key: 'attrCashOnly',      icon: 'banknote',   group: 'practical', cats: '*', exclusive: true },
+  { id: 'familySeating', key: 'attrFamilySeating', icon: 'users',      group: 'practical', cats: ['restaurants'] },
+  { id: 'accessible',    key: 'attrAccessible',    icon: 'accessible', group: 'practical', cats: '*' },
+  { id: 'wifi',          key: 'attrWifi',          icon: 'wifi',       group: 'practical', cats: '*' },
+
+  /* --- one month a year, and the busiest filter in it -------------------- */
+  { id: 'ramadanHours', key: 'attrRamadanHours', icon: 'moon',    group: 'ramadan', season: 'ramadan', cats: '*', quick: ['restaurants', 'worship'] },
+  { id: 'iftar',        key: 'attrIftar',        icon: 'utensils', group: 'ramadan', season: 'ramadan', cats: ['restaurants', 'worship'], quick: true },
+  { id: 'suhoor',       key: 'attrSuhoor',       icon: 'sunrise',  group: 'ramadan', season: 'ramadan', cats: ['restaurants', 'worship'], quick: true },
+];
+
+export function attrById(id) { return ATTRIBUTES.find(a => a.id === id) || null; }
+
+/** does this attribute belong on a business in `cat`? */
+export function attrInCat(attr, cat) {
+  return attr.cats === '*' || (Array.isArray(attr.cats) && attr.cats.includes(cat));
+}
+
+/** does it earn a chip above the results in `cat`? */
+export function attrIsQuick(attr, cat) {
+  if (attr.quick === true) return attrInCat(attr, cat);
+  if (Array.isArray(attr.quick)) return attr.quick.includes(cat);
+  return false;
+}
+
 export const BUSINESSES = [
   {
     id: 'b1', name: { ar: 'مطعم الشام', en: 'Al Sham Restaurant' }, cat: 'restaurants',
     phone: '(713) 555-0142', address: '6821 Hillcroft Ave, Houston, TX 77081',
-    hours: { ar: 'يومياً ١١ص – ١١م', en: 'Daily 11am – 11pm' },
+    // trades past midnight on the weekend — the case open/closed maths gets wrong
+    hours: week({ all: '11:00-23:00', fri: '11:00-02:00', sat: '11:00-02:00' }),
+    tags: ['شاورما', 'مشاوي', 'فلافل', 'حمص', 'مقبلات', 'توصيل',
+           'shawarma', 'grill', 'falafel', 'hummus', 'mezze', 'delivery'],
+    attributes: ['halalMeat', 'noAlcohol', 'arabicSpoken', 'delivery', 'familySeating', 'acceptsCard', 'parking', 'iftar', 'ramadanHours'],
     plan: 'paid', verified: true, rating: 4.8, reviewCount: 126, dist: 1.2, claimed: true,
     desc: { ar: 'مطبخ شامي أصيل من ٢٠٠٤ — مشاوي، شاورما، ومقبلات بيتية.', en: 'Authentic Levantine kitchen since 2004 — grills, shawarma and homemade mezze.' },
     photos: 8, videos: 2,
@@ -129,7 +297,10 @@ export const BUSINESSES = [
   {
     id: 'b2', name: { ar: 'فرن بيروت', en: 'Beirut Bakery' }, cat: 'restaurants',
     phone: '(281) 555-0198', address: '10920 Westheimer Rd, Houston, TX 77042',
-    hours: { ar: 'يومياً ٧ص – ٩م', en: 'Daily 7am – 9pm' },
+    hours: week({ all: '07:00-21:00', sun: '08:00-15:00' }),
+    tags: ['مناقيش', 'زعتر', 'معجنات', 'حلويات', 'كنافة', 'خبز',
+           'manakish', 'zaatar', 'pastries', 'sweets', 'knafeh', 'bread'],
+    attributes: ['halalMeat', 'noAlcohol', 'arabicSpoken', 'acceptsCard', 'suhoor'],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 3.4, claimed: false,
     desc: { ar: 'مناقيش، معجنات، وحلويات عربية طازجة.', en: 'Manakish, pastries and fresh Arabic sweets.' },
     photos: 0, videos: 0,
@@ -137,7 +308,10 @@ export const BUSINESSES = [
   {
     id: 'b3', name: { ar: 'عيادة النور الطبية', en: 'Al Noor Medical Clinic' }, cat: 'doctors',
     phone: '(713) 555-0177', address: '9440 Bellaire Blvd, Houston, TX 77036',
-    hours: { ar: 'سبت – خميس ٩ص – ٦م', en: 'Sat – Thu 9am – 6pm' },
+    hours: week({ all: '09:00-18:00', fri: null }),
+    tags: ['طب عائلي', 'باطنية', 'أطفال', 'تطعيمات', 'فحص سنوي',
+           'family medicine', 'internal', 'pediatrics', 'vaccines', 'checkup'],
+    attributes: ['femaleDoctor', 'maleDoctor', 'arabicSpoken', 'insMedicaid', 'insMajor', 'insSelfPay', 'acceptsCard', 'parking', 'accessible'],
     plan: 'paid', verified: true, rating: 4.9, reviewCount: 88, dist: 2.3, claimed: true,
     desc: { ar: 'طب عائلي وباطنية — الطاقم يتكلم عربي وإنجليزي.', en: 'Family & internal medicine — Arabic and English speaking staff.' },
     photos: 5, videos: 1,
@@ -145,7 +319,10 @@ export const BUSINESSES = [
   {
     id: 'b4', name: { ar: 'مكتب الهدى للمحاماة', en: 'Al Huda Law Office' }, cat: 'lawyers',
     phone: '(832) 555-0110', address: '2500 Wilcrest Dr, Houston, TX 77042',
-    hours: { ar: 'اثنين – جمعة ٩ص – ٥م', en: 'Mon – Fri 9am – 5pm' },
+    hours: week({ mon: '09:00-17:00', tue: '09:00-17:00', wed: '09:00-17:00', thu: '09:00-17:00', fri: '09:00-13:00' }),
+    tags: ['هجرة', 'جرين كارد', 'جنسية', 'لجوء', 'ترجمة معتمدة', 'قضايا أسرة',
+           'immigration', 'green card', 'citizenship', 'asylum', 'certified translation', 'family law'],
+    attributes: ['arabicSpoken', 'immigrationLaw', 'certTranslation', 'acceptsCard', 'parking', 'wifi'],
     plan: 'paid', verified: true, rating: 4.7, reviewCount: 41, dist: 4.1, claimed: true,
     desc: { ar: 'هجرة، أعمال، وقضايا الأسرة.', en: 'Immigration, business and family law.' },
     photos: 3, videos: 0,
@@ -153,7 +330,10 @@ export const BUSINESSES = [
   {
     id: 'b5', name: { ar: 'سوبرماركت البركة', en: 'Al Baraka Supermarket' }, cat: 'grocery',
     phone: '(713) 555-0165', address: '5711 Hillcroft St, Houston, TX 77036',
-    hours: { ar: 'يومياً ٨ص – ١٠م', en: 'Daily 8am – 10pm' },
+    hours: week({ all: '08:00-22:00' }),
+    tags: ['لحوم حلال', 'ذبيحة', 'خضار', 'بهارات', 'جبنة', 'زيتون', 'تمر',
+           'halal meat', 'butcher', 'produce', 'spices', 'cheese', 'olives', 'dates'],
+    attributes: ['halalMeat', 'noAlcohol', 'arabicSpoken', 'delivery', 'acceptsCard', 'parking', 'accessible', 'ramadanHours'],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0.8, claimed: false,
     desc: { ar: 'لحوم حلال، خضار، ومنتجات مستوردة.', en: 'Halal meat, produce and imported goods.' },
     photos: 0, videos: 0,
@@ -161,7 +341,10 @@ export const BUSINESSES = [
   {
     id: 'b6', name: { ar: 'الأمانة للسيارات', en: 'Al Amana Auto' }, cat: 'auto',
     phone: '(281) 555-0133', address: '12105 Bissonnet St, Houston, TX 77099',
-    hours: { ar: 'اثنين – سبت ٨ص – ٧م', en: 'Mon – Sat 8am – 7pm' },
+    hours: week({ all: '08:00-19:00', sun: null }),
+    tags: ['ميكانيكا', 'زيت', 'فرامل', 'كهرباء سيارات', 'سيارات مستعملة', 'فحص',
+           'mechanic', 'oil change', 'brakes', 'auto electric', 'used cars', 'inspection'],
+    attributes: ['arabicSpoken', 'acceptsCard', 'parking'],
     plan: 'paid', verified: true, rating: 4.5, reviewCount: 63, dist: 5.6, claimed: true,
     desc: { ar: 'صيانة، ميكانيكا، وبيع سيارات مستعملة مضمونة.', en: 'Service, mechanics and warrantied used cars.' },
     photos: 6, videos: 3,
@@ -169,7 +352,11 @@ export const BUSINESSES = [
   {
     id: 'b7', name: { ar: 'صالون ليان', en: 'Layan Beauty Salon' }, cat: 'beauty',
     phone: '(832) 555-0121', address: '8300 W Airport Blvd, Houston, TX 77071',
-    hours: { ar: 'ثلاثاء – أحد ١٠ص – ٨م', en: 'Tue – Sun 10am – 8pm' },
+    // shuts for a midday break — the two-span case
+    hours: week({ all: ['10:00-14:00', '16:00-20:00'], mon: null }),
+    tags: ['قص شعر', 'صبغة', 'مكياج', 'عرايس', 'حناء', 'عناية بالبشرة', 'أظافر',
+           'haircut', 'color', 'makeup', 'bridal', 'henna', 'skincare', 'nails'],
+    attributes: ['women', 'familyPlace', 'arabicSpoken', 'acceptsCard', 'parking'],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 2.9, claimed: false,
     desc: { ar: 'قص، صبغة، مكياج مناسبات، وعناية بالبشرة.', en: 'Cuts, color, event makeup and skincare.' },
     photos: 0, videos: 0,
@@ -177,7 +364,10 @@ export const BUSINESSES = [
   {
     id: 'b8', name: { ar: 'تكييف وتبريد أبو خالد', en: 'Abu Khaled A/C & Heating' }, cat: 'home',
     phone: '(713) 555-0188', address: '7100 Regency Square Blvd, Houston, TX 77036',
-    hours: { ar: 'خدمة طوارئ ٢٤ ساعة', en: '24h emergency service' },
+    hours: week({ all: '24h' }),
+    tags: ['تكييف', 'تبريد', 'تدفئة', 'صيانة', 'طوارئ', 'تركيب',
+           'ac', 'air conditioning', 'heating', 'repair', 'emergency', 'install'],
+    attributes: ['arabicSpoken', 'cashOnly'],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 1.9, claimed: false,
     desc: { ar: 'تركيب وصيانة تكييف — خدمة سريعة.', en: 'A/C install and repair — fast service.' },
     photos: 0, videos: 0,
@@ -185,7 +375,10 @@ export const BUSINESSES = [
   {
     id: 'b9', name: { ar: 'مدرسة النهضة العربية', en: 'Al Nahda Arabic School' }, cat: 'education',
     phone: '(281) 555-0144', address: '3110 Eldridge Pkwy, Houston, TX 77082',
-    hours: { ar: 'سبت وأحد ٩ص – ٢م', en: 'Sat & Sun 9am – 2pm' },
+    hours: week({ sat: '09:00-14:00', sun: '09:00-14:00' }),
+    tags: ['لغة عربية', 'قرآن', 'تحفيظ', 'أطفال', 'دروس', 'نهاية الأسبوع',
+           'arabic language', 'quran', 'memorization', 'kids', 'lessons', 'weekend'],
+    attributes: ['schoolArabic', 'quranSchool', 'weekendClass', 'tutoring', 'arabicSpoken', 'parking', 'accessible'],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 6.7, claimed: false,
     desc: { ar: 'تعليم اللغة العربية والقرآن للأطفال.', en: 'Arabic language and Quran classes for children.' },
     photos: 0, videos: 0,
@@ -193,9 +386,56 @@ export const BUSINESSES = [
   {
     id: 'b10', name: { ar: 'الديار العقارية', en: 'Al Diyar Realty' }, cat: 'realestate',
     phone: '(832) 555-0156', address: '15915 Katy Fwy, Houston, TX 77094',
-    hours: { ar: 'اثنين – سبت ٩ص – ٦م', en: 'Mon – Sat 9am – 6pm' },
+    hours: week({ all: '09:00-18:00', sun: null }),
+    tags: ['بيع', 'إيجار', 'شقق', 'بيوت', 'تجاري', 'استثمار',
+           'buy', 'rent', 'apartments', 'homes', 'commercial', 'investment'],
+    attributes: ['arabicSpoken', 'acceptsCard', 'parking', 'wifi'],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 9.2, claimed: false,
     desc: { ar: 'بيع وشراء وتأجير عقارات سكنية وتجارية.', en: 'Residential and commercial sales and leasing.' },
+    photos: 0, videos: 0,
+  },
+  {
+    id: 'b11', name: { ar: 'مسجد الرحمة', en: 'Al Rahma Mosque' }, cat: 'worship',
+    phone: '(713) 555-0210', address: '11815 Adel Rd, Houston, TX 77067',
+    hours: week({ all: '05:00-22:00' }),
+    tags: ['مسجد', 'صلاة', 'جمعة', 'تراويح', 'تحفيظ', 'جنازة',
+           'mosque', 'masjid', 'prayer', 'jumuah', 'friday', 'quran'],
+    attributes: ['womensPrayer', 'quranSchool', 'arabicClasses', 'arabicSpoken', 'parking', 'accessible', 'iftar', 'ramadanHours'],
+    worship: {
+      kind: 'mosque',
+      prayers: { fajr: '05:35', dhuhr: '13:15', asr: '16:45', maghrib: '19:52', isha: '21:10' },
+      jumuah: ['13:30', '14:30'],
+      lang: 'both',
+    },
+    plan: 'free', verified: true, rating: 0, reviewCount: 0, dist: 4.6, claimed: true,
+    desc: { ar: 'مسجد ومركز إسلامي — صلوات الخمس، خطبة الجمعة، ومدرسة تحفيظ.', en: 'Mosque and Islamic centre — five daily prayers, Friday sermon and a Quran school.' },
+    photos: 0, videos: 0,
+  },
+  {
+    id: 'b12', name: { ar: 'كنيسة السيدة العذراء القبطية', en: 'St Mary Coptic Orthodox Church' }, cat: 'worship',
+    phone: '(281) 555-0233', address: '1050 W Sam Houston Pkwy N, Houston, TX 77043',
+    hours: week({ all: '09:00-20:00', mon: null }),
+    tags: ['كنيسة', 'قداس', 'قبطية', 'أرثوذكسية', 'مدارس أحد', 'تعميد',
+           'church', 'mass', 'coptic', 'orthodox', 'sunday school', 'baptism'],
+    attributes: ['arabicClasses', 'arabicSpoken', 'parking', 'accessible'],
+    worship: {
+      kind: 'church',
+      mass: [{ day: 0, time: '08:00' }, { day: 3, time: '18:30' }, { day: 6, time: '09:00' }],
+      lang: 'both',
+    },
+    plan: 'free', verified: true, rating: 0, reviewCount: 0, dist: 7.3, claimed: true,
+    desc: { ar: 'كنيسة قبطية أرثوذكسية — قداسات بالعربية والإنجليزية ومدارس أحد.', en: 'Coptic Orthodox church — Arabic and English liturgy and Sunday school.' },
+    photos: 0, videos: 0,
+  },
+  {
+    id: 'b13', name: { ar: 'نادي الصفا الرياضي', en: 'Al Safa Fitness Club' }, cat: 'gyms',
+    phone: '(832) 555-0244', address: '9600 Bellaire Blvd, Houston, TX 77036',
+    hours: week({ all: '05:00-23:00', fri: '05:00-12:00' }),
+    tags: ['نادي', 'رياضة', 'حديد', 'لياقة', 'أوقات نسائية', 'مدرب',
+           'gym', 'fitness', 'weights', 'training', 'women hours', 'coach'],
+    attributes: ['gymWomenHours', 'gymMen', 'arabicSpoken', 'acceptsCard', 'parking', 'wifi', 'accessible'],
+    plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 1.5, claimed: false,
+    desc: { ar: 'نادي رياضي بأوقات نسائية مخصّصة ومدربين معتمدين.', en: 'Fitness club with dedicated women-only hours and certified trainers.' },
     photos: 0, videos: 0,
   },
 ];

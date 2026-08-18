@@ -2,8 +2,8 @@
    ARABNA — router / bootstrap
    ============================================================ */
 
-import { setLang } from './i18n.js';
-import { state } from './store.js';
+import { setLang, bothPacks } from './i18n.js';
+import { state, registerStrings } from './store.js';
 import { $, renderHeader, renderNav, hideNav, closeSheet, closeDrawer } from './ui.js';
 
 import { HomeScreen } from './screens/home.js';
@@ -89,6 +89,8 @@ function render() {
 }
 
 window.addEventListener('hashchange', render);
+registerStrings(bothPacks());
+
 window.addEventListener('DOMContentLoaded', () => {
   setLang(state.lang || 'ar');
   if (!location.hash) location.hash = '#/home';

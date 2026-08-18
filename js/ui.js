@@ -312,9 +312,26 @@ export function wirePriceGates(root) {
  * @param {boolean} o.withPrice show the price range (marketplace only)
  * @param {Function} o.onApply called with the new value
  */
-export function openFilterSheet({ cats, value, withPrice, onApply }) {
-  const v = Object.assign({ cat: 'all', radius: S.state.radius, sort: 'newest', priceMin: '', priceMax: '' }, value);
-  const sorts = [['newest', t('sortNewest')], ['nearest', t('sortNearest')], ['rated', t('sortTopRated')]];
+/**
+ * The one filter surface for both listing screens.
+ * `withAttrs` turns on the directory extras — open-now, "open first" and the
+ * attribute groups, which are generated from the registry for whichever
+ * category is selected. Nothing about attributes is written here by hand, so
+ * a new one is a line in data.js and appears in this sheet on its own.
+ */
+export function openFilterSheet({ cats, value, withPrice, withAttrs, onApply }) {
+  const v = Object.assign({ cat: 'all', radius: S.state.radius, sort: 'newest',
+                            priceMin: '', priceMax: '', openNow: false, attrs: [] }, value);
+  v.attrs = (v.attrs || []).slice();
+  const sorts = [['newest', t('sortNewest')], ['nearest', t('sortNearest')], ['rated', t('sortTopRated')]]
+    .concat(withAttrs ? [['open', t('sortOpen')]] : []);
+
+  const attrHtml = () => S.attrGroupsForCat(v.cat === 'all' ? '*' : v.cat).map(g => `
+    <div class="label mt-16">${t(g.group.key)}</div>
+    <div class="attr-pick" data-grp="${g.group.id}">
+      ${g.attrs.map(a => `<button class="chip ${v.attrs.includes(a.id) ? 'active' : ''}" data-a="${a.id}">
+        ${icon(a.icon, 14)} ${t(a.key)}</button>`).join('')}
+    </div>`).join('');
 
   openSheet(`
     <div class="sheet-title">${t('filters')}</div>
@@ -342,6 +359,13 @@ export function openFilterSheet({ cats, value, withPrice, onApply }) {
         <input class="input" id="fMax" inputmode="decimal" placeholder="${t('priceTo')}" value="${v.priceMax}" />
       </div>` : ''}
 
+    ${withAttrs ? `
+      <div class="label mt-16">${t('hoursTitle')}</div>
+      <div class="attr-pick">
+        <button class="chip ${v.openNow ? 'active' : ''}" id="fOpenNow">${icon('clock', 14)} ${t('filterOpenNow')}</button>
+      </div>
+      <div id="fAttrs">${attrHtml()}</div>` : ''}
+
     <button class="btn btn-gold btn-block mt-16" id="fApply">${t('applyFilters')}</button>
     <button class="btn btn-ghost btn-block mt-8" id="fClear">${t('clearFilters')}</button>
   `, (panel) => {
@@ -355,6 +379,31 @@ export function openFilterSheet({ cats, value, withPrice, onApply }) {
     pick('#fRad', 'r', 'radius', Number);
     pick('#fSort', 's', 'sort');
 
+    if (withAttrs) {
+      const on = panel.querySelector('#fOpenNow');
+      on.addEventListener('click', () => { v.openNow = !v.openNow; on.classList.toggle('active', v.openNow); });
+
+      // attributes are multi-select and combine; picking two narrows the list
+      const wireAttrs = () => panel.querySelectorAll('#fAttrs .chip').forEach(b => {
+        b.addEventListener('click', () => {
+          const id = b.dataset.a;
+          const i = v.attrs.indexOf(id);
+          if (i >= 0) v.attrs.splice(i, 1); else v.attrs.push(id);
+          b.classList.toggle('active', v.attrs.includes(id));
+        });
+      });
+      wireAttrs();
+
+      // changing the category changes which attributes exist: rebuild them,
+      // and drop any selection that no longer applies
+      panel.querySelectorAll('#fCats .chip').forEach(b => b.addEventListener('click', () => {
+        const valid = S.attrsForCat(v.cat === 'all' ? '*' : v.cat).map(a => a.id);
+        v.attrs = v.attrs.filter(id => valid.includes(id));
+        panel.querySelector('#fAttrs').innerHTML = attrHtml();
+        wireAttrs();
+      }));
+    }
+
     panel.querySelector('#fApply').addEventListener('click', () => {
       if (withPrice) {
         v.priceMin = panel.querySelector('#fMin').value.trim();
@@ -366,7 +415,8 @@ export function openFilterSheet({ cats, value, withPrice, onApply }) {
     });
     panel.querySelector('#fClear').addEventListener('click', () => {
       closeSheet();
-      onApply({ cat: 'all', radius: S.state.radius, sort: 'newest', priceMin: '', priceMax: '' });
+      onApply({ cat: 'all', radius: S.state.radius, sort: 'newest', priceMin: '', priceMax: '',
+                openNow: false, attrs: [] });
       toast(t('filtersCleared'), 'ok');
     });
   });
@@ -380,6 +430,8 @@ export function activeFilterCount(v) {
   if (v.sort && v.sort !== 'newest') n++;
   if (v.priceMin) n++;
   if (v.priceMax) n++;
+  if (v.openNow) n++;
+  n += (v.attrs || []).length;
   return n;
 }
 
@@ -400,6 +452,58 @@ export function statusBadge(c, showLive = false) {
 }
 
 /** query params from the hash: #/directory?cat=cars → { cat: 'cars' } */
+/* ============================================================
+   Opening hours — display
+   ============================================================ */
+
+/** "17:30" → "٥:٣٠ م" / "5:30pm". Storage stays 24-hour; only the label changes. */
+export function fmtTime(hhmm) {
+  const [H, M] = String(hhmm).split(':').map(Number);
+  if (H === 24 || (H === 0 && M === 0)) return getLang() === 'ar' ? '١٢:٠٠ ص' : '12:00am';
+  const suffix = H < 12 ? t('am') : t('pm');
+  const h12 = H % 12 === 0 ? 12 : H % 12;
+  const body = `${h12}:${String(M).padStart(2, '0')}`;
+  const num = getLang() === 'ar' ? body.replace(/\d/g, d => '٠١٢٣٤٥٦٧٨٩'[d]) : body;
+  return getLang() === 'ar' ? `${num} ${suffix}` : `${num}${suffix}`;
+}
+
+/** one day's spans as text, or "closed" */
+export function fmtDay(spans) {
+  if (!spans || !spans.length) return t('closedToday');
+  if (S.isAllDay(spans)) return t('open24');
+  return spans.map(([o, c]) => `${fmtTime(o)} – ${fmtTime(c)}`).join(' · ');
+}
+
+/**
+ * The open/closed pill. Says what the user actually needs next: closing time
+ * when it is about to shut, opening time when it is closed.
+ * Returns '' when the business carries no hours — better nothing than a guess.
+ */
+export function openBadge(biz, now = new Date()) {
+  const st = S.openState(biz, now);
+  if (!st) return '';
+  if (st.always) return `<span class="open-pill open">${icon('clock', 12)}${t('open24')}</span>`;
+  if (st.open) {
+    const soon = st.minsToClose !== null && st.minsToClose <= 60;
+    return `<span class="open-pill ${soon ? 'soon' : 'open'}">${icon('clock', 12)}${
+      soon ? t('closesSoon') : t('openNow')}</span>`;
+  }
+  // name the day only when it is not today — "opens Monday 9am" vs "opens 9am"
+  const day = st.opensToday ? '' : t(S.DAY_KEYS[st.opensDay]) + ' ';
+  const when = st.opensAt ? `${t('opensAt')} ${day}${fmtTime(st.opensAt)}` : t('closedNow');
+  return `<span class="open-pill closed">${icon('clock', 12)}${when.trim()}</span>`;
+}
+
+/** the attribute pills shown under a business description */
+export function attrChips(biz) {
+  const list = (biz.attributes || [])
+    .map(id => S.attrById(id))
+    .filter(a => a && S.seasonOn(a.season));
+  if (!list.length) return '';
+  return `<div class="attr-chips">${list.map(a =>
+    `<span class="attr-chip">${icon(a.icon, 14)}${t(a.key)}</span>`).join('')}</div>`;
+}
+
 /**
  * One line above the results naming the section the user is looking at.
  * Without it a pre-filtered arrival looks like the whole list, just shorter.

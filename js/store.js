@@ -5,7 +5,11 @@
    ============================================================ */
 
 import { CLASSIFIEDS, BUSINESSES, NOTIFICATIONS, SLIDER_ADS, REVIEWS,
-         MARKET_CATS, FREE_PRICE, EVENTS, VERIFY_BADGE_PRICE, blankEvent } from './data.js';
+         MARKET_CATS, FREE_PRICE, EVENTS, VERIFY_BADGE_PRICE, blankEvent,
+         ATTRIBUTES, ATTR_GROUPS, CATEGORIES, DAY_KEYS, attrById, attrInCat, attrIsQuick,
+         isAllDay, week } from './data.js';
+
+export { ATTRIBUTES, ATTR_GROUPS, DAY_KEYS, attrById, attrInCat, attrIsQuick, isAllDay, week };
 
 export { blankEvent };
 
@@ -46,6 +50,9 @@ const DEFAULTS = {
   eventEdits: {},            // admin edits applied on top of a seed event
   draft: null,               // half-finished listing kept across a verification detour
   adminAuth: null,           // { user, pass } once the owner changes the defaults
+  businessEdits: {},         // admin edits layered on top of a seed business
+  mergedBusinesses: [],      // { keepId, dropId, when } — duplicates folded together
+  seasons: { ramadan: false },   // seasonal attribute groups the owner has switched on
 };
 
 export const state = Object.assign({}, DEFAULTS, load() || {});
@@ -296,7 +303,283 @@ export function scanMessage(text, listing) {
 }
 
 /* ---------------- data accessors ---------------- */
-export function allBusinesses() { return state.extraBusinesses.concat(BUSINESSES); }
+/* ============================================================
+   Opening hours: is it open right now?
+   ------------------------------------------------------------
+   Everything is computed in the viewer's own local time. The case
+   that catches naive implementations is the shop that closes after
+   midnight: at 00:30 on Saturday it is *Friday's* span that is still
+   running, so yesterday has to be inspected as well as today.
+   ============================================================ */
+
+const MINS = (hhmm) => {
+  const [h, m] = String(hhmm).split(':').map(Number);
+  return (h || 0) * 60 + (m || 0);
+};
+
+/** every span of `day` as absolute minutes relative to the start of today */
+function spansOn(hours, dayIndex, dayOffset) {
+  const spans = hours && hours[dayIndex];
+  if (!spans || !spans.length) return [];
+  return spans.map(([o, c]) => {
+    let start = MINS(o), end = MINS(c);
+    if (end <= start) end += 1440;          // runs past midnight
+    return { start: start + dayOffset * 1440, end: end + dayOffset * 1440 };
+  });
+}
+
+/**
+ * @returns {null|{open:boolean, always:boolean, minsToClose:number|null,
+ *                 closesAt:string|null, opensAt:string|null, opensDay:number|null,
+ *                 opensToday:boolean}}
+ * null when the business carries no structured hours at all.
+ */
+export function openState(biz, now = new Date()) {
+  const hours = biz && biz.hours;
+  if (!Array.isArray(hours) || hours.length !== 7) return null;
+
+  const today = now.getDay();
+  const nowMins = now.getHours() * 60 + now.getMinutes();
+
+  // yesterday first, so a span that began before midnight is seen
+  for (const offset of [-1, 0]) {
+    const day = (today + offset + 7) % 7;
+    for (const sp of spansOn(hours, day, offset)) {
+      if (nowMins >= sp.start && nowMins < sp.end) {
+        const always = isAllDay(hours[day]) && isAllDay(hours[(day + 1) % 7]);
+        return {
+          open: true,
+          always,
+          minsToClose: always ? null : sp.end - nowMins,
+          closesAt: always ? null : fmtMins(sp.end % 1440),
+          opensAt: null, opensDay: null, opensToday: false,
+        };
+      }
+    }
+  }
+
+  // closed: find the next opening within the coming week
+  for (let offset = 0; offset < 8; offset++) {
+    const day = (today + offset) % 7;
+    for (const sp of spansOn(hours, day, offset).sort((a, b) => a.start - b.start)) {
+      if (sp.start > nowMins) {
+        return {
+          open: false, always: false, minsToClose: null, closesAt: null,
+          opensAt: fmtMins(sp.start % 1440),
+          opensDay: day,
+          opensToday: offset === 0,
+        };
+      }
+    }
+  }
+  return { open: false, always: false, minsToClose: null, closesAt: null,
+           opensAt: null, opensDay: null, opensToday: false };
+}
+
+function fmtMins(m) {
+  const h = Math.floor(m / 60) % 24, mm = m % 60;
+  return String(h).padStart(2, '0') + ':' + String(mm).padStart(2, '0');
+}
+
+export function isOpenNow(biz, now = new Date()) {
+  const st = openState(biz, now);
+  return !!(st && st.open);
+}
+
+/** open, but for less than an hour — worth a quiet warning, never a lie */
+export function closingSoon(biz, now = new Date()) {
+  const st = openState(biz, now);
+  return !!(st && st.open && !st.always && st.minsToClose !== null && st.minsToClose <= 60);
+}
+
+/* ============================================================
+   Attributes
+   ============================================================ */
+
+/** the seasonal groups the owner has switched on (admin → settings) */
+export function seasonOn(season) {
+  return !season || !!(state.seasons && state.seasons[season]);
+}
+export function setSeason(season, on) {
+  state.seasons = Object.assign({}, state.seasons, { [season]: !!on });
+  save();
+}
+
+/** every attribute that applies to `cat` and is in season */
+export function attrsForCat(cat) {
+  return ATTRIBUTES.filter(a => attrInCat(a, cat) && seasonOn(a.season));
+}
+/** …grouped, in registry order, for the add form and the filter sheet */
+export function attrGroupsForCat(cat) {
+  const list = attrsForCat(cat);
+  return ATTR_GROUPS
+    .filter(g => seasonOn(g.season))
+    .map(g => ({ group: g, attrs: list.filter(a => a.group === g.id) }))
+    .filter(g => g.attrs.length);
+}
+/** the ones that earn a chip above the results */
+export function quickAttrsForCat(cat) {
+  return ATTRIBUTES.filter(a => attrIsQuick(a, cat) && seasonOn(a.season));
+}
+export function hasAttr(biz, id) {
+  return Array.isArray(biz && biz.attributes) && biz.attributes.includes(id);
+}
+/** every selected attribute must be present — chips combine, they do not widen */
+export function matchesAttrs(biz, ids) {
+  if (!ids || !ids.length) return true;
+  return ids.every(id => hasAttr(biz, id));
+}
+
+/* ============================================================
+   Search
+   ------------------------------------------------------------
+   Name and description alone missed anyone who typed what they
+   actually wanted — "شاورما", "أسنان", "tow". Keywords and the
+   category name join the haystack, and both languages are always
+   searched whatever the interface is set to, because people type
+   in whichever one is under their thumb.
+   ============================================================ */
+
+/** strip case, tatweel, diacritics and alef/ya/ta-marbuta variants */
+export function normalize(str) {
+  return String(str == null ? '' : str)
+    .toLowerCase()
+    .replace(/[\u0640]/g, '')
+    .replace(/[\u064B-\u065F\u0670]/g, '')
+    .replace(/[\u0622\u0623\u0625\u0671]/g, '\u0627')
+    .replace(/\u0649/g, '\u064A')
+    .replace(/\u0629/g, '\u0647')
+    .trim();
+}
+
+/** everything a business can be found by, both languages at once */
+export function searchHaystack(biz) {
+  const cat = CATEGORIES.find(c => c.id === biz.cat);
+  const parts = [
+    biz.name && biz.name.ar, biz.name && biz.name.en,
+    biz.desc && biz.desc.ar, biz.desc && biz.desc.en,
+    biz.address,
+    ...(Array.isArray(biz.tags) ? biz.tags : []),
+  ];
+  if (cat) parts.push(catNames(cat.key));
+  return normalize(parts.filter(Boolean).join(' '));
+}
+
+/** both translations of a category key, so either language finds it */
+function catNames(key) {
+  try {
+    const packs = i18nPacks();
+    return [packs.ar[key], packs.en[key]].filter(Boolean).join(' ');
+  } catch (e) { return ''; }
+}
+let _packs = null;
+function i18nPacks() {
+  if (!_packs) _packs = { ar: {}, en: {} };
+  return _packs;
+}
+/** i18n hands its tables over at boot; store must not import a screen module */
+export function registerStrings(packs) { _packs = packs; }
+
+export function matchesSearch(biz, term) {
+  const q = normalize(term);
+  if (!q) return true;
+  const hay = searchHaystack(biz);
+  // every word must appear somewhere — "مطعم حلال" should narrow, not widen
+  return q.split(/\s+/).filter(Boolean).every(w => hay.includes(w));
+}
+
+/* ============================================================
+   Duplicate businesses
+   ------------------------------------------------------------
+   300 shops are going in by hand, and then their owners will add
+   themselves because they did not find their own listing. The phone
+   number is the one field two records for the same shop almost
+   always agree on, so it is the primary key for this check.
+   ============================================================ */
+
+/** last ten digits, Arabic-Indic numerals included */
+export function phoneKey(phone) {
+  const latin = String(phone || '').replace(/[\u0660-\u0669]/g, d => String(d.charCodeAt(0) - 0x0660));
+  const digits = latin.replace(/\D/g, '');
+  return digits.length >= 10 ? digits.slice(-10) : digits;
+}
+
+/**
+ * Existing records that look like the one being added.
+ * @returns [{ biz, reason: 'phone'|'name' }]
+ */
+export function findDuplicates({ phone, name, address, id } = {}) {
+  const key = phoneKey(phone);
+  const nName = normalize(typeof name === 'string' ? name : (name && (name.ar || name.en)) || '');
+  const nAddr = normalize(address).replace(/[.,]/g, '');
+  const out = [];
+  for (const b of allBusinesses()) {
+    if (id && b.id === id) continue;
+    if (key && key.length === 10 && phoneKey(b.phone) === key) { out.push({ biz: b, reason: 'phone' }); continue; }
+    if (!nName) continue;
+    const sameName = normalize(b.name.ar) === nName || normalize(b.name.en) === nName;
+    const sameAddr = nAddr && normalize(b.address).replace(/[.,]/g, '') === nAddr;
+    if (sameName && sameAddr) out.push({ biz: b, reason: 'name' });
+  }
+  return out;
+}
+
+/**
+ * Fold `dropId` into `keepId`: reviews, saved flags, ownership and any
+ * photos follow, then the duplicate is removed. Seed records cannot be
+ * deleted from the file, so they are tombstoned instead.
+ */
+export function mergeBusinesses(keepId, dropId) {
+  if (!keepId || !dropId || keepId === dropId) return false;
+  const keep = businessById(keepId), drop = businessById(dropId);
+  if (!keep || !drop) return false;
+
+  // reviews
+  const moved = (state.reviews || []).filter(r => r.bizId === dropId);
+  moved.forEach(r => { r.bizId = keepId; });
+
+  // favourites: the kept record inherits the star
+  if (state.saved.includes(dropId)) {
+    state.saved = state.saved.filter(x => x !== dropId);
+    if (!state.saved.includes(keepId)) state.saved.push(keepId);
+  }
+  if (state.myBusinessId === dropId) state.myBusinessId = keepId;
+  if (state.subscription && state.subscription.businessId === dropId) state.subscription.businessId = keepId;
+
+  // anything the duplicate knew that the survivor did not
+  const target = state.extraBusinesses.find(b => b.id === keepId) || keep;
+  target.attributes = Array.from(new Set([].concat(keep.attributes || [], drop.attributes || [])));
+  target.tags = Array.from(new Set([].concat(keep.tags || [], drop.tags || [])));
+  if (!target.phone && drop.phone) target.phone = drop.phone;
+  if (state.extraBusinesses.find(b => b.id === keepId)) {
+    // the survivor is a user record — keep the merged fields on it
+  } else {
+    // the survivor is a seed record: layer the merge on top of it
+    state.businessEdits = Object.assign({}, state.businessEdits, {
+      [keepId]: { attributes: target.attributes, tags: target.tags },
+    });
+  }
+
+  state.extraBusinesses = state.extraBusinesses.filter(b => b.id !== dropId);
+  state.mergedBusinesses = (state.mergedBusinesses || []).concat([{ keepId, dropId, when: Date.now() }]);
+  save();
+  return true;
+}
+
+/**
+ * Seed records plus user records, with admin edits layered on top and any
+ * record folded into a duplicate removed. The seed file stays a clean import
+ * target — nothing is ever written back into it.
+ */
+export function allBusinesses() {
+  const dropped = (state.mergedBusinesses || []).map(m => m.dropId);
+  return state.extraBusinesses.concat(BUSINESSES)
+    .filter(b => !dropped.includes(b.id))
+    .map(b => {
+      const edit = state.businessEdits && state.businessEdits[b.id];
+      return edit ? Object.assign({}, b, edit) : b;
+    });
+}
 export function businessById(id) { return allBusinesses().find(b => b.id === id); }
 
 /**
@@ -834,8 +1117,11 @@ export function sendMessage(listingId, text, lang = 'ar') {
   return { msg, removed: clean.removed, flagged: scan.flagged };
 }
 
+let bizSeq = 0;
 export function addBusiness(biz) {
-  const id = 'ub' + Date.now();
+  // a counter as well as the clock: two records added inside the same
+  // millisecond must not share an id
+  const id = 'ub' + Date.now() + '-' + (++bizSeq);
   const rec = Object.assign({ id, plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0.5, claimed: true, photos: 0, videos: 0 }, biz);
   state.extraBusinesses.unshift(rec);
   state.myBusinessId = id;
