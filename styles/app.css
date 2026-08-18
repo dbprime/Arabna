@@ -1225,13 +1225,18 @@ input[inputmode="tel"], input[type="email"], input[inputmode="decimal"], #zipIn 
 }
 .imp-row.bad { border-color: rgba(196,89,92,0.45); background: rgba(196,89,92,0.07); }
 .imp-row.dup { border-color: rgba(198,161,91,0.45); background: rgba(198,161,91,0.06); }
+/* a warning row still imports — it is marked, not refused */
+.imp-row.warn { border-color: rgba(198,161,91,0.22); }
 .imp-pick { display: flex; flex-direction: column; align-items: center; gap: 4px; }
 .imp-pick input { width: 18px; height: 18px; accent-color: #C6A15B; }
 .imp-line { font-size: 10.5px; color: var(--muted); }
 .imp-body { flex: 1; min-width: 0; }
 .imp-body b { display: block; font-size: 14px; }
 .imp-why { font-size: 11.5px; margin-top: 3px; line-height: 1.5; }
+.imp-why { display: flex; gap: 5px; align-items: flex-start; }
+.imp-why svg { flex: 0 0 12px; margin-top: 3px; }
 .imp-why.err { color: #E79A9C; }
+.imp-why.warn { color: var(--gold-bright); }
 .imp-why.dup { color: var(--gold-bright); }
 
 /* ---------- "which section am I looking at" ---------- */

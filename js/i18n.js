@@ -345,6 +345,17 @@ export const STRINGS = {
     backupWhy: 'كل البيانات في ملف JSON واحد — بعد إدخال مئات المحلات تصير هذه أثمن ما عندك.',
     backupExport: 'تصدير نسخة احتياطية',
     backupDone: 'نزّلنا النسخة الاحتياطية',
+    // --- names: the English one is the required half
+    nameEn: 'اسم النشاط (إنجليزي)',
+    nameAr: 'اسم النشاط (عربي)',
+    nameArHint: 'اتركه فارغاً إذا كان المحل معروفاً باسمه الإنجليزي فقط — بنعرضه كما هو.',
+    // --- import: what blocks a row and what only warns
+    importWarn: 'صف بتنبيه',
+    importLegend: 'الأحمر يمنع الاستيراد · الأصفر تنبيه فقط والصف يمرّ',
+    importWarnNoNameAr: 'بلا اسم عربي — بنعرض الإنجليزي',
+    importWarnNoHours: 'بلا دوام',
+    importWarnNoDesc: 'بلا وصف',
+    importWarnUnknownAttr: 'خصائص غير معروفة — ستُتجاهَل',
     // --- commercial prices behind a free account
     pricesAfterSignup: 'الأسعار تظهر بعد إنشاء حساب مجاني',
     unlockPrices: 'سجّل مجاناً وشوف الأسعار',
@@ -800,6 +811,15 @@ export const STRINGS = {
     backupWhy: 'Everything in one JSON file — after hundreds of shops are entered this is your most valuable asset.',
     backupExport: 'Export backup',
     backupDone: 'Backup downloaded',
+    nameEn: 'Business name (English)',
+    nameAr: 'Business name (Arabic)',
+    nameArHint: 'Leave blank if the shop is known only by its English name — we show it as it is.',
+    importWarn: 'Rows with warnings',
+    importLegend: 'Red blocks the import · amber is only a warning and the row still goes through',
+    importWarnNoNameAr: 'no Arabic name — the English one is used',
+    importWarnNoHours: 'no opening hours',
+    importWarnNoDesc: 'no description',
+    importWarnUnknownAttr: 'unknown attributes — they will be ignored',
     pricesAfterSignup: 'Prices show after you create a free account',
     unlockPrices: 'Sign up free to see prices',
     unlockPrice: 'Sign up free to see the price',
@@ -952,5 +972,8 @@ export function bothPacks() { return STRINGS; }
 export function L(obj) {
   if (obj == null) return '';
   if (typeof obj === 'string') return obj;
-  return obj[currentLang] !== undefined ? obj[currentLang] : (obj.ar || obj.en || '');
+  // An empty side falls back to the other one. Most shops here trade under an
+  // English name only, and a blank name in the Arabic interface would be worse
+  // than showing the name written on the shopfront.
+  return obj[currentLang] || obj.ar || obj.en || '';
 }

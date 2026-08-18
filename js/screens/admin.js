@@ -592,33 +592,41 @@ function showImport(result, repaint) {
     return;
   }
 
+  // an error stops the row; a warning is only worth saying out loud
   const problem = (e) => {
     const label = { required: t('importRequired'), unknown: t('importUnknownCat'),
-                    badPhone: t('importBadPhone'), badHours: t('importBadHours'),
-                    unknownAttr: t('importUnknownAttr') }[e.code] || e.code;
+                    badPhone: t('importBadPhone'), badHours: t('importBadHours') }[e.code] || e.code;
     return `${e.field}: ${label}${e.got ? ` (${e.got})` : ''}`;
+  };
+  const caution = (w) => {
+    const label = { noNameAr: t('importWarnNoNameAr'), noHours: t('importWarnNoHours'),
+                    noDesc: t('importWarnNoDesc'), unknownAttr: t('importWarnUnknownAttr') }[w.code] || w.code;
+    return `${label}${w.got ? `: ${w.got}` : ''}`;
   };
 
   const render = () => {
     const chosen = result.rows.filter(r => r.include);
     out.innerHTML = `
-      <div class="stat-row mt-12" style="padding:0">
+      <div class="stat-row mt-12" style="padding:0;grid-template-columns:repeat(4,1fr)">
         <div class="stat"><b>${result.counts.ok}</b><span>${t('importOk')}</span></div>
+        <div class="stat"><b>${result.counts.warn}</b><span>${t('importWarn')}</span></div>
         <div class="stat"><b>${result.counts.bad}</b><span>${t('importBad')}</span></div>
         <div class="stat"><b>${result.counts.dup}</b><span>${t('importDup')}</span></div>
       </div>
+      <div class="hint" style="margin:8px 0 0">${t('importLegend')}</div>
       <div class="mt-12">
         ${result.rows.map(r => `
-          <div class="imp-row ${r.errors.length ? 'bad' : r.dupOf ? 'dup' : 'ok'}">
+          <div class="imp-row ${r.errors.length ? 'bad' : r.dupOf ? 'dup' : r.warnings.length ? 'warn' : 'ok'}">
             <label class="imp-pick">
               <input type="checkbox" data-inc="${r.line}" ${r.include ? 'checked' : ''}
                      ${r.errors.length ? 'disabled' : ''} />
               <span class="imp-line">#${r.line}</span>
             </label>
             <div class="imp-body">
-              <b>${r.biz.name.ar || '—'}</b>
+              <b>${r.biz.name.en || r.biz.name.ar || '—'}</b>
               <span class="ltr muted fs-12">${r.biz.phone || '—'}</span>
-              ${r.errors.length ? `<div class="imp-why err">${r.errors.map(problem).join(' · ')}</div>` : ''}
+              ${r.errors.length ? `<div class="imp-why err">${icon('alert', 12)} ${r.errors.map(problem).join(' · ')}</div>` : ''}
+              ${r.warnings.length ? `<div class="imp-why warn">${icon('info', 12)} ${r.warnings.map(caution).join(' · ')}</div>` : ''}
               ${!r.errors.length && r.dupOf ? `<div class="imp-why dup">${r.dupOf.kind === 'file'
                 ? `${t('importDupFile')} #${r.dupOf.line}`
                 : `${t('importDupDir')}: ${L(r.dupOf.name)}`}</div>` : ''}

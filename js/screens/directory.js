@@ -557,7 +557,10 @@ export function AddBusinessScreen(root) {
   root.innerHTML = `
     <div class="pad mt-16">
       <div class="list-note" style="margin:0 0 14px">${icon('info', 18)}<span>${t('needPhoneSub')}</span></div>
-      <div class="field"><label class="label">${t('adBizName')}</label><input class="input" id="bName" /></div>
+      <div class="field"><label class="label">${t('nameEn')}</label><input class="input ltr" id="bName" dir="ltr" /></div>
+      <div class="field"><label class="label">${t('nameAr')} <span class="muted">(${t('optional')})</span></label>
+        <input class="input" id="bNameAr" />
+        <div class="hint">${t('nameArHint')}</div></div>
       <div class="field"><label class="label">${t('category')}</label>
         <select class="select" id="bCat">${CATEGORIES.filter(c => !c.route).map(c => `<option value="${c.id}">${t(c.key)}</option>`).join('')}</select></div>
       <div class="field"><label class="label">${t('phoneLabel')}</label><input class="input" id="bPhone" inputmode="tel" placeholder="(713) 555-0000" /></div>
@@ -628,15 +631,18 @@ export function AddBusinessScreen(root) {
 
   const collect = () => ({
     name: $('#bName').value.trim(),
+    nameAr: $('#bNameAr').value.trim(),
     phone: $('#bPhone').value.trim(),
     address: $('#bAddr').value.trim(),
   });
 
   const save = () => {
-    const { name, phone, address } = collect();
+    const { name, nameAr, phone, address } = collect();
     const tags = $('#bTags').value.split(/[,\u060C\n]/).map(x => x.trim()).filter(Boolean);
     const rec = S.addBusiness({
-      name: { ar: name, en: name }, cat, phone, address,
+      // Most shops here trade under an English name only. Rather than invent
+      // an Arabic one, the English name stands in both fields.
+      name: { ar: nameAr || name, en: name }, cat, phone, address,
       hours: readHours(), tags, attributes: picked.slice(),
       desc: { ar: $('#bDesc').value, en: $('#bDesc').value },
     });
@@ -794,7 +800,11 @@ export function BusinessEditScreen(root, params) {
 
   root.innerHTML = `
     <div class="pad mt-16">
-      <div class="field"><label class="label">${t('adBizName')}</label><input class="input" id="eName" value="${attr(L(b.name))}" /></div>
+      <div class="field"><label class="label">${t('nameEn')}</label>
+        <input class="input ltr" id="eName" dir="ltr" value="${attr((b.name && b.name.en) || '')}" /></div>
+      <div class="field"><label class="label">${t('nameAr')} <span class="muted">(${t('optional')})</span></label>
+        <input class="input" id="eNameAr" value="${attr((b.name && b.name.ar) || '')}" />
+        <div class="hint">${t('nameArHint')}</div></div>
       <div class="field"><label class="label">${t('phoneLabel')}</label><input class="input" id="ePhone" inputmode="tel" value="${attr(b.phone)}" /></div>
       <div class="field"><label class="label">${t('address')}</label><input class="input" id="eAddr" value="${attr(b.address)}" /></div>
       <div class="field"><label class="label">${t('descLabel')}</label><textarea class="textarea" id="eDesc">${L(b.desc || '')}</textarea></div>
@@ -830,9 +840,10 @@ export function BusinessEditScreen(root, params) {
 
   $('#eSave').addEventListener('click', () => {
     const name = $('#eName').value.trim();
+    const nameAr = $('#eNameAr').value.trim();
     if (!name) { toast(t('required'), 'err'); return; }
     S.applyBusinessEdit(b.id, {
-      name: { ar: name, en: name },
+      name: { ar: nameAr || name, en: name },
       phone: $('#ePhone').value.trim(),
       address: $('#eAddr').value.trim(),
       desc: { ar: $('#eDesc').value, en: $('#eDesc').value },

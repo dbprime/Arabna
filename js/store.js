@@ -1411,8 +1411,9 @@ export function addArticle(a) {
    same screen writes to the database and step three disappears.
    ============================================================ */
 
+/* name_en first because it is the required one; name_ar may be left blank */
 export const CSV_COLUMNS = [
-  'name_ar', 'name_en', 'category', 'phone', 'address',
+  'name_en', 'name_ar', 'category', 'phone', 'address',
   'desc_ar', 'desc_en', 'tags', 'attributes',
   'hours_sun', 'hours_mon', 'hours_tue', 'hours_wed', 'hours_thu', 'hours_fri', 'hours_sat',
 ];
@@ -1420,7 +1421,7 @@ export const CSV_COLUMNS = [
 /** A sample file with the right columns and one filled row. */
 export function sampleCsv() {
   const example = [
-    'مطعم النخيل', 'Al Nakheel Restaurant', 'restaurants', '(713) 555-0101',
+    'Al Nakheel Restaurant', 'مطعم النخيل', 'restaurants', '(713) 555-0101',
     '123 Hillcroft Ave, Houston, TX 77081',
     'مشاوي ومقبلات', 'Grills and mezze',
     'مشاوي;كباب;grill;kebab', 'halalMeat;noAlcohol;delivery',
@@ -1476,11 +1477,15 @@ const pad = (t) => { const [h, m] = t.split(':'); return String(h).padStart(2, '
  */
 export function parseBusinessCsv(text) {
   const table = parseCsv(text);
-  if (!table.length) return { header: [], rows: [], counts: { ok: 0, bad: 0, dup: 0 }, fatal: 'empty' };
+  if (!table.length) return { header: [], rows: [], counts: { ok: 0, bad: 0, dup: 0, warn: 0 }, fatal: 'empty' };
 
   const header = table[0].map(h => h.trim().toLowerCase());
-  const missing = ['name_ar', 'category', 'phone', 'address'].filter(c => !header.includes(c));
-  if (missing.length) return { header, rows: [], counts: { ok: 0, bad: 0, dup: 0 }, fatal: 'columns', missing };
+  // The English name is the required one. Most Arab-owned shops in Houston
+  // trade under an English name — Abdallah's, Fadi's, Dimassi's — and it is
+  // the name on the shopfront that people search for. Inventing an Arabic
+  // one for them would be worse than having none.
+  const missing = ['name_en', 'category', 'phone', 'address'].filter(c => !header.includes(c));
+  if (missing.length) return { header, rows: [], counts: { ok: 0, bad: 0, dup: 0, warn: 0 }, fatal: 'columns', missing };
 
   const col = (r, name) => {
     const i = header.indexOf(name);
@@ -1493,14 +1498,19 @@ export function parseBusinessCsv(text) {
 
   for (let i = 1; i < table.length; i++) {
     const raw = table[i];
+    // Two lists, and the difference matters: an error stops the row, a warning
+    // does not. Treating both as errors made a perfectly good file of 413 shops
+    // look like a total failure.
     const errors = [];
-    const nameAr = col(raw, 'name_ar');
-    const nameEn = col(raw, 'name_en') || nameAr;
+    const warnings = [];
+    const nameEn = col(raw, 'name_en');
+    const nameAr = col(raw, 'name_ar') || nameEn;
     const cat = col(raw, 'category');
     const phone = col(raw, 'phone');
     const address = col(raw, 'address');
 
-    if (!nameAr) errors.push({ field: 'name_ar', code: 'required' });
+    if (!nameEn) errors.push({ field: 'name_en', code: 'required' });
+    if (!col(raw, 'name_ar') && nameEn) warnings.push({ field: 'name_ar', code: 'noNameAr' });
     if (!cat) errors.push({ field: 'category', code: 'required' });
     else if (!catIds.includes(cat)) errors.push({ field: 'category', code: 'unknown', got: cat });
     if (!phone) errors.push({ field: 'phone', code: 'required' });
@@ -1514,10 +1524,17 @@ export function parseBusinessCsv(text) {
       hours.push(parsed.ok ? parsed.value : null);
     });
 
+    if (hours.every(d => d === null)) warnings.push({ field: 'hours', code: 'noHours' });
+    if (!col(raw, 'desc_ar') && !col(raw, 'desc_en')) warnings.push({ field: 'desc', code: 'noDesc' });
+
     const tags = col(raw, 'tags').split(/[;,\u060C]/).map(x => x.trim()).filter(Boolean);
-    const attributes = col(raw, 'attributes').split(/[;,\u060C]/).map(x => x.trim()).filter(Boolean);
-    attributes.filter(a => !attrIds.includes(a))
-      .forEach(a => errors.push({ field: 'attributes', code: 'unknownAttr', got: a }));
+    const rawAttrs = col(raw, 'attributes').split(/[;,\u060C]/).map(x => x.trim()).filter(Boolean);
+    // An attribute this build has not defined yet is dropped with a note, not
+    // treated as a fault: new ones keep arriving, and one unknown id must never
+    // cost the whole file.
+    const unknownAttrs = rawAttrs.filter(a => !attrIds.includes(a));
+    const attributes = rawAttrs.filter(a => attrIds.includes(a));
+    if (unknownAttrs.length) warnings.push({ field: 'attributes', code: 'unknownAttr', got: unknownAttrs.join(' · ') });
 
     // duplicates: inside the file first, then against what is already listed
     let dupOf = null;
@@ -1526,13 +1543,13 @@ export function parseBusinessCsv(text) {
       if (seenPhones[key]) dupOf = { kind: 'file', line: seenPhones[key] };
       else {
         seenPhones[key] = i + 1;
-        const hit = findDuplicates({ phone, name: nameAr, address })[0];
+        const hit = findDuplicates({ phone, name: nameEn, address })[0];
         if (hit) dupOf = { kind: 'directory', name: hit.biz.name, id: hit.biz.id, reason: hit.reason };
       }
     }
 
     rows.push({
-      line: i + 1, raw, errors, dupOf, include: !errors.length && !dupOf,
+      line: i + 1, raw, errors, warnings, dupOf, include: !errors.length && !dupOf,
       biz: {
         name: { ar: nameAr, en: nameEn }, cat, phone, address,
         desc: { ar: col(raw, 'desc_ar'), en: col(raw, 'desc_en') || col(raw, 'desc_ar') },
@@ -1547,6 +1564,9 @@ export function parseBusinessCsv(text) {
       ok: rows.filter(r => !r.errors.length && !r.dupOf).length,
       bad: rows.filter(r => r.errors.length).length,
       dup: rows.filter(r => !r.errors.length && r.dupOf).length,
+      // a subset of `ok`: how many of the rows that will import carry a note.
+      // Duplicates are counted under `dup` alone, never twice.
+      warn: rows.filter(r => !r.errors.length && !r.dupOf && r.warnings.length).length,
     },
   };
 }

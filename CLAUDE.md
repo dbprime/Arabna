@@ -343,6 +343,19 @@ means re-entering 300 shops, so treat it as frozen unless there is no choice.
   a subscriber's page shows none. These are never sold: this community is small
   and its owners talk to each other, so "pay to bury your rival" would cost more
   in reputation than it earns.
+- **The English name is the required one, the Arabic name is optional.** Most
+  Arab-owned shops in Houston trade under an English name — Abdallah's, Fadi's,
+  Dimassi's — and that is the name on the shopfront and in people's searches.
+  Inventing an Arabic name for them would be worse than having none, so
+  `name.ar` falls back to `name.en`, in the importer and in the add/edit form
+  alike, and `L()` falls back on an empty side rather than rendering a blank.
+- **The importer distinguishes an error from a warning.** An error blocks the
+  row (no English name · no category · unknown category · unusable phone · no
+  address); a warning does not (no Arabic name · no hours · no description ·
+  an attribute this build has not defined yet, which is dropped with a note).
+  Treating everything as an error once made a clean file of 413 shops read as a
+  total failure. **Never make an unknown attribute id fatal** — new ones keep
+  being defined, and a file must not fail because it is ahead of the code.
 - **Bulk import is three steps, because of one constraint:** seed businesses
   live in `js/data.js` (deployed, everyone sees them) while anything saved in
   the app lives in the owner's own localStorage (nobody else ever sees it).
