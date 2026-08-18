@@ -51,6 +51,10 @@ const DEFAULTS = {
   draft: null,               // half-finished listing kept across a verification detour
   adminAuth: null,           // { user, pass } once the owner changes the defaults
   businessEdits: {},         // admin edits layered on top of a seed business
+  bizPhotos: {},             // { bizId: [{ url, status, when }] } — reviewed like avatars
+  bizVerify: {},             // { bizId: { status, ref, reason } } — never derived from plan
+  claims: [],                // ownership requests awaiting an admin decision
+  reviewReplies: {},         // { reviewId: { text, when } } — the owner's answer
   mergedBusinesses: [],      // { keepId, dropId, when } — duplicates folded together
   seasons: { ramadan: false },   // seasonal attribute groups the owner has switched on
 };
@@ -649,17 +653,250 @@ export function sliderAds() {
   return live.concat(SLIDER_ADS);
 }
 
-/* ---------------- entitlements ---------------- */
+/* ============================================================
+   Entitlements
+   ------------------------------------------------------------
+   What the subscription buys, in one table. Reviews are NOT on
+   it: if twenty of three hundred shops subscribe, gating reviews
+   leaves 93% of the directory empty and nobody has a reason to
+   open the app at all — and with no users nobody pays either.
+   Reviews are the content that makes the app worth opening, not
+   a feature to sell.
+   ============================================================ */
 export function businessPlan(b) {
   if (state.subscription && state.subscription.businessId === b.id) return 'paid';
   return b.plan;
 }
-export function canSeeReviews(b) { return businessPlan(b) === 'paid'; }
+export const PLAN_LIMITS = {
+  free: { photos: 3, videos: 0 },
+  paid: { photos: Infinity, videos: 3 },
+};
+export function planLimits(b) { return PLAN_LIMITS[businessPlan(b)] || PLAN_LIMITS.free; }
+
+/** Reviews are free for everyone, on every listing. */
+export function canSeeReviews() { return true; }
+
+/** Paying does not verify anybody — see businessVerified(). */
+export function isPaid(b) { return businessPlan(b) === 'paid'; }
+
+/* ============================================================
+   Verification — deliberately not a consequence of paying
+   ------------------------------------------------------------
+   A badge that means "this shop paid us" is worth nothing, and
+   the whole directory rests on being trusted. `verified` is its
+   own field, set only by the review flow below. Subscribing is a
+   precondition for *applying*, never a way of being granted it.
+   Two different badges on purpose: a gold one for a business,
+   a blue one for a person. Same word for both and nobody would
+   know which is which.
+   ============================================================ */
+export function bizVerifyState(bizId) {
+  return (state.bizVerify && state.bizVerify[bizId]) || null;
+}
+/** the gold badge: an explicit, reviewed decision — never derived from plan */
+export function businessVerified(b) {
+  if (!b) return false;
+  const st = bizVerifyState(b.id);
+  if (st) return st.status === 'verified';
+  return b.verified === true;
+}
+/** only a subscriber may even start the process */
+export function canRequestBizVerify(b) {
+  const st = bizVerifyState(b.id);
+  return isPaid(b) && !businessVerified(b) && (!st || st.status === 'rejected');
+}
+export function requestBizVerify(bizId, ref) {
+  state.bizVerify = Object.assign({}, state.bizVerify, {
+    // Only ever a result and a reference. No identity image, no face scan is
+    // taken or stored here — the provider holds those in V.02 and hands back
+    // pass/fail, which is what state biometric law is built around.
+    [bizId]: { status: 'pending', ref: ref || '', when: Date.now(), reason: '' },
+  });
+  save();
+}
+export function approveBizVerify(bizId) {
+  const cur = bizVerifyState(bizId) || {};
+  state.bizVerify = Object.assign({}, state.bizVerify, {
+    [bizId]: Object.assign({}, cur, { status: 'verified', reason: '', decided: Date.now() }),
+  });
+  notifyKeys('bizVerifyOkTitle', 'bizVerifyOkBody', '#/directory/' + bizId, 'checkCircle');
+  save();
+}
+export function rejectBizVerify(bizId, reason) {
+  const cur = bizVerifyState(bizId) || {};
+  state.bizVerify = Object.assign({}, state.bizVerify, {
+    [bizId]: Object.assign({}, cur, { status: 'rejected', reason: reason || '', decided: Date.now() }),
+  });
+  notifyKeys('bizVerifyNoTitle', 'bizVerifyNoBody', '#/directory/' + bizId, 'alert', reason);
+  save();
+}
+export function pendingBizVerify() {
+  return Object.entries(state.bizVerify || {})
+    .filter(([, v]) => v.status === 'pending')
+    .map(([bizId, v]) => ({ bizId, ...v }));
+}
+
+/* ============================================================
+   Business photos — the thing the $29 actually sells
+   ------------------------------------------------------------
+   Stored per business, each with its own review status, exactly
+   like a profile photo. A free listing may hold three; a
+   subscriber is unlimited and may add video. Nothing is ever
+   invented: a business with no photos renders no gallery, rather
+   than the placeholder squares that used to stand in for a
+   feature that did not exist.
+   ============================================================ */
+export function bizPhotos(bizId) {
+  return ((state.bizPhotos && state.bizPhotos[bizId]) || []).slice();
+}
+/** what a visitor sees; the owner also sees their own pending ones */
+export function visiblePhotos(b) {
+  const own = ownsBusiness(b.id);
+  return bizPhotos(b.id).filter(p => p.status === 'approved' || (own && p.status === 'pending'));
+}
+export function heroPhoto(b) {
+  const list = visiblePhotos(b).filter(p => p.status === 'approved');
+  return list.length ? list[0].url : '';
+}
+export function setBizPhotos(bizId, urls) {
+  const before = bizPhotos(bizId);
+  const next = urls.map(url => {
+    const old = before.find(p => p.url === url);
+    return old || { url, status: 'pending', when: Date.now() };
+  });
+  state.bizPhotos = Object.assign({}, state.bizPhotos, { [bizId]: next });
+  save();
+  return next;
+}
+export function approveBizPhoto(bizId, url) {
+  const list = bizPhotos(bizId).map(p => p.url === url ? Object.assign({}, p, { status: 'approved' }) : p);
+  state.bizPhotos = Object.assign({}, state.bizPhotos, { [bizId]: list });
+  save();
+}
+export function rejectBizPhoto(bizId, url) {
+  const list = bizPhotos(bizId).filter(p => p.url !== url);
+  state.bizPhotos = Object.assign({}, state.bizPhotos, { [bizId]: list });
+  save();
+}
+export function pendingBizPhotos() {
+  const out = [];
+  Object.entries(state.bizPhotos || {}).forEach(([bizId, list]) =>
+    list.filter(p => p.status === 'pending').forEach(p => out.push({ bizId, ...p })));
+  return out;
+}
+
+/* ============================================================
+   Owning a business page
+   ------------------------------------------------------------
+   Claiming used to hand the page over on a tap. It now raises a
+   request the admin decides on, and the owner is told either way.
+   ============================================================ */
+export function ownsBusiness(bizId) {
+  return !!bizId && state.myBusinessId === bizId;
+}
+export function claimFor(bizId) {
+  return (state.claims || []).find(c => c.bizId === bizId) || null;
+}
+export function requestClaim(bizId, details) {
+  const existing = claimFor(bizId);
+  if (existing && existing.status === 'pending') return existing;
+  const rec = Object.assign({
+    id: 'cl' + Date.now() + '-' + ((state.claims || []).length + 1),
+    bizId, status: 'pending', when: Date.now(), reason: '',
+  }, details || {});
+  state.claims = (state.claims || []).filter(c => c.bizId !== bizId).concat([rec]);
+  save();
+  return rec;
+}
+export function approveClaim(id) {
+  const c = (state.claims || []).find(x => x.id === id);
+  if (!c) return;
+  c.status = 'approved'; c.decided = Date.now();
+  state.myBusinessId = c.bizId;                 // ownership lands only here
+  const biz = businessById(c.bizId);
+  if (biz) applyBusinessEdit(c.bizId, { claimed: true });
+  notifyKeys('claimOkTitle', 'claimOkBody', '#/directory/' + c.bizId, 'checkCircle');
+  save();
+}
+export function rejectClaim(id, reason) {
+  const c = (state.claims || []).find(x => x.id === id);
+  if (!c) return;
+  c.status = 'rejected'; c.reason = reason || ''; c.decided = Date.now();
+  notifyKeys('claimNoTitle', 'claimNoBody', '#/directory/' + c.bizId, 'alert', reason);
+  save();
+}
+export function pendingClaims() { return (state.claims || []).filter(c => c.status === 'pending'); }
+
+/** layer an edit on top of a record, seed or user-created alike */
+export function applyBusinessEdit(bizId, patch) {
+  const own = state.extraBusinesses.find(b => b.id === bizId);
+  if (own) Object.assign(own, patch);
+  else state.businessEdits = Object.assign({}, state.businessEdits, {
+    [bizId]: Object.assign({}, state.businessEdits[bizId] || {}, patch),
+  });
+  save();
+}
+
+/* ---------------- owner replies to a review ---------------- */
+export function replyFor(reviewId) {
+  return (state.reviewReplies && state.reviewReplies[reviewId]) || null;
+}
+export function replyToReview(reviewId, text) {
+  state.reviewReplies = Object.assign({}, state.reviewReplies, {
+    [reviewId]: { text, when: Date.now() },
+  });
+  save();
+}
+export function deleteReply(reviewId) {
+  const next = Object.assign({}, state.reviewReplies);
+  delete next[reviewId];
+  state.reviewReplies = next;
+  save();
+}
+
+/**
+ * Nearby businesses in the same category, for the foot of a free page.
+ * Plain suggestions, never sold: this community is small and its owners
+ * talk to each other, so "pay to bury your rivals" would cost more in
+ * reputation than it could ever earn.
+ */
+export function similarTo(b, n = 4) {
+  return allBusinesses()
+    .filter(x => x.id !== b.id && x.cat === b.cat)
+    .sort((x, y) => Math.abs(x.dist - b.dist) - Math.abs(y.dist - b.dist))
+    .slice(0, n);
+}
+
+/** A notification built from i18n keys, so the owner reads it in whichever
+    language they open the app in — not the one the admin happened to use. */
+function notifyKeys(titleKey, bodyKey, route, ico, extra) {
+  const packs = i18nPacks();
+  const line = (key, lang) => (packs[lang] && packs[lang][key]) || key;
+  const suffix = (lang) => extra ? ' — ' + extra : '';
+  pushNotif({
+    icon: ico || 'bell', route,
+    title: { ar: line(titleKey, 'ar'), en: line(titleKey, 'en') },
+    body: { ar: line(bodyKey, 'ar') + suffix('ar'), en: line(bodyKey, 'en') + suffix('en') },
+  });
+}
 
 /* ---------------- simulated backend calls ----------------
    Each of these is the exact seam where a real API goes in V.02. */
 
 export const DEMO_CODE = '123456';
+
+/**
+ * The identity-check seam. In V.02 this hands off to Stripe Identity: the
+ * person uploads their document and selfie *to the provider*, and all that
+ * comes back here is a verdict and a reference. No identity image and no
+ * face template is ever received or stored by this app — the architecture
+ * is built that way from the start, because biometric data carries strict
+ * state-law duties and the cheapest way to meet them is never to hold any.
+ */
+export function runIdentityCheck() {
+  return new Promise(res => setTimeout(() =>
+    res({ ok: true, ref: 'demo_' + Date.now().toString(36) }), 900));
+}
 
 export function sendEmailCode(email) {
   return new Promise(res => setTimeout(() => res({ ok: true, code: DEMO_CODE }), 700));
@@ -1061,7 +1298,8 @@ export function pendingBadge() {
 }
 export function pendingCount() {
   return pendingListings().length + pendingEvents().length + state.flags.length
-       + (pendingAvatar() ? 1 : 0) + (pendingBadge() ? 1 : 0);
+       + (pendingAvatar() ? 1 : 0) + (pendingBadge() ? 1 : 0)
+       + pendingClaims().length + pendingBizPhotos().length + pendingBizVerify().length;
 }
 
 /* ====================== IN-APP MESSAGES ====================== */
@@ -1128,7 +1366,9 @@ export function addBusiness(biz) {
   save();
   return rec;
 }
-export function claimBusiness(id) { state.myBusinessId = id; save(); }
+/** Kept as the single entry point, but it now raises a request rather than
+    handing the page over: ownership is an admin decision. */
+export function claimBusiness(id, details) { return requestClaim(id, details); }
 
 export function subscribeBusiness(businessId) {
   state.subscription = { businessId, since: Date.now() };
@@ -1153,4 +1393,192 @@ export function addArticle(a) {
   state.extraArticles.unshift(rec);
   save();
   return rec;
+}
+
+
+/* ============================================================
+   Bulk import and backup
+   ------------------------------------------------------------
+   The constraint that shapes this: seed businesses live in
+   js/data.js, i.e. in the deployed code, so every user sees them.
+   Anything added from inside the app lands in the owner's own
+   localStorage and nobody else ever sees it. Importing straight
+   into state would therefore publish nothing at all.
+
+   So the import is three steps: read and check the file, show
+   exactly what is wrong with which row, then emit the text of a
+   BUSINESSES array to paste into data.js and push. In V.02 the
+   same screen writes to the database and step three disappears.
+   ============================================================ */
+
+export const CSV_COLUMNS = [
+  'name_ar', 'name_en', 'category', 'phone', 'address',
+  'desc_ar', 'desc_en', 'tags', 'attributes',
+  'hours_sun', 'hours_mon', 'hours_tue', 'hours_wed', 'hours_thu', 'hours_fri', 'hours_sat',
+];
+
+/** A sample file with the right columns and one filled row. */
+export function sampleCsv() {
+  const example = [
+    'مطعم النخيل', 'Al Nakheel Restaurant', 'restaurants', '(713) 555-0101',
+    '123 Hillcroft Ave, Houston, TX 77081',
+    'مشاوي ومقبلات', 'Grills and mezze',
+    'مشاوي;كباب;grill;kebab', 'halalMeat;noAlcohol;delivery',
+    '11:00-23:00', '11:00-23:00', '11:00-23:00', '11:00-23:00', '11:00-23:00', '11:00-02:00', 'closed',
+  ];
+  return CSV_COLUMNS.join(',') + '\n' + example.map(csvCell).join(',') + '\n';
+}
+function csvCell(v) {
+  const s2 = String(v == null ? '' : v);
+  return /[",\n]/.test(s2) ? '"' + s2.replace(/"/g, '""') + '"' : s2;
+}
+
+/** a small RFC-4180 reader: quoted fields, doubled quotes, CRLF */
+export function parseCsv(text) {
+  const rows = [];
+  let row = [], cell = '', inQuotes = false;
+  const src = String(text || '').replace(/\r\n?/g, '\n');
+  for (let i = 0; i < src.length; i++) {
+    const ch = src[i];
+    if (inQuotes) {
+      if (ch === '"') {
+        if (src[i + 1] === '"') { cell += '"'; i++; } else inQuotes = false;
+      } else cell += ch;
+    } else if (ch === '"') inQuotes = true;
+    else if (ch === ',') { row.push(cell); cell = ''; }
+    else if (ch === '\n') { row.push(cell); rows.push(row); row = []; cell = ''; }
+    else cell += ch;
+  }
+  if (cell !== '' || row.length) { row.push(cell); rows.push(row); }
+  return rows.filter(r => r.some(c => c.trim() !== ''));
+}
+
+/** 'closed' | '' | '24h' | '11:00-23:00' | '09:00-14:00|17:00-22:00' */
+function parseHoursCell(v) {
+  const raw = String(v || '').trim().toLowerCase();
+  if (!raw || raw === 'closed' || raw === 'مغلق') return { ok: true, value: null };
+  if (raw === '24h') return { ok: true, value: [['00:00', '24:00']] };
+  const spans = [];
+  for (const part of raw.split('|')) {
+    const m = part.trim().match(/^(\d{1,2}:\d{2})\s*-\s*(\d{1,2}:\d{2})$/);
+    if (!m) return { ok: false };
+    spans.push([pad(m[1]), pad(m[2])]);
+  }
+  return { ok: true, value: spans };
+}
+const pad = (t) => { const [h, m] = t.split(':'); return String(h).padStart(2, '0') + ':' + m; };
+
+/**
+ * Read a CSV into rows tagged ok / error / duplicate.
+ * Duplicates are checked against the directory *and* within the file itself,
+ * because the same shop appears twice in a hand-made list more often than not.
+ * @returns { header, rows: [{ line, raw, biz, errors, dupOf }], counts }
+ */
+export function parseBusinessCsv(text) {
+  const table = parseCsv(text);
+  if (!table.length) return { header: [], rows: [], counts: { ok: 0, bad: 0, dup: 0 }, fatal: 'empty' };
+
+  const header = table[0].map(h => h.trim().toLowerCase());
+  const missing = ['name_ar', 'category', 'phone', 'address'].filter(c => !header.includes(c));
+  if (missing.length) return { header, rows: [], counts: { ok: 0, bad: 0, dup: 0 }, fatal: 'columns', missing };
+
+  const col = (r, name) => {
+    const i = header.indexOf(name);
+    return i < 0 ? '' : String(r[i] == null ? '' : r[i]).trim();
+  };
+  const catIds = CATEGORIES.filter(c => !c.route).map(c => c.id);
+  const attrIds = ATTRIBUTES.map(a => a.id);
+  const seenPhones = {};
+  const rows = [];
+
+  for (let i = 1; i < table.length; i++) {
+    const raw = table[i];
+    const errors = [];
+    const nameAr = col(raw, 'name_ar');
+    const nameEn = col(raw, 'name_en') || nameAr;
+    const cat = col(raw, 'category');
+    const phone = col(raw, 'phone');
+    const address = col(raw, 'address');
+
+    if (!nameAr) errors.push({ field: 'name_ar', code: 'required' });
+    if (!cat) errors.push({ field: 'category', code: 'required' });
+    else if (!catIds.includes(cat)) errors.push({ field: 'category', code: 'unknown', got: cat });
+    if (!phone) errors.push({ field: 'phone', code: 'required' });
+    else if (phoneKey(phone).length !== 10) errors.push({ field: 'phone', code: 'badPhone', got: phone });
+    if (!address) errors.push({ field: 'address', code: 'required' });
+
+    const hours = [];
+    ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'].forEach(d => {
+      const parsed = parseHoursCell(col(raw, 'hours_' + d));
+      if (!parsed.ok) errors.push({ field: 'hours_' + d, code: 'badHours', got: col(raw, 'hours_' + d) });
+      hours.push(parsed.ok ? parsed.value : null);
+    });
+
+    const tags = col(raw, 'tags').split(/[;,\u060C]/).map(x => x.trim()).filter(Boolean);
+    const attributes = col(raw, 'attributes').split(/[;,\u060C]/).map(x => x.trim()).filter(Boolean);
+    attributes.filter(a => !attrIds.includes(a))
+      .forEach(a => errors.push({ field: 'attributes', code: 'unknownAttr', got: a }));
+
+    // duplicates: inside the file first, then against what is already listed
+    let dupOf = null;
+    const key = phoneKey(phone);
+    if (key.length === 10) {
+      if (seenPhones[key]) dupOf = { kind: 'file', line: seenPhones[key] };
+      else {
+        seenPhones[key] = i + 1;
+        const hit = findDuplicates({ phone, name: nameAr, address })[0];
+        if (hit) dupOf = { kind: 'directory', name: hit.biz.name, id: hit.biz.id, reason: hit.reason };
+      }
+    }
+
+    rows.push({
+      line: i + 1, raw, errors, dupOf, include: !errors.length && !dupOf,
+      biz: {
+        name: { ar: nameAr, en: nameEn }, cat, phone, address,
+        desc: { ar: col(raw, 'desc_ar'), en: col(raw, 'desc_en') || col(raw, 'desc_ar') },
+        hours, tags, attributes,
+      },
+    });
+  }
+
+  return {
+    header, rows,
+    counts: {
+      ok: rows.filter(r => !r.errors.length && !r.dupOf).length,
+      bad: rows.filter(r => r.errors.length).length,
+      dup: rows.filter(r => !r.errors.length && r.dupOf).length,
+    },
+  };
+}
+
+/** the text of a BUSINESSES entry, ready to paste into js/data.js */
+export function toDataFile(list, startIndex = 1) {
+  const q = (v) => JSON.stringify(v == null ? '' : v);
+  const hoursLine = (h) => '[' + h.map(d => d === null ? 'null'
+    : '[' + d.map(sp => '[' + q(sp[0]) + ', ' + q(sp[1]) + ']').join(', ') + ']').join(', ') + ']';
+  const body = list.map((b, i) => `  {
+    id: ${q('b' + (startIndex + i))}, name: { ar: ${q(b.name.ar)}, en: ${q(b.name.en)} }, cat: ${q(b.cat)},
+    phone: ${q(b.phone)}, address: ${q(b.address)},
+    hours: ${hoursLine(b.hours)},
+    tags: [${(b.tags || []).map(q).join(', ')}],
+    attributes: [${(b.attributes || []).map(q).join(', ')}],
+    plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
+    desc: { ar: ${q(b.desc.ar)}, en: ${q(b.desc.en)} },
+    photos: 0, videos: 0,
+  },`).join('\n');
+  return `/* Generated by the ARABNA admin importer — paste inside BUSINESSES in js/data.js.\n`
+       + `   ${list.length} record(s). Check the ids do not collide with the ones already there. */\n`
+       + body + '\n';
+}
+
+/**
+ * Everything the owner has entered, as one JSON file. After 300 shops go in
+ * by hand this is a company asset, and one mistake could erase weeks.
+ */
+export function exportBackup() {
+  return JSON.stringify({
+    app: 'ARABNA', version: 'V.01.9', exportedAt: new Date().toISOString(),
+    seedCounts: { businesses: BUSINESSES.length, events: EVENTS.length },
+    state,
+  }, null, 2);
 }

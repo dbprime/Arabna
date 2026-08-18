@@ -66,7 +66,7 @@ function panelView(root) {
   const paint = () => {
     root.innerHTML = paintTabs() + '<div id="aBody"></div>';
     const body = $('#aBody');
-    if (tab === 'queue') body.innerHTML = queueHtml();
+    if (tab === 'queue') body.innerHTML = claimsHtml() + verifyHtml() + bizPhotoHtml() + queueHtml();
     else if (tab === 'mag') body.innerHTML = magHtml();
     else if (tab === 'ads') body.innerHTML = adsHtml();
     else if (tab === 'events') body.innerHTML = eventsHtml();
@@ -118,6 +118,34 @@ function panelView(root) {
       S.rejectBadge(); toast(t('itemRejected'), 'ok'); paint();
     }));
     // --- admin password ---
+    // --- ownership claims ---
+    $$('#aBody [data-clok]').forEach(b => b.addEventListener('click', () => {
+      S.approveClaim(b.dataset.clok); toast(t('claimApproved'), 'ok'); paint();
+    }));
+    $$('#aBody [data-clno]').forEach(b => b.addEventListener('click', () => {
+      const box = $('#why-' + b.dataset.clno);
+      S.rejectClaim(b.dataset.clno, box ? box.value : '');
+      toast(t('claimRejected'), 'ok'); paint();
+    }));
+    // --- business photos ---
+    $$('#aBody [data-bpok]').forEach(b => b.addEventListener('click', () => {
+      const [id, url] = b.dataset.bpok.split('|');
+      S.approveBizPhoto(id, url); toast(t('done'), 'ok'); paint();
+    }));
+    $$('#aBody [data-bpno]').forEach(b => b.addEventListener('click', () => {
+      const [id, url] = b.dataset.bpno.split('|');
+      S.rejectBizPhoto(id, url); toast(t('itemRejected'), 'ok'); paint();
+    }));
+    // --- business verification ---
+    $$('#aBody [data-bvok]').forEach(b => b.addEventListener('click', () => {
+      S.approveBizVerify(b.dataset.bvok); toast(t('done'), 'ok'); paint();
+    }));
+    $$('#aBody [data-bvno]').forEach(b => b.addEventListener('click', () => {
+      const box = $('#why-' + b.dataset.bvno);
+      S.rejectBizVerify(b.dataset.bvno, box ? box.value : '');
+      toast(t('itemRejected'), 'ok'); paint();
+    }));
+
     const ram = $('#ramSw');
     if (ram) ram.addEventListener('click', () => {
       // one switch turns the whole Ramadan group on: attributes, chips, filters
@@ -125,6 +153,30 @@ function panelView(root) {
       ram.classList.toggle('on', S.seasonOn('ramadan'));
       toast(t('done'), 'ok');
     });
+
+    /* ---- bulk import: read, show exactly what is wrong, then emit a file ---- */
+    const sampleBtn = $('#csvSample');
+    if (sampleBtn) sampleBtn.addEventListener('click', () =>
+      download('arabna-businesses-sample.csv', S.sampleCsv(), 'text/csv'));
+
+    const bk = $('#bkExport');
+    if (bk) bk.addEventListener('click', () => {
+      download('arabna-backup-' + new Date().toISOString().slice(0, 10) + '.json',
+               S.exportBackup(), 'application/json');
+      toast(t('backupDone'), 'ok');
+    });
+
+    const pick = $('#csvPick'), file = $('#csvFile');
+    if (pick && file) {
+      pick.addEventListener('click', () => file.click());
+      file.addEventListener('change', () => {
+        const f = file.files && file.files[0];
+        if (!f) return;
+        const reader = new FileReader();
+        reader.onload = () => showImport(S.parseBusinessCsv(String(reader.result)), paint);
+        reader.readAsText(f, 'utf-8');
+      });
+    }
 
     const mg = $('#mgGo');
     if (mg) mg.addEventListener('click', () => {
@@ -406,6 +458,73 @@ function adsHtml() {
   </div>`;
 }
 
+/* --------- ownership claims, business photos, verification --------- */
+function claimsHtml() {
+  const list = S.pendingClaims();
+  if (!list.length) return '';
+  return `<div class="dr-group-label">${t('claimQueue')} (${list.length})</div>
+    ${list.map(c => {
+      const b = S.businessById(c.bizId);
+      return `<div class="card" style="padding:13px;margin:0 14px 10px">
+        <div class="row-title">${b ? L(b.name) : c.bizId}</div>
+        <div class="row-sub"><span class="ltr">${b ? b.address : ''}</span></div>
+        <div class="info-row" style="border:none;padding:8px 0 0">
+          <div class="i-txt"><b>${c.name} — ${t('role' + c.role[0].toUpperCase() + c.role.slice(1))}</b>
+          <span class="ltr">${c.phone}</span></div></div>
+        ${c.proof ? `<p class="fs-13 muted" style="margin:6px 0 0">${c.proof}</p>` : ''}
+        <div class="reject-box"><input class="input" id="why-${c.id}" placeholder="${t('rejectReasonPlaceholder')}" /></div>
+        <div class="row-actions mt-8">
+          <button class="mini-btn gold" data-clok="${c.id}">${icon('check', 15)} ${t('approve')}</button>
+          <button class="mini-btn" data-clno="${c.id}">${icon('x', 15)} ${t('reject')}</button>
+        </div>
+      </div>`;
+    }).join('')}`;
+}
+
+function bizPhotoHtml() {
+  const list = S.pendingBizPhotos();
+  if (!list.length) return '';
+  return `<div class="dr-group-label">${t('bizPhotoQueue')} (${list.length})</div>
+    <div class="pad">${list.map(p => {
+      const b = S.businessById(p.bizId);
+      return `<div class="list-row">
+        <span class="row-ico" style="overflow:hidden;padding:0"><img src="${p.url}" style="width:100%;height:100%;object-fit:cover" alt="" /></span>
+        <div class="row-main">
+          <div class="row-title">${b ? L(b.name) : p.bizId}</div>
+          <div class="row-actions">
+            <button class="mini-btn gold" data-bpok="${p.bizId}|${p.url}">${icon('check', 15)} ${t('approve')}</button>
+            <button class="mini-btn" data-bpno="${p.bizId}|${p.url}">${icon('x', 15)} ${t('reject')}</button>
+          </div>
+        </div>
+      </div>`;
+    }).join('')}</div>`;
+}
+
+/**
+ * Verification review. It shows a status and a note and nothing else —
+ * no identity image ever reaches this app, so there is none to display.
+ * The screen exists because the appeals will come ("the system rejected me
+ * and I am real"), and without it there is no answer to give them.
+ */
+function verifyHtml() {
+  const list = S.pendingBizVerify();
+  if (!list.length) return '';
+  return `<div class="dr-group-label">${t('verifyQueue')} (${list.length})</div>
+    ${list.map(v => {
+      const b = S.businessById(v.bizId);
+      return `<div class="card" style="padding:13px;margin:0 14px 10px">
+        <div class="row-title">${b ? L(b.name) : v.bizId}</div>
+        <div class="row-sub">${t('verifyRef')}: <span class="ltr">${v.ref || '—'}</span></div>
+        <div class="list-note" style="margin:8px 0 0">${icon('shield', 18)}<span>${t('verifyNoImages')}</span></div>
+        <div class="reject-box"><input class="input" id="why-${v.bizId}" placeholder="${t('rejectReasonPlaceholder')}" /></div>
+        <div class="row-actions mt-8">
+          <button class="mini-btn gold" data-bvok="${v.bizId}">${icon('check', 15)} ${t('approve')}</button>
+          <button class="mini-btn" data-bvno="${v.bizId}">${icon('x', 15)} ${t('reject')}</button>
+        </div>
+      </div>`;
+    }).join('')}`;
+}
+
 function dirHtml() {
   const all = S.allBusinesses();
   const paid = all.filter(b => S.businessPlan(b) === 'paid').length;
@@ -415,9 +534,23 @@ function dirHtml() {
       <div class="stat"><b>${paid}</b><span>${t('verified')}</span></div>
       <div class="stat"><b>${all.filter(b => !b.claimed).length}</b><span>${t('claimIt')}</span></div>
     </div>
-    <div class="list-note mt-16" style="margin-inline:0">${icon('info', 18)}
-      <span>${S.state.lang === 'en' ? 'Bulk import (CSV / PDF list) seeds unclaimed free listings — V.02 with the real database.' : 'الاستيراد الجماعي (من ملف PDF/CSV) يضيف الأنشطة كإدراج مجاني غير مُطالَب به — في V.02 مع قاعدة البيانات الحقيقية.'}</span></div>
-    <button class="btn btn-ghost btn-block mt-12" disabled>${icon('file', 19)} ${S.state.lang === 'en' ? 'Import list' : 'استيراد قائمة'} — ${t('comingSoon')}</button>
+    <div class="section-title mt-16">${t('addBusiness')}</div>
+    <div class="hint" style="margin-bottom:10px">${t('adminAddNote')}</div>
+    <button class="btn btn-gold btn-block" data-route="#/add-business">${icon('plus', 19)} ${t('addBusiness')}</button>
+
+    <div class="section-title mt-20">${t('importTitle')}</div>
+    <div class="hint" style="margin-bottom:10px">${t('importWhy')}</div>
+    <div class="action-grid">
+      <button class="btn btn-ghost btn-sm" id="csvSample">${icon('file', 18)} ${t('importSample')}</button>
+      <button class="btn btn-ghost btn-sm" id="csvPick">${icon('inbox', 18)} ${t('importPick')}</button>
+    </div>
+    <input type="file" id="csvFile" accept=".csv,text/csv" hidden />
+    <div id="csvOut"></div>
+
+    <div class="section-title mt-20">${t('backupTitle')}</div>
+    <div class="hint" style="margin-bottom:10px">${t('backupWhy')}</div>
+    <button class="btn btn-ghost btn-block" id="bkExport">${icon('file', 19)} ${t('backupExport')}</button>
+
     <div class="section-title mt-20">${t('mergeDuplicates')}</div>
     <div class="hint" style="margin-bottom:10px">${t('mergePick')}</div>
     <div class="field"><label class="label">${t('mergeKeep')}</label>
@@ -431,4 +564,88 @@ function dirHtml() {
         <span class="muted fs-12">${all.filter(b => b.cat === c.id).length}</span></div>`).join('')}
     </div>
   </div>`;
+}
+
+
+/** hand the operator a file — the only way out of localStorage today */
+function download(name, text, mime) {
+  const blob = new Blob([text], { type: (mime || 'text/plain') + ';charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = name;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 2000);
+}
+
+/**
+ * Step two of the import: every row accounted for, line by line, with the
+ * reason it was refused. Rows can be dropped before the file is produced.
+ */
+function showImport(result, repaint) {
+  const out = $('#csvOut');
+  if (result.fatal === 'empty') {
+    out.innerHTML = `<div class="err-msg">${icon('alert', 15)} ${t('importEmpty')}</div>`;
+    return;
+  }
+  if (result.fatal === 'columns') {
+    out.innerHTML = `<div class="err-msg">${icon('alert', 15)} ${t('importMissingCols')}: <b class="ltr">${result.missing.join(', ')}</b></div>`;
+    return;
+  }
+
+  const problem = (e) => {
+    const label = { required: t('importRequired'), unknown: t('importUnknownCat'),
+                    badPhone: t('importBadPhone'), badHours: t('importBadHours'),
+                    unknownAttr: t('importUnknownAttr') }[e.code] || e.code;
+    return `${e.field}: ${label}${e.got ? ` (${e.got})` : ''}`;
+  };
+
+  const render = () => {
+    const chosen = result.rows.filter(r => r.include);
+    out.innerHTML = `
+      <div class="stat-row mt-12" style="padding:0">
+        <div class="stat"><b>${result.counts.ok}</b><span>${t('importOk')}</span></div>
+        <div class="stat"><b>${result.counts.bad}</b><span>${t('importBad')}</span></div>
+        <div class="stat"><b>${result.counts.dup}</b><span>${t('importDup')}</span></div>
+      </div>
+      <div class="mt-12">
+        ${result.rows.map(r => `
+          <div class="imp-row ${r.errors.length ? 'bad' : r.dupOf ? 'dup' : 'ok'}">
+            <label class="imp-pick">
+              <input type="checkbox" data-inc="${r.line}" ${r.include ? 'checked' : ''}
+                     ${r.errors.length ? 'disabled' : ''} />
+              <span class="imp-line">#${r.line}</span>
+            </label>
+            <div class="imp-body">
+              <b>${r.biz.name.ar || '—'}</b>
+              <span class="ltr muted fs-12">${r.biz.phone || '—'}</span>
+              ${r.errors.length ? `<div class="imp-why err">${r.errors.map(problem).join(' · ')}</div>` : ''}
+              ${!r.errors.length && r.dupOf ? `<div class="imp-why dup">${r.dupOf.kind === 'file'
+                ? `${t('importDupFile')} #${r.dupOf.line}`
+                : `${t('importDupDir')}: ${L(r.dupOf.name)}`}</div>` : ''}
+            </div>
+          </div>`).join('')}
+      </div>
+      <button class="btn btn-gold btn-block mt-12" id="impExport" ${chosen.length ? '' : 'disabled'}>
+        ${icon('file', 19)} ${t('importExport')} (${chosen.length})</button>
+      <div class="hint" style="text-align:center;margin-top:8px">${t('importExportNote')}</div>`;
+
+    out.querySelectorAll('[data-inc]').forEach(cb => cb.addEventListener('change', () => {
+      const row = result.rows.find(r => String(r.line) === cb.dataset.inc);
+      if (row) row.include = cb.checked;
+      const n = result.rows.filter(r => r.include).length;
+      const btn = out.querySelector('#impExport');
+      btn.disabled = !n;
+      btn.innerHTML = `${icon('file', 19)} ${t('importExport')} (${n})`;
+    }));
+
+    const ex = out.querySelector('#impExport');
+    if (ex) ex.addEventListener('click', () => {
+      const list = result.rows.filter(r => r.include).map(r => r.biz);
+      // ids continue after the ones already in data.js
+      download('arabna-businesses.js', S.toDataFile(list, S.allBusinesses().length + 1), 'text/javascript');
+      toast(t('importDone'), 'ok');
+    });
+    out.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  };
+  render();
 }

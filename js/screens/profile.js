@@ -350,7 +350,7 @@ export function MyBusinessScreen(root) {
           <span class="row-ico">${icon(catIcon(b.cat), 22)}</span>
           <div class="row-main">
             <div class="row-title">${L(b.name)}
-              <span class="badge ${S.businessPlan(b) === 'paid' ? 'badge-verified' : 'badge-free'}">${S.businessPlan(b) === 'paid' ? t('verified') : t('free')}</span></div>
+              ${S.businessVerified(b) ? `<span class="badge badge-bizverified">${icon('checkCircle', 12)}${t('bizVerified')}</span>` : ''}</div>
             <div class="row-sub">${icon('mapPin', 13)} <span class="ltr">${b.address}</span></div>
           </div>
         </div>

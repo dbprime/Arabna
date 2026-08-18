@@ -7,7 +7,7 @@ ARABNA · عربنا — a mobile-first web app for the Arab community in the U.
 **business directory + marketplace + events + magazine**, Arabic-first with a full English toggle.
 ("Classifieds / الإعلانات الشخصية" is now "Marketplace / السوق" — the old `#/classifieds`
 routes still resolve so shared links keep working.)
-Current version: **V.01.8 (prototype)**. Owner: Rai Elby (@dbprime). Deploys to Vercel (team DB Prime).
+Current version: **V.01.9 (prototype)**. Owner: Rai Elby (@dbprime). Deploys to Vercel (team DB Prime).
 
 ## Hard rules (from the product brief)
 1. **One repository, one Vercel project.** No duplicates, no stray preview projects.
@@ -55,7 +55,7 @@ Icons are sized inline via `icon('name', size)`.
 |---|---|
 | Home main slider | highest-priced ad placement ($149+/week) |
 | Home mini banner | cheaper ad tier ($49+/week) |
-| Directory | $29/month business subscription (reviews, 10 photos, 3 videos, verified badge) |
+| Directory | $29/month business subscription — unlimited photos + video, eligibility for the gold badge, category ranking, "featured this week", **"your page, only yours"**, stats, offers. **Reviews are NOT on it** (see below) |
 | Marketplace | free + paid "Boost" ($2–8); the Handyman section caps at 1 listing / 14 days and upsells the directory subscription |
 | Magazine | native banners between articles + sponsored stories ($199+) |
 | Events | "Featured Event" pin at the top of the section ($99+/week, `AD_PRODUCTS.event`) |
@@ -300,6 +300,56 @@ means re-entering 300 shops, so treat it as frozen unless there is no choice.
   because the community is Muslim and Christian — and **`gyms`**. Arabic
   schooling and newcomer services are attribute groups rather than categories,
   for the anti-duplication reason above.
+
+## What the $29 buys, and what it must never buy (V.01.9)
+- **Reviews are free on every listing, subscribed or not.** If twenty of three
+  hundred shops subscribe, gating reviews leaves 93% of the directory empty and
+  nobody has a reason to open the app — and with no users nobody pays. Reviews
+  are the content that makes the app worth opening, not a feature to sell.
+  `canSeeReviews()` returns true; `PLAN_LIMITS` in `store.js` holds the real
+  split (free: 3 photos · paid: unlimited + video).
+- **Never print "مجاني" on a business.** The owner reads it as "this one didn't
+  pay", and in the marketplace the same word means "costs nothing". A subscriber
+  is marked by the row tint and, if verified, the badge; absence is the signal.
+- **Paying never verifies anyone.** `businessVerified()` reads an explicit,
+  reviewed decision (`state.bizVerify`) and is *never* derived from `plan`. A
+  subscription is only the precondition for applying. Two distinct badges:
+  **gold "نشاط موثّق"** for a business, **blue** for a personal identity —
+  same word for both and nobody could tell them apart.
+- **No identity image ever enters this app.** The flow asks for consent in a
+  separate checkbox *before* anything is captured (Texas CUBI requires prior
+  consent and destruction inside a year; Illinois allows private suits), and
+  `runIdentityCheck()` is the Stripe Identity seam: the document and selfie go
+  to the provider, and only a pass/fail plus a reference come back. The admin
+  review screen therefore shows status and note and says why there is nothing
+  to look at.
+- **Never import reviews from Google or Yelp, and never seed a fake one.** The
+  FTC rule of October 2024 makes the platform itself liable with civil
+  penalties. Seed reviews in `data.js` are development data and must be
+  cleared before launch.
+
+## Ownership, photos and bulk entry (V.01.9)
+- **Claiming is a request.** `claimBusiness()` raises a pending record;
+  `approveClaim()` is the only thing that sets `state.myBusinessId`, and both
+  outcomes notify the owner. The claim button lives on the business page itself,
+  because almost every shop owner arrives there from a link or a search rather
+  than from a claim screen.
+- **Photos are real and reviewed.** `state.bizPhotos` holds `{url, status}` per
+  business through the marketplace's `mountPhotoPicker` / `compressImage` path.
+  The first approved one becomes the hero. **A business with no photos renders
+  no gallery** — the old `b.photos || 3` invented placeholder squares for a
+  feature that did not exist.
+- **"Your page, only yours".** Free pages end with `similarTo()` suggestions;
+  a subscriber's page shows none. These are never sold: this community is small
+  and its owners talk to each other, so "pay to bury your rival" would cost more
+  in reputation than it earns.
+- **Bulk import is three steps, because of one constraint:** seed businesses
+  live in `js/data.js` (deployed, everyone sees them) while anything saved in
+  the app lives in the owner's own localStorage (nobody else ever sees it).
+  So `parseBusinessCsv()` reads and checks, the preview names the fault on every
+  row, and `toDataFile()` emits text to paste into `data.js` and push. In V.02
+  the same screen writes to the database and step three disappears.
+  `exportBackup()` dumps the whole state as JSON.
 
 ## Testing before you ship a change
 1. Serve locally (`python3 -m http.server`) and click through: home → directory → listing →

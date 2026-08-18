@@ -494,6 +494,18 @@ export function openBadge(biz, now = new Date()) {
   return `<span class="open-pill closed">${icon('clock', 12)}${when.trim()}</span>`;
 }
 
+/**
+ * The gold "verified business" mark. Deliberately not the blue one on a
+ * personal account: two different things, so two different names, shapes
+ * and colours — one word for both and nobody could tell them apart.
+ * It reads `businessVerified`, which is an explicit decision and is never
+ * inferred from whether the shop pays us.
+ */
+export function bizBadge(b) {
+  if (!S.businessVerified(b)) return '';
+  return `<span class="badge badge-bizverified" title="${t('bizVerified')}">${icon('checkCircle', 12)}${t('bizVerified')}</span>`;
+}
+
 /** the attribute pills shown under a business description */
 export function attrChips(biz) {
   const list = (biz.attributes || [])

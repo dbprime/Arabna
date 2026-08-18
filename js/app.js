@@ -9,7 +9,8 @@ import { $, renderHeader, renderNav, hideNav, closeSheet, closeDrawer } from './
 import { HomeScreen } from './screens/home.js';
 import { CategoriesScreen } from './screens/categories.js';
 import { EventsScreen, EventScreen, EventFormScreen } from './screens/events.js';
-import { DirectoryScreen, ListingScreen, AddBusinessScreen, ClaimScreen, SubscribeScreen } from './screens/directory.js';
+import { DirectoryScreen, ListingScreen, AddBusinessScreen, ClaimScreen, SubscribeScreen,
+         BusinessEditScreen, BusinessPhotosScreen, BusinessVerifyScreen } from './screens/directory.js';
 import { MarketplaceScreen, ListingDetailScreen, PostScreen, BoostScreen, MessagesScreen } from './screens/marketplace.js';
 import { MagazineScreen, ArticleScreen } from './screens/magazine.js';
 import { ProfileScreen, EditProfileScreen, ChangePasswordScreen, SavedScreen, MyAdsScreen,
@@ -30,6 +31,10 @@ const ROUTES = [
   { re: /^#\/directory\/(.+)$/,   screen: ListingScreen,     nav: 'directory' },
   { re: /^#\/add-business$/,      screen: AddBusinessScreen, nav: 'directory' },
   { re: /^#\/claim$/,             screen: ClaimScreen,       nav: 'directory' },
+  { re: /^#\/claim\/(.+)$/,       screen: ClaimScreen,       nav: 'directory' },
+  { re: /^#\/business\/edit\/(.+)$/,   screen: BusinessEditScreen,   nav: 'directory' },
+  { re: /^#\/business\/photos\/(.+)$/, screen: BusinessPhotosScreen, nav: 'directory' },
+  { re: /^#\/verify-business\/(.+)$/,  screen: BusinessVerifyScreen, nav: 'directory' },
   { re: /^#\/subscribe(?:\/(.+))?$/, screen: SubscribeScreen, nav: 'directory' },
   { re: /^#\/magazine$/,          screen: MagazineScreen,    nav: 'directory' },
   { re: /^#\/magazine\/(.+)$/,    screen: ArticleScreen,     nav: 'directory' },
