@@ -27,13 +27,13 @@ export function SignUpScreen(root) {
       ${passwordField('sPass', t('password'))}
 
       <label class="setting-row" style="padding:8px 0;border:none;cursor:pointer">
-        <input type="checkbox" id="agree1" style="width:18px;height:18px;accent-color:#C6A15B" />
+        <input type="checkbox" id="agree1" class="check-gold" />
         <span class="s-txt"><b style="font-weight:500;font-size:12.5px">${t('agreeTo')}
           <a class="gold" href="#/terms">${t('terms')}</a> ${t('and')}
           <a class="gold" href="#/privacy">${t('privacy')}</a></b></span>
       </label>
       <label class="setting-row" style="padding:8px 0;border:none;cursor:pointer">
-        <input type="checkbox" id="agree2" style="width:18px;height:18px;accent-color:#C6A15B" />
+        <input type="checkbox" id="agree2" class="check-gold" />
         <span class="s-txt"><b style="font-weight:500;font-size:12.5px">${t('age18')}</b></span>
       </label>
 

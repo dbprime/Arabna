@@ -80,6 +80,7 @@ const P = {
   languages: '<path d="M3 5h8"/><path d="M7 5v2c0 3-2 5-4 6"/><path d="M5 9c0 2 2 4 5 5"/><path d="M12 20l4-10 4 10"/><line x1="13.5" y1="17" x2="18.5" y2="17"/>',
   graduation: '<path d="M12 4 2 9l10 5 10-5-10-5z"/><path d="M6 11.5V17c0 1.4 2.7 2.5 6 2.5s6-1.1 6-2.5v-5.5"/>',
   droplet: '<path d="M12 2.5S6 9 6 13.5a6 6 0 0 0 12 0C18 9 12 2.5 12 2.5z"/>',
+  sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.9 4.9 1.4 1.4"/><path d="m17.7 17.7 1.4 1.4"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m4.9 19.1 1.4-1.4"/><path d="m17.7 6.3 1.4-1.4"/>',
   sunrise: '<path d="M12 3v5"/><path d="M5.6 10.6 4.2 9.2"/><path d="M18.4 10.6l1.4-1.4"/><path d="M2 18h20"/><path d="M6 18a6 6 0 0 1 12 0"/><line x1="4" y1="22" x2="20" y2="22"/>',
   gift: '<rect x="3" y="8" width="18" height="4" rx="1"/><path d="M5 12v8a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-8"/><line x1="12" y1="8" x2="12" y2="21"/><path d="M12 8S10.5 3 8 3a2.5 2.5 0 0 0 0 5z"/><path d="M12 8s1.5-5 4-5a2.5 2.5 0 0 1 0 5z"/>',
   grid: '<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>',

@@ -7,7 +7,7 @@
 import { CLASSIFIEDS, BUSINESSES, NOTIFICATIONS, SLIDER_ADS, MINI_ADS, ARTICLES, REVIEWS,
          MARKET_CATS, FREE_PRICE, EVENTS, VERIFY_BADGE_PRICE, blankEvent,
          ATTRIBUTES, ATTR_GROUPS, CATEGORIES, DAY_KEYS, CHIP_MIN, CHIP_MAX_SHARE, EVENT_TYPES,
-         GENERIC_WORDS, NAME_SIM_MIN, STREET_WORDS, SUBSCRIPTION_PRICE,
+         GENERIC_WORDS, NAME_SIM_MIN, STREET_WORDS, SUBSCRIPTION_PRICE, AD_CARD_COLOR,
          CITY_POINTS, REGION_RADIUS_MI,
          AD_PRODUCTS, AD_SLOTS,
          attrById, attrInCat, isAllDay, week, nextOccurrence } from './data.js';
@@ -29,6 +29,9 @@ function load() {
 
 const DEFAULTS = {
   lang: 'ar',
+  /* 'auto' follows the device, which is what somebody who schedules night
+     mode on their phone already expects the app to do. */
+  theme: 'auto',                 // 'auto' | 'light' | 'dark'
   /* No city until the person tells us or the device does. A city written
      in advance lies to everyone who is not in it — and 138 of the 515
      listings are not in Houston. */
@@ -491,6 +494,12 @@ export function quickAttrsForCat(cat, limit = 0) {
 
 /** the city out of "…, Katy, TX 77450" — works on 513 of the 515 */
 const cityCache = new Map();
+export function themeMode() { return state.theme || 'auto'; }
+export function setThemeMode(mode) {
+  state.theme = (mode === 'light' || mode === 'dark') ? mode : 'auto';
+  save();
+}
+
 export function cityOf(biz) {
   if (!biz) return '';
   if (biz.city) return biz.city;
@@ -1199,7 +1208,7 @@ function orderAsSlide(a) {
     name: { ar: a.bizName, en: a.bizName },
     tag: { ar: a.tagline, en: a.tagline },
     cta: { ar: a.ctaText, en: a.ctaText },
-    color: 'linear-gradient(135deg,#2F5D50,#14312B)', icon: 'megaphone',
+    color: AD_CARD_COLOR, icon: 'megaphone',
     link: a.link || '#/home',
   };
 }

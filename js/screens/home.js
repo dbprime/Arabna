@@ -99,7 +99,7 @@ export function HomeScreen(root) {
 
     <!-- house CTA -->
     <div class="upsell" data-route="#/advertise">
-      <div style="width:40px;height:40px;border-radius:12px;display:grid;place-items:center;background:rgba(198,161,91,.18);color:var(--gold-bright)">${icon('megaphone', 24)}</div>
+      <div class="tile-ico lg">${icon('megaphone', 24)}</div>
       <div class="upsell-txt"><b>${t('adCta')}</b><span>${t('adCtaSub')}</span></div>
       ${icon(document.documentElement.dir === 'rtl' ? 'chevronL' : 'chevronR', 21)}
     </div>
@@ -123,7 +123,7 @@ function slideHtml(a, i) {
       <div style="color:var(--gold);margin-bottom:6px">${icon('megaphone', 31)}</div>
       <div class="slide-title">${t('adCta')}</div>
       <div class="slide-sub" style="color:var(--muted)">${t('adCtaSub')}</div>
-      <div class="slide-cta" style="align-self:center;background:linear-gradient(145deg,#E4C77E,#C6A15B)">${icon('plus', 17)} ${t('continueAction')}</div>
+      <div class="slide-cta cta-center">${icon('plus', 17)} ${t('continueAction')}</div>
     </div>`;
   }
   return `<div class="slide ${i === 0 ? 'active' : ''}" data-i="${i}" data-route="${a.link}" style="background:${a.color}">

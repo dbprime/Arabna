@@ -77,7 +77,7 @@ export function MarketplaceScreen(root) {
     } else if (cat === 'handyman') {
       el.innerHTML = `<div class="list-note">${icon('hammer', 18)}<span>${t('handymanRule')}</span></div>
         <div class="upsell" data-route="#/subscribe">
-          <div style="width:38px;height:38px;border-radius:11px;display:grid;place-items:center;background:rgba(198,161,91,.2);color:var(--gold-bright)">${icon('crown', 22)}</div>
+          <div class="tile-ico">${icon('crown', 22)}</div>
           <div class="upsell-txt"><b>${t('handymanUpsell')}</b><span>${showsPrices()
             ? fmtMoney(SUBSCRIPTION_PRICE) + ' ' + t('month') : t('pricesAfterSignup')}</span></div>
           <span class="btn btn-gold btn-sm">${t('upgradeBtn')}</span>
@@ -197,7 +197,7 @@ export function ListingDetailScreen(root, params) {
   root.innerHTML = `
     <div class="detail-hero" style="height:${photos.length ? '0' : '200px'};${photos.length ? 'display:none' : ''}">
       <button class="back-btn" id="bk">${icon(document.documentElement.dir === 'rtl' ? 'chevronR' : 'chevronL', 22)}</button>
-      <div style="color:#6B77A0">${icon(c.icon || 'image', 66)}</div>
+      <div class="hero-ico">${icon(c.icon || 'image', 66)}</div>
       ${c.boosted ? `<span class="badge badge-boost" style="position:absolute;inset-block-end:12px;inset-inline-start:14px">${icon('bolt', 13)}${t('boosted')}</span>` : ''}
     </div>
 

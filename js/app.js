@@ -5,7 +5,8 @@
 import { setLang, bothPacks } from './i18n.js';
 import { state, registerStrings, runReminders, runSubscriptionCycle } from './store.js';
 import { $, renderHeader, renderNav, hideNav, closeSheet, closeDrawer, closeDropdown,
-         mountScrollMemory, restoreScroll, historyKey, markShown, startClock } from './ui.js';
+         mountScrollMemory, restoreScroll, historyKey, markShown, startClock,
+         applyTheme, mountThemeWatch } from './ui.js';
 
 import { HomeScreen } from './screens/home.js';
 import { CategoriesScreen } from './screens/categories.js';
@@ -119,6 +120,8 @@ registerStrings(bothPacks());
    clock says, and each one carries a one-shot key. */
 function catchUp() {
   try { runSubscriptionCycle(); runReminders(); } catch (e) { /* never block boot */ }
+  applyTheme();          // before anything is drawn, so there is no flash
+  mountThemeWatch();
   mountScrollMemory();
   startClock();
 }

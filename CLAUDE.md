@@ -7,7 +7,7 @@ ARABNA · عربنا — a mobile-first web app for the Arab community in the U.
 **business directory + marketplace + events + magazine**, Arabic-first with a full English toggle.
 ("Classifieds / الإعلانات الشخصية" is now "Marketplace / السوق" — the old `#/classifieds`
 routes still resolve so shared links keep working.)
-Current version: **V.02.4 (prototype)**. Owner: Rai Elby (@dbprime). Deploys to Vercel (team DB Prime).
+Current version: **V.02.5 (prototype)**. Owner: Rai Elby (@dbprime). Deploys to Vercel (team DB Prime).
 
 ## Hard rules (from the product brief)
 1. **One repository, one Vercel project.** No duplicates, no stray preview projects.
@@ -45,8 +45,11 @@ index-single-file.html  generated single-file build (backup / offline demo)
 ```
 
 ## Design language
-Navy `#0B1526` · surface `#141F3B` / `#1C2A4D` · gold `#C6A15B` / `#E4C77E` ·
-ivory `#F3F1EC` · muted `#8B93AC` · success `#4E8B6B`.
+**Two themes, one set of symbols** (V.02.5): every colour is a role, never a
+value. Dark — page `#0E1829` · bar `#131F39` · surface `#1C2A50` / `#263764`.
+Light — page `#EFE8DA` · bar and surface `#FFFDF8` / `#F6EFE1`.
+Gold `#C6A15B` / `#E4C77E` · ivory `#F3F1EC` · muted `#8B93AC` in dark;
+the light theme darkens gold and green for contrast on ivory.
 Base font-size 16px, generous spacing, large tap targets (buttons ≥ 52px).
 Icons are sized inline via `icon('name', size)`.
 
@@ -160,7 +163,9 @@ naming the section and the count.
 - **The drawer has two versions.** Member: user head · language · **notifications as a
   standalone row with its own badge** · ▸حسابي · ▸أقسام التطبيق · أعلن معنا · ▸المساعدة
   والقوانين · تسجيل الخروج — seven rows, no scrolling, all groups folded, one open at a
-  time. Visitor: guest head · one invite card (sign up + "have an account?") · language ·
+  time. **The light/dark flip (V.02.5) is an icon in the head, not a row**: an eighth
+  row measured 887px against 844 the moment a group was open, and the drawer's rule is
+  that it never scrolls. Visitor: guest head · one invite card (sign up + "have an account?") · language ·
   ▸أقسام التطبيق · أعلن معنا · ▸المساعدة والقوانين.
 - **A visitor never sees an account tool.** Notifications, the حسابي group, settings and
   sign-out are *removed from the tree*, not greyed out — a row that only bounces you to
@@ -822,6 +827,81 @@ that is festival · lecture · bazaar, one event each. `EVENT_TYPES` defines
 eleven, but the row was never hiding the other eight: **there are no events
 of those types yet**. The rule stands (never offer a filter that returns
 nothing); the list grows by itself as events arrive.
+
+## V.02.5 — the logo files, and light mode
+
+### The logo is horizontal now
+`ARABNA-logo-files.zip` replaced every image: `lockup-horizontal-transparent`
+→ `assets/logo-sm.png` (the header), `lockup-original-transparent` →
+`assets/logo.png`, `icon-1024` → `assets/icon.png`, and 32 · 120 · 152 · 180 ·
+192 · 512 · 1024 into `assets/icons/`. The header sizes it at
+**`height: 44px; width: auto`** with no forced width and no `object-fit` —
+the file is 913×340, so it takes its own width (118px) and keeps its
+proportions. 40px installed.
+
+- **The icons are square on purpose.** iOS rounds them itself; a
+  pre-rounded file is cut twice and comes out wrong. Nothing is
+  re-compressed or resized.
+- **No plate, no background behind the logo, in either theme.** The
+  transparency is the point, and the silver mark carries its own dark
+  outline so it survives on ivory.
+- `icon-120` and `icon-152` are new — both in `index.html` as
+  `apple-touch-icon` and in the manifest.
+- **The splash is `#071A3D`** (`background_color` in the manifest) — the
+  navy of the logo itself, not `--bar`. Anything else draws a rectangle of
+  a different colour around the mark for the first second.
+- `header-h44/56/72/96`, `mark-transparent` and the two Android layers
+  travel with the project in `assets/` and are wired to nothing yet.
+
+### Light mode: a symbol says the role, the theme says the value
+Every colour in the app is a token. `styles/app.css` holds three blocks —
+the theme-independent one (geometry, the ad-card colours, the Settings
+previews), dark, and light — plus a `prefers-color-scheme` copy of light so
+the very first paint is right before any script runs.
+
+- **288 hand-written colours are gone**: 204 in `app.css` outside `:root`
+  and 16 inline styles in `js/`. `grep` for a literal outside the token
+  layer returns **nothing**, in the CSS and in the JavaScript alike.
+- **The one exception is `data.js`** — the saturated ad cards. Their
+  gradient moved there as `AD_CARD_COLOR` (it had been sitting in
+  `store.js`), and `--ad-ink` / `--ad-cta` / `--ad-badge` / `--ad-line` /
+  `--ad-sheen` keep the card's own parts literal-free **without** making
+  them follow the theme: white on a strong colour reads either way, and an
+  advertiser's artwork should not change under the reader.
+- **`--muted` is never put on `--surface-2`** — measured at 3.79 in dark,
+  under the 4.5 line. The picker row moved to `--surface`, and secondary
+  text inside a tinted pill uses `--text-2` (dimmed ivory) instead.
+- Two light values were **measured down** from the table: `--gold-bright`
+  #6E5324 → **#5A4418** (4.17 on a gold wash over ivory) and `--green`
+  #256B48 → **#1F5C3D** (4.42 on its own pill).
+- **2470 pieces of text were measured on 15 screens plus the drawer, in
+  both themes.** The audit walks each element's real background stack; the
+  script lives in the scratchpad and is worth re-running after any colour
+  change.
+
+### The switch
+`state.theme` is `'auto' | 'light' | 'dark'`, default `'auto'`, saved with
+everything else. `applyTheme()` in `ui.js` sets `data-theme` on `<html>`
+and nothing else — one attribute repaints the whole app with no reload and
+no re-render.
+
+- **`auto` follows the device while the app is open**: a `matchMedia`
+  listener, so a phone that dims itself on a schedule dims the app too.
+- **The system chrome follows**: `theme-color` and
+  `apple-mobile-web-app-status-bar-style` are rewritten on every switch and
+  set correctly at boot, or the iPhone keeps a black status bar over an
+  ivory app.
+- `color-scheme: light dark` hands the scrollbars, the caret and the native
+  inputs to the system.
+- The fade is on the large surfaces only, and only for readers who have
+  not asked for less motion.
+- **Settings → المظهر** has the three choices, each with a preview of
+  itself (the automatic one is split down the middle), and the note
+  «بيتبع إعدادات جهازك». The **drawer head** carries a sun/moon button that
+  flips light ↔ dark in one tap — reaching Settings to turn the lights down
+  at night is too far. It is in the head and not a row on purpose: an
+  eighth row made the drawer scroll (887px against 844) as soon as a group
+  was open.
 
 ## Known open items
 - Legal pages are first drafts — a lawyer must review before public launch.

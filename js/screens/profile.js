@@ -57,7 +57,7 @@ export function ProfileScreen(root) {
           <span>${u.phone
             ? (u.phoneVerified
                 ? `<span class="ok-inline">${icon('check', 12)} ${t('verified')}</span>`
-                : `<span style="color:#E79A9C">${t('phoneNotVerified')}</span>`)
+                : `<span class="ink-danger">${t('phoneNotVerified')}</span>`)
             : t('phoneNumber')}</span>
         </div>
       </div>
@@ -450,6 +450,18 @@ export function SettingsScreen(root) {
       <div class="setting-row"><span class="s-txt"><b>${t('language')}</b><span>العربية / English</span></span>
         <button class="lang-pill" id="langBtn">${S.state.lang === 'ar' ? 'العربية' : 'English'}</button></div>
 
+      <div class="dr-group-label">${t('appearance')}</div>
+      <div class="theme-pick" id="themePick">
+        ${['auto', 'light', 'dark'].map(m => `
+          <button class="theme-opt ${S.themeMode() === m ? 'on' : ''}" data-theme-opt="${m}"
+                  role="radio" aria-checked="${S.themeMode() === m}">
+            <span class="tp-prev ${m}"><i></i><b></b></span>
+            <span class="tp-name">${t(m === 'auto' ? 'themeAuto' : m === 'light' ? 'themeLight' : 'themeDark')}</span>
+            <span class="tp-tick">${S.themeMode() === m ? icon('check', 16) : ''}</span>
+          </button>`).join('')}
+      </div>
+      <div class="hint" style="padding:0 16px 4px">${t('themeAutoNote')}</div>
+
       <div class="dr-group-label">${t('notifPrefs')}</div>
       ${sw('messages', t('notifMessages'), p.messages)}
       ${sw('expiry', t('notifExpiry'), p.expiry)}
@@ -483,10 +495,23 @@ export function SettingsScreen(root) {
       <div class="dr-group-label">${t('deleteAccount')}</div>
       <div class="setting-row" style="border:none">
         <span class="s-txt"><b>${t('deleteAccount')}</b><span>${t('deleteAccountSub')}</span></span>
-        <button class="mini-btn" id="delAcc" style="color:#E79A9C">${icon('trash', 15)}</button>
+        <button class="mini-btn ink-danger" id="delAcc">${icon('trash', 15)}</button>
       </div>
       <div style="height:20px"></div>
     </div>`;
+
+  $$('[data-theme-opt]').forEach(b => b.addEventListener('click', () => {
+    import('../ui.js').then(m => {
+      m.setTheme(b.dataset.themeOpt);
+      // the choice is repainted in place: no reload, and no losing your spot
+      $$('[data-theme-opt]').forEach(x => {
+        const on = x === b;
+        x.classList.toggle('on', on);
+        x.setAttribute('aria-checked', on);
+        x.querySelector('.tp-tick').innerHTML = on ? icon('check', 16) : '';
+      });
+    });
+  }));
 
   $$('.switch').forEach(s => s.addEventListener('click', () => {
     const k = s.dataset.k;

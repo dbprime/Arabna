@@ -337,6 +337,55 @@ export function openDropdown({ host, anchor, title, options, value, unit, onPick
   if (sel) sel.scrollIntoView({ block: 'nearest' });
 }
 
+/* ============================================================
+   Light and dark
+   ------------------------------------------------------------
+   Three states: follow the device, light, dark. The choice is a
+   `data-theme` attribute on <html> and nothing else — every colour in
+   the app is a symbol, so one attribute repaints all of it with no
+   reload and no re-render.
+   ============================================================ */
+
+const BAR_COLOR = { dark: '#131F39', light: '#FFFDF8' };
+
+/** what is actually on screen right now, after resolving 'auto' */
+export function resolvedTheme() {
+  const mode = S.themeMode();
+  if (mode === 'light' || mode === 'dark') return mode;
+  return (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches)
+    ? 'light' : 'dark';
+}
+
+/**
+ * The system chrome has to follow too. Without these two lines the
+ * iPhone keeps a black status bar over an ivory app — the same fault we
+ * fixed for the installed header, in a different place.
+ */
+export function applyTheme() {
+  const theme = resolvedTheme();
+  document.documentElement.setAttribute('data-theme', theme);
+  const bar = document.querySelector('meta[name="theme-color"]');
+  if (bar) bar.setAttribute('content', BAR_COLOR[theme]);
+  const status = document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]');
+  // iOS reads this at launch, so it is set correctly from boot as well
+  if (status) status.setAttribute('content', theme === 'light' ? 'default' : 'black-translucent');
+}
+
+export function setTheme(mode) {
+  S.setThemeMode(mode);
+  applyTheme();
+}
+
+/** in 'auto', follow the device while the app is open — night mode on a
+    schedule should not need the app closed and opened again */
+export function mountThemeWatch() {
+  if (!window.matchMedia) return;
+  const mq = window.matchMedia('(prefers-color-scheme: light)');
+  const onChange = () => { if (S.themeMode() === 'auto') applyTheme(); };
+  if (mq.addEventListener) mq.addEventListener('change', onChange);
+  else if (mq.addListener) mq.addListener(onChange);
+}
+
 /* ---------------- toast ---------------- */
 export function toast(msg, kind = '') {
   const root = $('#toast');
@@ -551,13 +600,23 @@ export function openDrawer() {
     item('file', t('terms'), '#/terms'),
   ].join('');
 
+  /* Reaching Settings to turn the lights down is too far for something
+     people do at night, one-handed, in bed. It sits in the head rather
+     than in a row of its own: the drawer's rule is that it never scrolls,
+     and an eighth row broke that the moment a group was open. */
+  const dark = resolvedTheme() === 'dark';
+  const themeBtn = `<button class="dr-theme-btn" id="drTheme"
+        aria-label="${t(dark ? 'themeLight' : 'themeDark')}">${icon(dark ? 'sun' : 'moon', 20)}</button>`;
+
   const head = member ? `
       <div class="drawer-head">
+        ${themeBtn}
         <img src="assets/logo-sm.png" alt="ARABNA" />
         <div style="font-weight:700">${u.name}</div>
         <div class="drawer-user">${u.email} · ${tierLabel}</div>
       </div>` : `
       <div class="drawer-head">
+        ${themeBtn}
         <img src="assets/logo-sm.png" alt="ARABNA" />
         <div style="font-weight:700">${t('guest')}</div>
       </div>
@@ -570,7 +629,8 @@ export function openDrawer() {
 
   const langRow = `
       <button class="dr-item" id="drLang">${icon('globe', 22)}<span>${t('language')}</span>
-        <span class="lang-pill" style="margin-inline-start:auto">${getLang() === 'ar' ? 'العربية' : 'English'}</span></button>`;
+        <span class="lang-pill dr-end">${getLang() === 'ar' ? 'العربية' : 'English'}</span></button>`;
+
 
   root.innerHTML = `
     <div class="drawer-scrim" data-close></div>
@@ -582,7 +642,7 @@ export function openDrawer() {
       ${group('sections', t('grpSections'), sections)}
       ${item('megaphone', t('advertiseWithUs'), '#/advertise', 0, true)}
       ${group('help', t('grpHelp'), help)}
-      ${member ? `<button class="dr-item" id="drOut" style="color:#E79A9C">${icon('logout', 22)}<span>${t('signOut')}</span></button>` : ''}
+      ${member ? `<button class="dr-item ink-danger" id="drOut">${icon('logout', 22)}<span>${t('signOut')}</span></button>` : ''}
       <div class="dr-version">ARABNA · عربنا — ${t('version')} 0.1</div>
     </aside>`;
 
@@ -603,6 +663,12 @@ export function openDrawer() {
 
   $$('#drawer [data-route]').forEach(b => b.addEventListener('click', () => { closeDrawer(); go(b.dataset.route); }));
   const dl = $('#drLang'); if (dl) dl.addEventListener('click', () => { closeDrawer(); toggleLang(); });
+  const dt = $('#drTheme');
+  if (dt) dt.addEventListener('click', () => {
+    setTheme(resolvedTheme() === 'dark' ? 'light' : 'dark');
+    closeDrawer();
+    toast(t(resolvedTheme() === 'dark' ? 'themeDarkOn' : 'themeLightOn'), 'ok');
+  });
   const out = $('#drOut');
   if (out) out.addEventListener('click', () => {
     closeDrawer();

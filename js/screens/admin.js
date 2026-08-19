@@ -490,10 +490,10 @@ function queueHtml() {
     ${flags.length ? `<div class="dr-group-label">${t('queueReports')}</div>` : ''}
     ${flags.map(f => `
       <div class="list-row">
-        <span class="row-ico" style="color:${f.risk === 'high' ? '#E79A9C' : 'var(--gold-bright)'}">${icon(f.kind === 'message' ? 'message' : 'alert', 24)}</span>
+        <span class="row-ico ${f.risk === 'high' ? 'ink-danger' : 'gold'}">${icon(f.kind === 'message' ? 'message' : 'alert', 24)}</span>
         <div class="row-main">
           <div class="row-title">${f.item ? L(f.item) : t(f.kind === 'contact-attempts' ? 'contactAttemptReport' : 'report')}
-            <span class="badge badge-free" style="color:#E79A9C;background:rgba(196,89,92,.14);border-color:rgba(196,89,92,.35)">${f.risk}</span></div>
+            <span class="badge badge-free flag-pill">${f.risk}</span></div>
           <div class="row-sub">${L(f.reason)}</div>
           <div class="row-actions">
             <button class="mini-btn gold" data-flagok="${f.id}">${icon('check', 15)} ${t('approve')}</button>
@@ -610,7 +610,7 @@ function magHtml() {
     <div class="field"><label class="label">${S.state.lang === 'en' ? 'Excerpt' : 'المقتطف'}</label><input class="input" id="artEx" /></div>
     <div class="field"><label class="label">${S.state.lang === 'en' ? 'Body' : 'نص المقال'}</label><textarea class="textarea" id="artBody"></textarea></div>
     <label class="setting-row" style="padding:8px 0;border:none">
-      <input type="checkbox" id="artSpon" style="width:18px;height:18px;accent-color:#C6A15B" />
+      <input type="checkbox" id="artSpon" class="check-gold" />
       <span class="s-txt"><b style="font-weight:500;font-size:12.5px">${t('sponsoredStory')}</b></span></label>
     <div class="field"><label class="label">${S.state.lang === 'en' ? 'Advertiser' : 'المعلن'} <span class="muted">(${t('optional')})</span></label><input class="input" id="artAdv" /></div>
     <button class="btn btn-gold btn-block" id="pubArt">${icon('send', 19)} ${S.state.lang === 'en' ? 'Publish' : 'نشر'}</button>

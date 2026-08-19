@@ -165,6 +165,12 @@ export const CITY_SUGGESTIONS = [
 ];
 
 /* ---- paid ad inventory (main slider) ---- */
+/* The one colour left outside the theme layer, and deliberately: an ad
+   card is a saturated block with white text on it, it reads the same in
+   both themes, and an advertiser's artwork should not change under the
+   reader. Every approved order that has no artwork of its own gets this. */
+export const AD_CARD_COLOR = 'linear-gradient(135deg,#2F5D50,#14312B)';
+
 export const SLIDER_ADS = markDemo([
   {
     id: 'ad1', kind: 'paid',

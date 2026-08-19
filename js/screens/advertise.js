@@ -308,7 +308,7 @@ export function AdvertiseScreen(root, params) {
       shell.innerHTML = `
         <div class="pad" style="margin-top:60px">
           <div class="center-col">
-            <div class="empty-ico" style="width:84px;height:84px;color:#7FC3A1;border-color:rgba(78,139,107,.4);background:rgba(78,139,107,.1)">${icon('checkCircle', 42)}</div>
+            <div class="empty-ico done-mark">${icon('checkCircle', 42)}</div>
             <b style="font-size:19px">${t('adSubmitted')}</b>
             <span class="muted fs-13" style="max-width:280px;margin-top:6px">${t('adSubmittedSub')}</span>
             <button class="btn btn-gold mt-20" data-route="#/home">${t('backHome')}</button>
