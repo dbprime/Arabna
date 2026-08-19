@@ -1,5 +1,5 @@
 /* ======================= MARKETPLACE ======================= */
-import { t, L, icon, $, $$, go, back, renderHeader, confirmSheet, toast, wireRoutes,
+import { t, L, icon, $, $$, go, back, renderHeader, confirmSheet, toast, wireRoutes, cityChipLabel,
          emptyState, query, shareItem, fmtMoney, priceLabel, statusBadge,
          openSheet, closeSheet, openFilterSheet, activeFilterCount, sectionNote,
          showsPrices, replaceHash, goAfterDone } from '../ui.js';
@@ -42,7 +42,7 @@ export function MarketplaceScreen(root) {
       <div class="search-bar big">${icon('search', 22)}<input id="clSearch" placeholder="${t('searchExample')}" value="${term.replace(/"/g, '&quot;')}" /></div>
     </div>
     <div class="search-row sub">
-      <button class="loc-chip" data-loc>${icon('mapPin', 17)}<span>${S.state.location.city}</span></button>
+      <button class="loc-chip ${S.hasLocation() ? '' : 'unset'}" data-loc>${icon('mapPin', 17)}<span>${cityChipLabel()}</span></button>
       <button class="filter-btn" id="mkFilter" aria-label="${t('filters')}">${icon('filter', 20)}<span id="fCount"></span></button>
     </div>
 
@@ -412,7 +412,7 @@ export function PostScreen(root) {
         <input class="input" id="pPrice" inputmode="decimal" placeholder="$"
                value="${escapeAttr(editing ? (editing.price !== FREE_PRICE ? editing.price : '') : (draft && draft.price) || '')}" /></div>
       <div class="field"><label class="label">${t('cityLabel')}</label>
-        <input class="input" id="pCity" value="${escapeAttr(editing ? editing.city : (draft && draft.city) || (S.state.location.city + ', ' + S.state.location.state))}" /></div>
+        <input class="input" id="pCity" value="${escapeAttr(editing ? editing.city : (draft && draft.city) || (S.userCity() ? S.userCity() + ', ' + S.state.location.state : ''))}" /></div>
       <div class="field"><label class="label">${t('descLabel')}</label>
         <textarea class="textarea" id="pDesc">${escapeHtml(editing ? L(editing.desc || '') : (draft && draft.desc) || '')}</textarea></div>
 

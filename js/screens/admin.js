@@ -273,6 +273,12 @@ function panelView(root) {
 
     /* After 486 records arrived from two separate files, "is anything in
        here twice?" is a question with a real answer. */
+    const geoEx = $('#geoExport');
+    if (geoEx) geoEx.addEventListener('click', () => {
+      download('arabna-missing-coordinates.csv', S.geoQueueCsv(), 'text/csv');
+      toast(t('geoExported'), 'ok');
+    });
+
     const scan = $('#dupScan');
     if (scan) scan.addEventListener('click', () => {
       const out = $('#dupScanOut');
@@ -828,6 +834,19 @@ function dirHtml() {
 
     <button class="btn btn-ghost btn-block mt-12" id="dupScan">${icon('search', 19)} ${t('dupScan')}</button>
     <div id="dupScanOut"></div>
+
+    <!-- the coordinates queue. Turning 515 addresses into points is a data
+         job done outside the app; what the panel owes the owner is the
+         count, so the gap is a number somebody can work through rather
+         than a silence, and the addresses in a file they can hand over. -->
+    <div class="section-title mt-20">${t('geoQueueTitle')}</div>
+    <div class="hint" style="margin-bottom:10px">${t('geoQueueSub')}</div>
+    <div class="q-card">
+      <div class="q-head"><b>${S.needsGeoList().length}</b><span class="muted fs-12">${t('geoQueueTitle')}</span></div>
+      <div class="row-sub"><span>${S.allBusinesses().length - S.needsGeoList().length} / ${S.allBusinesses().length}</span></div>
+    </div>
+    <button class="btn btn-ghost btn-block mt-8" id="geoExport" ${S.needsGeoList().length ? '' : 'disabled'}>
+      ${icon('file', 19)} ${t('exportMissingGeo')}</button>
 
     <div class="section-title mt-20">${t('nonCommercial')}</div>
     <div class="hint" style="margin-bottom:10px">${t('nonCommercialHint')}</div>

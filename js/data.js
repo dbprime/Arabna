@@ -697,6 +697,48 @@ export const STREET_WORDS = {
   e: 'e', east: 'e', w: 'w', west: 'w',
 };
 
+/**
+ * Centroids of the cities the directory actually covers, used for one
+ * thing only: turning the device's coordinates into the name of the city
+ * the person is in, so the chip can fill itself.
+ *
+ * They are **never** used to compute a distance to a business. A listing's
+ * own coordinates are the only thing allowed to do that, and none of the
+ * 515 has them yet — geocoding the addresses is a data job done outside
+ * the app. Putting a city centre in a shop's place would make every shop
+ * in Katy exactly as far away as every other, which is a number that
+ * looks real and is not.
+ */
+export const CITY_POINTS = [
+  { city: 'Houston',       lat: 29.7604, lng: -95.3698 },
+  { city: 'Katy',          lat: 29.7858, lng: -95.8245 },
+  { city: 'Sugar Land',    lat: 29.6197, lng: -95.6349 },
+  { city: 'Spring',        lat: 30.0799, lng: -95.4172 },
+  { city: 'Richmond',      lat: 29.5822, lng: -95.7607 },
+  { city: 'Cypress',       lat: 29.9691, lng: -95.6972 },
+  { city: 'Pearland',      lat: 29.5636, lng: -95.2860 },
+  { city: 'Humble',        lat: 29.9988, lng: -95.2622 },
+  { city: 'Webster',       lat: 29.5377, lng: -95.1183 },
+  { city: 'Galveston',     lat: 29.3013, lng: -94.7977 },
+  { city: 'Rosharon',      lat: 29.3555, lng: -95.4483 },
+  { city: 'Stafford',      lat: 29.6161, lng: -95.5577 },
+  { city: 'Tomball',       lat: 30.0972, lng: -95.6161 },
+  { city: 'Bellaire',      lat: 29.7058, lng: -95.4588 },
+  { city: 'Conroe',        lat: 30.3119, lng: -95.4561 },
+  { city: 'Kemah',         lat: 29.5388, lng: -95.0202 },
+  { city: 'La Porte',      lat: 29.6658, lng: -95.0191 },
+  { city: 'League City',   lat: 29.5075, lng: -95.0949 },
+  { city: 'Magnolia',      lat: 30.2094, lng: -95.7508 },
+  { city: 'Missouri City', lat: 29.6186, lng: -95.5377 },
+  { city: 'Needville',     lat: 29.3944, lng: -95.8386 },
+  { city: 'New Caney',     lat: 30.1516, lng: -95.2113 },
+  { city: 'Shenandoah',    lat: 30.1852, lng: -95.4541 },
+  { city: 'The Woodlands', lat: 30.1658, lng: -95.4613 },
+];
+
+/** How far outside the covered cities we stop claiming to serve someone. */
+export const REGION_RADIUS_MI = 60;
+
 export const CHIP_MIN = 5;
 
 /**

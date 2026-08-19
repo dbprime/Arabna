@@ -5,7 +5,7 @@
 import { setLang, bothPacks } from './i18n.js';
 import { state, registerStrings, runReminders, runSubscriptionCycle } from './store.js';
 import { $, renderHeader, renderNav, hideNav, closeSheet, closeDrawer,
-         rememberScroll, restoreScroll, historyKey, markShown } from './ui.js';
+         mountScrollMemory, restoreScroll, historyKey, markShown, startClock } from './ui.js';
 
 import { HomeScreen } from './screens/home.js';
 import { CategoriesScreen } from './screens/categories.js';
@@ -83,8 +83,6 @@ function render() {
   const full = location.hash || '#/home';
   const hash = full.split('?')[0];
   const app = $('#app');
-  // the outgoing screen's position belongs to the entry we are leaving
-  rememberScroll();
   closeSheet();
   closeDrawer();
 
@@ -120,6 +118,8 @@ registerStrings(bothPacks());
    clock says, and each one carries a one-shot key. */
 function catchUp() {
   try { runSubscriptionCycle(); runReminders(); } catch (e) { /* never block boot */ }
+  mountScrollMemory();
+  startClock();
 }
 
 window.addEventListener('DOMContentLoaded', () => {

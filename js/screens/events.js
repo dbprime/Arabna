@@ -238,7 +238,7 @@ export function EventFormScreen(root, params) {
       <div class="field"><label class="label">${t('eventVenue')}</label>
         <input class="input" id="evVenue" value="${attr(L(e.venue))}" /></div>
       <div class="field"><label class="label">${t('cityLabel')}</label>
-        <input class="input" id="evCity" value="${attr(e.city || (S.state.location.city + ', ' + S.state.location.state))}" /></div>
+        <input class="input" id="evCity" value="${attr(e.city || (S.userCity() ? S.userCity() + ', ' + S.state.location.state : ''))}" /></div>
 
       <div class="field"><label class="label">${t('eventOrganizerName')}</label>
         <input class="input" id="evOrg" value="${attr(L(e.organizer))}" /></div>

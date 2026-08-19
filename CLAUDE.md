@@ -7,7 +7,7 @@ ARABNA · عربنا — a mobile-first web app for the Arab community in the U.
 **business directory + marketplace + events + magazine**, Arabic-first with a full English toggle.
 ("Classifieds / الإعلانات الشخصية" is now "Marketplace / السوق" — the old `#/classifieds`
 routes still resolve so shared links keep working.)
-Current version: **V.02.2 (prototype)**. Owner: Rai Elby (@dbprime). Deploys to Vercel (team DB Prime).
+Current version: **V.02.3 (prototype)**. Owner: Rai Elby (@dbprime). Deploys to Vercel (team DB Prime).
 
 ## Hard rules (from the product brief)
 1. **One repository, one Vercel project.** No duplicates, no stray preview projects.
@@ -266,7 +266,9 @@ hand. Treat it as immovable unless there is no choice.
   attributes: ['halalMeat', 'noAlcohol', …],       // ids only, never booleans
   worship: { kind, prayers, jumuah, mass, lang },  // places of worship only
   nonCommercial, entryPrice,                       // outings; both optional (V.02.1)
-  plan, verified, rating, reviewCount, dist, claimed, photos, videos,
+  plan, verified, rating, reviewCount, claimed, photos, videos,
+  lat, lng, needsGeo,                              // V.02.3; never shown to a reader
+  dist,                                            // dead since V.02.3 — nothing reads it
 }
 ```
 
@@ -664,6 +666,93 @@ for an account at the publish button**, with the draft (text and photos)
 parked and the publish resuming itself afterwards. Asking before a person
 knows what they get is the commonest reason they leave.
 
+## V.02.3 — the six fixes after batch four
+
+### Back restores the position (the measured cause, not the guessed one)
+The scroll is saved by a **single passive, rAF-throttled `scroll` listener on
+`#app`**, mounted once at boot (`mountScrollMemory` in `ui.js`).
+`rememberScroll()` is gone from `render()`, `go()` and `back()`: by the time
+`hashchange` fires the browser has already zeroed `#app.scrollTop`, so the
+old call wrote a 0 over the good value and back landed at the top. Keyed to
+the **history entry**, as before.
+
+### An option appears once
+«الأكثر استخداماً» is a shortcut to the top of the list, not a second copy of
+it: whatever it lifts is removed from the group it came from (`inTop`), and
+`CHIP_MAX_SHARE` applies to it too, so «يتحدثون العربية» (438 of 515) leads
+nothing.
+
+### The sheet footer is a sibling of the body
+`.sheet-panel` is `display:flex; flex-direction:column; max-height:88dvh`;
+`.sheet-body` is `flex:1 1 auto; overflow-y:auto` and holds every group;
+`.sheet-foot` sits **outside** it with no `sticky`. A sticky footer inside a
+container taller than the screen covered the last group on a real device.
+
+### The radius became the area
+The 5–100 mile slider filtered nothing — no listing has coordinates, so every
+setting returned the same list, and in RTL the thumb sat at the wrong end. It
+is replaced on the directory by **counted area options**: «كل المنطقة», the
+reader's own city, and 5/10/25/50 miles that appear **only** when both halves
+exist (a point for the reader and geocoded listings). The marketplace never
+filtered by distance at all, so it has no area group. The `.range` rule with
+its RTL fix stays in the design system.
+
+### «مفتوح الآن» keeps time
+One 60-second timer (`startClock` / `onMinute` / `refreshOpenBadges` in
+`ui.js`) rewrites **the badges only** — `openBadgeSlot()` wraps each in
+`[data-openbadge]` — so nobody's place in a 139-row list moves. It recomputes
+at once on `visibilitychange` and `focus`, stops while the tab is hidden, and
+the directory re-filters only when «مفتوح الآن» is actually on. A wrong
+«مفتوح الآن» sends somebody driving to a closed shop.
+
+### Location: the real thing, or the area name — never a number we invented
+`dist` was a hand-typed field, 0 on all 486 imported rows and identical for
+every reader in every city. Nothing reads it any more.
+
+- **A figure in miles is printed only when both points exist** — the
+  reader's and the listing's (`distanceTo()` returns `null` otherwise, and
+  `distLabel()` prints the city instead). This is the rule the rest follows
+  from.
+- **The chip starts empty.** Before there is a location it is a dashed
+  button saying «حدّد موقعك»: a chip reading "Houston" to somebody standing
+  in Katy is the app telling them something false before they have touched
+  anything.
+- **Nothing asks the browser at launch.** iOS asks once and a refusal is
+  permanent, so permission is requested at the moment of use — the chip, the
+  «الأقرب» sort, the area filter — and `openGeoPrompt()` puts one line of our
+  own in front of the system dialog: «عشان نوريك أقرب المحلات إلك» with
+  [سماح] [مش هلق]. `askForLocation()` is the whole flow; the location sheet
+  hands over to it rather than stacking a second sheet on itself.
+- **Three ways in, one sheet**: the device (the only one that yields a
+  point), the **25 real cities with live counts** — Houston 377 · Katy 39 ·
+  Sugar Land 32 · Spring 15 · Richmond 13 — read off the addresses by
+  `cityOf()` / `directoryCities()`, and any U.S. ZIP. A city picked by hand
+  clears any stored point: it belonged to somewhere the reader has left.
+- **Every ending is handled**: refusal, timeout, no GPS, a point outside the
+  region. Each says what happened and leaves the city list one tap away;
+  `nearestCity()` snaps a point to a city we actually cover, and beyond
+  `REGION_RADIUS_MI` (60) it stays the area.
+- **Ordering falls back in the order of what it knows**: real miles when
+  there is a point (`byNearest`, ungeocoded listings after, never mixed in),
+  otherwise the reader's own city first, then the rating, then a subscriber
+  ahead of a free listing at the same rating.
+- **A paid listing leads for every reader inside Greater Houston and for
+  nobody outside it** (`inCoverage()` + `pinSponsored()`, one slot): the 25
+  cities the directory covers, not the state — an advertiser in Houston is
+  worth showing to somebody in Katy and worth nothing to somebody in Dallas.
+  It is labelled «إعلان مموّل» and carries **the same distance line as every
+  other row**, real miles or the area name. The money buys the place, not
+  the silence.
+- **Coordinates are never shown to anyone** — not on a card, a page, the add
+  form or the import template — but they live in the record and in the
+  backup. Every new listing is saved `needsGeo: true`, **changing an address
+  clears `lat`/`lng` and sets the flag again** (a shop that moved and kept its
+  old point is worse than one with none), and admin → directory carries the
+  «بانتظار الإحداثيات» queue with its count and an «تصدير العناوين الناقصة»
+  CSV. Geocoding the 515 addresses is a data job done outside the app; the
+  day they arrive the miles appear by themselves.
+- The privacy page says all of it, in both languages, as its own section.
+
 ## Known open items
 - Legal pages are first drafts — a lawyer must review before public launch.
 - Push notifications: triggers are defined in Settings but not wired to a real service.
@@ -676,5 +765,8 @@ knows what they get is the commonest reason they leave.
 - The subscription test clock in admin → settings goes with the demo data.
 - `personKey()` is a stand-in for real user ids: blocking keys on a listing's
   owner or a review's author until V.02 brings accounts on a server.
-- `dist` is 0 on all 486 imported listings until geocoding lands, so "nearest"
-  sorting and the radius filter do nothing for them.
+- **None of the 515 listings has coordinates yet.** That is a data job done
+  outside the app (admin → directory exports the addresses). Until they
+  arrive the app shows each listing's area name, never a figure in miles,
+  the mile options stay out of the filter sheet, and "nearest" falls back to
+  the reader's own city and the rating.

@@ -658,25 +658,28 @@ export function PrivacyScreen(root) {
   const en = S.state.lang === 'en';
   root.innerHTML = `<div class="legal-body">
     <h2>${en ? '1. What we collect' : '١. البيانات التي نجمعها'}</h2>
-    <p>${en ? 'Name, email address, mobile number (for verification), your listings and content, approximate location when you use radius search, and payment records processed by our payment provider.'
-            : 'الاسم، البريد الإلكتروني، رقم الجوال (للتحقق)، إعلاناتك ومحتواك، موقعك التقريبي عند استخدام البحث بالنطاق، وسجلات الدفع التي تُعالَج عبر مزوّد الدفع.'}</p>
-    <h2>${en ? '2. Why we collect it' : '٢. سبب الجمع'}</h2>
+    <p>${en ? 'Name, email address, mobile number (for verification), your listings and content, your location when you ask for distance-based results, and payment records processed by our payment provider.'
+            : 'الاسم، البريد الإلكتروني، رقم الجوال (للتحقق)، إعلاناتك ومحتواك، موقعك عند طلب نتائج مرتبة بالمسافة، وسجلات الدفع التي تُعالَج عبر مزوّد الدفع.'}</p>
+    <h2>${en ? '2. Your location' : '٢. موقعك'}</h2>
+    <p>${en ? 'Your location is only requested at the moment you ask for something that needs it — sorting by what is nearest, filtering by distance, or setting your city. It is never requested when the app opens. The coordinates stay on your device, are used only to work out how far away a listing is, and are never sent to us or to anyone else. You can clear them at any time from the location sheet, and picking a city by hand needs no permission at all.'
+            : 'لا نطلب موقعك إلا في اللحظة التي تطلب فيها شيئاً يحتاجه — الترتيب بالأقرب، أو الفلترة بالمسافة، أو تحديد مدينتك. ولا يُطلب أبداً عند فتح التطبيق. الإحداثيات تبقى على جهازك، وتُستعمل فقط لحساب بُعد النشاط عنك، ولا تُرسل إلينا ولا إلى أي جهة أخرى. تقدر تمسحها في أي وقت من نافذة الموقع، واختيار المدينة يدوياً لا يحتاج أي إذن.'}</p>
+    <h2>${en ? '3. Why we collect it' : '٣. سبب الجمع'}</h2>
     <p>${en ? 'To operate the directory and the marketplace, to verify real users, to prevent fraud and abuse, and to process paid placements and subscriptions.'
             : 'لتشغيل الدليل والماركت بليس، والتحقق من أن المستخدمين حقيقيون، ومنع الاحتيال وسوء الاستخدام، ومعالجة الاشتراكات والإعلانات المدفوعة.'}</p>
-    <h2>${en ? '3. Card data' : '٣. بيانات البطاقة'}</h2>
+    <h2>${en ? '4. Card data' : '٤. بيانات البطاقة'}</h2>
     <p>${en ? 'We never store full card numbers. Payments are handled by a PCI-compliant provider.'
             : 'لا نخزّن أرقام البطاقات كاملة إطلاقاً. الدفع يتم عبر مزوّد متوافق مع معايير PCI.'}</p>
-    <h2>${en ? '4. Automated message scanning' : '٤. الفحص الآلي للرسائل'}</h2>
+    <h2>${en ? '5. Automated message scanning' : '٥. الفحص الآلي للرسائل'}</h2>
     <p>${t('legalScanBody')}</p>
-    <h2>${en ? '5. Your rights' : '٥. حقوقك'}</h2>
+    <h2>${en ? '6. Your rights' : '٦. حقوقك'}</h2>
     <ul>
       <li>${en ? 'Request a copy of your data' : 'طلب نسخة من بياناتك'}</li>
       <li>${en ? 'Correct or delete your data (Settings → Delete account)' : 'تصحيح أو حذف بياناتك (الإعدادات ← حذف الحساب)'}</li>
       <li>${en ? 'Withdraw notification consent at any time' : 'إيقاف الإشعارات في أي وقت'}</li>
     </ul>
-    <h2>${en ? '6. Age' : '٦. العمر'}</h2>
+    <h2>${en ? '7. Age' : '٧. العمر'}</h2>
     <p>${en ? 'ARABNA accounts require users to be 18 years or older.' : 'إنشاء حساب في عربنا يتطلب أن يكون عمرك ١٨ سنة أو أكثر.'}</p>
-    <h2>${en ? '7. Contact' : '٧. التواصل'}</h2>
+    <h2>${en ? '8. Contact' : '٨. التواصل'}</h2>
     ${contactBlock(en)}
     <p class="muted fs-12">${en ? 'Draft v0.1 — must be reviewed by a lawyer before public launch.' : 'مسودة ٠.١ — يجب مراجعتها من محامٍ قبل الإطلاق الرسمي.'}</p>
   </div>`;

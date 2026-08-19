@@ -41,11 +41,28 @@ export function historyKey() {
   return key;
 }
 
-/** remember where the page was before it is replaced */
-export function rememberScroll() {
+/**
+ * Record the position *while it changes*, not when we navigate.
+ *
+ * Navigating is always too late: by the time `hashchange` reaches us the
+ * browser has already reset the container's scrollTop, so saving then
+ * wrote a zero over the value that had been correct a moment earlier —
+ * which is exactly what "back returns to the top" was. One passive
+ * listener, throttled to a frame, mounted once at boot.
+ */
+export function mountScrollMemory() {
   const app = $('#app');
-  if (!app || !shownKey) return;
-  scrollMemory.set(shownKey, app.scrollTop);
+  if (!app || app.dataset.scrollWired) return;
+  app.dataset.scrollWired = '1';
+  let ticking = false;
+  app.addEventListener('scroll', () => {
+    if (ticking) return;
+    ticking = true;
+    requestAnimationFrame(() => {
+      ticking = false;
+      if (shownKey) scrollMemory.set(shownKey, app.scrollTop);
+    });
+  }, { passive: true });
 }
 
 /** called once the new screen is on screen, so later saves land correctly */
@@ -68,7 +85,6 @@ export function restoreScroll(key) {
 export function forgetScroll(key) { scrollMemory.delete(key || historyKey()); }
 
 export function go(hash) {
-  rememberScroll();
   if (location.hash === hash) window.dispatchEvent(new HashChangeEvent('hashchange'));
   else {
     location.hash = hash;
@@ -103,7 +119,6 @@ export function goAfterDone(hash) {
 }
 
 export function back() {
-  rememberScroll();
   if (history.length > 1) history.back(); else go('#/home');
 }
 
@@ -121,16 +136,31 @@ export function toast(msg, kind = '') {
 /* ---------------- bottom sheet ---------------- */
 let sheetOnClose = null;
 let sheetSeq = 0;
+/**
+ * A bottom sheet. If the markup contains a `.sheet-foot`, it is lifted out
+ * of the scrolling body and becomes its sibling.
+ *
+ * `position: sticky` was not enough: it pins to the bottom of its own
+ * container, and that container was taller than the screen, so on a real
+ * phone the last group of filters sat *underneath* the apply button and
+ * could not be reached. A flex column with a scrolling body and a footer
+ * beside it cannot do that.
+ */
 export function openSheet(html, onMount, onClose) {
   sheetSeq++;
   const root = $('#sheet');
   root.innerHTML = `<div class="sheet-scrim" data-close></div>
-    <div class="sheet-panel"><div class="sheet-grip"></div>${html}</div>`;
+    <div class="sheet-panel"><div class="sheet-grip"></div>
+      <div class="sheet-body">${html}</div>
+    </div>`;
+  const panel = root.querySelector('.sheet-panel');
+  const foot = panel.querySelector('.sheet-foot');
+  if (foot) panel.appendChild(foot);          // out of the scroll, into the column
   root.setAttribute('aria-hidden', 'false');
   requestAnimationFrame(() => root.classList.add('open'));
   sheetOnClose = onClose || null;
   root.querySelector('[data-close]').addEventListener('click', closeSheet);
-  if (onMount) onMount(root.querySelector('.sheet-panel'));
+  if (onMount) onMount(panel);
 }
 export function closeSheet() {
   const root = $('#sheet');
@@ -449,7 +479,8 @@ export function wirePriceGates(root) {
  *  - options with no listings behind them are not offered at all — 185 of
  *    the 342 attributes are empty in some categories;
  *  - the most-used handful come first, before the named groups;
- *  - radius is a slider rather than chips that ran off the screen;
+ *  - the radius became the area group: the whole area or the reader's
+ *    own city, with mile options the day coordinates exist;
  *  - and the footer is pinned, with a live count on the button, because
  *    it used to be cut off below the fold.
  *
@@ -457,16 +488,41 @@ export function wirePriceGates(root) {
  * attribute is written here: they are generated from the registry, so a
  * new one is a line in data.js and appears here on its own.
  */
-export function openFilterSheet({ cat, cats, value, withPrice, withAttrs, countFor, onApply }) {
-  const v = Object.assign({ cat: cat || 'all', radius: S.state.radius, sort: 'newest',
+export function openFilterSheet({ cat, cats, value, withPrice, withAttrs, withArea, countFor, onApply }) {
+  const v = Object.assign({ cat: cat || 'all', area: 'all', sort: 'newest',
                             priceMin: '', priceMax: '', openNow: false, attrs: [] }, value);
   v.attrs = (v.attrs || []).slice();
   const sorts = [['newest', t('sortNewest')], ['nearest', t('sortNearest')], ['rated', t('sortTopRated')]]
     .concat(withAttrs ? [['open', t('sortOpen')]] : []);
-  const RADII = [5, 10, 25, 50, 100];
   const catFor = () => (v.cat === 'all' ? '*' : v.cat);
 
   const counts = () => S.attrCountsFor(catFor());
+
+  /* ---- where, not how far ----
+     The radius used to be a slider from 5 to 100 miles that filtered
+     nothing at all: no listing has coordinates yet, so every setting
+     returned the same list. What a reader can actually be given today is
+     the whole area or their own city, each with the number of listings
+     behind it; the mile options appear by themselves on the day both
+     halves exist — a point for the reader and geocoded listings to
+     measure against. */
+  const areaOptions = () => {
+    const pool = S.allBusinesses().filter(b => v.cat === 'all' || b.cat === v.cat);
+    const opts = [{ id: 'all', label: t('areaAll') }];
+    if (S.hasLocation()) opts.push({ id: 'city', label: S.userCity() || t('areaCity') });
+    if (S.radiusUsable()) [5, 10, 25, 50].forEach(r => opts.push({ id: String(r), label: `${r} ${t('miles')}` }));
+    return opts.map(o => Object.assign(o, { n: pool.filter(b => S.inArea(b, o.id)).length }));
+  };
+
+  const areaHtml = () => `
+    <div class="row-between">
+      <span class="label" style="margin:0">${t('areaTitle')}</span>
+    </div>
+    <div class="attr-pick" id="fArea">
+      ${areaOptions().map(o => `<button class="chip ${String(v.area) === o.id ? 'active' : ''}" data-ar="${o.id}">
+        ${o.label} <span class="chip-n">${o.n}</span></button>`).join('')}
+    </div>
+    ${S.hasLocation() ? '' : `<button class="btn btn-ghost btn-sm btn-block mt-8" id="fLoc">${icon('navigation', 16)} ${t('setLocation')}</button>`}`;
 
   /** one option, with how many listings stand behind it */
   const chip = (a, n) => `<button class="chip ${v.attrs.includes(a.id) ? 'active' : ''}" data-a="${a.id}">
@@ -474,19 +530,31 @@ export function openFilterSheet({ cat, cats, value, withPrice, withAttrs, countF
 
   const attrHtml = () => {
     const c = counts();
+    const pool = S.categorySize(catFor());
+    const ceiling = Math.max(1, Math.floor(pool * S.CHIP_MAX_SHARE));
     const groups = S.attrGroupsForCat(catFor())
       .map(g => ({ group: g.group, attrs: g.attrs.filter(a => (c[a.id] || 0) > 0) }))
       .filter(g => g.attrs.length);
 
-    // the handful people reach for first, so the useful ones need no scroll
+    /* "Most used" is a shortcut to the top of this list, not a second copy
+       of it: whatever appears here is taken out of the group it belongs to,
+       or the same option shows twice in one sheet. The same 60% rule as the
+       quick chips applies — something 85% of the category carries narrows
+       nothing, so it is left in its own group instead of leading this one. */
     const top = groups.reduce((all, g) => all.concat(g.attrs), [])
+      .filter(a => (c[a.id] || 0) <= ceiling)
       .sort((a, b) => (c[b.id] || 0) - (c[a.id] || 0))
       .slice(0, 6);
+    const inTop = new Set(top.map(a => a.id));
+
+    const rest = groups
+      .map(g => ({ group: g.group, attrs: g.attrs.filter(a => !inTop.has(a.id)) }))
+      .filter(g => g.attrs.length);
 
     // a group holding one option does not need a heading of its own;
     // a title over a single chip cost two lines and said nothing
-    const singles = groups.filter(g => g.attrs.length === 1).reduce((all, g) => all.concat(g.attrs), []);
-    const named = groups.filter(g => g.attrs.length > 1);
+    const singles = rest.filter(g => g.attrs.length === 1).reduce((all, g) => all.concat(g.attrs), []);
+    const named = rest.filter(g => g.attrs.length > 1);
 
     return `
       ${top.length ? `<div class="label mt-16">${t('mostUsed')}</div>
@@ -503,12 +571,7 @@ export function openFilterSheet({ cat, cats, value, withPrice, withAttrs, countF
   openSheet(`
     <div class="sheet-title">${t('filters')}</div>
 
-    <div class="row-between">
-      <span class="label" style="margin:0">${t('radius')}</span>
-      <span class="gold fs-13" id="radOut">${v.radius} ${t('miles')}</span>
-    </div>
-    <input class="range" type="range" id="fRad" min="0" max="${RADII.length - 1}" step="1"
-           value="${Math.max(0, RADII.indexOf(v.radius))}" />
+    ${withArea ? areaHtml() : ''}
 
     <div class="label mt-16">${t('sortBy')}</div>
     <div class="attr-pick" id="fSort">
@@ -529,7 +592,6 @@ export function openFilterSheet({ cat, cats, value, withPrice, withAttrs, countF
       </div>
       <div id="fAttrs">${attrHtml()}</div>` : ''}
 
-    <div style="height:78px"></div>
     <div class="sheet-foot">
       <button class="btn btn-ghost btn-sm" id="fClear">${t('clearAll')}</button>
       <button class="btn btn-gold" id="fApply">${t('applyFilters')}</button>
@@ -546,14 +608,34 @@ export function openFilterSheet({ cat, cats, value, withPrice, withAttrs, countF
       apply.textContent = n === 0 ? t('noResultsTryLess') : t('showNResults').replace('{n}', n);
     };
 
-    const rad = panel.querySelector('#fRad');
-    rad.addEventListener('input', () => {
-      v.radius = RADII[+rad.value] || RADII[0];
-      panel.querySelector('#radOut').textContent = `${v.radius} ${t('miles')}`;
-      refresh();
-    });
+    if (withArea) {
+      panel.querySelectorAll('#fArea .chip').forEach(b => b.addEventListener('click', () => {
+        v.area = b.dataset.ar;
+        panel.querySelectorAll('#fArea .chip').forEach(x => x.classList.toggle('active', x === b));
+        refresh();
+      }));
+      const loc = panel.querySelector('#fLoc');
+      // no location yet: the way to get one is here, not a dead option
+      if (loc) loc.addEventListener('click', () => {
+        closeSheet();
+        import('./screens/home.js').then(m => m.openLocationSheet());
+      });
+    }
 
     panel.querySelectorAll('#fSort .chip').forEach(b => b.addEventListener('click', () => {
+      /* "Nearest" is the moment the app actually needs a location, so that
+         is where it asks for one — not at launch, where iOS spends the one
+         question it allows on somebody who has not seen the app yet. */
+      if (b.dataset.s === 'nearest' && !S.state.geo) {
+        closeSheet();
+        import('./screens/home.js').then(m => m.askForLocation(() => {
+          // the sort they asked for is applied once the point arrives, so
+          // allowing does not leave them back where they started
+          if (withArea) S.setArea(v.area);
+          onApply(Object.assign({}, v, { sort: 'nearest' }));
+        }));
+        return;
+      }
       v.sort = b.dataset.s;
       panel.querySelectorAll('#fSort .chip').forEach(x => x.classList.toggle('active', x === b));
       refresh();
@@ -585,13 +667,14 @@ export function openFilterSheet({ cat, cats, value, withPrice, withAttrs, countF
         v.priceMin = panel.querySelector('#fMin').value.trim();
         v.priceMax = panel.querySelector('#fMax').value.trim();
       }
-      S.state.radius = v.radius; S.save();
+      if (withArea) S.setArea(v.area);
       closeSheet();
       onApply(v);
     });
     panel.querySelector('#fClear').addEventListener('click', () => {
       closeSheet();
-      onApply({ cat: v.cat, radius: S.state.radius, sort: 'newest', priceMin: '', priceMax: '',
+      if (withArea) S.setArea('all');
+      onApply({ cat: v.cat, area: 'all', sort: 'newest', priceMin: '', priceMax: '',
                 openNow: false, attrs: [] });
       toast(t('filtersCleared'), 'ok');
     });
@@ -607,6 +690,7 @@ export function activeFilterCount(v) {
   if (v.priceMin) n++;
   if (v.priceMax) n++;
   if (v.openNow) n++;
+  if (v.area && v.area !== 'all') n++;
   n += (v.attrs || []).length;
   return n;
 }
@@ -656,15 +740,37 @@ export function fmtDay(spans) {
  * Returns '' when the business carries no hours — better nothing than a guess.
  */
 /**
- * How far away, or nothing at all. The 486 real listings came in through
- * the importer with no coordinates yet, so their distance is unknown —
- * and "0 mi" on every row would be a number the app invented. Geocoding
- * fills these in at V.02; until then the line is simply absent, the same
- * way a missing phone number leaves no call button.
+ * How far away — and the one rule the whole thing rests on: **a figure in
+ * miles is printed only when both points exist**, the reader's and the
+ * listing's. Anything else is the area name.
+ *
+ * The old line read `biz.dist`, a number typed into the seed file and left
+ * at 0 on all 486 imported rows. It was identical for every reader in
+ * every city, which made it not a distance at all. Geocoding the addresses
+ * is a data job done outside the app; until a listing has coordinates it
+ * says where it is, not how far, and the moment they arrive this line
+ * turns into miles by itself.
  */
 export function distLabel(biz) {
-  const d = biz && biz.dist;
-  return d ? `<span>${icon('mapPin', 13)} ${d} ${t('miles')}</span>` : '';
+  const d = S.distanceTo(biz);
+  if (d != null) return `<span>${icon('mapPin', 13)} ${fmtMiles(d)} ${t('miles')}</span>`;
+  const city = S.cityOf(biz);
+  return city ? `<span>${icon('mapPin', 13)} ${city}</span>` : '';
+}
+
+/** 0.4 · 3.2 · 14 — a tenth of a mile matters up close and nowhere else */
+export function fmtMiles(d) {
+  return d < 10 ? String(Math.round(d * 10) / 10) : String(Math.round(d));
+}
+
+/**
+ * The city chip. Empty until we know: a chip reading "Houston" to somebody
+ * standing in Katy is the app telling them something false before they have
+ * touched anything, so before there is a location it is a button asking for
+ * one.
+ */
+export function cityChipLabel() {
+  return S.userCity() || t('setLocation');
 }
 
 /**
@@ -734,6 +840,62 @@ export function mountAdRotator({ host, items, interval = 7000, paint, onClick })
     if (io) io.disconnect();
     document.removeEventListener('visibilitychange', onVis);
   };
+}
+
+/* ============================================================
+   "Open now" has to stay true
+   ------------------------------------------------------------
+   The badge used to be computed once when the screen was drawn and
+   never again. A phone left in a pocket for an hour showed "closes
+   within the hour" on a shop that had already shut — and a wrong
+   "open now" sends somebody to a locked door, which is the fastest
+   way to lose their trust in the whole directory.
+
+   One ticker, one minute, and it repaints the badges only: repainting
+   the list would move the scroll position out from under the reader.
+   It stops while the page is hidden and catches up the moment it comes
+   back, because "in a pocket for two hours" is the normal case.
+   ============================================================ */
+const minuteSubs = [];
+let minuteTimer = null;
+
+/** re-run `fn` every minute for as long as `el` is still on the page */
+export function onMinute(el, fn) {
+  minuteSubs.push({ el, fn });
+}
+
+/** rewrite every open/closed badge in place, wherever it is */
+export function refreshOpenBadges() {
+  const now = new Date();
+  $$('[data-openbadge]').forEach(el => {
+    const b = S.businessById(el.dataset.openbadge);
+    if (b) el.innerHTML = openBadge(b, now);
+  });
+}
+
+function minuteTick() {
+  if (document.visibilityState !== 'visible') return;
+  refreshOpenBadges();
+  for (let i = minuteSubs.length - 1; i >= 0; i--) {
+    const sub = minuteSubs[i];
+    if (!sub.el || !document.contains(sub.el)) { minuteSubs.splice(i, 1); continue; }
+    try { sub.fn(); } catch (e) { /* one screen must not stop the rest */ }
+  }
+}
+
+export function startClock() {
+  if (minuteTimer) return;
+  minuteTimer = setInterval(minuteTick, 60000);
+  // the two moments a stale badge is most likely to be looked at
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') minuteTick();
+  });
+  window.addEventListener('focus', minuteTick);
+}
+
+/** a badge that can be rewritten later without touching the row around it */
+export function openBadgeSlot(biz, now = new Date()) {
+  return `<span data-openbadge="${biz.id}">${openBadge(biz, now)}</span>`;
 }
 
 export function openBadge(biz, now = new Date()) {

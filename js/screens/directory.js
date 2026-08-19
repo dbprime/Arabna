@@ -3,7 +3,7 @@ import { t, L, icon, $, $$, go, back, renderHeader, openSheet, closeSheet, confi
          toast, stars, wireRoutes, emptyState, query, openMaps, shareItem, fmtMoney,
          openFilterSheet, activeFilterCount, sectionNote, replaceHash, goAfterDone,
          showsPrices, priceGate, wirePriceGates,
-         openBadge, distLabel, attrChips, fmtDay, fmtTime, bizBadge } from '../ui.js';
+         openBadge, openBadgeSlot, onMinute, distLabel, cityChipLabel, fmtMiles, attrChips, fmtDay, fmtTime, bizBadge } from '../ui.js';
 import { CATEGORIES, SUBSCRIPTION_PRICE, DAY_KEYS } from '../data.js';
 import * as S from '../store.js';
 import { catIcon, startSlider } from './home.js';
@@ -33,7 +33,7 @@ export function DirectoryScreen(root) {
       openNow: q.open === '1',
       sort: q.sort || 'newest',
       attrs: (q.attrs || '').split(',').filter(Boolean),
-      radius: +q.radius || S.state.radius,
+      area: q.area || S.state.area || 'all',
     };
   };
   let st = readUrl();
@@ -50,6 +50,7 @@ export function DirectoryScreen(root) {
     if (st.openNow) p.push('open=1');
     if (st.sort !== 'newest') p.push('sort=' + st.sort);
     if (st.attrs.length) p.push('attrs=' + st.attrs.join(','));
+    if (st.area && st.area !== 'all') p.push('area=' + encodeURIComponent(st.area));
     replaceHash('#/directory' + (p.length ? '?' + p.join('&') : ''));
   };
 
@@ -64,7 +65,7 @@ export function DirectoryScreen(root) {
       </div>
     </div>
     <div class="search-row sub">
-      <button class="loc-chip" data-loc>${icon('mapPin', 17)}<span>${S.state.location.city}</span></button>
+      <button class="loc-chip ${S.hasLocation() ? '' : 'unset'}" data-loc>${icon('mapPin', 17)}<span>${cityChipLabel()}</span></button>
       <button class="filter-btn" id="dirFilter" aria-label="${t('filters')}">${icon('filter', 20)}<span id="fCount"></span></button>
     </div>
 
@@ -175,6 +176,7 @@ export function DirectoryScreen(root) {
       if (a) on.push({ k: id, label: t(a.key) });
     });
     if (st.sort !== 'newest') on.push({ k: '__sort', label: t(sortKey(st.sort)) });
+    if (st.area && st.area !== 'all') on.push({ k: '__area', label: areaLabel(st.area) });
     if (st.term) on.push({ k: '__term', label: '"' + st.term + '"' });
 
     host.innerHTML = on.length ? `<div class="pill-row">
@@ -185,6 +187,7 @@ export function DirectoryScreen(root) {
     $$('#pills [data-off]').forEach(b => b.addEventListener('click', () => {
       const k = b.dataset.off;
       if (k === '__open') st.openNow = false;
+      else if (k === '__area') { st.area = 'all'; S.setArea('all'); }
       else if (k === '__sort') st.sort = 'newest';
       else if (k === '__term') { st.term = ''; $('#dirSearch').value = ''; }
       else st.attrs = st.attrs.filter(x => x !== k);
@@ -192,7 +195,8 @@ export function DirectoryScreen(root) {
     }));
     const pc = $('#pillClear');
     if (pc) pc.addEventListener('click', () => {
-      st.openNow = false; st.attrs = []; st.sort = 'newest'; st.term = '';
+      st.openNow = false; st.attrs = []; st.sort = 'newest'; st.term = ''; st.area = 'all';
+      S.setArea('all');
       $('#dirSearch').value = '';
       writeUrl(); paintChips(); paint();
     });
@@ -219,7 +223,7 @@ export function DirectoryScreen(root) {
     const now = new Date();
     return S.allBusinesses()
       .filter(b => st.cat === 'all' || b.cat === st.cat)
-      .filter(b => !b.dist || b.dist <= S.state.radius)
+      .filter(b => S.inArea(b, st.area))
       .filter(b => !st.openNow || S.isOpenNow(b, now))
       .filter(b => S.matchesAttrs(b, st.attrs));
   };
@@ -229,10 +233,35 @@ export function DirectoryScreen(root) {
     const found = S.searchBusinesses(baseList(), st.term);
     let list = found.list.slice();
 
+    /* Ordering, and what it falls back to. Nothing sorts on the old `dist`
+       field any more: it was 0 on all 486 imported rows, so "nearest" put
+       them in file order and called it distance. With a real point the list
+       is genuinely nearest-first, with everything ungeocoded after it;
+       without one the fallback is the rating, which is at least true. */
+    const canRank = !!S.state.geo && S.anyGeocoded();
     if (st.sort === 'rated') list.sort((a, b) => S.ratingFor(b).avg - S.ratingFor(a).avg);
-    else if (st.sort === 'nearest') list.sort((a, b) => a.dist - b.dist);
-    else if (st.sort === 'open') list.sort((a, b) => (S.isOpenNow(b, now) - S.isOpenNow(a, now)) || a.dist - b.dist);
-    else if (found.mode !== 'loose') list.sort((a, b) => (S.businessPlan(b) === 'paid') - (S.businessPlan(a) === 'paid') || a.dist - b.dist);
+    else if (st.sort === 'nearest') list = S.byNearest(list);
+    else if (st.sort === 'open') list = S.byNearest(list).sort((a, b) => S.isOpenNow(b, now) - S.isOpenNow(a, now));
+    else if (found.mode !== 'loose') {
+      /* Three fallbacks, in the order of how much they actually know:
+         real miles when there is a point; otherwise the reader's own city
+         first, because a city they chose is still true; then the rating,
+         and a subscriber ahead of a free listing at the same rating —
+         that is the ranking the $29 pays for, and it survives here
+         without letting a paid shop in another city lead the screen. */
+      list = canRank ? S.byNearest(list)
+        : list.sort((a, b) => (S.sameCity(b) - S.sameCity(a))
+                           || (S.ratingFor(b).avg - S.ratingFor(a).avg)
+                           || (S.isPaid(b) - S.isPaid(a)));
+    }
+
+    /* A subscriber leads — inside the reader's own city once we know which
+       one that is, and everywhere only while we do not. Whatever is pinned
+       is labelled and keeps its distance line: the money buys the position,
+       not the right to hide how far away the shop is. */
+    const pin = found.mode === 'loose' ? { list, ids: [] } : S.pinSponsored(list);
+    list = pin.list;
+    const sponsored = new Set(pin.ids);
 
     const sec = CATEGORIES.find(c => c.id === st.cat);
     $('#dirNote').innerHTML = sectionNote(sec ? t(sec.key) : '', list.length)
@@ -242,7 +271,7 @@ export function DirectoryScreen(root) {
     paintCatSlider();
 
     const el = $('#dirList');
-    const filtered = st.openNow || st.attrs.length || st.term;
+    const filtered = st.openNow || st.attrs.length || st.term || (st.area && st.area !== 'all');
     if (!list.length && filtered) {
       // a dead end offers something to press, not just an apology
       el.innerHTML = emptyState('filter', t('noFilterResults'), t('noFilterResultsSub'));
@@ -258,7 +287,7 @@ export function DirectoryScreen(root) {
         else { st.term = b.dataset.sv; $('#dirSearch').value = st.term; writeUrl(); paint(); }
       }));
       el.querySelector('#clrF').addEventListener('click', () => {
-        st.openNow = false; st.attrs = []; st.term = '';
+        st.openNow = false; st.attrs = []; st.term = ''; st.area = 'all'; S.setArea('all');
         $('#dirSearch').value = '';
         writeUrl(); paintChips(); paint();
       });
@@ -266,10 +295,10 @@ export function DirectoryScreen(root) {
       return;
     }
     if (!list.length) {
-      el.innerHTML = emptyState('search', t('emptyDirTitle'), t('emptyDirSub'), t('radius'), '#/directory');
+      el.innerHTML = emptyState('search', t('emptyDirTitle'), t('emptyDirSub'), t('setLocation'), '#/directory');
     } else {
       // the subscription upsell sits after the first five results, not above them
-      const rows = list.map(rowHtml);
+      const rows = list.map(b => rowHtml(b, sponsored.has(b.id)));
       if (rows.length > 5) rows.splice(5, 0, upsellHtml());
       else rows.push(upsellHtml());
       el.innerHTML = rows.join('');
@@ -278,7 +307,7 @@ export function DirectoryScreen(root) {
     $$('#dirList [data-call]').forEach(b => b.addEventListener('click', e => { e.stopPropagation(); location.href = 'tel:' + b.dataset.call; }));
     $$('#dirList .list-row[data-route^="#/directory/"]').forEach(r =>
       r.addEventListener('click', () => { lastOpened = r.dataset.route.split('/').pop(); }));
-    if (!list.length) $$('#dirList .empty .btn').forEach(b => b.addEventListener('click', () => import('./home.js').then(m => m.openRadiusSheet())));
+    if (!list.length) $$('#dirList .empty .btn').forEach(b => b.addEventListener('click', () => import('./home.js').then(m => m.openLocationSheet())));
 
     paintFilterCount();
     flashReturn();
@@ -286,7 +315,7 @@ export function DirectoryScreen(root) {
 
   const paintFilterCount = () => {
     const fc = $('#fCount');
-    const n = activeFilterCount({ cat: st.cat, openNow: st.openNow, attrs: st.attrs, sort: st.sort });
+    const n = activeFilterCount({ cat: st.cat, openNow: st.openNow, attrs: st.attrs, sort: st.sort, area: st.area });
     fc.className = n ? 'f-count' : '';
     fc.textContent = n || '';
     $('#dirFilter').classList.toggle('on', n > 0);
@@ -311,6 +340,11 @@ export function DirectoryScreen(root) {
   paintChips();
   paint();
 
+  /* The badges rewrite themselves every minute wherever they are; only the
+     list has to be rebuilt, and only when "open now" is actually filtering
+     it — otherwise the reader's place in a 139-row list would jump. */
+  onMinute(root, () => { if (st.openNow) paint(); });
+
   const search = $('#dirSearch');
   const clear = $('#dirClear');
   const syncClear = () => { clear.hidden = !search.value; };
@@ -328,22 +362,30 @@ export function DirectoryScreen(root) {
   $('[data-loc]').addEventListener('click', () => import('./home.js').then(m => m.openLocationSheet()));
   $('#dirFilter').addEventListener('click', () => openFilterSheet({
     cat: st.cat,
-    value: { cat: st.cat, radius: S.state.radius, sort: st.sort, openNow: st.openNow, attrs: st.attrs.slice() },
+    value: { cat: st.cat, area: st.area, sort: st.sort, openNow: st.openNow, attrs: st.attrs.slice() },
     withPrice: false,
     withAttrs: true,
+    withArea: true,
     countFor: (v) => S.searchBusinesses(S.allBusinesses()
       .filter(b => v.cat === 'all' || b.cat === v.cat)
-      .filter(b => !b.dist || b.dist <= v.radius)
+      .filter(b => S.inArea(b, v.area))
       .filter(b => !v.openNow || S.isOpenNow(b, new Date()))
       .filter(b => S.matchesAttrs(b, v.attrs)), st.term).list.length,
     onApply: (v) => {
       st.openNow = v.openNow; st.sort = v.sort; st.attrs = v.attrs.slice();
-      S.setRadius(v.radius);
+      st.area = v.area || 'all';
+      S.setArea(st.area);
       writeUrl();
       paintChips(); paint();
     },
   }));
   wireRoutes(root);
+}
+
+/** what an area choice is called on its pill: a city, a radius, or nothing */
+function areaLabel(area) {
+  if (area === 'city') return S.userCity() || t('areaCity');
+  return `${area} ${t('miles')}`;
 }
 
 /** the i18n key for a sort id, for the pill that shows it */
@@ -354,7 +396,7 @@ function sortKey(id) {
 /* Slim card: icon · name + verified · rating/reviews/distance on one line ·
    call. The written phone duplicated the call button and "directions" now
    lives on the detail page, where the address is anyway. */
-function rowHtml(b) {
+function rowHtml(b, sponsored) {
   // the tint marks a subscriber's row; "free" is never written on anyone.
   // A shop owner reading "free" on their own page hears "this one didn't pay",
   // and in the marketplace the same word means "costs nothing" — twice wrong.
@@ -363,10 +405,10 @@ function rowHtml(b) {
   return `<div class="list-row ${paid ? 'premium' : ''}" data-route="#/directory/${b.id}">
     <span class="row-ico">${icon(catIcon(b.cat), 22)}</span>
     <div class="row-main">
-      <div class="row-title">${L(b.name)}${bizBadge(b)}</div>
+      <div class="row-title">${L(b.name)}${bizBadge(b)}${sponsored ? `<span class="badge badge-sponsored">${t('sponsored')}</span>` : ''}</div>
       <div class="row-sub">${r.count ? stars(r.avg) + `<span>· ${r.count} ${t('reviews')}</span> · ` : ''}
         ${distLabel(b)}
-        ${openBadge(b)}
+        ${openBadgeSlot(b)}
       </div>
       ${b.phone ? `<div class="row-actions">
         <button class="mini-btn gold" data-call="${b.phone}">${icon('phone', 15)} ${t('call')}</button>
@@ -390,7 +432,7 @@ function hoursBlock(b) {
     <div class="hours-head">
       <span class="i-ico">${icon('clock', 21)}</span>
       <b>${t('hoursTitle')}</b>
-      ${openBadge(b)}
+      ${openBadgeSlot(b)}
     </div>
     <div class="hours-week">
       ${b.hours.map((spans, i) => `
@@ -480,7 +522,7 @@ function halalNearbyBlock(b) {
         <span class="row-ico">${icon(catIcon(x.cat), 20)}</span>
         <div class="row-main">
           <div class="row-title">${L(x.name)}${bizBadge(x)}</div>
-          <div class="row-sub">${distLabel(x)}${openBadge(x)}</div>
+          <div class="row-sub">${distLabel(x)}${openBadgeSlot(x)}</div>
         </div>
       </div>`).join('')}
     </div>
@@ -553,7 +595,7 @@ export function ListingScreen(root, params) {
           ? `<div class="info-row"><span class="i-ico">${icon('phone', 21)}</span><div class="i-txt"><b class="muted">${t('noPhoneUseMap')}</b><span>${t('phoneLabel')}</span></div></div>`
           : ''}
       ${b.address
-        ? `<div class="info-row"><span class="i-ico">${icon('mapPin', 21)}</span><div class="i-txt"><b class="ltr">${b.address}</b><span>${t('address')}${b.dist ? ` · ${b.dist} ${t('miles')} ${t('distanceAway')}` : ''}</span></div></div>`
+        ? `<div class="info-row"><span class="i-ico">${icon('mapPin', 21)}</span><div class="i-txt"><b class="ltr">${b.address}</b><span>${t('address')}${S.distanceTo(b) != null ? ` · ${fmtMiles(S.distanceTo(b))} ${t('miles')} ${t('distanceAway')}` : (S.cityOf(b) ? ` · ${S.cityOf(b)}` : '')}</span></div></div>`
         : ''}
       ${hoursBlock(b)}
       ${worshipBlock(b)}
@@ -724,7 +766,7 @@ function similarBlock(b, paid) {
         <span class="row-ico">${icon(catIcon(x.cat), 20)}</span>
         <div class="row-main">
           <div class="row-title">${L(x.name)}${bizBadge(x)}</div>
-          <div class="row-sub">${distLabel(x)}${openBadge(x)}</div>
+          <div class="row-sub">${distLabel(x)}${openBadgeSlot(x)}</div>
         </div>
       </div>`).join('')}
     </div>

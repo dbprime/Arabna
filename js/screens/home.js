@@ -1,6 +1,6 @@
 /* ============================ HOME ============================ */
 import { t, L, icon, $, $$, go, renderHeader, openSheet, closeSheet, toast, stars, wireRoutes,
-         distLabel, mountAdRotator } from '../ui.js';
+         distLabel, cityChipLabel, mountAdRotator } from '../ui.js';
 import { CATEGORIES, HOME_CATS, MINI_ADS, ARTICLES, ZIPS, CITY_SUGGESTIONS } from '../data.js';
 import * as S from '../store.js';
 
@@ -26,7 +26,7 @@ export function HomeScreen(root) {
       </div>
     </div>
     <div class="search-row sub">
-      <button class="loc-chip" id="locBtn">${icon('mapPin', 17)}<span>${loc.city}</span></button>
+      <button class="loc-chip ${loc.city ? '' : 'unset'}" id="locBtn">${icon('mapPin', 17)}<span>${cityChipLabel()}</span></button>
     </div>
 
     <!-- categories — home is a summary: 5 max, the rest live on #/categories -->
@@ -336,30 +336,145 @@ export async function reverseGeocode(lat, lng) {
   return { zip, city, state, lat, lng };
 }
 
-/* ---------------- location sheet (ZIP + city autocomplete) ---------------- */
+/* ---------------- location ----------------
+   Three ways in, one sheet: the device, the list of cities the directory
+   actually covers, and any U.S. ZIP. The device is the only one of the
+   three that yields a point, so it is the only one that ever produces a
+   figure in miles — a city picked by hand tells us the area and nothing
+   more, and the app says the area.
+   ------------------------------------------------------------------- */
+
+/**
+ * The line that stands in front of the system dialog.
+ *
+ * iOS asks once. A reader who taps "don't allow" on a prompt that arrived
+ * with no explanation has denied it permanently, and no later screen can
+ * ask again — so nothing in this app calls the browser at launch, and
+ * nothing calls it before this sheet has been answered.
+ */
+export function openGeoPrompt(onAllow) {
+  openSheet(`
+    <div class="sheet-title">${t('geoAskTitle')}</div>
+    <div class="sheet-sub">${t('geoAskBody')}</div>
+    <button class="btn btn-gold btn-block" id="geoYes">${icon('navigation', 19)} ${t('geoAllow')}</button>
+    <button class="btn btn-ghost btn-block mt-8" id="geoNo">${t('geoNotNow')}</button>
+    <div class="hint mt-12">${icon('info', 15)} ${t('locPrivacyLine')}</div>
+  `, (panel) => {
+    panel.querySelector('#geoYes').addEventListener('click', () => {
+      S.markGeoAsked();
+      closeSheet();
+      onAllow();
+    });
+    panel.querySelector('#geoNo').addEventListener('click', () => closeSheet());
+  });
+}
+
+/**
+ * The device's position, turned into a city. Every ending is handled and
+ * every one of them ends somewhere usable: on a refusal, a timeout, a
+ * desktop with no GPS or a point outside the region, the reader still has
+ * the city list and the ZIP box behind this.
+ */
+export function requestGeo({ onStep, onOk, onFail }) {
+  const step = onStep || (() => {});
+  const fail = onFail || (() => {});
+  if (!navigator.geolocation) { fail('geoUnsupported'); return; }
+  step('locating');
+  navigator.geolocation.getCurrentPosition(
+    async (pos) => {
+      const { latitude, longitude } = pos.coords;
+      step('resolvingLocation');
+      const r = await reverseGeocode(latitude, longitude);
+      if (r.error === 'outside') { fail('geoOutsideUs'); return; }
+      if (r.error) { fail('geoLookupFailed'); return; }
+      /* The reverse lookup names the town it thinks the point is in, which
+         may be a place the directory has never heard of. Snapping to the
+         nearest city we actually cover keeps "my city" meaning something,
+         and outside the region we keep the point (the miles are still
+         real) but leave the city as the area. */
+      const near = S.nearestCity({ lat: latitude, lng: longitude });
+      onOk({ zip: r.zip || '', city: (near && near.city) || r.city, state: r.state,
+             lat: latitude, lng: longitude, inRegion: !!near });
+    },
+    (err) => {
+      if (err && err.code === 1) { S.markGeoDenied(); fail('geoDenied'); }
+      else if (err && err.code === 3) fail('geoTimeout');
+      else fail('geoUnavailable');
+    },
+    { enableHighAccuracy: true, timeout: 15000, maximumAge: 60000 }
+  );
+}
+
+/** ask for the position wherever a distance is needed, then repaint */
+export function askForLocation(after) {
+  openGeoPrompt(() => {
+    toast(t('locating'));
+    requestGeo({
+      onOk: (r) => {
+        S.setUserLocation({ zip: r.zip, city: r.city, state: r.state }, { lat: r.lat, lng: r.lng });
+        toast(`${t('locSetTo')}: ${r.city || t('regionName')}`, 'ok');
+        if (after) after(); else window.dispatchEvent(new HashChangeEvent('hashchange'));
+      },
+      onFail: (key) => {
+        // a refusal is not a dead end: the city list is one tap behind it
+        toast(t(key), 'err');
+        openLocationSheet();
+      },
+    });
+  });
+}
+
 export function openLocationSheet() {
+  const cities = S.directoryCities();
+  const cur = S.userCity();
   openSheet(`
     <div class="sheet-title">${t('locationTitle')}</div>
-    <div class="sheet-sub">${t('locationSub')}</div>
+    <div class="sheet-sub">${t('geoAskBody')}</div>
+
+    <button class="btn btn-gold btn-block" id="geoBtn">${icon('navigation', 19)} ${t('useMyLocation')}</button>
+    <div id="zipMsg" class="mt-8"></div>
+
+    <div class="label mt-16">${t('pickCity')}</div>
+    <div class="attr-pick" id="cityPick">
+      <button class="chip ${!cur ? 'active' : ''}" data-city="">${t('areaAll')}
+        <span class="chip-n">${S.allBusinesses().length}</span></button>
+      ${cities.map(c => `<button class="chip ${cur === c.city ? 'active' : ''}" data-city="${c.city}">
+        ${c.city} <span class="chip-n">${c.n}</span></button>`).join('')}
+    </div>
+
+    <div class="label mt-16">${t('zipOrCity')}</div>
     <div class="field">
       <input class="input" id="zipIn" inputmode="text" placeholder="${t('zipOrCity')}" value="${S.state.location.zip || ''}" />
-      <div id="zipMsg"></div>
       <div id="sugg" style="margin-top:8px"></div>
     </div>
-    <button class="btn btn-ghost btn-block" id="geoBtn">${icon('navigation', 19)} ${t('useMyLocation')}</button>
-    <div class="label mt-16">${t('radius')}</div>
-    <div class="hscroll" style="padding:0" id="radRow">
-      ${[5, 10, 25, 50, 100].map(r => `<button class="chip ${S.state.radius === r ? 'active' : ''}" data-r="${r}">${r} ${t('miles')}</button>`).join('')}
+
+    <div class="hint mt-12">${icon('info', 15)} ${t('locPrivacyLine')}</div>
+    ${cur ? `<button class="btn btn-ghost btn-block mt-12" id="clrLoc">${t('clearLocation')}</button>` : ''}
+    <div class="sheet-foot">
+      <button class="btn btn-gold btn-block" id="applyLoc">${t('apply')}</button>
     </div>
-    <button class="btn btn-gold btn-block mt-16" id="applyLoc">${t('apply')}</button>
   `, (panel) => {
-    let picked = Object.assign({}, S.state.location);
-    let radius = S.state.radius;
+    /* Nothing chosen inside this sheet carries a point: a city or a ZIP
+       names an area, and only the device knows where the reader is. That
+       is why the sheet never produces a distance and the button above it
+       does. */
+    let picked = { zip: S.state.location.zip || '', city: cur, state: S.state.location.state || 'TX' };
 
     const input = panel.querySelector('#zipIn');
     const msg = panel.querySelector('#zipMsg');
     const sugg = panel.querySelector('#sugg');
     let debounce = null;
+
+    const markCity = (city) => {
+      panel.querySelectorAll('#cityPick .chip')
+        .forEach(x => x.classList.toggle('active', (x.dataset.city || '') === (city || '')));
+    };
+
+    panel.querySelectorAll('#cityPick .chip').forEach(b => b.addEventListener('click', () => {
+      picked = { zip: '', city: b.dataset.city, state: 'TX' };
+      input.value = ''; sugg.innerHTML = ''; msg.innerHTML = '';
+      markCity(b.dataset.city);
+    }));
 
     input.addEventListener('input', () => {
       clearTimeout(debounce);
@@ -377,6 +492,7 @@ export function openLocationSheet() {
           if (z === undefined) { msg.innerHTML = `<div class="err-msg">${icon('alert', 15)} ${t('zipOffline')}</div>`; return; }
           if (!z) { input.classList.add('input-err'); msg.innerHTML = `<div class="err-msg">${icon('alert', 15)} ${t('invalidZip')}</div>`; return; }
           picked = { zip: v, city: z.city, state: z.state };
+          markCity(z.city);
           msg.innerHTML = `<div class="ok-msg">${t('zipResolved')}: <b>${z.city}, ${z.state}</b></div>`;
         } else if (v.length >= 2) {
           const hits = CITY_SUGGESTIONS.filter(c => c.toLowerCase().includes(v.toLowerCase())).slice(0, 6);
@@ -386,92 +502,36 @@ export function openLocationSheet() {
             const [city, st] = b.dataset.city.split(', ');
             picked = { zip: '', city, state: st };
             input.value = b.dataset.city; sugg.innerHTML = '';
+            markCity(city);
             msg.innerHTML = `<div class="ok-msg">${t('zipResolved')}: <b>${b.dataset.city}</b></div>`;
           }));
         }
       }, 250);
     });
 
-    /* --- use my current location: real device coordinates, no default city --- */
-    const geoBtn = panel.querySelector('#geoBtn');
-    let geoBusy = false;
-
-    const geoFail = (key) => {
-      geoBusy = false;
-      input.classList.remove('input-err');
-      sugg.innerHTML = '';
-      msg.innerHTML = `<div class="err-msg">${icon('alert', 15)} ${t(key)}</div>`;
-      geoBtn.disabled = false;
-      geoBtn.innerHTML = `${icon('navigation', 19)} ${t('retryLocation')}`;
-    };
-
-    geoBtn.addEventListener('click', () => {
-      if (geoBusy) return;
-      if (!navigator.geolocation) { geoFail('geoUnsupported'); return; }
-
-      geoBusy = true;
-      geoBtn.disabled = true;
-      geoBtn.innerHTML = `<span class="spinner"></span> ${t('locating')}`;
-      sugg.innerHTML = '';
-      input.classList.remove('input-err');
-      msg.innerHTML = '';
-
-      navigator.geolocation.getCurrentPosition(
-        async (pos) => {
-          const { latitude, longitude } = pos.coords;
-          geoBtn.innerHTML = `<span class="spinner"></span> ${t('resolvingLocation')}`;
-          msg.innerHTML = `<div class="hint"><span class="spinner" style="display:inline-block;vertical-align:-3px"></span> ${t('resolvingLocation')}</div>`;
-
-          const r = await reverseGeocode(latitude, longitude);
-          if (!panel.isConnected) return;               // sheet closed meanwhile
-          if (r.error === 'outside') { geoFail('geoOutsideUs'); return; }
-          if (r.error) { geoFail('geoLookupFailed'); return; }
-
-          picked = { zip: r.zip || '', city: r.city, state: r.state, lat: r.lat, lng: r.lng };
-          const label = `${r.city}, ${r.state}`;
-          input.value = r.zip || label;
-          msg.innerHTML = `<div class="ok-msg">${t('zipResolved')}: <b>${label}${r.zip ? ` ${r.zip}` : ''}</b></div>`;
-          geoBusy = false;
-          geoBtn.disabled = false;
-          geoBtn.innerHTML = `${icon('check', 19)} ${t('done')}`;
-        },
-        (err) => {
-          if (err && err.code === 1) geoFail('geoDenied');
-          else if (err && err.code === 3) geoFail('geoTimeout');
-          else geoFail('geoUnavailable');
-        },
-        { enableHighAccuracy: true, timeout: 15000, maximumAge: 60000 }
-      );
+    /* --- the device: the only source that yields a point, and so the only
+           one that will ever produce a distance in miles. The sheet steps
+           out of the way and hands over to the same flow the "nearest"
+           sort uses; one sheet can only replace another, so asking from
+           inside this one would have left nothing behind it. --- */
+    panel.querySelector('#geoBtn').addEventListener('click', () => {
+      closeSheet();
+      askForLocation();
     });
 
-    panel.querySelectorAll('#radRow .chip').forEach(c => c.addEventListener('click', () => {
-      radius = +c.dataset.r;
-      panel.querySelectorAll('#radRow .chip').forEach(x => x.classList.toggle('active', x === c));
-    }));
+    const clr = panel.querySelector('#clrLoc');
+    if (clr) clr.addEventListener('click', () => {
+      S.clearUserLocation();
+      closeSheet(); toast(t('locCleared'), 'ok');
+      window.dispatchEvent(new HashChangeEvent('hashchange'));
+    });
 
     panel.querySelector('#applyLoc').addEventListener('click', () => {
-      S.state.location = picked; S.state.radius = radius; S.save();
-      closeSheet(); toast(`${picked.city}, ${picked.state} · ${radius} ${t('miles')}`, 'ok');
+      S.setUserLocation(picked);
+      closeSheet();
+      toast(`${t('locSetTo')}: ${picked.city || t('regionName')}`, 'ok');
       window.dispatchEvent(new HashChangeEvent('hashchange'));
     });
-  });
-}
-
-export function openRadiusSheet() {
-  openSheet(`
-    <div class="sheet-title">${t('radius')}</div>
-    <div class="sheet-sub">${t('locationSub')}</div>
-    ${[5, 10, 25, 50, 100].map(r => `
-      <button class="price-card ${S.state.radius === r ? 'selected' : ''}" data-r="${r}">
-        <span class="price-radio"></span>
-        <span><span class="price-name">${r} ${t('miles')}</span></span>
-      </button>`).join('')}
-  `, (panel) => {
-    panel.querySelectorAll('[data-r]').forEach(b => b.addEventListener('click', () => {
-      S.state.radius = +b.dataset.r; S.save(); closeSheet();
-      toast(`${t('radius')}: ${b.dataset.r} ${t('miles')}`, 'ok');
-      window.dispatchEvent(new HashChangeEvent('hashchange'));
-    }));
   });
 }
 

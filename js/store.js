@@ -8,10 +8,11 @@ import { CLASSIFIEDS, BUSINESSES, NOTIFICATIONS, SLIDER_ADS, MINI_ADS, ARTICLES,
          MARKET_CATS, FREE_PRICE, EVENTS, VERIFY_BADGE_PRICE, blankEvent,
          ATTRIBUTES, ATTR_GROUPS, CATEGORIES, DAY_KEYS, CHIP_MIN, CHIP_MAX_SHARE, EVENT_TYPES,
          GENERIC_WORDS, NAME_SIM_MIN, STREET_WORDS, SUBSCRIPTION_PRICE,
+         CITY_POINTS, REGION_RADIUS_MI,
          AD_PRODUCTS, AD_SLOTS,
          attrById, attrInCat, isAllDay, week, nextOccurrence } from './data.js';
 
-export { ATTRIBUTES, ATTR_GROUPS, DAY_KEYS, CHIP_MIN, EVENT_TYPES,
+export { ATTRIBUTES, ATTR_GROUPS, DAY_KEYS, CHIP_MIN, CHIP_MAX_SHARE, EVENT_TYPES,
          attrById, attrInCat, isAllDay, week, nextOccurrence };
 
 export { blankEvent };
@@ -28,8 +29,14 @@ function load() {
 
 const DEFAULTS = {
   lang: 'ar',
-  location: { zip: '77036', city: 'Houston', state: 'TX' },
-  radius: 5,
+  /* No city until the person tells us or the device does. A city written
+     in advance lies to everyone who is not in it — and 138 of the 515
+     listings are not in Houston. */
+  location: { zip: '', city: '', state: 'TX' },
+  geo: null,                 // { lat, lng, at } — the user's own point, never sent anywhere
+  geoAsked: false,           // the pre-prompt has been shown once
+  geoDenied: false,          // …and refused: iOS will not ask again, so neither do we
+  area: 'all',          // 'all' · 'city' · a number of miles
   user: null,               // { name, email, emailVerified, phone, phoneVerified }
   saved: [],                // ids of saved businesses / classifieds
   myListings: ['c1'],       // classifieds owned by the current user
@@ -472,6 +479,196 @@ export function quickAttrsForCat(cat, limit = 0) {
   return limit ? out.slice(0, limit) : out;
 }
 
+/* ============================================================
+   Where things are
+   ------------------------------------------------------------
+   A distance needs two points. The device can give us the user's;
+   the listings have none yet — geocoding the 515 addresses is a data
+   job done outside the app. Until a listing has coordinates, the app
+   shows the area it is in and never a number: one invented mile
+   undoes the trust the whole directory runs on.
+   ============================================================ */
+
+/** the city out of "…, Katy, TX 77450" — works on 513 of the 515 */
+const cityCache = new Map();
+export function cityOf(biz) {
+  if (!biz) return '';
+  if (biz.city) return biz.city;
+  const addr = String(biz.address || '');
+  if (cityCache.has(addr)) return cityCache.get(addr);
+  /* "…, Katy, TX 77450" is the normal shape; two rows carry only
+     "Katy, TX 77449 (…)" with no street before it, so the city is also
+     accepted at the very start of the address. */
+  const m = addr.match(/,\s*([^,]+?),\s*[A-Z]{2}\b/) || addr.match(/^\s*([A-Za-z .'-]+?),\s*[A-Z]{2}\b/);
+  const city = m ? m[1].trim() : '';
+  cityCache.set(addr, city);
+  return city;
+}
+
+/** every city the directory actually covers, with how many listings each holds */
+export function directoryCities() {
+  const counts = new Map();
+  allBusinesses().forEach(b => {
+    const c = cityOf(b);
+    if (!c) return;
+    counts.set(c, (counts.get(c) || 0) + 1);
+  });
+  return Array.from(counts.entries())
+    .map(([city, n]) => ({ city, n }))
+    .sort((a, b) => b.n - a.n || a.city.localeCompare(b.city));
+}
+
+/** the user's chosen or detected city, '' when we do not know yet */
+export function userCity() { return (state.location && state.location.city) || ''; }
+export function hasLocation() { return !!userCity(); }
+
+export function setUserLocation(loc, geo) {
+  state.location = Object.assign({ zip: '', city: '', state: 'TX' }, loc);
+  /* A hand-picked city carries no point of its own, and the point we had
+     belonged to wherever the reader was before. Keeping it would compute
+     miles from a place they have left, which is worse than no miles. */
+  state.geo = (geo && isFinite(geo.lat) && isFinite(geo.lng))
+    ? { lat: geo.lat, lng: geo.lng, at: now() }
+    : null;
+  save();
+}
+export function clearUserLocation() {
+  state.location = { zip: '', city: '', state: 'TX' };
+  state.geo = null;
+  save();
+}
+export function markGeoAsked() { state.geoAsked = true; save(); }
+export function markGeoDenied() { state.geoDenied = true; save(); }
+
+/** miles between two points */
+export function haversine(a, b) {
+  const R = 3958.8;                       // earth radius in miles
+  const toRad = (d) => d * Math.PI / 180;
+  const dLat = toRad(b.lat - a.lat);
+  const dLng = toRad(b.lng - a.lng);
+  const s1 = Math.sin(dLat / 2), s2 = Math.sin(dLng / 2);
+  const h = s1 * s1 + Math.cos(toRad(a.lat)) * Math.cos(toRad(b.lat)) * s2 * s2;
+  return 2 * R * Math.asin(Math.min(1, Math.sqrt(h)));
+}
+
+/** does this listing have a real position of its own? */
+export function hasCoords(biz) {
+  return !!(biz && isFinite(biz.lat) && isFinite(biz.lng) && (biz.lat || biz.lng));
+}
+
+/**
+ * Real miles, or null. Null whenever either point is missing — which is
+ * every listing today, because none of them has been geocoded yet. The
+ * caller shows the area name instead; it never guesses.
+ */
+export function distanceTo(biz) {
+  if (!state.geo || !hasCoords(biz)) return null;
+  return haversine(state.geo, { lat: biz.lat, lng: biz.lng });
+}
+
+/**
+ * Which of the directory's cities a point is in — or the nearest one, if
+ * it is still inside the region we cover. Outside that, nothing: we would
+ * rather say "the whole area" than name a city an hour away.
+ */
+export function nearestCity(point) {
+  if (!point || !isFinite(point.lat) || !isFinite(point.lng)) return null;
+  let best = null;
+  CITY_POINTS.forEach(c => {
+    const d = haversine(point, c);
+    if (!best || d < best.miles) best = { city: c.city, miles: d };
+  });
+  return best && best.miles <= REGION_RADIUS_MI ? best : null;
+}
+
+/** everything the app covers, whichever city the reader is in */
+export function inRegion(point) { return !!nearestCity(point); }
+
+/** is this listing in the city the reader is in? */
+export function sameCity(biz) {
+  const c = userCity();
+  return !!c && cityOf(biz) === c;
+}
+
+/** has anything in the directory been geocoded yet? */
+export function anyGeocoded() { return allBusinesses().some(hasCoords); }
+
+/**
+ * Can a radius filter anything at all? Only when both halves exist: a
+ * point for the reader and at least one listing with coordinates of its
+ * own. Until then the sheet offers "my city / the whole area" instead —
+ * a mile figure nobody can compute is not a filter, it is a dead option.
+ */
+export function radiusUsable() { return !!state.geo && anyGeocoded(); }
+
+/** which listings a chosen area keeps. Unknown positions are never dropped:
+    we do not know they are far, and guessing them away empties the screen. */
+export function inArea(biz, area) {
+  if (!area || area === 'all') return true;
+  if (area === 'city') return sameCity(biz);
+  const d = distanceTo(biz);
+  return d == null ? true : d <= Number(area);
+}
+export function setArea(v) { state.area = v || 'all'; save(); }
+
+/**
+ * Nearest first, with everything whose distance we do not know after it —
+ * never slipped in at a guessed position. Order inside each half is kept.
+ */
+export function byNearest(list) {
+  const known = [], unknown = [];
+  list.forEach(b => {
+    const d = distanceTo(b);
+    if (d == null) unknown.push(b); else known.push({ b, d });
+  });
+  known.sort((x, y) => x.d - y.d);
+  return known.map(x => x.b).concat(unknown);
+}
+
+/**
+ * Is the reader inside the area a Houston advertiser is worth paying for?
+ * Greater Houston — the cities the directory covers — and not Texas: an
+ * advertiser in Houston is worth showing to somebody in Katy and worth
+ * nothing to somebody in Dallas. An unknown location rules nothing out.
+ */
+export function inCoverage() {
+  if (state.geo) return !!nearestCity(state.geo);
+  const c = userCity();
+  if (!c) return true;
+  return CITY_POINTS.some(p => p.city === c) || directoryCities().some(x => x.city === c);
+}
+
+/**
+ * A paid listing leads the results, for every reader inside the region and
+ * for nobody outside it. The subscription buys the place, not the right to
+ * hide how far away the shop is: what is pinned here is labelled «إعلان
+ * مموّل» and carries exactly the same distance line as every other row —
+ * real miles where both points exist, the area name where they do not.
+ */
+export function pinSponsored(list, n = 1) {
+  if (!inCoverage()) return { list, ids: [] };
+  const paid = list.filter(isPaid).slice(0, n);
+  if (!paid.length) return { list, ids: [] };
+  const ids = paid.map(b => b.id);
+  const seen = new Set(ids);
+  return { list: paid.concat(list.filter(b => !seen.has(b.id))), ids };
+}
+
+/** listings still waiting for coordinates — the admin queue and its export */
+export function needsGeoList() {
+  return everyBusiness().filter(b => !hasCoords(b));
+}
+export function geoQueueCsv() {
+  const rows = needsGeoList().map(b => [b.id, (b.name && (b.name.en || b.name.ar)) || '', b.address || '']);
+  const cell = (v) => /[",\n]/.test(String(v)) ? '"' + String(v).replace(/"/g, '""') + '"' : String(v);
+  return 'id,name,address\n' + rows.map(r => r.map(cell).join(',')).join('\n') + '\n';
+}
+
+/** how many listings a category holds — the denominator for CHIP_MAX_SHARE */
+export function categorySize(cat) {
+  return allBusinesses().filter(b => cat === 'all' || cat === '*' || b.cat === cat).length;
+}
+
 /** how many businesses in this category carry each attribute — for the sheet */
 export function attrCountsFor(cat) { return attrCounts(cat); }
 export function hasAttr(biz, id) {
@@ -843,7 +1040,6 @@ export function mergeBusinesses(keepId, dropId) {
    ============================================================ */
 
 /** is the prototype data currently part of the app? */
-export function setRadius(miles) { state.radius = miles; save(); }
 
 export function showDemo() { return !state.demoPurged && state.showDemo !== false; }
 export function setShowDemo(on) { state.showDemo = !!on; save(); }
@@ -1206,6 +1402,14 @@ export function pendingClaims() { return (state.claims || []).filter(c => c.stat
 
 /** layer an edit on top of a record, seed or user-created alike */
 export function applyBusinessEdit(bizId, patch) {
+  /* A shop that moved and kept the coordinates of where it used to be is
+     worse than one with none: it looks right and is wrong. */
+  if (patch && Object.prototype.hasOwnProperty.call(patch, 'address')) {
+    const before = businessById(bizId);
+    if (before && String(before.address || '') !== String(patch.address || '')) {
+      patch = Object.assign({}, patch, { lat: null, lng: null, needsGeo: true });
+    }
+  }
   const own = state.extraBusinesses.find(b => b.id === bizId);
   if (own) Object.assign(own, patch);
   else state.businessEdits = Object.assign({}, state.businessEdits, {
@@ -1256,15 +1460,26 @@ export function setNonCommercial(bizId, on) { applyBusinessEdit(bizId, { nonComm
 export function nearbyHalal(b, n = 3) {
   const pool = allBusinesses().filter(x => x.cat === 'restaurants' && x.id !== b.id);
   const halal = pool.filter(x => hasAttr(x, 'halalMeat'));
-  return (halal.length ? halal : pool)
-    .sort((x, y) => Math.abs(x.dist - b.dist) - Math.abs(y.dist - b.dist))
-    .slice(0, n);
+  return nearAnchor(halal.length ? halal : pool, b, n);
 }
 
 export function similarTo(b, n = 4) {
-  return allBusinesses()
-    .filter(x => x.id !== b.id && x.cat === b.cat)
-    .sort((x, y) => Math.abs(x.dist - b.dist) - Math.abs(y.dist - b.dist))
+  return nearAnchor(allBusinesses().filter(x => x.id !== b.id && x.cat === b.cat), b, n);
+}
+
+/**
+ * The n places closest to a given listing. Real miles when both ends carry
+ * coordinates; otherwise the ones in the same city come first. It never
+ * subtracts one `dist` from another — that field was the same invented
+ * number on every imported row, so the order it produced meant nothing.
+ */
+function nearAnchor(list, anchor, n) {
+  const miles = (x) => (hasCoords(x) && hasCoords(anchor))
+    ? haversine({ lat: x.lat, lng: x.lng }, { lat: anchor.lat, lng: anchor.lng })
+    : null;
+  const tier = (x) => miles(x) != null ? 0 : (cityOf(x) && cityOf(x) === cityOf(anchor) ? 1 : 2);
+  return list.slice()
+    .sort((x, y) => (tier(x) - tier(y)) || ((miles(x) || 0) - (miles(y) || 0)))
     .slice(0, n);
 }
 
@@ -1771,7 +1986,7 @@ export function addBusiness(biz, { pendingReview = false } = {}) {
   // a counter as well as the clock: two records added inside the same
   // millisecond must not share an id
   const id = 'ub' + Date.now() + '-' + (++bizSeq);
-  const rec = Object.assign({ id, plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0.5, claimed: true, photos: 0, videos: 0 }, biz);
+  const rec = Object.assign({ id, plan: 'free', verified: false, rating: 0, reviewCount: 0, needsGeo: true, claimed: true, photos: 0, videos: 0 }, biz);
   if (pendingReview) {
     // added over a certain duplicate match: the person said it is a
     // different shop, and an admin decides who is right. It shows on
@@ -2604,7 +2819,7 @@ export function toDataFile(list, startIndex = 1) {
     hours: ${hoursLine(b.hours)},
     tags: [${(b.tags || []).map(q).join(', ')}],
     attributes: [${(b.attributes || []).map(q).join(', ')}],
-    plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,${b.nonCommercial ? '\n    nonCommercial: true,' : ''}${b.entryPrice ? '\n    entryPrice: ' + q(b.entryPrice) + ',' : ''}
+    plan: 'free', verified: false, rating: 0, reviewCount: 0, needsGeo: true, claimed: false,${b.nonCommercial ? '\n    nonCommercial: true,' : ''}${b.entryPrice ? '\n    entryPrice: ' + q(b.entryPrice) + ',' : ''}
     desc: { ar: ${q(b.desc.ar)}, en: ${q(b.desc.en)} },
     photos: 0, videos: 0,
   },`).join('\n');
