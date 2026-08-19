@@ -361,9 +361,28 @@ export function resolvedTheme() {
  * iPhone keeps a black status bar over an ivory app — the same fault we
  * fixed for the installed header, in a different place.
  */
+/**
+ * The silver family in the lockup is a dark-background mark: 72% of its
+ * pixels measured under 2:1 against the ivory bar. Transparency solved the
+ * white box behind it, not the contrast — those are two different problems.
+ * So the light theme gets its own copy with the silver re-inked to the
+ * logo's own navy and the gold untouched (12.73 against 1.58).
+ * Never `filter: invert` — that turns the gold blue.
+ */
+const LOGO = {
+  stacked: { dark: 'assets/logo.png',    light: 'assets/logo-ink.png'    },
+  wide:    { dark: 'assets/logo-sm.png', light: 'assets/logo-sm-ink.png' },
+};
+export function logoSrc(kind = 'stacked') { return LOGO[kind][resolvedTheme()]; }
+
 export function applyTheme() {
   const theme = resolvedTheme();
   document.documentElement.setAttribute('data-theme', theme);
+  // the mark is a file, not a symbol, so the attribute cannot repaint it.
+  // Every logo on screen carries data-logo and is swapped here, so the flip
+  // is immediate and not one screen late.
+  document.querySelectorAll('img[data-logo]')
+    .forEach(el => el.setAttribute('src', logoSrc(el.dataset.logo)));
   const bar = document.querySelector('meta[name="theme-color"]');
   if (bar) bar.setAttribute('content', BAR_COLOR[theme]);
   const status = document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]');
@@ -466,7 +485,7 @@ export function renderHeader(opts = {}) {
     // optically centred instead of crowded against a stack of icons.
     head.innerHTML = `
       <button class="icon-btn" id="hMenu" aria-label="menu">${icon('menu', 24)}${S.isMember() && S.unreadCount() ? '<span class="dot"></span>' : ''}</button>
-      <img class="h-logo" src="assets/logo-sm.png" alt="ARABNA عربنا" />
+      <img class="h-logo" data-logo="stacked" src="${logoSrc('stacked')}" alt="ARABNA عربنا" />
       <span class="h-spacer" aria-hidden="true"></span>`;
     $('#hMenu').addEventListener('click', openDrawer);
   }
@@ -611,13 +630,13 @@ export function openDrawer() {
   const head = member ? `
       <div class="drawer-head">
         ${themeBtn}
-        <img src="assets/logo-sm.png" alt="ARABNA" />
+        <img data-logo="wide" src="${logoSrc('wide')}" alt="ARABNA" />
         <div style="font-weight:700">${u.name}</div>
         <div class="drawer-user">${u.email} · ${tierLabel}</div>
       </div>` : `
       <div class="drawer-head">
         ${themeBtn}
-        <img src="assets/logo-sm.png" alt="ARABNA" />
+        <img data-logo="wide" src="${logoSrc('wide')}" alt="ARABNA" />
         <div style="font-weight:700">${t('guest')}</div>
       </div>
       <div class="dr-invite">

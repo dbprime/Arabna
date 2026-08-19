@@ -122,7 +122,7 @@ function slideHtml(a, i) {
     return `<div class="slide slide-house ${i === 0 ? 'active' : ''}" data-i="${i}" data-route="#/advertise">
       <div style="color:var(--gold);margin-bottom:6px">${icon('megaphone', 31)}</div>
       <div class="slide-title">${t('adCta')}</div>
-      <div class="slide-sub" style="color:var(--muted)">${t('adCtaSub')}</div>
+      <div class="slide-sub" style="color:var(--text-2)">${t('adCtaSub')}</div>
       <div class="slide-cta cta-center">${icon('plus', 17)} ${t('continueAction')}</div>
     </div>`;
   }

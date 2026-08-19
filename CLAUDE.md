@@ -903,6 +903,57 @@ no re-render.
   eighth row made the drawer scroll (887px against 844) as soon as a group
   was open.
 
+## V.02.5b — three faults the colour batch left behind
+
+### A fixed ground takes fixed ink; a themed ground takes themed ink
+This is the rule, and every surface in the app must have both halves from
+the same family. `.slide` broke it: its background comes from the
+advertiser (`style="background:${a.color}"`, `home.js` and `directory.js`)
+and therefore does **not** follow the theme, but the rule set no `color`,
+so the text inherited `--text` and turned navy on maroon in light —
+**measured 1.04**, the highest-priced placement in the app, unreadable.
+`.slide-badge` and `.slide-cta` were already using `--ad-cta` and survived;
+the title and the description inherited and did not.
+
+- `.slide { color: var(--ad-cta); }` — never inherits again.
+- `.slide-house { color: var(--text); }` — **the exception that proves the
+  rule**: the house "your ad here" slide sits on `--surface-2`/`--bar`,
+  which *is* ours and *does* follow the theme, so its ink must follow too
+  or it inverts in turn.
+- Everything else was checked and was already correct: the mini banner, the
+  story cards, the featured event, the category strip all take both halves
+  from the token layer.
+
+### The header logo is stacked, not horizontal
+A deliberate reversal of the V.02.5 mapping: `lockup-horizontal` in the
+header put «عربنا» and `ARABNA` *beside* the mark instead of under it. The
+header now uses the stacked `assets/logo.png` at the **old numbers — 65px,
+54px installed** — and because the new file's ratio is 1.23 against the old
+1.44 it takes **80px** of width where the old one took 94, so the 92px
+header does not move. `header-h44/56/72/96.png` are crops of the horizontal
+file and stay in `assets/` wired to nothing.
+
+### Transparency is not contrast
+The silver family in the lockup is a dark-background mark: measured over
+every opaque pixel, **72% of it falls under 2:1 against the ivory bar**
+(median 1.58, against 10.2 on navy). Transparency solved the white box
+behind the logo — a different problem entirely.
+
+- `assets/logo-ink.png` and `assets/logo-sm-ink.png` are the same lockups
+  with the silver re-inked to the logo's own navy `#071A3D`, the gold
+  untouched, and the gradient inverted so the mark keeps its depth.
+  **Median 12.94 on the ivory bar, 12.3% under 2:1.**
+- **Never `filter: invert`** — it turns the gold blue.
+- `logoSrc(kind)` in `ui.js` picks the file (`stacked` | `wide`), every
+  `<img>` carries `data-logo`, and **`applyTheme()` rewrites all of them**,
+  so the mark flips with the theme on the spot rather than one screen late.
+- It is wired at **every** logo, not only the header: the drawer head and
+  the sign-up/sign-in screens use the wide one and the About page the
+  stacked one, and all of them sit on ivory in light. The spec called the
+  wide ink file a spare "not to be linked" on the assumption the horizontal
+  lockup had no use left; it still has three, and they dissolved the same
+  way (78% under 2:1 on the light page).
+
 ## Known open items
 - Legal pages are first drafts — a lawyer must review before public launch.
 - Push notifications: triggers are defined in Settings but not wired to a real service.

@@ -263,11 +263,13 @@ ul { margin: 0; padding: 0; list-style: none; }
   inset-inline-start: 50%;
   transform: translateX(-50%);
   inset-block-start: calc(var(--safe-top) + var(--header-h) / 2);
-  /* The lockup is horizontal now — wider and shorter than the stacked one.
-     It takes its natural width at a fixed height: no forced width, no
-     object-fit, nothing to squeeze the wordmark out of proportion. */
-  margin-block-start: -22px;           /* half of the 44px height */
-  height: 44px; width: auto;
+  /* The stacked lockup: the mark on top, ARABNA under it, عربنا under that.
+     The horizontal one was a mistake — the wordmarks belong below the mark,
+     not beside it. Same two numbers the old logo used (65 / 54), no forced
+     width and no object-fit: at 1173×955 it takes 80px of width, narrower
+     than the 94px the old one took, so the 92px header does not move. */
+  margin-block-start: -32px;           /* half of the 65px height */
+  height: 65px; width: auto;
   pointer-events: none;
 }
 /* RTL mirrors translateX, so the centring stays true in both directions */
@@ -279,7 +281,7 @@ ul { margin: 0; padding: 0; list-style: none; }
    92 + 59 = 151px would be far too tall. Browser sizes are unchanged. */
 @media (display-mode: standalone) {
   :root { --header-h: 72px; }
-  .app-header .h-logo { height: 40px; margin-block-start: -20px; }
+  .app-header .h-logo { height: 54px; margin-block-start: -27px; }
 }
 
 
@@ -520,6 +522,11 @@ ul { margin: 0; padding: 0; list-style: none; }
   position: absolute; inset: 0;
   display: flex; flex-direction: column; justify-content: center;
   padding: 16px 18px;
+  /* The advertiser's own colour does not follow the theme, so the text on
+     top of it must not either. Inheriting --text put dark navy on dark
+     maroon in the light theme: measured 1.04, invisible. A fixed ground
+     takes fixed ink. */
+  color: var(--ad-cta);
   border-radius: var(--r-lg);
   border: 1px solid var(--line);
   opacity: 0; transform: scale(0.98);
@@ -553,7 +560,10 @@ ul { margin: 0; padding: 0; list-style: none; }
 }
 .slide-icon { position: absolute; inset-block-start: 50%; inset-inline-end: 18px; transform: translateY(-50%); opacity: .30; z-index: 1; }
 .slide-house {
+  /* …and the house slide is the exception that proves it: its ground is
+     ours and does follow the theme, so its ink has to follow too. */
   background: linear-gradient(140deg, var(--surface-2), var(--bar));
+  color: var(--text);
   border: 1px dashed var(--gold-wash-4) !important;
   align-items: center; text-align: center; justify-content: center;
 }

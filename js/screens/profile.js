@@ -1,7 +1,7 @@
 /* ======================= PROFILE & ACCOUNT SCREENS ======================= */
 import { t, L, icon, $, $$, go, renderHeader, toast, wireRoutes, emptyState, confirmSheet,
          openSheet, closeSheet,
-         fmtMoney, priceLabel, statusBadge, stars } from '../ui.js';
+         fmtMoney, priceLabel, statusBadge, stars, logoSrc } from '../ui.js';
 import { SUBSCRIPTION_PRICE, CATEGORIES } from '../data.js';
 import * as S from '../store.js';
 import { catIcon } from './home.js';
@@ -654,7 +654,7 @@ export function AboutScreen(root) {
   renderHeader({ simple: true, title: t('about') });
   root.innerHTML = `
     <div class="pad mt-20 center-col">
-      <img src="assets/logo.png" style="max-width:230px" alt="ARABNA عربنا" />
+      <img data-logo="stacked" src="${logoSrc('stacked')}" style="max-width:230px" alt="ARABNA عربنا" />
       <p class="fs-13 muted mt-16" style="max-width:300px;text-align:center">
         ${S.state.lang === 'en'
           ? 'ARABNA brings the Arab community in America together in one app: a business directory, a marketplace, and a community magazine.'

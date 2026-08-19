@@ -1,5 +1,5 @@
 /* ======================= AUTH & VERIFICATION ======================= */
-import { t, icon, $, $$, go, back, renderHeader, toast, wireRoutes } from '../ui.js';
+import { t, icon, $, $$, go, back, renderHeader, toast, wireRoutes, logoSrc } from '../ui.js';
 import * as S from '../store.js';
 import { passwordField, wirePasswordToggles } from './profile.js';
 
@@ -16,7 +16,7 @@ export function SignUpScreen(root) {
 
   root.innerHTML = `
     <div class="pad mt-16 center-col">
-      <img src="assets/logo-sm.png" style="height:56px" alt="ARABNA" />
+      <img data-logo="wide" src="${logoSrc('wide')}" style="height:56px" alt="ARABNA" />
       <b style="font-size:17px;margin-top:12px">${t('needAccount')}</b>
       <span class="muted fs-13">${t('needAccountSub')}</span>
     </div>
@@ -62,7 +62,7 @@ export function SignUpScreen(root) {
 export function SignInScreen(root) {
   renderHeader({ simple: true, title: t('signIn') });
   root.innerHTML = `
-    <div class="pad mt-16 center-col"><img src="assets/logo-sm.png" style="height:56px" alt="ARABNA" /></div>
+    <div class="pad mt-16 center-col"><img data-logo="wide" src="${logoSrc('wide')}" style="height:56px" alt="ARABNA" /></div>
     <div class="pad mt-16">
       <div class="field"><label class="label">${t('email')}</label><input class="input" id="iEmail" type="email" /></div>
       ${passwordField('iPass', t('password'))}
