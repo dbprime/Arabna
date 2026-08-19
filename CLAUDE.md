@@ -7,7 +7,7 @@ ARABNA · عربنا — a mobile-first web app for the Arab community in the U.
 **business directory + marketplace + events + magazine**, Arabic-first with a full English toggle.
 ("Classifieds / الإعلانات الشخصية" is now "Marketplace / السوق" — the old `#/classifieds`
 routes still resolve so shared links keep working.)
-Current version: **V.02.3 (prototype)**. Owner: Rai Elby (@dbprime). Deploys to Vercel (team DB Prime).
+Current version: **V.02.4 (prototype)**. Owner: Rai Elby (@dbprime). Deploys to Vercel (team DB Prime).
 
 ## Hard rules (from the product brief)
 1. **One repository, one Vercel project.** No duplicates, no stray preview projects.
@@ -668,13 +668,11 @@ knows what they get is the commonest reason they leave.
 
 ## V.02.3 — the six fixes after batch four
 
-### Back restores the position (the measured cause, not the guessed one)
+### Back restores the position (superseded by V.02.4 below)
 The scroll is saved by a **single passive, rAF-throttled `scroll` listener on
-`#app`**, mounted once at boot (`mountScrollMemory` in `ui.js`).
-`rememberScroll()` is gone from `render()`, `go()` and `back()`: by the time
-`hashchange` fires the browser has already zeroed `#app.scrollTop`, so the
-old call wrote a 0 over the good value and back landed at the top. Keyed to
-the **history entry**, as before.
+`#app`**, mounted once at boot (`mountScrollMemory` in `ui.js`), keyed to the
+**history entry**. Removing the save from `render()` was right; removing it
+from `go()` as well was not, and V.02.4 puts it back — see there.
 
 ### An option appears once
 «الأكثر استخداماً» is a shortcut to the top of the list, not a second copy of
@@ -752,6 +750,78 @@ every reader in every city. Nothing reads it any more.
   CSV. Geocoding the 515 addresses is a data job done outside the app; the
   day they arrive the miles appear by themselves.
 - The privacy page says all of it, in both languages, as its own section.
+
+## V.02.4 — the scroll, and the end of sideways choosing
+
+### Back restores the position (the third attempt, and the last)
+Two earlier fixes both wrote a **0** over the saved pixel, from different
+places. The order of events on a tap is:
+
+```
+scroll  → scrollTop = 0     ← the browser empties the container
+hash    → #/directory/b3    ← only then does hashchange fire
+```
+
+So the save has to happen **before** anything else, and the listener has to
+be told to ignore the browser's own reset:
+
+- `go()` writes `scrollMemory.set(shownKey, app.scrollTop)` as its very first
+  statement, then sets `navigating = true`.
+- the `scroll` listener returns early while `navigating` is true.
+- `markShown()` clears the flag once the new screen is up.
+
+Going **forward** is the path that matters — the screen being left is the one
+we want back, and `go()` is the only moment we control. Going **back** needs
+nothing: there the browser zeroes the *departing* screen, and that zero is
+filed under that screen's own key. Do not try to intercept it; the event
+arrives before anything we own.
+
+### An option that scrolls off the edge is an option nobody has
+Every row a person **chooses** from now comes down vertically instead of
+running off the side. Sideways scrolling stays where it is *display* —
+a shop's photos, "featured this week", the story cards.
+
+- **One picker row** replaces the two scrolling ones:
+  `[ التصنيف · الكل ▾ ] [ الترتيب · الأحدث ▾ ] [ ⚙︎ ]`. The pickers share
+  the space, the filter button keeps its own. Each prints the small label
+  and the chosen value **in gold**, so the reader knows what they are
+  filtering by without opening anything. Long values ellipsis; the row's
+  height never moves.
+- **The panel is in the flow** (`#ddHost` under the row) and **pushes the
+  results down rather than covering them**: `.dd-scroll` is capped at
+  `45dvh` and scrolls inside itself.
+- «الكل» is always the first row with the total; the rest are **ordered by
+  how many listings stand behind them**, so the ones people want need no
+  scrolling at all. Every row carries an icon, a count, and a ✓ when chosen.
+- Closing: picking · a tap outside · `Escape` · the **device back button**.
+  The panel pushes **one history entry**, and that entry stands for "a panel
+  is open" rather than for one particular panel — switching from the
+  category list to the sort list passes it over (`adopt`) instead of
+  fighting over it. Anything the pick has to do waits for the pop
+  (`pending`), because a `history.back()` in flight will otherwise wind the
+  URL the pick just wrote straight back off again.
+- The first tap outside **only closes the panel**. It does not also press
+  the shop underneath it.
+- `aria-expanded` on the button, `role="listbox"` / `role="option"`,
+  `aria-selected` on the chosen row, ↑↓ to move and Enter to pick.
+- The same picker on the **marketplace** (sections) and **events** (types).
+  The **magazine**'s six chips simply wrap. **Home keeps its circles** —
+  they show, they do not filter — with «عرض الكل» in the section head.
+- `#catGrid` and the all-categories sheet are gone: the list does that job,
+  and the button that opened it used to sit at the far end of the row it
+  was meant to save you from.
+- The filter button's badge no longer counts the category: it is printed on
+  the row where the reader can already see it.
+- Measured at 390px: the results start at **272px instead of 322px**, and
+  nothing on the directory, the marketplace, the events list or the
+  magazine is cut off at the edge in either language.
+
+### The events list shows three types because there are three
+The type list holds «الكل» plus every type with something upcoming — today
+that is festival · lecture · bazaar, one event each. `EVENT_TYPES` defines
+eleven, but the row was never hiding the other eight: **there are no events
+of those types yet**. The rule stands (never offer a filter that returns
+nothing); the list grows by itself as events arrive.
 
 ## Known open items
 - Legal pages are first drafts — a lawyer must review before public launch.

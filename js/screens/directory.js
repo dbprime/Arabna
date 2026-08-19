@@ -2,6 +2,7 @@
 import { t, L, icon, $, $$, go, back, renderHeader, openSheet, closeSheet, confirmSheet,
          toast, stars, wireRoutes, emptyState, query, openMaps, shareItem, fmtMoney,
          openFilterSheet, activeFilterCount, sectionNote, replaceHash, goAfterDone,
+         pickerBtn, setPickerValue, openDropdown, closeDropdown,
          showsPrices, priceGate, wirePriceGates,
          openBadge, openBadgeSlot, onMinute, distLabel, cityChipLabel, fmtMiles, attrChips, fmtDay, fmtTime, bizBadge } from '../ui.js';
 import { CATEGORIES, SUBSCRIPTION_PRICE, DAY_KEYS } from '../data.js';
@@ -55,22 +56,26 @@ export function DirectoryScreen(root) {
   };
 
   root.innerHTML = `
-    <!-- the search gets its own full-width row: sharing one with the city
-         chip and the filter button squeezed the magnifier down to 13px,
-         which is the same as not having one -->
-    <div class="search-row solo">
+    <!-- The magnifier keeps its 22px and its own share of the row: it is
+         flex: 0 0 auto, so the city chip beside it cannot squeeze it. -->
+    <div class="search-row">
       <div class="search-bar big">${icon('search', 22)}
         <input id="dirSearch" placeholder="${t('searchExample')}" value="${attr(st.term)}" />
         <button class="search-clear" id="dirClear" hidden aria-label="${t('clear')}">${icon('x', 16)}</button>
       </div>
-    </div>
-    <div class="search-row sub">
       <button class="loc-chip ${S.hasLocation() ? '' : 'unset'}" data-loc>${icon('mapPin', 17)}<span>${cityChipLabel()}</span></button>
-      <button class="filter-btn" id="dirFilter" aria-label="${t('filters')}">${icon('filter', 20)}<span id="fCount"></span></button>
     </div>
 
-    <div class="hscroll mt-12" id="catChips"></div>
-    <div class="hscroll mt-8" id="attrChips"></div>
+    <!-- One row that does not scroll sideways. It also says what is being
+         filtered by without opening anything. -->
+    <div class="ctl-row">
+      ${pickerBtn({ id: 'ctlCat', label: t('lblCategory'), value: catLabel(st.cat) })}
+      ${pickerBtn({ id: 'ctlSort', label: t('lblSort'), value: t(sortKey(st.sort)) })}
+      <button class="filter-btn" id="dirFilter" aria-label="${t('filters')}">${icon('filter', 20)}<span id="fCount"></span></button>
+    </div>
+    <div id="ddHost"></div>
+
+    <div class="chip-wrap" id="attrChips"></div>
     <div id="pills"></div>
     <div id="catSlider"></div>
     <div id="dirNote"></div>
@@ -87,23 +92,38 @@ export function DirectoryScreen(root) {
     return out;
   };
 
-  const paintCatChips = () => {
+  /* Every category in one vertical list, ordered by how much is in it, so
+     the ones people actually want are at the top without any scrolling.
+     "All" is always the first row. */
+  const catOptions = () => {
     const counts = catCounts();
-    const cats = CATEGORIES.filter(c => !c.route);
-    $('#catChips').innerHTML =
-      `<button class="chip ${st.cat === 'all' ? 'active' : ''}" data-cat="all">${t('catAll')}
-         <span class="chip-n">${S.allBusinesses().length}</span></button>`
-      + cats.map(c => `<button class="chip ${st.cat === c.id ? 'active' : ''}" data-cat="${c.id}">
-          ${icon(c.icon, 15)} ${t(c.key)} <span class="chip-n">${counts[c.id] || 0}</span></button>`).join('')
-      + `<button class="chip chip-grid" id="catGrid" aria-label="${t('allCategories')}">${icon('grid', 16)}</button>`;
+    return [{ id: 'all', label: t('catAll'), icon: 'grid', count: S.allBusinesses().length }]
+      .concat(CATEGORIES.filter(c => !c.route)
+        .map(c => ({ id: c.id, label: t(c.key), icon: c.icon, count: counts[c.id] || 0 }))
+        .sort((a, b) => b.count - a.count));
+  };
 
-    $$('#catChips .chip[data-cat]').forEach(c => c.addEventListener('click', () => {
-      setCat(c.dataset.cat);
-    }));
-    $('#catGrid').addEventListener('click', openCatSheet);
+  const openCatDD = () => openDropdown({
+    host: $('#ddHost'), anchor: $('#ctlCat'), title: t('pickCategory'), unit: 'ddCat',
+    options: catOptions(), value: st.cat, onPick: setCat,
+  });
 
-    const active = $('#catChips .chip.active');
-    if (active && st.cat !== 'all') active.scrollIntoView({ inline: 'center', block: 'nearest' });
+  const openSortDD = () => openDropdown({
+    host: $('#ddHost'), anchor: $('#ctlSort'), title: t('pickSort'), unit: 'dd',
+    options: ['newest', 'nearest', 'rated', 'open'].map(id => ({ id, label: t(sortKey(id)) })),
+    value: st.sort,
+    onPick: (v) => {
+      if (v === 'nearest' && !S.state.geo) {
+        import('./home.js').then(m => m.askForLocation(() => { st.sort = 'nearest'; applySort(); }));
+        return;
+      }
+      st.sort = v; applySort();
+    },
+  });
+
+  const applySort = () => {
+    setPickerValue('ctlSort', t(sortKey(st.sort)));
+    writeUrl(); paint();
   };
 
   const setCat = (id) => {
@@ -111,31 +131,8 @@ export function DirectoryScreen(root) {
     const valid = S.attrsForCat(id === 'all' ? '*' : id).map(a => a.id);
     st.attrs = st.attrs.filter(x => valid.includes(x));
     writeUrl();
-    paintCatChips(); paintChips(); paint();
-  };
-
-  /** every category at once, three to a row, with its real count */
-  const openCatSheet = () => {
-    const counts = catCounts();
-    openSheet(`
-      <div class="sheet-title">${t('allCategories')}</div>
-      <div class="cat-box">
-        <button class="cat-box-cell ${st.cat === 'all' ? 'active' : ''}" data-c="all">
-          <span class="cc-ico">${icon('grid', 22)}</span>
-          <span class="cc-label">${t('catAll')}</span>
-          <span class="cc-count">${S.allBusinesses().length}</span></button>
-        ${CATEGORIES.filter(c => !c.route).map(c => `
-          <button class="cat-box-cell ${st.cat === c.id ? 'active' : ''}" data-c="${c.id}">
-            <span class="cc-ico">${icon(c.icon, 22)}</span>
-            <span class="cc-label">${t(c.key)}</span>
-            <span class="cc-count">${counts[c.id] || 0}</span></button>`).join('')}
-      </div>
-    `, (panel) => {
-      panel.querySelectorAll('[data-c]').forEach(b => b.addEventListener('click', () => {
-        closeSheet();
-        setCat(b.dataset.c);
-      }));
-    });
+    setPickerValue('ctlCat', catLabel(id));
+    paintChips(); paint();
   };
 
   /* Quick chips belong to a category. On "all" they were a second row of
@@ -192,12 +189,14 @@ export function DirectoryScreen(root) {
       else if (k === '__term') { st.term = ''; $('#dirSearch').value = ''; }
       else st.attrs = st.attrs.filter(x => x !== k);
       writeUrl(); paintChips(); paint();
+      setPickerValue('ctlSort', t(sortKey(st.sort)));
     }));
     const pc = $('#pillClear');
     if (pc) pc.addEventListener('click', () => {
       st.openNow = false; st.attrs = []; st.sort = 'newest'; st.term = ''; st.area = 'all';
       S.setArea('all');
       $('#dirSearch').value = '';
+      setPickerValue('ctlSort', t(sortKey(st.sort)));
       writeUrl(); paintChips(); paint();
     });
   };
@@ -336,9 +335,11 @@ export function DirectoryScreen(root) {
     });
   };
 
-  paintCatChips();
   paintChips();
   paint();
+
+  $('#ctlCat').addEventListener('click', openCatDD);
+  $('#ctlSort').addEventListener('click', openSortDD);
 
   /* The badges rewrite themselves every minute wherever they are; only the
      list has to be rebuilt, and only when "open now" is actually filtering
@@ -375,6 +376,7 @@ export function DirectoryScreen(root) {
       st.openNow = v.openNow; st.sort = v.sort; st.attrs = v.attrs.slice();
       st.area = v.area || 'all';
       S.setArea(st.area);
+      setPickerValue('ctlSort', t(sortKey(st.sort)));
       writeUrl();
       paintChips(); paint();
     },
@@ -386,6 +388,13 @@ export function DirectoryScreen(root) {
 function areaLabel(area) {
   if (area === 'city') return S.userCity() || t('areaCity');
   return `${area} ${t('miles')}`;
+}
+
+/** what the category picker prints — the name, or "all" */
+function catLabel(id) {
+  if (!id || id === 'all') return t('catAll');
+  const c = CATEGORIES.find(x => x.id === id);
+  return c ? t(c.key) : t('catAll');
 }
 
 /** the i18n key for a sort id, for the pill that shows it */

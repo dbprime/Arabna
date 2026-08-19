@@ -1,5 +1,6 @@
 /* ======================= MARKETPLACE ======================= */
 import { t, L, icon, $, $$, go, back, renderHeader, confirmSheet, toast, wireRoutes, cityChipLabel,
+         pickerBtn, setPickerValue, openDropdown,
          emptyState, query, shareItem, fmtMoney, priceLabel, statusBadge,
          openSheet, closeSheet, openFilterSheet, activeFilterCount, sectionNote,
          showsPrices, replaceHash, goAfterDone } from '../ui.js';
@@ -8,6 +9,13 @@ import { getLang } from '../i18n.js';
 import * as S from '../store.js';
 
 /* ----------------------------- LIST ----------------------------- */
+/** what the section picker prints */
+function mktLabel(id) {
+  if (!id || id === 'all') return t('catAll');
+  const c = MARKET_CATS.find(x => x.id === id);
+  return c ? t(c.key) : t('catAll');
+}
+
 export function MarketplaceScreen(root) {
   renderHeader({});
   /* Same rule as the directory: the state of the screen lives in the URL,
@@ -38,12 +46,9 @@ export function MarketplaceScreen(root) {
   };
 
   root.innerHTML = `
-    <div class="search-row solo">
+    <div class="search-row">
       <div class="search-bar big">${icon('search', 22)}<input id="clSearch" placeholder="${t('searchExample')}" value="${term.replace(/"/g, '&quot;')}" /></div>
-    </div>
-    <div class="search-row sub">
       <button class="loc-chip ${S.hasLocation() ? '' : 'unset'}" data-loc>${icon('mapPin', 17)}<span>${cityChipLabel()}</span></button>
-      <button class="filter-btn" id="mkFilter" aria-label="${t('filters')}">${icon('filter', 20)}<span id="fCount"></span></button>
     </div>
 
     <div class="section-head" style="margin-top:14px">
@@ -52,10 +57,13 @@ export function MarketplaceScreen(root) {
       </div>
     </div>
 
-    <div class="hscroll" id="clChips">
-      <button class="chip ${cat === 'all' ? 'active' : ''}" data-cat="all">${t('catAll')}</button>
-      ${MARKET_CATS.map(c => `<button class="chip ${cat === c.id ? 'active' : ''}" data-cat="${c.id}">${icon(c.icon, 15)} ${t(c.key)}</button>`).join('')}
+    <!-- the sections come down in a list; a row that scrolls sideways hides
+         whatever does not fit, and half of these never fitted -->
+    <div class="ctl-row">
+      ${pickerBtn({ id: 'ctlSec', label: t('lblSection'), value: mktLabel(cat) })}
+      <button class="filter-btn" id="mkFilter" aria-label="${t('filters')}">${icon('filter', 20)}<span id="fCount"></span></button>
     </div>
+    <div id="ddHost"></div>
 
     <div id="secNote"></div>
     <div id="catNote"></div>
@@ -117,17 +125,21 @@ export function MarketplaceScreen(root) {
   paintNote();
   paint();
 
-  // arriving straight at a section (drawer / categories screen) — bring its chip into view
-  const activeChip = $('#clChips .chip.active');
-  if (activeChip && cat !== 'all') activeChip.scrollIntoView({ inline: 'center', block: 'nearest' });
-
-  $$('#clChips .chip').forEach(c => c.addEventListener('click', () => {
-    cat = c.dataset.cat;
-    filters.cat = cat;
-    $$('#clChips .chip').forEach(x => x.classList.toggle('active', x === c));
-    writeUrl();
-    paintNote();
-    paint();
+  const secOptions = () => {
+    const counts = {};
+    S.allClassifieds().forEach(c => { counts[c.cat] = (counts[c.cat] || 0) + 1; });
+    return [{ id: 'all', label: t('catAll'), icon: 'grid', count: S.allClassifieds().length }]
+      .concat(MARKET_CATS.map(c => ({ id: c.id, label: t(c.key), icon: c.icon, count: counts[c.id] || 0 }))
+        .sort((a, b) => b.count - a.count));
+  };
+  $('#ctlSec').addEventListener('click', () => openDropdown({
+    host: $('#ddHost'), anchor: $('#ctlSec'), title: t('pickSection'), unit: 'ddSec',
+    options: secOptions(), value: cat,
+    onPick: (v) => {
+      cat = v; filters.cat = cat;
+      setPickerValue('ctlSec', mktLabel(cat));
+      writeUrl(); paintNote(); paint();
+    },
   }));
   $('#clSearch').addEventListener('input', e => { term = e.target.value; writeUrl(); paint(); });
   $('[data-loc]').addEventListener('click', () => import('./home.js').then(m => m.openLocationSheet()));

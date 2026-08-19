@@ -31,6 +31,12 @@ let historySeq = 0;
    it would file the old page's position under the new page's key — and
    then "back" would restore the position of the screen you just left. */
 let shownKey = null;
+/* True from the instant we decide to navigate until the new screen is on
+   screen. The browser zeroes `#app.scrollTop` while the old screen is
+   still the "shown" one, and that `scroll` event arrives *before*
+   `hashchange` — so without this gate the listener writes a 0 over the
+   position we are about to need. */
+let navigating = false;
 
 /** the key of the history entry currently showing */
 export function historyKey() {
@@ -56,7 +62,7 @@ export function mountScrollMemory() {
   app.dataset.scrollWired = '1';
   let ticking = false;
   app.addEventListener('scroll', () => {
-    if (ticking) return;
+    if (navigating || ticking) return;    // the browser's reset is not the reader scrolling
     ticking = true;
     requestAnimationFrame(() => {
       ticking = false;
@@ -66,7 +72,7 @@ export function mountScrollMemory() {
 }
 
 /** called once the new screen is on screen, so later saves land correctly */
-export function markShown(key) { shownKey = key || historyKey(); }
+export function markShown(key) { shownKey = key || historyKey(); navigating = false; }
 
 /** put it back, after the new screen has actually been laid out */
 export function restoreScroll(key) {
@@ -85,6 +91,16 @@ export function restoreScroll(key) {
 export function forgetScroll(key) { scrollMemory.delete(key || historyKey()); }
 
 export function go(hash) {
+  /* Save first, then shut the listener up. Going forward is the path that
+     matters: the screen being left is the one we want to come back to, and
+     `go()` is the only moment we control — everything after it (the
+     container's reset, then `hashchange`) is the browser's. Coming back is
+     not a problem: there the browser zeroes the *departing* screen, and
+     that zero is filed under that screen's own key. */
+  const app = $('#app');
+  if (app && shownKey) scrollMemory.set(shownKey, app.scrollTop);
+  navigating = true;
+
   if (location.hash === hash) window.dispatchEvent(new HashChangeEvent('hashchange'));
   else {
     location.hash = hash;
@@ -111,6 +127,7 @@ export function replaceHash(hash) {
  * inside a payment screen they have already completed.
  */
 export function goAfterDone(hash) {
+  navigating = true;
   forgetScroll();
   const key = 'h' + (++historySeq);
   history.replaceState({ key }, '', hash);
@@ -119,7 +136,205 @@ export function goAfterDone(hash) {
 }
 
 export function back() {
+  navigating = true;
   if (history.length > 1) history.back(); else go('#/home');
+}
+
+/* ============================================================
+   The picker row and its drop-down
+   ------------------------------------------------------------
+   Every choice in this app used to live in a row that scrolled
+   sideways, and **an option you cannot see does not exist**. The
+   category row was cut off at the edge, and the button that opened
+   "all categories" sat at the far end of it — you had to scroll to
+   find the thing that saves you from scrolling.
+
+   So: nothing a person chooses from scrolls sideways any more. The
+   choice comes down vertically, which is the direction people already
+   scroll and the one that hides nothing. Sideways scrolling stays where
+   it is *display* rather than choice — a shop's photos, "featured this
+   week", the story cards.
+
+   The panel opens **below its button and pushes the page down** instead
+   of covering it: a reader keeps sight of what they were looking at, and
+   on a small screen an overlay that covers the results is how you lose
+   your place.
+   ============================================================ */
+
+let openDD = null;          // { close } — one panel at a time, ever
+let ddSeq = 0;
+/* The history entry stands for "a panel is open", not for one particular
+   panel: switching from the category list to the sort list is still one
+   thing the back button should undo, and pushing a second entry (or
+   winding the first one off mid-switch) turned that into a fight the
+   reader lost. */
+let ddToken = null;
+
+/** the button: a small label, the chosen value in gold, and a chevron */
+export function pickerBtn({ id, label, value, wide }) {
+  return `<button class="ctl ${wide ? 'wide' : ''}" id="${id}" type="button"
+      aria-haspopup="listbox" aria-expanded="false">
+    <span class="ctl-txt"><span class="ctl-k">${label}</span><span class="ctl-v">${value}</span></span>
+    ${icon('chevronD', 16)}
+  </button>`;
+}
+
+/** update a picker's printed value without rebuilding the row */
+export function setPickerValue(id, value) {
+  const el = $(`#${id} .ctl-v`);
+  if (el) el.textContent = value;
+}
+
+/**
+ * @param keepHistory  true when the caller is itself navigating: the panel's
+ *                     own history entry is then left alone, because winding
+ *                     it back in the middle of somebody else's navigation
+ *                     is how you end up two screens from where you meant.
+ */
+export function closeDropdown(keepHistory) { if (openDD) openDD.close(keepHistory); }
+
+/**
+ * Open the list under a picker.
+ *
+ * @param host      the element the panel is drawn into (in the flow, so it pushes)
+ * @param anchor    the button that opened it
+ * @param title     "choose a category"
+ * @param options   [{ id, label, icon, count }] — already ordered
+ * @param value     the chosen id
+ * @param onPick    (id) => void; the panel closes itself first
+ */
+export function openDropdown({ host, anchor, title, options, value, unit, onPick }) {
+  if (openDD && openDD.anchor === anchor) { openDD.close(); return; }
+  if (openDD) openDD.adopt();              // a switch, not a close-and-reopen
+  if (!host || !anchor) return;
+
+  const total = options.length;
+  /* «22 تصنيف» · «4 أنواع» · "22 categories". Arabic counts three to ten
+     with the plural and eleven upwards with the singular, and English does
+     the opposite of neither — so the caller names the thing and the rule
+     lives in one place. */
+  const u = unit || 'dd';
+  const word = S.state.lang === 'en'
+    ? t(total === 1 ? u + 'One' : u + 'Few')
+    : t(total >= 3 && total <= 10 ? u + 'Few' : u + 'One');
+  host.innerHTML = `
+    <div class="dd-panel" role="listbox" aria-label="${title}">
+      <div class="dd-head"><span>${title}</span><span class="dd-total">${total} ${word}</span></div>
+      <div class="dd-scroll">
+        ${options.map(o => `
+          <button class="dd-row ${o.id === value ? 'selected' : ''}" type="button" role="option"
+                  aria-selected="${o.id === value}" data-v="${o.id}">
+            ${o.icon ? icon(o.icon, 18) : '<span class="dd-nogap"></span>'}
+            <span class="dd-name">${o.label}</span>
+            ${o.count == null ? '' : `<span class="chip-n">${o.count}</span>`}
+            <span class="dd-tick">${o.id === value ? icon('check', 16) : ''}</span>
+          </button>`).join('')}
+      </div>
+    </div>`;
+  anchor.setAttribute('aria-expanded', 'true');
+  anchor.classList.add('open');
+
+  const rows = $$('.dd-row', host);
+  const panel = host.querySelector('.dd-panel');
+
+  /* A history entry of its own, so the device back button closes the panel
+     instead of leaving the screen — the panel is a place the reader went
+     to, and back should undo exactly that. The URL does not change, so the
+     router never re-renders and the reader's scroll position is untouched. */
+  if (!ddToken) {
+    ddToken = 'dd' + (++ddSeq);
+    try { history.pushState({ key: historyKey(), dd: ddToken }, ''); } catch (e) { /* file:// */ }
+  }
+  const token = ddToken;
+
+  /* Anything that has to happen *after* the panel's history entry is gone
+     waits for the pop. Doing it the other way round cost a whole bug: the
+     pick rewrote the URL, and the back() that was already in flight then
+     wound that rewrite straight back off again. */
+  let pending = null;
+
+  /**
+   * @param mode  undefined → wind the history entry back
+   *              'adopt'   → another picker is opening; leave it for them
+   *              'abandon' → we are navigating away; forget it, do not touch it
+   */
+  const finish = (fromHistory, cb, mode) => {
+    if (openDD !== api) { if (cb) cb(); return; }
+    openDD = null;
+    document.removeEventListener('pointerdown', onDown, true);
+    document.removeEventListener('keydown', onKey, true);
+    host.innerHTML = '';
+    anchor.setAttribute('aria-expanded', 'false');
+    anchor.classList.remove('open');
+    window.removeEventListener('popstate', onPop);
+
+    if (fromHistory || mode === 'abandon') ddToken = null;
+    else if (mode !== 'adopt') {
+      let ours = false;
+      try { ours = ddToken && history.state && history.state.dd === token; } catch (e) { /* file:// */ }
+      if (ours) {
+        ddToken = null;
+        pending = cb || null;
+        window.addEventListener('popstate', onPop);   // the pick waits for the pop
+        history.back();
+        return;
+      }
+    }
+    if (cb) cb();
+  };
+
+  const onPop = () => {
+    window.removeEventListener('popstate', onPop);
+    const cb = pending; pending = null;
+    ddToken = null;
+    finish(true);
+    if (cb) cb();
+  };
+
+  /* The first tap outside only closes the panel — it does not also press
+     whatever is under it. Anything else and one tap both closes the list
+     and opens a shop the reader never meant to open. */
+  const onDown = (e) => {
+    if (panel.contains(e.target) || anchor.contains(e.target)) return;
+    // tapping the other picker swaps the lists; it is one open panel either
+    // way, so the history entry passes over rather than being rebuilt
+    const other = e.target.closest && e.target.closest('[aria-haspopup="listbox"]');
+    if (other) { finish(false, null, 'adopt'); return; }
+    finish(false);
+    const swallow = (ev) => { ev.stopPropagation(); ev.preventDefault(); };
+    document.addEventListener('click', swallow, { capture: true, once: true });
+    setTimeout(() => document.removeEventListener('click', swallow, true), 400);
+  };
+
+  const onKey = (e) => {
+    if (e.key === 'Escape') { e.stopPropagation(); finish(false); anchor.focus(); return; }
+    if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp') return;
+    e.preventDefault();
+    const i = rows.indexOf(document.activeElement);
+    const next = e.key === 'ArrowDown' ? (i < 0 ? 0 : Math.min(i + 1, rows.length - 1))
+                                       : (i < 0 ? rows.length - 1 : Math.max(i - 1, 0));
+    rows[next] && rows[next].focus();
+  };
+
+  const api = {
+    anchor,
+    close: (keepHistory) => finish(false, null, keepHistory ? 'abandon' : undefined),
+    adopt: () => finish(false, null, 'adopt'),
+  };
+  openDD = api;
+
+  window.addEventListener('popstate', onPop);
+  document.addEventListener('pointerdown', onDown, true);
+  document.addEventListener('keydown', onKey, true);
+
+  rows.forEach(r => r.addEventListener('click', () => {
+    const v = r.dataset.v;
+    finish(false, () => onPick(v));
+  }));
+
+  // the chosen row is brought into view inside the panel, never the page
+  const sel = host.querySelector('.dd-row.selected');
+  if (sel) sel.scrollIntoView({ block: 'nearest' });
 }
 
 /* ---------------- toast ---------------- */
@@ -147,6 +362,7 @@ let sheetSeq = 0;
  * beside it cannot do that.
  */
 export function openSheet(html, onMount, onClose) {
+  closeDropdown();          // one surface at a time
   sheetSeq++;
   const root = $('#sheet');
   root.innerHTML = `<div class="sheet-scrim" data-close></div>
@@ -685,7 +901,9 @@ export function openFilterSheet({ cat, cats, value, withPrice, withAttrs, withAr
 export function activeFilterCount(v) {
   if (!v) return 0;
   let n = 0;
-  if (v.cat && v.cat !== 'all') n++;
+  /* The category is not counted: it has a control of its own now, printed
+     on the row where the reader can already see it. A badge that repeats
+     what is written beside it teaches nobody anything. */
   if (v.sort && v.sort !== 'newest') n++;
   if (v.priceMin) n++;
   if (v.priceMax) n++;

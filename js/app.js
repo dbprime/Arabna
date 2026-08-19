@@ -4,7 +4,7 @@
 
 import { setLang, bothPacks } from './i18n.js';
 import { state, registerStrings, runReminders, runSubscriptionCycle } from './store.js';
-import { $, renderHeader, renderNav, hideNav, closeSheet, closeDrawer,
+import { $, renderHeader, renderNav, hideNav, closeSheet, closeDrawer, closeDropdown,
          mountScrollMemory, restoreScroll, historyKey, markShown, startClock } from './ui.js';
 
 import { HomeScreen } from './screens/home.js';
@@ -85,6 +85,7 @@ function render() {
   const app = $('#app');
   closeSheet();
   closeDrawer();
+  closeDropdown(true);   // the navigation owns the history, not the panel
 
   let match = null, params = [];
   for (const r of ROUTES) {

@@ -1,6 +1,6 @@
 /* ======================= EVENTS ======================= */
 import { t, L, icon, $, $$, go, back, renderHeader, toast, wireRoutes, replaceHash,
-         emptyState, query, sectionNote } from '../ui.js';
+         emptyState, query, sectionNote, pickerBtn, setPickerValue, openDropdown } from '../ui.js';
 import { getLang } from '../i18n.js';
 import { EVENT_TYPES, nextOccurrence } from '../data.js';
 import * as S from '../store.js';
@@ -49,11 +49,11 @@ export function EventsScreen(root) {
       <div class="section-title">${t('eventsTitle')}<small>${t('eventsSub')}</small></div>
       <button class="link-gold" data-route="#/events/propose">${icon('plus', 17)} ${t('proposeEvent')}</button>
     </div>
-    <div class="hscroll" id="evChips">
-      <button class="chip ${type === 'all' ? 'active' : ''}" data-type="all">${t('catAll')}</button>
-      ${live.map(x => `<button class="chip ${type === x.id ? 'active' : ''}" data-type="${x.id}">
-        ${icon(x.icon, 15)} ${t(x.key)}</button>`).join('')}
+    <!-- eleven types, of which a sideways row showed three -->
+    <div class="ctl-row">
+      ${pickerBtn({ id: 'ctlType', label: t('lblType'), value: typeLabel(type) })}
     </div>
+    <div id="ddHost"></div>
     <div id="evNote"></div>
     <div class="pad mt-12" id="evList"></div>
     <div style="height:18px"></div>`;
@@ -70,18 +70,32 @@ export function EventsScreen(root) {
   };
   paint();
 
-  const active = $('#evChips .chip.active');
-  if (active && type !== 'all') active.scrollIntoView({ inline: 'center', block: 'nearest' });
-
   /* The chosen type lives in the URL, replaced rather than pushed — the
      same rule as the directory, so back leaves the screen. */
-  $$('#evChips .chip').forEach(c => c.addEventListener('click', () => {
-    type = c.dataset.type;
-    $$('#evChips .chip').forEach(x => x.classList.toggle('active', x === c));
-    replaceHash('#/events' + (type === 'all' ? '' : '?type=' + type));
-    paint();
+  const typeOptions = () => [{ id: 'all', label: t('catAll'), icon: 'calendar', count: all.length }]
+    .concat(live.map(x => ({
+      id: x.id, label: t(x.key), icon: x.icon,
+      count: all.filter(e => (e.type || 'community') === x.id).length,
+    })).sort((a, b) => b.count - a.count));
+
+  $('#ctlType').addEventListener('click', () => openDropdown({
+    host: $('#ddHost'), anchor: $('#ctlType'), title: t('pickType'), unit: 'ddType',
+    options: typeOptions(), value: type,
+    onPick: (v) => {
+      type = v;
+      setPickerValue('ctlType', typeLabel(type));
+      replaceHash('#/events' + (type === 'all' ? '' : '?type=' + type));
+      paint();
+    },
   }));
   wireRoutes(root);
+}
+
+/** what the type picker prints */
+function typeLabel(id) {
+  if (!id || id === 'all') return t('catAll');
+  const x = EVENT_TYPES.find(v => v.id === id);
+  return x ? t(x.key) : t('catAll');
 }
 
 function cardHtml(e) {

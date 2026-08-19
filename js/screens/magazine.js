@@ -22,7 +22,10 @@ export function MagazineScreen(root) {
     <div class="section-head" style="margin-top:14px">
       <div class="section-title">${t('magazineTitle')}<small>${t('magazineSub')}</small></div>
     </div>
-    <div class="hscroll" id="magChips">
+    <!-- six short chips: they wrap onto a second line rather than run off
+         the edge. Same rule as everywhere else — an option nobody can see
+         is an option nobody has. -->
+    <div class="chip-wrap" id="magChips">
       <button class="chip ${cat === 'all' ? 'active' : ''}" data-cat="all">${t('catAll')}</button>
       ${MAG_CATS.map(c => `<button class="chip ${cat === c.id ? 'active' : ''}" data-cat="${c.id}">${t(c.key)}</button>`).join('')}
     </div>
@@ -51,10 +54,6 @@ export function MagazineScreen(root) {
     wireRoutes($('#magList'));
   };
   paint();
-
-  // an active chip the user cannot see reads as "the filter did not apply"
-  const activeChip = $('#magChips .chip.active');
-  if (activeChip && cat !== 'all') activeChip.scrollIntoView({ inline: 'center', block: 'nearest' });
 
   $$('#magChips .chip').forEach(c => c.addEventListener('click', () => {
     cat = c.dataset.cat;

@@ -899,7 +899,7 @@ input[inputmode="tel"], input[type="email"], input[inputmode="decimal"], #zipIn 
 /* one-row search: field takes the space, city chip stays compact */
 .search-row { display: flex; gap: 8px; align-items: center; padding: 12px 14px 0; }
 .search-row .search-bar { flex: 1 1 auto; min-width: 0; margin: 0; }
-.search-row .loc-chip { flex: 0 0 auto; max-width: 42%; overflow: hidden; }
+.search-row .loc-chip { flex: 0 0 auto; max-width: 46%; overflow: hidden; }
 .search-row .loc-chip span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .filter-btn {
   flex: 0 0 auto; position: relative;
@@ -1184,6 +1184,78 @@ input[inputmode="tel"], input[type="email"], input[inputmode="decimal"], #zipIn 
 .delta.up { color: #7FC49B; }
 .delta.down { color: #E79A9C; }
 
+/* ---------- the picker row and its drop-down (V.02.4) ---------- */
+/* One row, and it never scrolls sideways. The two pickers share whatever
+   width is left after the filter button, which keeps its own size so it
+   is always in the same place under the reader's thumb. */
+.ctl-row {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 14px 0;
+}
+.ctl {
+  flex: 1 1 0; min-width: 0;
+  height: 46px; padding: 0 12px;
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  color: var(--ink);
+  text-align: start;
+}
+.ctl.open { border-color: rgba(198,161,91,.55); }
+.ctl > svg { flex: 0 0 16px; color: var(--muted); transition: transform .16s ease; }
+.ctl.open > svg { transform: rotate(180deg); }
+/* the value can be long — it truncates, and the row's height never moves */
+.ctl-txt { display: flex; flex-direction: column; min-width: 0; line-height: 1.15; }
+.ctl-k { font-size: 10.5px; color: var(--muted); }
+.ctl-v {
+  font-size: 14px; font-weight: 700; color: var(--gold-bright);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.ctl-row .filter-btn { flex: 0 0 auto; height: 46px; width: 46px; }
+
+/* The panel is in the flow: it pushes the results down rather than
+   covering them, so the reader never loses sight of where they were. */
+.dd-panel {
+  margin: 8px 14px 0;
+  background: var(--surface-2);
+  border: 1px solid rgba(198,161,91,.34);
+  border-radius: 16px;
+  overflow: hidden;
+}
+.dd-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 11px 14px;
+  font-size: 12.5px; color: var(--muted);
+  border-block-end: 1px solid var(--line);
+}
+.dd-total { color: var(--gold); font-weight: 700; }
+.dd-scroll { max-height: 45dvh; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+.dd-row {
+  width: 100%;
+  display: flex; align-items: center; gap: 10px;
+  padding: 12px 14px;
+  background: none; border: 0;
+  color: var(--ink); font-size: 14.5px; text-align: start;
+}
+.dd-row + .dd-row { border-block-start: 1px solid rgba(255,255,255,.045); }
+.dd-row > svg { flex: 0 0 18px; color: var(--muted); }
+.dd-nogap { flex: 0 0 18px; }
+.dd-name { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dd-row .chip-n { flex: 0 0 auto; }
+.dd-tick { flex: 0 0 18px; display: flex; color: var(--gold-bright); }
+.dd-row.selected { background: rgba(198,161,91,.10); }
+.dd-row.selected .dd-name { color: var(--gold-bright); font-weight: 700; }
+.dd-row:focus-visible { outline: 2px solid var(--gold); outline-offset: -2px; }
+
+/* the quick attribute chips wrap onto a second line instead of running
+   off the edge — same rule: an option you cannot see does not exist */
+.chip-wrap {
+  display: flex; flex-wrap: wrap; gap: 8px;
+  padding: 10px 14px 0;
+}
+.chip-wrap:empty { display: none; }
+
 /* ---------- search and filters (batch four) ---------- */
 /* The magnifier used to shrink to ~13px because flex-shrink defaults to 1
    and the row was crowded. It is now on a row of its own and refuses to
@@ -1203,6 +1275,10 @@ input[inputmode="tel"], input[type="email"], input[inputmode="decimal"], #zipIn 
   display: grid; place-items: center; color: var(--muted);
   background: rgba(255,255,255,.06); border: 0;
 }
+/* `display: grid` beats the `hidden` attribute, so the empty-field ✕ was
+   showing anyway — and once the city chip joined the row it landed on top
+   of it. The attribute wins again. */
+.search-clear[hidden] { display: none; }
 
 .chip-n {
   font-size: 11px; font-weight: 700; opacity: .7;
