@@ -10,11 +10,100 @@ import * as S from './store.js';
 export const $ = (sel, root = document) => root.querySelector(sel);
 export const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
 
-export function go(hash) {
-  if (location.hash === hash) window.dispatchEvent(new HashChangeEvent('hashchange'));
-  else location.hash = hash;
+/* ============================================================
+   Where you were
+   ------------------------------------------------------------
+   Scroll memory keyed to the *history entry*, not to the route. Two
+   visits to #/directory are two different places to have been, and a
+   map keyed by route would confuse them; `history.state.key` cannot.
+   Back and forward then both work with no extra code, and so do the
+   Android back button and the iOS edge swipe.
+
+   The map lives in memory only. Opening the app fresh should start at
+   the top — that is what people expect, and it is also what stops the
+   map growing without limit.
+   ============================================================ */
+const scrollMemory = new Map();
+let historySeq = 0;
+/* The entry whose content is on screen right now. It is deliberately not
+   read from `history.state` at save time: by the moment `hashchange`
+   fires the browser has already moved to the new entry, so saving against
+   it would file the old page's position under the new page's key — and
+   then "back" would restore the position of the screen you just left. */
+let shownKey = null;
+
+/** the key of the history entry currently showing */
+export function historyKey() {
+  const st = history.state;
+  if (st && st.key) return st.key;
+  const key = 'h' + (++historySeq);
+  try { history.replaceState({ key }, ''); } catch (e) { /* file:// */ }
+  return key;
 }
+
+/** remember where the page was before it is replaced */
+export function rememberScroll() {
+  const app = $('#app');
+  if (!app || !shownKey) return;
+  scrollMemory.set(shownKey, app.scrollTop);
+}
+
+/** called once the new screen is on screen, so later saves land correctly */
+export function markShown(key) { shownKey = key || historyKey(); }
+
+/** put it back, after the new screen has actually been laid out */
+export function restoreScroll(key) {
+  const app = $('#app');
+  if (!app) return;
+  const y = scrollMemory.get(key);
+  if (!y) { app.scrollTop = 0; return; }
+  // two frames: one for the paint, one for anything that measured itself
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    const max = Math.max(0, app.scrollHeight - app.clientHeight);
+    app.scrollTop = Math.min(y, max);
+  }));
+}
+
+/** a screen that finished something starts at the top, whatever was saved */
+export function forgetScroll(key) { scrollMemory.delete(key || historyKey()); }
+
+export function go(hash) {
+  rememberScroll();
+  if (location.hash === hash) window.dispatchEvent(new HashChangeEvent('hashchange'));
+  else {
+    location.hash = hash;
+    // a brand-new entry: give it its own key so its own scroll is its own
+    try { history.replaceState({ key: 'h' + (++historySeq) }, ''); } catch (e) { /* file:// */ }
+  }
+}
+
+/**
+ * Replace where we are without adding a history entry. Filter changes use
+ * this: pushing one per filter would make the back button undo them one at
+ * a time and never leave the screen.
+ */
+export function replaceHash(hash) {
+  if (location.hash === hash) return;
+  const key = historyKey();
+  history.replaceState({ key }, '', hash);
+}
+
+/**
+ * Go somewhere and take the screen we were on out of the history.
+ * Used after something is finished — a listing published, an ad paid
+ * for, a subscription started. Pressing back should not put a person
+ * inside a payment screen they have already completed.
+ */
+export function goAfterDone(hash) {
+  forgetScroll();
+  const key = 'h' + (++historySeq);
+  history.replaceState({ key }, '', hash);
+  shownKey = key;
+  window.dispatchEvent(new HashChangeEvent('hashchange'));
+}
+
 export function back() {
+  rememberScroll();
   if (history.length > 1) history.back(); else go('#/home');
 }
 
@@ -97,20 +186,59 @@ export function toggleLang() {
 }
 
 /* ---------------- bottom nav ---------------- */
+/**
+ * What "+" offers.
+ *
+ * It used to be a symbol with no label that went straight to the
+ * marketplace post form, which then demanded an account — so a visitor
+ * pressed something unnamed and was thrown into a sign-up screen without
+ * ever learning what they had been stopped from doing. Now it is labelled
+ * «أضف», and pressing it says in words what can be created. There are
+ * four creatable things in this app and the button used to hide the one
+ * that matters most commercially: adding a business.
+ */
+export function openAddSheet() {
+  const rows = [
+    { route: '#/post', ico: 'bag', title: t('addSell'), sub: t('addSellSub') },
+    { route: '#/add-business', ico: 'briefcase', title: t('addBiz'), sub: t('addBizSub') },
+    { route: '#/events/propose', ico: 'calendar', title: t('addSuggestEvent'), sub: t('addSuggestEventSub') },
+  ];
+  openSheet(`
+    <div class="sheet-title">${t('addWhat')}</div>
+    ${rows.map(r => `<button class="add-row" data-go="${r.route}">
+      <span class="a-ico">${icon(r.ico, 21)}</span>
+      <span class="a-txt"><b>${r.title}</b><span>${r.sub}</span></span>
+      <span class="chev">${icon(document.documentElement.dir === 'rtl' ? 'chevronL' : 'chevronR', 18)}</span>
+    </button>`).join('')}
+    <button class="add-row secondary" data-go="#/advertise">
+      <span class="a-ico">${icon('megaphone', 19)}</span>
+      <span class="a-txt"><b>${t('advertiseWithUs')}</b></span>
+      <span class="chev">${icon(document.documentElement.dir === 'rtl' ? 'chevronL' : 'chevronR', 18)}</span>
+    </button>
+  `, (panel) => {
+    panel.querySelectorAll('[data-go]').forEach(b => b.addEventListener('click', () => {
+      closeSheet();
+      go(b.dataset.go);
+    }));
+  });
+}
+
 export function renderNav(active) {
   const nav = $('#bottomNav');
   const items = [
     { id: 'home',        label: t('navHome'),    ico: 'home',    route: '#/home' },
     { id: 'directory',   label: t('navExplore'), ico: 'compass', route: '#/directory' },
-    { id: 'post',        label: '',              ico: 'plus',    route: '#/post', center: true },
+    // named like every other tab, and it opens a choice rather than a screen
+    { id: 'post',        label: t('navAdd'),     ico: 'plus',    route: '',      center: true },
     { id: 'classifieds', label: t('navMarket'),  ico: 'bag',     route: '#/marketplace' },
     { id: 'profile',     label: t('navProfile'), ico: 'user',    route: '#/profile' },
   ];
   nav.innerHTML = items.map(i => i.center
-    ? `<button class="nav-item" data-route="${i.route}"><span class="nav-post">${icon('plus', 28)}</span></button>`
+    ? `<button class="nav-item nav-add" id="navAdd"><span class="nav-post">${icon('plus', 28)}</span><span>${i.label}</span></button>`
     : `<button class="nav-item ${active === i.id ? 'active' : ''}" data-route="${i.route}">${icon(i.ico, 25)}<span>${i.label}</span></button>`
   ).join('');
-  $$('#bottomNav .nav-item').forEach(b => b.addEventListener('click', () => go(b.dataset.route)));
+  $$('#bottomNav .nav-item[data-route]').forEach(b => b.addEventListener('click', () => go(b.dataset.route)));
+  $('#navAdd').addEventListener('click', openAddSheet);
   nav.style.display = 'grid';
 }
 export function hideNav() { $('#bottomNav').style.display = 'none'; }
@@ -273,7 +401,12 @@ export function wireRoutes(root) {
   });
 }
 
-export function fmtMoney(n) { return '$' + n.toLocaleString('en-US'); }
+/* Tolerates a missing amount rather than throwing: one order row with no
+   price should not take the whole admin panel down with it. */
+export function fmtMoney(n) {
+  const v = Number(n);
+  return '$' + (isFinite(v) ? v : 0).toLocaleString('en-US');
+}
 
 /* ---------------- commercial prices are for account holders ----------------
    What ARABNA charges — ad placements, the directory subscription, boosts,
@@ -305,50 +438,80 @@ export function wirePriceGates(root) {
 }
 
 /**
- * One filter sheet for both listing screens.
- * @param {object} o
- * @param {Array}  o.cats     [{ id, label }] category options
- * @param {object} o.value    current { cat, radius, sort, priceMin, priceMax }
- * @param {boolean} o.withPrice show the price range (marketplace only)
- * @param {Function} o.onApply called with the new value
- */
-/**
  * The one filter surface for both listing screens.
- * `withAttrs` turns on the directory extras — open-now, "open first" and the
- * attribute groups, which are generated from the registry for whichever
- * category is selected. Nothing about attributes is written here by hand, so
- * a new one is a line in data.js and appears in this sheet on its own.
+ *
+ * Rebuilt in the fourth batch against what the screen actually did wrong:
+ *  - the category row repeated the chips sitting behind the sheet, so it
+ *    is gone; the grid button on the directory does that job now;
+ *  - every group wraps, because a filter that scrolls sideways off the
+ *    edge is a filter nobody knows is there;
+ *  - each option carries its count, so nothing leads to zero results;
+ *  - options with no listings behind them are not offered at all — 185 of
+ *    the 342 attributes are empty in some categories;
+ *  - the most-used handful come first, before the named groups;
+ *  - radius is a slider rather than chips that ran off the screen;
+ *  - and the footer is pinned, with a live count on the button, because
+ *    it used to be cut off below the fold.
+ *
+ * `withAttrs` turns on the directory extras. Nothing about any specific
+ * attribute is written here: they are generated from the registry, so a
+ * new one is a line in data.js and appears here on its own.
  */
-export function openFilterSheet({ cats, value, withPrice, withAttrs, onApply }) {
-  const v = Object.assign({ cat: 'all', radius: S.state.radius, sort: 'newest',
+export function openFilterSheet({ cat, cats, value, withPrice, withAttrs, countFor, onApply }) {
+  const v = Object.assign({ cat: cat || 'all', radius: S.state.radius, sort: 'newest',
                             priceMin: '', priceMax: '', openNow: false, attrs: [] }, value);
   v.attrs = (v.attrs || []).slice();
   const sorts = [['newest', t('sortNewest')], ['nearest', t('sortNearest')], ['rated', t('sortTopRated')]]
     .concat(withAttrs ? [['open', t('sortOpen')]] : []);
+  const RADII = [5, 10, 25, 50, 100];
+  const catFor = () => (v.cat === 'all' ? '*' : v.cat);
 
-  const attrHtml = () => S.attrGroupsForCat(v.cat === 'all' ? '*' : v.cat).map(g => `
-    <div class="label mt-16">${t(g.group.key)}</div>
-    <div class="attr-pick" data-grp="${g.group.id}">
-      ${g.attrs.map(a => `<button class="chip ${v.attrs.includes(a.id) ? 'active' : ''}" data-a="${a.id}">
-        ${icon(a.icon, 14)} ${t(a.key)}</button>`).join('')}
-    </div>`).join('');
+  const counts = () => S.attrCountsFor(catFor());
+
+  /** one option, with how many listings stand behind it */
+  const chip = (a, n) => `<button class="chip ${v.attrs.includes(a.id) ? 'active' : ''}" data-a="${a.id}">
+    ${icon(a.icon, 14)} ${t(a.key)} <span class="chip-n">${n}</span></button>`;
+
+  const attrHtml = () => {
+    const c = counts();
+    const groups = S.attrGroupsForCat(catFor())
+      .map(g => ({ group: g.group, attrs: g.attrs.filter(a => (c[a.id] || 0) > 0) }))
+      .filter(g => g.attrs.length);
+
+    // the handful people reach for first, so the useful ones need no scroll
+    const top = groups.reduce((all, g) => all.concat(g.attrs), [])
+      .sort((a, b) => (c[b.id] || 0) - (c[a.id] || 0))
+      .slice(0, 6);
+
+    // a group holding one option does not need a heading of its own;
+    // a title over a single chip cost two lines and said nothing
+    const singles = groups.filter(g => g.attrs.length === 1).reduce((all, g) => all.concat(g.attrs), []);
+    const named = groups.filter(g => g.attrs.length > 1);
+
+    return `
+      ${top.length ? `<div class="label mt-16">${t('mostUsed')}</div>
+        <div class="attr-pick">${top.map(a => chip(a, c[a.id] || 0)).join('')}</div>` : ''}
+      ${named.map(g => `
+        <div class="label mt-16">${t(g.group.key)}</div>
+        <div class="attr-pick" data-grp="${g.group.id}">
+          ${g.attrs.map(a => chip(a, c[a.id] || 0)).join('')}
+        </div>`).join('')}
+      ${singles.length ? `<div class="label mt-16">${t('moreFilters')}</div>
+        <div class="attr-pick">${singles.map(a => chip(a, c[a.id] || 0)).join('')}</div>` : ''}`;
+  };
 
   openSheet(`
     <div class="sheet-title">${t('filters')}</div>
 
-    <div class="label">${t('category')}</div>
-    <div class="hscroll" style="padding:0" id="fCats">
-      <button class="chip ${v.cat === 'all' ? 'active' : ''}" data-c="all">${t('catAll')}</button>
-      ${cats.map(c => `<button class="chip ${v.cat === c.id ? 'active' : ''}" data-c="${c.id}">${c.label}</button>`).join('')}
+    <div class="row-between">
+      <span class="label" style="margin:0">${t('radius')}</span>
+      <span class="gold fs-13" id="radOut">${v.radius} ${t('miles')}</span>
     </div>
-
-    <div class="label mt-16">${t('radius')}</div>
-    <div class="hscroll" style="padding:0" id="fRad">
-      ${[5, 10, 25, 50, 100].map(r => `<button class="chip ${v.radius === r ? 'active' : ''}" data-r="${r}">${r} ${t('miles')}</button>`).join('')}
-    </div>
+    <input class="range" type="range" id="fRad" min="0" max="${RADII.length - 1}" step="1"
+           value="${Math.max(0, RADII.indexOf(v.radius))}" />
 
     <div class="label mt-16">${t('sortBy')}</div>
-    <div class="hscroll" style="padding:0" id="fSort">
+    <div class="attr-pick" id="fSort">
       ${sorts.map(([id, lbl]) => `<button class="chip ${v.sort === id ? 'active' : ''}" data-s="${id}">${lbl}</button>`).join('')}
     </div>
 
@@ -366,45 +529,58 @@ export function openFilterSheet({ cats, value, withPrice, withAttrs, onApply }) 
       </div>
       <div id="fAttrs">${attrHtml()}</div>` : ''}
 
-    <button class="btn btn-gold btn-block mt-16" id="fApply">${t('applyFilters')}</button>
-    <button class="btn btn-ghost btn-block mt-8" id="fClear">${t('clearFilters')}</button>
+    <div style="height:78px"></div>
+    <div class="sheet-foot">
+      <button class="btn btn-ghost btn-sm" id="fClear">${t('clearAll')}</button>
+      <button class="btn btn-gold" id="fApply">${t('applyFilters')}</button>
+    </div>
   `, (panel) => {
-    const pick = (sel, attr, key, cast = (x) => x) => {
-      panel.querySelectorAll(`${sel} .chip`).forEach(b => b.addEventListener('click', () => {
-        v[key] = cast(b.dataset[attr]);
-        panel.querySelectorAll(`${sel} .chip`).forEach(x => x.classList.toggle('active', x === b));
-      }));
+    const apply = panel.querySelector('#fApply');
+
+    /* The number on the button is worked out from the choices as they are
+       made, so nobody applies a filter and discovers zero. */
+    const refresh = () => {
+      if (!countFor) { apply.textContent = t('applyFilters'); return; }
+      const n = countFor(v);
+      apply.disabled = n === 0;
+      apply.textContent = n === 0 ? t('noResultsTryLess') : t('showNResults').replace('{n}', n);
     };
-    pick('#fCats', 'c', 'cat');
-    pick('#fRad', 'r', 'radius', Number);
-    pick('#fSort', 's', 'sort');
+
+    const rad = panel.querySelector('#fRad');
+    rad.addEventListener('input', () => {
+      v.radius = RADII[+rad.value] || RADII[0];
+      panel.querySelector('#radOut').textContent = `${v.radius} ${t('miles')}`;
+      refresh();
+    });
+
+    panel.querySelectorAll('#fSort .chip').forEach(b => b.addEventListener('click', () => {
+      v.sort = b.dataset.s;
+      panel.querySelectorAll('#fSort .chip').forEach(x => x.classList.toggle('active', x === b));
+      refresh();
+    }));
 
     if (withAttrs) {
       const on = panel.querySelector('#fOpenNow');
-      on.addEventListener('click', () => { v.openNow = !v.openNow; on.classList.toggle('active', v.openNow); });
+      on.addEventListener('click', () => {
+        v.openNow = !v.openNow;
+        on.classList.toggle('active', v.openNow);
+        refresh();
+      });
 
       // attributes are multi-select and combine; picking two narrows the list
-      const wireAttrs = () => panel.querySelectorAll('#fAttrs .chip').forEach(b => {
-        b.addEventListener('click', () => {
-          const id = b.dataset.a;
-          const i = v.attrs.indexOf(id);
-          if (i >= 0) v.attrs.splice(i, 1); else v.attrs.push(id);
-          b.classList.toggle('active', v.attrs.includes(id));
-        });
-      });
-      wireAttrs();
-
-      // changing the category changes which attributes exist: rebuild them,
-      // and drop any selection that no longer applies
-      panel.querySelectorAll('#fCats .chip').forEach(b => b.addEventListener('click', () => {
-        const valid = S.attrsForCat(v.cat === 'all' ? '*' : v.cat).map(a => a.id);
-        v.attrs = v.attrs.filter(id => valid.includes(id));
-        panel.querySelector('#fAttrs').innerHTML = attrHtml();
-        wireAttrs();
+      panel.querySelectorAll('#fAttrs .chip').forEach(b => b.addEventListener('click', () => {
+        const id = b.dataset.a;
+        const i = v.attrs.indexOf(id);
+        if (i >= 0) v.attrs.splice(i, 1); else v.attrs.push(id);
+        panel.querySelectorAll(`#fAttrs .chip[data-a="${id}"]`)
+          .forEach(x => x.classList.toggle('active', v.attrs.includes(id)));
+        refresh();
       }));
     }
 
-    panel.querySelector('#fApply').addEventListener('click', () => {
+    refresh();
+
+    apply.addEventListener('click', () => {
       if (withPrice) {
         v.priceMin = panel.querySelector('#fMin').value.trim();
         v.priceMax = panel.querySelector('#fMax').value.trim();
@@ -415,7 +591,7 @@ export function openFilterSheet({ cats, value, withPrice, withAttrs, onApply }) 
     });
     panel.querySelector('#fClear').addEventListener('click', () => {
       closeSheet();
-      onApply({ cat: 'all', radius: S.state.radius, sort: 'newest', priceMin: '', priceMax: '',
+      onApply({ cat: v.cat, radius: S.state.radius, sort: 'newest', priceMin: '', priceMax: '',
                 openNow: false, attrs: [] });
       toast(t('filtersCleared'), 'ok');
     });
@@ -489,6 +665,75 @@ export function fmtDay(spans) {
 export function distLabel(biz) {
   const d = biz && biz.dist;
   return d ? `<span>${icon('mapPin', 13)} ${d} ${t('miles')}</span>` : '';
+}
+
+/**
+ * A rotating ad surface that only rotates while it can actually be seen.
+ *
+ * The reason is commercial, not technical: an impression we sell has to be
+ * an impression that happened. A banner cycling behind a scrolled page, or
+ * in a backgrounded tab, inflates the number we invoice against and buys
+ * us an advertiser who does not renew. So the timer runs on
+ * IntersectionObserver and stops on `visibilitychange`, and a view is only
+ * counted once the placement has held still on screen for a full second.
+ *
+ * @returns a stop() function — call it when the screen is replaced
+ */
+export function mountAdRotator({ host, items, interval = 7000, paint, onClick }) {
+  if (!host || !items || !items.length) return () => {};
+  let i = 0, timer = null, visible = false, pending = null, alive = true;
+
+  const countable = (item) => item && item.orderId;   // house ads are not sold
+
+  const armImpression = () => {
+    clearTimeout(pending);
+    const item = items[i];
+    if (!countable(item)) return;
+    pending = setTimeout(() => {
+      if (alive && visible && document.visibilityState === 'visible') S.recordImpression(item.orderId);
+    }, 1000);
+  };
+
+  const show = (n) => {
+    i = (n + items.length) % items.length;
+    paint(items[i], i);
+    armImpression();
+  };
+
+  const start = () => {
+    if (timer || items.length < 2) { armImpression(); return; }
+    timer = setInterval(() => show(i + 1), interval);
+    armImpression();
+  };
+  const stop = () => { clearInterval(timer); timer = null; clearTimeout(pending); };
+
+  const io = ('IntersectionObserver' in window)
+    ? new IntersectionObserver((entries) => {
+        visible = entries.some(e => e.isIntersecting);
+        if (visible && document.visibilityState === 'visible') start(); else stop();
+      }, { threshold: 0.5 })
+    : null;
+
+  const onVis = () => {
+    if (document.visibilityState === 'visible' && visible) start(); else stop();
+  };
+  document.addEventListener('visibilitychange', onVis);
+
+  if (io) io.observe(host); else { visible = true; start(); }
+  paint(items[0], 0);
+
+  if (onClick) host.addEventListener('click', (e) => {
+    const item = items[i];
+    if (countable(item)) S.recordClick(item.orderId);
+    onClick(item, e);
+  });
+
+  return () => {
+    alive = false;
+    stop();
+    if (io) io.disconnect();
+    document.removeEventListener('visibilitychange', onVis);
+  };
 }
 
 export function openBadge(biz, now = new Date()) {

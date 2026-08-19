@@ -1,9 +1,10 @@
 /* ======================= ADVERTISE PURCHASE FLOW ======================= */
 import { t, icon, $, $$, go, renderHeader, toast, wireRoutes, fmtMoney,
          openSheet, closeSheet, showsPrices, wirePriceGates } from '../ui.js';
-import { AD_PRODUCTS } from '../data.js';
+import { AD_PRODUCTS, CATEGORIES } from '../data.js';
 import * as S from '../store.js';
 import { mountPhotoPicker } from './marketplace.js';
+import { fmtDate } from './directory.js';
 
 const DURATIONS = [
   { id: 'week1', key: 'week1' },
@@ -20,6 +21,7 @@ const ORDERED = AD_PRODUCTS.slice().sort((a, b) => a.prices.week1 - b.prices.wee
 /* Which line of the guide sheet points at which product. */
 const GUIDE = [
   { key: 'guideMaxReach', id: 'slider' },
+  { key: 'guideCategory', id: 'catSlider' },
   { key: 'guideBudget',   id: 'mini' },
   { key: 'guideStory',    id: 'story' },
   { key: 'guideEvent',    id: 'event' },
@@ -40,8 +42,11 @@ function placement(productId) {
     mini:   [row('ph-bar'), row('ph-block', 'height:26px'), cats, lit('height:15px'), row('ph-block', 'height:22px')],
     story:  [row('ph-bar'), row('ph-line'), row('ph-block', 'height:20px'), lit('height:20px'), row('ph-block', 'height:20px')],
     event:  [row('ph-bar'), row('ph-line'), lit('height:24px'), row('ph-block', 'height:20px'), row('ph-block', 'height:20px')],
+    // a category page: the chips first, then the strip that was bought
+    catSlider: [row('ph-bar'), cats, lit('height:30px'), row('ph-block', 'height:22px'), row('ph-block', 'height:22px')],
   };
-  const where = { slider: 'placeSlider', mini: 'placeMini', story: 'placeStory', event: 'placeEvent' };
+  const where = { slider: 'placeSlider', mini: 'placeMini', story: 'placeStory',
+                  event: 'placeEvent', catSlider: 'placeCatSlider' };
 
   return `<div class="ad-preview">
     <div class="ph">${(screens[productId] || screens.slider).join('')}<span class="ph-nav"></span></div>
@@ -59,6 +64,30 @@ function points(productId) {
   return `<ul class="ad-points">${list.map(p => `<li>${icon('check', 14)}<span>${p}</span></li>`).join('')}</ul>`;
 }
 
+/**
+ * How much of this placement is left, read off the running orders.
+ *
+ * Saying it out loud does two jobs: it stops us overselling a surface
+ * until it is worth nothing to anybody on it, and scarcity that is true
+ * is the most honest reason to buy this week rather than next.
+ */
+function availabilityLine(p) {
+  const perCat = !!p.perCat;
+  const left = perCat ? null : S.adSlotsLeft(p.id);
+  const total = S.adCapacity(p.id);
+  if (perCat) {
+    return `<div class="ad-avail">${icon('grid', 14)} ${t('slotsPerCat').replace('{n}', total)}</div>`;
+  }
+  if (left > 0) {
+    return `<div class="ad-avail">${icon('checkCircle', 14)}
+      ${t('slotsLeft').replace('{left}', left).replace('{total}', total)}</div>`;
+  }
+  const free = S.adNextFreeAt(p.id);
+  return `<div class="ad-avail full">${icon('clock', 14)}
+    ${t('slotsFull')}${free ? ' — ' + t('slotsNextFree').replace('{d}', fmtDate(free)) : ''}
+    <button class="link-gold" data-wait="${p.id}">${t('joinWaitlist')}</button></div>`;
+}
+
 export function AdvertiseScreen(root, params) {
   renderHeader({ simple: true, title: t('advertiseTitle') });
 
@@ -66,6 +95,8 @@ export function AdvertiseScreen(root, params) {
   // ORDERED[0] is the cheapest — the default when no product is named.
   let product = AD_PRODUCTS.find(p => p.id === params[0]) || ORDERED[0];
   let duration = DURATIONS[0];
+  // only the per-category slider needs one; the rest ignore it
+  let adCat = CATEGORIES.filter(c => !c.route)[0].id;
   const content = { bizName: '', tagline: '', ctaText: '', image: '' };
 
   const shell = document.createElement('div');
@@ -99,6 +130,7 @@ export function AdvertiseScreen(root, params) {
                   <span class="price-desc">${t(p.descKey)}</span></span>
                   ${paid ? `<span class="price-amt">${fmtMoney(p.prices.week1)}+</span>` : ''}
                 </button>
+                ${availabilityLine(p)}
                 <div class="ad-more"><div class="ad-more-inner">
                   ${placement(p.id)}
                   ${points(p.id)}
@@ -152,12 +184,41 @@ export function AdvertiseScreen(root, params) {
         panel.querySelector('[data-close]').addEventListener('click', closeSheet);
       }));
 
+      /* A full placement must not simply turn a buyer away: take the name
+         and call them when a slot frees. */
+      $$('#prods [data-wait]').forEach(b => b.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const prod = AD_PRODUCTS.find(x => x.id === b.dataset.wait);
+        openSheet(`
+          <div class="sheet-title">${t('joinWaitlist')}</div>
+          <div class="sheet-sub">${t('waitlistSub').replace('{p}', t(prod.nameKey))}</div>
+          <div class="field"><label class="label">${t('adBizName')}</label><input class="input" id="wlName" /></div>
+          <div class="field"><label class="label">${t('phoneLabel')}</label><input class="input" id="wlPhone" inputmode="tel" /></div>
+          <div class="field"><label class="label">${t('waitlistWhen')}</label><input class="input" id="wlWhen" placeholder="${t('waitlistWhenHint')}" /></div>
+          <button class="btn btn-gold btn-block" id="wlGo">${t('joinWaitlist')}</button>
+        `, (panel) => {
+          panel.querySelector('#wlGo').addEventListener('click', () => {
+            const name = panel.querySelector('#wlName').value.trim();
+            const phone = panel.querySelector('#wlPhone').value.trim();
+            if (!name || !phone) { toast(t('required'), 'err'); return; }
+            S.joinAdWaitlist({ product: prod.id, name, phone,
+                              preferred: panel.querySelector('#wlWhen').value.trim() });
+            closeSheet();
+            toast(t('waitlistDone'), 'ok');
+          });
+        });
+      }));
+
       wirePriceGates(shell);
 
     } else if (step === 2) {
       shell.innerHTML = `${paintSteps()}
         <div class="pad mt-16">
           <div class="section-title">${t('duration')}<small>${t(product.nameKey)}</small></div>
+          ${product.perCat ? `<div class="field mt-12"><label class="label">${t('adWhichCat')}</label>
+            <select class="select" id="adCat">${CATEGORIES.filter(c => !c.route).map(c =>
+              `<option value="${c.id}" ${c.id === adCat ? 'selected' : ''}>${t(c.key)} — ${S.adSlotsLeft('catSlider', c.id)}/${S.adCapacity('catSlider')}</option>`).join('')}</select>
+            <div class="hint">${t('adWhichCatHint')}</div></div>` : ''}
           <div class="mt-12" id="durs">
             ${DURATIONS.map(d => `
               <button class="price-card ${d.id === duration.id ? 'selected' : ''}" data-d="${d.id}">
@@ -173,7 +234,12 @@ export function AdvertiseScreen(root, params) {
         duration = DURATIONS.find(d => d.id === b.dataset.d);
         $$('#durs .price-card').forEach(x => x.classList.toggle('selected', x === b));
       }));
-      $('#next2').addEventListener('click', () => { step = 3; render(); });
+      const catSel = $('#adCat');
+      if (catSel) catSel.addEventListener('change', () => { adCat = catSel.value; });
+      $('#next2').addEventListener('click', () => {
+        if (product.perCat && S.adSlotsLeft('catSlider', adCat) <= 0) { toast(t('slotsFull'), 'err'); return; }
+        step = 3; render();
+      });
       $('#back2').addEventListener('click', () => { step = 1; render(); });
 
     } else if (step === 3) {
@@ -207,6 +273,8 @@ export function AdvertiseScreen(root, params) {
               <div class="i-txt"><b>${t(product.nameKey)}</b><span>${t(product.descKey)}</span></div></div>
             <div class="info-row"><span class="i-ico">${icon('calendar', 21)}</span>
               <div class="i-txt"><b>${t(duration.key)}</b><span>${t('duration')}</span></div></div>
+            ${product.perCat ? `<div class="info-row"><span class="i-ico">${icon('grid', 21)}</span>
+              <div class="i-txt"><b>${t((CATEGORIES.find(c => c.id === adCat) || {}).key || 'catAll')}</b><span>${t('adWhichCat')}</span></div></div>` : ''}
             <div class="info-row" style="border:none"><span class="i-ico">${icon('megaphone', 21)}</span>
               <div class="i-txt"><b>${content.bizName}</b><span>${content.tagline || '—'}</span></div></div>
           </div>
@@ -230,6 +298,7 @@ export function AdvertiseScreen(root, params) {
         e.target.innerHTML = `<span class="spinner"></span> ${t('paying')}`;
         await S.chargeCard(price(), 'ARABNA ad placement');
         S.addAdOrder({ product: product.id, duration: duration.id, price: price(),
+                       cat: product.perCat ? adCat : '',
                        bizName: content.bizName, tagline: content.tagline,
                        ctaText: content.ctaText, image: content.image });
         step = 5; render();

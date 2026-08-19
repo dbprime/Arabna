@@ -3,19 +3,21 @@
    ============================================================ */
 
 import { setLang, bothPacks } from './i18n.js';
-import { state, registerStrings } from './store.js';
-import { $, renderHeader, renderNav, hideNav, closeSheet, closeDrawer } from './ui.js';
+import { state, registerStrings, runReminders, runSubscriptionCycle } from './store.js';
+import { $, renderHeader, renderNav, hideNav, closeSheet, closeDrawer,
+         rememberScroll, restoreScroll, historyKey, markShown } from './ui.js';
 
 import { HomeScreen } from './screens/home.js';
 import { CategoriesScreen } from './screens/categories.js';
 import { EventsScreen, EventScreen, EventFormScreen } from './screens/events.js';
 import { DirectoryScreen, ListingScreen, AddBusinessScreen, ClaimScreen, SubscribeScreen,
+         SubscribeConsentScreen, MySubscriptionScreen,
          BusinessEditScreen, BusinessPhotosScreen, BusinessVerifyScreen } from './screens/directory.js';
 import { MarketplaceScreen, ListingDetailScreen, PostScreen, BoostScreen, MessagesScreen } from './screens/marketplace.js';
 import { MagazineScreen, ArticleScreen } from './screens/magazine.js';
 import { ProfileScreen, EditProfileScreen, ChangePasswordScreen, SavedScreen, MyAdsScreen,
          MyBusinessScreen, MyReviewsScreen, SettingsScreen, NotificationsScreen,
-         HelpScreen, AboutScreen, PrivacyScreen, TermsScreen } from './screens/profile.js';
+         HelpScreen, AboutScreen, PrivacyScreen, TermsScreen, BlockedScreen } from './screens/profile.js';
 import { SignUpScreen, SignInScreen, EmailVerifyScreen, PhoneVerifyScreen, ForgotScreen } from './screens/auth.js';
 import { AdvertiseScreen } from './screens/advertise.js';
 import { AdminScreen } from './screens/admin.js';
@@ -35,6 +37,8 @@ const ROUTES = [
   { re: /^#\/business\/edit\/(.+)$/,   screen: BusinessEditScreen,   nav: 'directory' },
   { re: /^#\/business\/photos\/(.+)$/, screen: BusinessPhotosScreen, nav: 'directory' },
   { re: /^#\/verify-business\/(.+)$/,  screen: BusinessVerifyScreen, nav: 'directory' },
+  { re: /^#\/subscribe-consent\/([^?]+)/, screen: SubscribeConsentScreen, nav: null },
+  { re: /^#\/my-subscription$/,   screen: MySubscriptionScreen, nav: 'profile' },
   { re: /^#\/subscribe(?:\/(.+))?$/, screen: SubscribeScreen, nav: 'directory' },
   { re: /^#\/magazine$/,          screen: MagazineScreen,    nav: 'directory' },
   { re: /^#\/magazine\/(.+)$/,    screen: ArticleScreen,     nav: 'directory' },
@@ -55,6 +59,7 @@ const ROUTES = [
   { re: /^#\/my-reviews$/,        screen: MyReviewsScreen,   nav: 'profile' },
   { re: /^#\/my-business$/,       screen: MyBusinessScreen,  nav: 'profile' },
   { re: /^#\/settings$/,          screen: SettingsScreen,    nav: 'profile' },
+  { re: /^#\/blocked$/,           screen: BlockedScreen,     nav: 'profile' },
   { re: /^#\/notifications$/,     screen: NotificationsScreen, nav: 'home' },
   { re: /^#\/help$/,              screen: HelpScreen,        nav: 'profile' },
   { re: /^#\/about$/,             screen: AboutScreen,       nav: 'profile' },
@@ -69,10 +74,17 @@ const ROUTES = [
   { re: /^#\/admin$/,             screen: AdminScreen,       nav: null },
 ];
 
+/* Screens that must always open at the top: a form, a sign-up step, or
+   anything reached straight after finishing something. Restoring a
+   half-scrolled form is disorienting rather than helpful. */
+const ALWAYS_TOP = /^#\/(auth|post|advertise|subscribe|subscribe-consent|events\/propose|events\/edit|business\/edit|add-business|claim|boost|profile\/edit|profile\/password)/;
+
 function render() {
   const full = location.hash || '#/home';
   const hash = full.split('?')[0];
   const app = $('#app');
+  // the outgoing screen's position belongs to the entry we are leaving
+  rememberScroll();
   closeSheet();
   closeDrawer();
 
@@ -91,13 +103,28 @@ function render() {
 
   if (match.nav) renderNav(match.nav); else hideNav();
   match.screen(view, params);
+
+  // …and the incoming one gets back whatever it had, unless it is a screen
+  // that has to start at the top
+  const key = historyKey();
+  markShown(key);
+  if (!ALWAYS_TOP.test(hash)) restoreScroll(key);
 }
 
 window.addEventListener('hashchange', render);
 registerStrings(bothPacks());
 
+/* Anything the passage of time has made due — a trial ending, a renewal
+   taken, an ad finishing tomorrow, a saved event arriving. There is no
+   server to push these, so they are worked out once at boot from what the
+   clock says, and each one carries a one-shot key. */
+function catchUp() {
+  try { runSubscriptionCycle(); runReminders(); } catch (e) { /* never block boot */ }
+}
+
 window.addEventListener('DOMContentLoaded', () => {
   setLang(state.lang || 'ar');
+  catchUp();
   if (!location.hash) location.hash = '#/home';
   render();
 });
@@ -105,6 +132,7 @@ window.addEventListener('DOMContentLoaded', () => {
 // If DOM is already parsed (module executes after parsing), render immediately.
 if (document.readyState !== 'loading') {
   setLang(state.lang || 'ar');
+  catchUp();
   if (!location.hash) location.hash = '#/home';
   render();
 }

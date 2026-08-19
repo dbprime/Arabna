@@ -4,9 +4,11 @@
     the rest of the app only ever calls these functions.)
    ============================================================ */
 
-import { CLASSIFIEDS, BUSINESSES, NOTIFICATIONS, SLIDER_ADS, REVIEWS,
+import { CLASSIFIEDS, BUSINESSES, NOTIFICATIONS, SLIDER_ADS, MINI_ADS, ARTICLES, REVIEWS,
          MARKET_CATS, FREE_PRICE, EVENTS, VERIFY_BADGE_PRICE, blankEvent,
-         ATTRIBUTES, ATTR_GROUPS, CATEGORIES, DAY_KEYS, CHIP_MIN, EVENT_TYPES,
+         ATTRIBUTES, ATTR_GROUPS, CATEGORIES, DAY_KEYS, CHIP_MIN, CHIP_MAX_SHARE, EVENT_TYPES,
+         GENERIC_WORDS, NAME_SIM_MIN, STREET_WORDS, SUBSCRIPTION_PRICE,
+         AD_PRODUCTS, AD_SLOTS,
          attrById, attrInCat, isAllDay, week, nextOccurrence } from './data.js';
 
 export { ATTRIBUTES, ATTR_GROUPS, DAY_KEYS, CHIP_MIN, EVENT_TYPES,
@@ -57,6 +59,16 @@ const DEFAULTS = {
   claims: [],                // ownership requests awaiting an admin decision
   reviewReplies: {},         // { reviewId: { text, when } } — the owner's answer
   mergedBusinesses: [],      // { keepId, dropId, when } — duplicates folded together
+  myPendingBusinesses: [],   // listings this device added over a certain duplicate match
+  clockOffset: 0,            // the admin test panel's fake clock, in ms — demo only
+  adWaitlist: [],            // { id, product, cat, name, phone, when, preferred } when a placement is full
+  adStats: {},               // { adId: { impressions, clicks, days: { 'YYYY-MM-DD': {i,c} } } }
+  bizStats: {},              // { bizId: { months: { 'YYYY-MM': { views, calls, directions, saves } } } }
+  blocked: [],               // { key, label, when } — people this user has blocked
+  savedEvents: [],           // event ids the user asked to be reminded about
+  reminded: {},              // one-shot keys, so a reminder is never sent twice
+  showDemo: true,            // the invented prototype data is visible until the owner hides it
+  demoPurged: false,         // …or erased for good, which the switch cannot undo
   seasons: { ramadan: false },   // seasonal attribute groups the owner has switched on
 };
 
@@ -444,13 +456,24 @@ export function attrGroupsForCat(cat, { all = false } = {}) {
     .filter(g => g.attrs.length);
 }
 
-/** chips above the results: only once CHIP_MIN businesses share the attribute */
-export function quickAttrsForCat(cat) {
+/**
+ * Chips above the results. An attribute earns one by being carried by at
+ * least CHIP_MIN businesses in the category — and by fewer than
+ * CHIP_MAX_SHARE of them, because something almost everyone has narrows
+ * nothing and only costs the row its best slot.
+ */
+export function quickAttrsForCat(cat, limit = 0) {
   const counts = attrCounts(cat);
-  return attrsForCat(cat)
-    .filter(a => (counts[a.id] || 0) >= CHIP_MIN)
+  const pool = allBusinesses().filter(b => cat === 'all' || cat === '*' || b.cat === cat).length;
+  const ceiling = Math.max(CHIP_MIN, Math.floor(pool * CHIP_MAX_SHARE));
+  const out = attrsForCat(cat)
+    .filter(a => (counts[a.id] || 0) >= CHIP_MIN && (counts[a.id] || 0) <= ceiling)
     .sort((a, b) => (counts[b.id] || 0) - (counts[a.id] || 0));
+  return limit ? out.slice(0, limit) : out;
 }
+
+/** how many businesses in this category carry each attribute — for the sheet */
+export function attrCountsFor(cat) { return attrCounts(cat); }
 export function hasAttr(biz, id) {
   return Array.isArray(biz && biz.attributes) && biz.attributes.includes(id);
 }
@@ -478,6 +501,8 @@ export function normalize(str) {
     .replace(/[\u064B-\u065F\u0670]/g, '')
     .replace(/[\u0622\u0623\u0625\u0671]/g, '\u0627')
     .replace(/\u0649/g, '\u064A')
+    .replace(/\u0624/g, '\u0648')
+    .replace(/\u0626/g, '\u064A')
     .replace(/\u0629/g, '\u0647')
     .trim();
 }
@@ -518,6 +543,69 @@ export function matchesSearch(biz, term) {
   return q.split(/\s+/).filter(Boolean).every(w => hay.includes(w));
 }
 
+/** how many of the typed words this listing matches */
+function wordHits(biz, words) {
+  const hay = searchHaystack(biz);
+  return words.reduce((n, w) => n + (hay.includes(w) ? 1 : 0), 0);
+}
+
+/**
+ * Search in three stages, because "every word must match" was throwing
+ * away the answer. Typing «صالون فلوريدا» returned nothing while
+ * "Florida Beauty Salon" sat in the directory: one extra word zeroed the
+ * result. So:
+ *
+ *   1. all the words — if anything matches, that is the answer;
+ *   2. otherwise any word, best first, and the screen says plainly that
+ *      this is not what was asked for;
+ *   3. otherwise nothing, and the caller offers the longest word and the
+ *      matching category names as buttons that do work.
+ *
+ * @returns { list, mode: 'all'|'exact'|'loose'|'none', suggestions }
+ */
+export function searchBusinesses(list, term) {
+  const q = normalize(term);
+  if (!q) return { list, mode: 'all', suggestions: [] };
+  const words = q.split(/\s+/).filter(Boolean);
+
+  const exact = list.filter(b => words.every(w => searchHaystack(b).includes(w)));
+  if (exact.length) return { list: exact, mode: 'exact', suggestions: [] };
+
+  const loose = list
+    .map(b => ({ b, n: wordHits(b, words) }))
+    .filter(x => x.n > 0)
+    .sort((x, y) => y.n - x.n)
+    .map(x => x.b);
+  if (loose.length) return { list: loose, mode: 'loose', suggestions: [] };
+
+  /* Nothing at all. A bare "no results" is a dead end; the longest word
+     the person typed, and any category whose name is close, are things
+     they can actually press. */
+  const longest = words.slice().sort((a, b) => b.length - a.length)[0] || '';
+  const suggestions = [];
+  if (longest) {
+    const n = list.filter(b => searchHaystack(b).includes(longest)).length;
+    if (n) suggestions.push({ kind: 'term', value: longest, label: longest, count: n });
+  }
+  CATEGORIES.filter(c => !c.route).forEach(c => {
+    const name = catName(c);
+    if (!name) return;
+    if (words.some(w => name.includes(w) || w.includes(name))) {
+      const n = list.filter(b => b.cat === c.id).length;
+      if (n) suggestions.push({ kind: 'cat', value: c.id, label: catLabel(c), count: n });
+    }
+  });
+  return { list: [], mode: 'none', suggestions: suggestions.slice(0, 4) };
+}
+function catName(c) {
+  const packs = i18nPacks();
+  return normalize([packs.ar[c.key], packs.en[c.key]].filter(Boolean).join(' '));
+}
+function catLabel(c) {
+  const packs = i18nPacks();
+  return (packs[state.lang] && packs[state.lang][c.key]) || c.id;
+}
+
 /* ============================================================
    Duplicate businesses
    ------------------------------------------------------------
@@ -527,6 +615,97 @@ export function matchesSearch(biz, term) {
    always agree on, so it is the primary key for this check.
    ============================================================ */
 
+/**
+ * What is left of a business name once everything anybody might write
+ * differently is taken away: punctuation, the Arabic definite article,
+ * and the word for the trade itself. "Al-Aseel Restaurant & Grill LLC"
+ * and "مطعم الأصيل" both come out as "aseel"/"اصيل" — the part that
+ * actually names the place.
+ */
+export function nameKey(name) {
+  const raw = typeof name === 'string' ? name : (name && (name.en || name.ar)) || '';
+  const flat = normalize(raw)
+    .replace(/[^\p{L}\p{N}]+/gu, ' ')       // punctuation and symbols become gaps
+    .trim();
+  const words = flat.split(/\s+/)
+    .map(w => /^ال\p{L}{2,}/u.test(w) ? w.slice(2) : w)   // ال- off the front
+    .filter(Boolean)
+    // the article again, this time as its own word: "ال", and the
+    // transliterations "al"/"el" that start half the shop names here
+    .filter(w => !['ال', 'al', 'el'].includes(w))
+    .filter(w => !GENERIC_WORDS.includes(w));
+  // sorted, so word order never decides whether two names are the same
+  return words.sort().join(' ');
+}
+
+/**
+ * Dice coefficient over letter bigrams — enough to tell a typo or a
+ * plural from a different shop, and small enough to need no library.
+ */
+export function similarity(a, b) {
+  const A = String(a || ''), B = String(b || '');
+  if (!A || !B) return 0;
+  if (A === B) return 1;
+  if (A.length < 2 || B.length < 2) return A === B ? 1 : 0;
+  const grams = (s2) => {
+    const m = new Map();
+    for (let i = 0; i < s2.length - 1; i++) {
+      const g = s2.slice(i, i + 2);
+      m.set(g, (m.get(g) || 0) + 1);
+    }
+    return m;
+  };
+  const ga = grams(A), gb = grams(B);
+  let hits = 0, total = 0;
+  ga.forEach(n => { total += n; });
+  gb.forEach((n, g) => { total += n; hits += Math.min(n, ga.get(g) || 0); });
+  return (2 * hits) / total;
+}
+
+/** every word of the shorter name appears in the longer one */
+function containsAllWords(a, b) {
+  const wa = String(a || '').split(/\s+/).filter(Boolean);
+  const wb = String(b || '').split(/\s+/).filter(Boolean);
+  if (!wa.length || !wb.length) return false;
+  const [short, long] = wa.length <= wb.length ? [wa, wb] : [wb, wa];
+  return short.every(w => long.includes(w));
+}
+
+/** two names are "the same name" by either test */
+export function sameName(a, b) {
+  const ka = nameKey(a), kb = nameKey(b);
+  if (!ka || !kb) return false;
+  if (ka === kb) return true;
+  if (containsAllWords(ka, kb)) return true;
+  return similarity(ka, kb) >= NAME_SIM_MIN;
+}
+
+/**
+ * An address reduced to what identifies the building: house number,
+ * street with its spelling folded, and the ZIP. The unit number is
+ * deliberately dropped from the *key* — the same shop is written with
+ * and without it — while the data keeps it for display.
+ * @returns { key, house, zip, street }
+ */
+export function addressKey(address) {
+  const raw = normalize(address).replace(/[.,]/g, ' ');
+  const zipMatch = raw.match(/\b(\d{5})(?:-\d{4})?\b(?!.*\b\d{5}\b)/);
+  const zip = zipMatch ? zipMatch[1] : '';
+  // the unit goes, including a trailing letter — "Suite 100 E" and
+  // "#100" are the same door written two ways
+  let body = raw
+    .replace(/\b(ste|suite|unit|apt|apartment)\s*[\w-]+(\s+[a-z]\b)?/g, ' ')
+    .replace(/#\s*[\w-]+/g, ' ');
+  const houseMatch = body.match(/\b(\d{1,6})\b/);
+  const house = houseMatch ? houseMatch[1] : '';
+  const words = body.split(/\s+/).filter(Boolean)
+    .map(w => STREET_WORDS[w] || w)
+    .filter(w => w !== zip && w !== house)
+    .filter(w => !/^\d{5}$/.test(w));
+  const street = words.join(' ');
+  return { key: [house, street, zip].filter(Boolean).join(' '), house, zip, street };
+}
+
 /** last ten digits, Arabic-Indic numerals included */
 export function phoneKey(phone) {
   const latin = String(phone || '').replace(/[\u0660-\u0669]/g, d => String(d.charCodeAt(0) - 0x0660));
@@ -535,23 +714,76 @@ export function phoneKey(phone) {
 }
 
 /**
- * Existing records that look like the one being added.
- * @returns [{ biz, reason: 'phone'|'name' }]
+ * Existing records that look like the one being added, each with how
+ * sure we are. Nothing here refuses anything — the caller shows the
+ * match and lets the person say which of the two it is.
+ *
+ * A missing phone is never a match. If it were, the eleven listings
+ * with no published number would all duplicate each other.
+ *
+ * @returns [{ biz, reason, confidence, score }] — certain first
  */
-export function findDuplicates({ phone, name, address, id } = {}) {
+export function findDuplicates({ phone, name, address, cat, id } = {}) {
   const key = phoneKey(phone);
-  const nName = normalize(typeof name === 'string' ? name : (name && (name.ar || name.en)) || '');
-  const nAddr = normalize(address).replace(/[.,]/g, '');
+  const inName = typeof name === 'string' ? name : (name && (name.en || name.ar)) || '';
+  const nk = nameKey(inName);
+  const ak = addressKey(address);
+  const RANK = { certain: 0, likely: 1, weak: 2 };
   const out = [];
-  for (const b of allBusinesses()) {
+
+  for (const b of everyBusiness()) {
     if (id && b.id === id) continue;
-    if (key && key.length === 10 && phoneKey(b.phone) === key) { out.push({ biz: b, reason: 'phone' }); continue; }
-    if (!nName) continue;
-    const sameName = normalize(b.name.ar) === nName || normalize(b.name.en) === nName;
-    const sameAddr = nAddr && normalize(b.address).replace(/[.,]/g, '') === nAddr;
-    if (sameName && sameAddr) out.push({ biz: b, reason: 'name' });
+
+    if (key.length === 10 && phoneKey(b.phone) === key) {
+      out.push({ biz: b, reason: 'phone', confidence: 'certain', score: 1 });
+      continue;
+    }
+
+    const bothNames = [b.name && b.name.en, b.name && b.name.ar].filter(Boolean);
+    const nameHit = nk && bothNames.some(n => sameName(inName, n));
+    const score = nk ? Math.max(0, ...bothNames.map(n => similarity(nk, nameKey(n)))) : 0;
+    const bk = addressKey(b.address);
+    const sameAddress = !!(ak.key && bk.key && ak.key === bk.key);
+    const sameZip = !!(ak.zip && bk.zip && ak.zip === bk.zip);
+
+    if (nameHit && sameAddress) out.push({ biz: b, reason: 'nameAddress', confidence: 'certain', score });
+    else if (nameHit && sameZip) out.push({ biz: b, reason: 'nameZip', confidence: 'likely', score });
+    else if (nameHit && cat && b.cat === cat) out.push({ biz: b, reason: 'name', confidence: 'weak', score });
+    else if (sameAddress && !nameHit) out.push({ biz: b, reason: 'address', confidence: 'weak', score });
   }
-  return out;
+
+  return out.sort((x, y) => RANK[x.confidence] - RANK[y.confidence] || y.score - x.score);
+}
+
+/** the strongest confidence in a result list, or '' when there is none */
+export function topConfidence(hits) {
+  if (!hits || !hits.length) return '';
+  return hits[0].confidence;
+}
+
+/**
+ * Every pair in the directory that looks like one shop entered twice.
+ * After 486 records went in from two files this is a button the owner
+ * actually needs, not a theoretical one.
+ * @returns [{ a, b, reason, confidence, score }]
+ */
+export function scanDirectoryDuplicates() {
+  const list = everyBusiness();
+  const seen = new Set();
+  const pairs = [];
+  for (const b of list) {
+    const hits = findDuplicates({
+      phone: b.phone, name: b.name, address: b.address, cat: b.cat, id: b.id,
+    }).filter(h => h.confidence !== 'weak');
+    for (const h of hits) {
+      const key = [b.id, h.biz.id].sort().join('|');
+      if (seen.has(key)) continue;
+      seen.add(key);
+      pairs.push({ a: b, b: h.biz, reason: h.reason, confidence: h.confidence, score: h.score });
+    }
+  }
+  const RANK = { certain: 0, likely: 1, weak: 2 };
+  return pairs.sort((x, y) => RANK[x.confidence] - RANK[y.confidence] || y.score - x.score);
 }
 
 /**
@@ -601,14 +833,105 @@ export function mergeBusinesses(keepId, dropId) {
  * record folded into a duplicate removed. The seed file stays a clean import
  * target — nothing is ever written back into it.
  */
-export function allBusinesses() {
+/* ============================================================
+   Demo data
+   ------------------------------------------------------------
+   Everything invented for the prototype carries `demo: true`. One
+   switch hides the lot; one button erases it. Without this the owner
+   would be hunting Al Sham Restaurant through 486 real listings on
+   launch day, and something invented would certainly be left behind.
+   ============================================================ */
+
+/** is the prototype data currently part of the app? */
+export function setRadius(miles) { state.radius = miles; save(); }
+
+export function showDemo() { return !state.demoPurged && state.showDemo !== false; }
+export function setShowDemo(on) { state.showDemo = !!on; save(); }
+
+/** drop the invented records from any list, when they are switched off */
+export function withoutDemo(list) {
+  return showDemo() ? list : list.filter(x => !(x && x.demo));
+}
+
+/** how much invented data there is, counted from the seed file itself */
+export function demoCounts() {
+  return {
+    businesses: BUSINESSES.filter(b => b.demo).length,
+    reviews: Object.values(REVIEWS).reduce((n, l) => n + l.filter(r => r.demo).length, 0),
+    ads: SLIDER_ADS.filter(a => a.demo).length + MINI_ADS.filter(a => a.demo).length,
+    listings: CLASSIFIEDS.filter(c => c.demo).length,
+    events: EVENTS.filter(e => e.demo).length,
+    articles: ARTICLES.filter(a => a.demo).length,
+    notifications: NOTIFICATIONS.filter(n => n.demo).length,
+  };
+}
+export function demoTotal() {
+  return Object.values(demoCounts()).reduce((a, b) => a + b, 0);
+}
+
+/**
+ * Erase it. The seed arrays live in a deployed file, so what this can
+ * honestly do is take them out of the app for good and cut every thread
+ * that pointed at them — and it says so. Deleting the arrays themselves
+ * from `data.js` is the last step before launch and belongs in the repo,
+ * not in localStorage.
+ */
+export function purgeDemoData() {
+  const demoIds = BUSINESSES.filter(b => b.demo).map(b => b.id);
+  state.demoPurged = true;
+  state.showDemo = false;
+  state.saved = (state.saved || []).filter(id => !demoIds.includes(id));
+  if (demoIds.includes(state.myBusinessId)) state.myBusinessId = null;
+  if (state.subscription && demoIds.includes(state.subscription.businessId)) state.subscription = null;
+  state.extraNotifs = (state.extraNotifs || []).filter(n => !n.demo);
+  save();
+}
+
+/**
+ * Every record there is, published or not — the admin queues, the
+ * duplicate scan and the merge tool need the ones nobody else sees.
+ * Screens call `allBusinesses()` instead.
+ */
+export function everyBusiness() {
   const dropped = (state.mergedBusinesses || []).map(m => m.dropId);
-  return state.extraBusinesses.concat(BUSINESSES)
+  return withoutDemo(state.extraBusinesses.concat(BUSINESSES))
     .filter(b => !dropped.includes(b.id))
     .map(b => {
       const edit = state.businessEdits && state.businessEdits[b.id];
       return edit ? Object.assign({}, b, edit) : b;
     });
+}
+
+/**
+ * What the directory shows. A listing held for review after a certain
+ * duplicate match is visible to whoever entered it and to nobody else,
+ * exactly like a pending marketplace ad.
+ */
+export function allBusinesses() {
+  return everyBusiness().filter(b =>
+    b.status !== 'pendingReview' || (state.myPendingBusinesses || []).includes(b.id));
+}
+
+/** listings this device entered that are still waiting on the admin */
+export function myPendingBusinesses() {
+  return everyBusiness().filter(b => b.status === 'pendingReview'
+    && (state.myPendingBusinesses || []).includes(b.id));
+}
+
+/** the admin queue: everything held for review, whoever entered it */
+export function pendingBusinesses() {
+  return everyBusiness().filter(b => b.status === 'pendingReview');
+}
+
+export function approvePendingBusiness(id) {
+  applyBusinessEdit(id, { status: 'live' });
+  notifyKeys('bizOkTitle', 'bizOkBody', '#/directory/' + id, 'checkCircle');
+  save();
+}
+export function rejectPendingBusiness(id, reason) {
+  applyBusinessEdit(id, { status: 'rejected' });
+  notifyKeys('bizNoTitle', 'bizNoBody', '#/directory', 'alert', reason);
+  save();
 }
 export function businessById(id) { return allBusinesses().find(b => b.id === id); }
 
@@ -618,8 +941,9 @@ export function businessById(id) { return allBusinesses().find(b => b.id === id)
  * never visible to anyone else.
  */
 export function allClassifieds() {
-  const list = state.extraClassifieds.concat(CLASSIFIEDS);
+  const list = withoutDemo(state.extraClassifieds.concat(CLASSIFIEDS));
   return list
+    .filter(c => !isBlocked(c))
     .filter(c => c.status !== 'rejected')
     .filter(c => c.status !== 'pending' || state.myListings.includes(c.id))
     .map(c => Object.assign({ status: 'live', photos: [] }, c, { boosted: state.boosted.includes(c.id) }));
@@ -649,7 +973,7 @@ export function myActiveInCat(catId) {
 export { FREE_PRICE };
 
 export function notifications() {
-  return state.extraNotifs.concat(NOTIFICATIONS)
+  return withoutDemo(state.extraNotifs.concat(NOTIFICATIONS))
     .map(n => Object.assign({}, n, { unread: n.unread && !state.readNotifs.includes(n.id) }));
 }
 export function unreadCount() { return notifications().filter(n => n.unread).length; }
@@ -672,11 +996,38 @@ export function pushNotif({ icon = 'bell', title, body, route }) {
   save();
 }
 
+/** a purchased order rendered as a slide; `orderId` is what the counters key on */
+function orderAsSlide(a) {
+  return {
+    id: a.id, orderId: a.id, kind: 'paid',
+    name: { ar: a.bizName, en: a.bizName },
+    tag: { ar: a.tagline, en: a.tagline },
+    cta: { ar: a.ctaText, en: a.ctaText },
+    color: 'linear-gradient(135deg,#2F5D50,#14312B)', icon: 'megaphone',
+    link: a.link || '#/home',
+  };
+}
+
 export function sliderAds() {
-  const live = state.myAds.filter(a => a.product === 'slider' && a.status === 'live')
-    .map(a => ({ id: a.id, kind: 'paid', name: { ar: a.bizName, en: a.bizName }, tag: { ar: a.tagline, en: a.tagline },
-                 cta: { ar: a.ctaText, en: a.ctaText }, color: 'linear-gradient(135deg,#2F5D50,#14312B)', icon: 'megaphone', link: '#/home' }));
-  return live.concat(SLIDER_ADS);
+  const t = now();
+  const live = (state.myAds || [])
+    .filter(a => a.product === 'slider' && a.status === 'live' && (!a.endsAt || a.endsAt > t))
+    .map(orderAsSlide);
+  return live.concat(withoutDemo(SLIDER_ADS));
+}
+
+/**
+ * The slider that sits at the top of one category. Cheaper than the home
+ * one and better targeted — a restaurant would rather reach someone who
+ * is already looking at restaurants than everyone who opens the app.
+ * Nothing is rendered when nobody has bought it: the results matter more
+ * than the pitch, and the pitch lives on #/advertise.
+ */
+export function catSliderAds(cat) {
+  const t = now();
+  return (state.myAds || [])
+    .filter(a => a.product === 'catSlider' && a.cat === cat && a.status === 'live' && (!a.endsAt || a.endsAt > t))
+    .map(orderAsSlide);
 }
 
 /* ============================================================
@@ -690,7 +1041,7 @@ export function sliderAds() {
    a feature to sell.
    ============================================================ */
 export function businessPlan(b) {
-  if (state.subscription && state.subscription.businessId === b.id) return 'paid';
+  if (state.subscription && state.subscription.businessId === b.id && subscriptionActive()) return 'paid';
   return b.plan;
 }
 export const PLAN_LIMITS = {
@@ -1183,7 +1534,7 @@ export function reportItem(id, label) {
 /** every review shown on a business page: seeded ones + ones written here */
 export function reviewsFor(bizId) {
   const mine = state.reviews.filter(r => r.bizId === bizId);
-  return mine.concat(REVIEWS[bizId] || []);
+  return mine.concat(withoutDemo(REVIEWS[bizId] || []).filter(r => !isBlocked(r)));
 }
 /** my own review of a business, if I wrote one */
 export function myReviewFor(bizId) { return state.reviews.find(r => r.bizId === bizId) || null; }
@@ -1214,6 +1565,11 @@ export function addReview(bizId, rating, text) {
     created: Date.now(),
   };
   state.reviews.unshift(rec);
+  // the owner hears about it — this is the notification shop owners open
+  if (state.myBusinessId === bizId) {
+    const stars = '★'.repeat(rating);
+    notifyKeys('revNewTitle', 'revNewBody', '#/directory/' + bizId, 'star', stars);
+  }
   save();
   return rec;
 }
@@ -1251,7 +1607,7 @@ export function eventIsPast(e, now = Date.now()) {
 /** Every event the admin can see, newest edits applied, deleted ones removed. */
 export function allEvents() {
   return state.extraEvents
-    .concat(EVENTS.filter(e => !state.hiddenEvents.includes(e.id)))
+    .concat(withoutDemo(EVENTS).filter(e => !state.hiddenEvents.includes(e.id)))
     .map(mergeEvent);
 }
 
@@ -1380,6 +1736,11 @@ export function sendMessage(listingId, text, lang = 'ar') {
   };
   state.messages.push(msg);
 
+  // the seller is told, on the listing the message is about
+  if (listing && !state.myListings.includes(listingId)) {
+    notifyKeys('msgNewTitle', 'msgNewBody', '#/messages/' + listingId, 'message');
+  }
+
   // Repeated attempts to hand out contact details get their own report.
   if (clean.removed) {
     const attempts = state.messages.filter(m => m.from === 'me' && m.scrubbed).length;
@@ -1406,13 +1767,20 @@ export function sendMessage(listingId, text, lang = 'ar') {
 }
 
 let bizSeq = 0;
-export function addBusiness(biz) {
+export function addBusiness(biz, { pendingReview = false } = {}) {
   // a counter as well as the clock: two records added inside the same
   // millisecond must not share an id
   const id = 'ub' + Date.now() + '-' + (++bizSeq);
   const rec = Object.assign({ id, plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0.5, claimed: true, photos: 0, videos: 0 }, biz);
+  if (pendingReview) {
+    // added over a certain duplicate match: the person said it is a
+    // different shop, and an admin decides who is right. It shows on
+    // their own device immediately and to nobody else.
+    rec.status = 'pendingReview';
+    state.myPendingBusinesses = (state.myPendingBusinesses || []).concat(id);
+  }
   state.extraBusinesses.unshift(rec);
-  state.myBusinessId = id;
+  if (!pendingReview) state.myBusinessId = id;
   save();
   return rec;
 }
@@ -1420,22 +1788,503 @@ export function addBusiness(biz) {
     handing the page over: ownership is an admin decision. */
 export function claimBusiness(id, details) { return requestClaim(id, details); }
 
-export function subscribeBusiness(businessId) {
-  state.subscription = { businessId, since: Date.now() };
+/* ============================================================
+   Subscription and auto-renewal
+   ------------------------------------------------------------
+   Most of the shape of this is a legal requirement, not a design
+   choice: a negative-option subscription in the US has to state the
+   amount, the cycle and the first charge date before any card field,
+   take an affirmative opt-in that is not pre-ticked, keep what the
+   person actually agreed to, and let them out in as few steps as they
+   got in. Everything below exists to satisfy that, and Stripe replaces
+   only the charging.
+   ============================================================ */
+
+export const TRIAL_DAYS = 14;
+export const YEARLY_DISCOUNT = 0.15;
+const DAY_MS = 86400000;
+
+/** the yearly price, derived from the monthly one so the two cannot drift */
+export function planPrice(plan) {
+  return plan === 'yearly'
+    ? Math.round(SUBSCRIPTION_PRICE * 12 * (1 - YEARLY_DISCOUNT))
+    : SUBSCRIPTION_PRICE;
+}
+/** what a year up front saves against paying monthly */
+export function yearlySaving() {
+  return SUBSCRIPTION_PRICE * 12 - planPrice('yearly');
+}
+
+/**
+ * The clock everything dated reads. It is the real one plus whatever the
+ * admin test panel has wound forward, so a trial ending and a renewal can
+ * be watched happening without a server. The offset ships with the demo
+ * data and goes with it.
+ */
+export function now() { return Date.now() + (state.clockOffset || 0); }
+export function advanceClock(days) {
+  state.clockOffset = (state.clockOffset || 0) + days * DAY_MS;
+  runSubscriptionCycle();
+  runReminders();
   save();
 }
-export function cancelSubscription() { state.subscription = null; save(); }
+export function resetClock() { state.clockOffset = 0; save(); }
+export function clockDaysAhead() { return Math.round((state.clockOffset || 0) / DAY_MS); }
+
+/**
+ * Start a subscription. `consentText` is stored verbatim, not as a link:
+ * the wording can change later and what matters is what this person read.
+ */
+export function startSubscription({ businessId, plan = 'monthly', consentText = '', device = '' }) {
+  const t0 = now();
+  const price = planPrice(plan);
+  state.subscription = {
+    businessId, plan, price,
+    status: 'trialing',
+    startedAt: t0,
+    trialEndsAt: t0 + TRIAL_DAYS * DAY_MS,
+    currentPeriodEnd: t0 + TRIAL_DAYS * DAY_MS,
+    cancelAtPeriodEnd: false,
+    consent: { text: consentText, acceptedAt: t0, device, amount: price, cycle: plan },
+    invoices: [],
+    notified: {},
+  };
+  save();
+  return state.subscription;
+}
+
+/** one period forward from `from`, by the plan's cycle */
+function periodEnd(from, plan) {
+  return plan === 'yearly' ? from + 365 * DAY_MS : from + 30 * DAY_MS;
+}
+
+/**
+ * Move the subscription to wherever the clock now is: end the trial, take
+ * the renewals that fell due, and send the notices the law expects before
+ * each one. Called on every read, so no timer has to be running.
+ */
+export function runSubscriptionCycle() {
+  const sub = state.subscription;
+  if (!sub || sub.status === 'canceled') return sub;
+  const t = now();
+  sub.notified = sub.notified || {};
+  let changed = false;
+
+  /* The reminders have a lower bound only. Real time arrives a second at a
+     time and would land inside any window, but the admin test clock jumps a
+     week at once — and a notice the law expects must not be skipped because
+     the tester moved fast. */
+  if (sub.status === 'trialing' && !sub.notified.trialEnding
+      && t >= sub.trialEndsAt - 2 * DAY_MS) {
+    notifyKeys('subTrialEndTitle', 'subTrialEndBody', '#/my-subscription', 'clock');
+    sub.notified.trialEnding = true; changed = true;
+  }
+  // "renews in three days — $29"
+  if (sub.status === 'active' && !sub.notified['renew' + sub.currentPeriodEnd]
+      && t >= sub.currentPeriodEnd - 3 * DAY_MS) {
+    notifyKeys('subRenewSoonTitle', 'subRenewSoonBody', '#/my-subscription', 'creditCard',
+               fmtAmount(sub.price));
+    sub.notified['renew' + sub.currentPeriodEnd] = true; changed = true;
+  }
+
+  // every period the clock has passed
+  let guard = 0;
+  while (t >= sub.currentPeriodEnd && guard++ < 200) {
+    if (sub.cancelAtPeriodEnd) {
+      sub.status = 'canceled';
+      sub.endedAt = sub.currentPeriodEnd;
+      notifyKeys('subEndedTitle', 'subEndedBody', '#/my-subscription', 'alert');
+      changed = true;
+      break;
+    }
+    sub.invoices = (sub.invoices || []).concat([{
+      id: 'inv' + (sub.invoices.length + 1),
+      date: sub.currentPeriodEnd, amount: sub.price, status: 'paid',
+    }]);
+    const wasTrial = sub.status === 'trialing';
+    sub.status = 'active';
+    sub.currentPeriodEnd = periodEnd(sub.currentPeriodEnd, sub.plan);
+    notifyKeys(wasTrial ? 'subStartedTitle' : 'subRenewedTitle',
+               wasTrial ? 'subStartedBody' : 'subRenewedBody',
+               '#/my-subscription', 'creditCard', fmtAmount(sub.price));
+    changed = true;
+  }
+  if (changed) save();
+  return sub;
+}
+function fmtAmount(n) { return '$' + n; }
+
+/** the live record, rolled forward to today */
+export function subscription() { return runSubscriptionCycle(); }
+
+/** cancelling keeps the service to the end of what was paid for */
+export function cancelSubscription() {
+  const sub = state.subscription;
+  if (!sub) return null;
+  sub.cancelAtPeriodEnd = true;
+  save();
+  return sub;
+}
+export function resumeSubscription() {
+  const sub = state.subscription;
+  if (!sub) return null;
+  sub.cancelAtPeriodEnd = false;
+  save();
+  return sub;
+}
+export function changeSubscriptionPlan(plan) {
+  const sub = state.subscription;
+  if (!sub || sub.plan === plan) return sub;
+  sub.plan = plan;
+  sub.price = planPrice(plan);
+  save();
+  return sub;
+}
+/** the card is simulated; what matters is that the screen exists */
+export function updateSubscriptionCard(last4) {
+  const sub = state.subscription;
+  if (!sub) return null;
+  sub.card = { last4: String(last4 || '').slice(-4) };
+  save();
+  return sub;
+}
+
+/** does the subscription entitle this business to the paid plan right now? */
+export function subscriptionActive() {
+  const sub = subscription();
+  return !!sub && (sub.status === 'trialing' || sub.status === 'active');
+}
+
+/** kept as the old entry point; the trial-less path is not used any more */
+export function subscribeBusiness(businessId) {
+  return startSubscription({ businessId, plan: 'monthly' });
+}
+
+/* ============================================================
+   Ad inventory
+   ------------------------------------------------------------
+   A placement is a finite thing. Selling more of it than exists is
+   how an ad surface stops working for everyone on it, so the count
+   is enforced here and shown to the buyer before they choose.
+   ============================================================ */
+
+export function adProduct(id) { return AD_PRODUCTS.find(p => p.id === id) || null; }
+
+/** how many of this placement exist at once (per category where that applies) */
+export function adCapacity(productId) { return AD_SLOTS[productId] || 0; }
+
+/** the orders occupying a placement right now */
+export function adsRunning(productId, cat) {
+  const t = now();
+  return (state.myAds || [])
+    .filter(a => a.product === productId)
+    .filter(a => !cat || a.cat === cat)
+    .filter(a => a.status === 'live' || a.status === 'pending')
+    .filter(a => !a.endsAt || a.endsAt > t);
+}
+
+export function adSlotsLeft(productId, cat) {
+  return Math.max(0, adCapacity(productId) - adsRunning(productId, cat).length);
+}
+
+/**
+ * When the next slot frees up — read off the running orders rather than
+ * typed in by hand, so it cannot be wrong.
+ */
+export function adNextFreeAt(productId, cat) {
+  const running = adsRunning(productId, cat)
+    .map(a => a.endsAt || 0)
+    .filter(Boolean)
+    .sort((a, b) => a - b);
+  if (adSlotsLeft(productId, cat) > 0) return null;
+  return running.length ? running[0] : null;
+}
 
 export function addAdOrder(order) {
-  const rec = Object.assign({ id: 'ad' + Date.now(), status: 'pending', created: Date.now() }, order);
+  const p = adProduct(order.product);
+  const t = now();
+  const rec = Object.assign({
+    id: 'ad' + t + '-' + (state.myAds || []).length,
+    status: 'pending', created: t,
+    startsAt: t,
+    endsAt: t + ((p && p.days) || 7) * 86400000,
+  }, order);
   state.myAds.unshift(rec);
   save();
   return rec;
 }
 export function approveAd(id) {
   const a = state.myAds.find(x => x.id === id);
-  if (a) a.status = 'live';
+  if (a) {
+    a.status = 'live';
+    notifyKeys('adLiveTitle', 'adLiveBody', '#/my-ads', 'checkCircle');
+  }
   save();
+}
+export function rejectAd(id, reason) {
+  const a = state.myAds.find(x => x.id === id);
+  if (a) {
+    a.status = 'rejected';
+    a.reason = reason || '';
+    notifyKeys('adNoTitle', 'adNoBody', '#/my-ads', 'alert', reason);
+  }
+  save();
+}
+/** one more period of the same placement, starting when the current one ends */
+export function renewAd(id) {
+  const a = state.myAds.find(x => x.id === id);
+  if (!a) return null;
+  const p = adProduct(a.product);
+  const from = Math.max(a.endsAt || 0, now());
+  a.endsAt = from + ((p && p.days) || 7) * 86400000;
+  a.status = 'live';
+  save();
+  return a;
+}
+
+/* ---- the waiting list, so a full placement does not lose the buyer ---- */
+export function joinAdWaitlist({ product, cat, name, phone, preferred }) {
+  const rec = { id: 'wl' + now() + '-' + (state.adWaitlist || []).length,
+                product, cat: cat || '', name, phone, preferred: preferred || '', when: now() };
+  state.adWaitlist = (state.adWaitlist || []).concat([rec]);
+  save();
+  return rec;
+}
+export function adWaitlist() { return (state.adWaitlist || []).slice().reverse(); }
+export function removeFromWaitlist(id) {
+  state.adWaitlist = (state.adWaitlist || []).filter(w => w.id !== id);
+  save();
+}
+
+/* ============================================================
+   Blocking
+   ------------------------------------------------------------
+   Apple requires four things of any app carrying user content:
+   filtering, a report button, published contact details, and a way to
+   block an abusive user. The first two existed; this is the third, and
+   it has to take effect immediately with no moderator in the loop —
+   that is the part the review guidelines are explicit about.
+
+   Identity in this prototype is thin: a listing's owner and a review's
+   author are the handles we have. `personKey` is the one place that
+   decides what "the same person" means, so real user ids replace it in
+   V.02 without touching anything else.
+   ============================================================ */
+
+/**
+ * What deleting an account takes with it, counted before it is done so
+ * the screen can say it out loud rather than asking for a blind yes.
+ */
+export function deletionSummary() {
+  return {
+    listings: (state.myListings || []).length,
+    reviews: (state.reviews || []).length,
+    saved: (state.saved || []).length,
+    messages: (state.messages || []).length,
+    ads: (state.myAds || []).length,
+    business: state.myBusinessId ? 1 : 0,
+    subscription: state.subscription ? 1 : 0,
+  };
+}
+
+/**
+ * A real deletion, not a sign-out. Everything the person put into this
+ * device goes: their listings, reviews, messages, favourites, ad orders,
+ * subscription and any page they owned.
+ */
+export function deleteAccount() {
+  const mine = state.myListings || [];
+  state.extraClassifieds = (state.extraClassifieds || []).filter(c => !mine.includes(c.id));
+  state.messages = (state.messages || []).filter(m => !mine.includes(m.listingId) && m.from !== 'me');
+  state.myListings = [];
+  state.reviews = [];
+  state.reviewReplies = {};
+  state.saved = [];
+  state.savedEvents = [];
+  state.myAds = [];
+  state.adStats = {};
+  state.subscription = null;
+  state.myBusinessId = null;
+  state.myPendingBusinesses = [];
+  state.extraBusinesses = (state.extraBusinesses || []).filter(b => !b.claimed);
+  state.claims = [];
+  state.blocked = [];
+  state.extraNotifs = [];
+  state.draft = null;
+  state.user = null;
+  save();
+}
+
+/* Published contact details. The stores want a real address for
+   complaints and takedown requests, visible in the app rather than
+   behind a form. One constant, used by About and both legal pages. */
+export const SUPPORT_EMAIL = 'support@arabna.app';
+export const SUPPORT_PHONE = '(713) 555-0199';
+
+export function personKey(x) {
+  if (!x) return '';
+  if (typeof x === 'string') return x;
+  if (x.userKey) return x.userKey;
+  if (x.owner && x.owner !== 'me') return 'u:' + x.owner;
+  if (x.user) return 'u:' + x.user;
+  if (x.listingId) return 'seller:' + x.listingId;
+  if (x.id) return 'seller:' + x.id;
+  return '';
+}
+
+export function blockedList() { return (state.blocked || []).slice(); }
+export function isBlocked(keyOrObj) {
+  const key = personKey(keyOrObj);
+  return !!key && (state.blocked || []).some(b => b.key === key);
+}
+export function blockUser(keyOrObj, label) {
+  const key = personKey(keyOrObj);
+  if (!key || isBlocked(key)) return false;
+  state.blocked = (state.blocked || []).concat([{ key, label: label || key, when: now() }]);
+  save();
+  return true;
+}
+export function unblockUser(key) {
+  state.blocked = (state.blocked || []).filter(b => b.key !== key);
+  save();
+}
+
+/* ---- events a person asked to be reminded about ---- */
+export function isEventSaved(id) { return (state.savedEvents || []).includes(id); }
+export function toggleSavedEvent(id) {
+  const list = state.savedEvents || [];
+  state.savedEvents = list.includes(id) ? list.filter(x => x !== id) : list.concat([id]);
+  save();
+  return isEventSaved(id);
+}
+export function savedEvents() {
+  return allEvents().filter(e => isEventSaved(e.id));
+}
+
+/**
+ * Everything that is due to be said today. Notifications in this app were
+ * seed data until now: `pushNotif` existed and nothing called it. These
+ * are the time-based ones — the rest fire from the action itself.
+ *
+ * Each reminder writes a one-shot key, so re-opening the app does not send
+ * it again.
+ */
+export function runReminders() {
+  const t = now();
+  const DAY = 86400000;
+  state.reminded = state.reminded || {};
+  const once = (key, fn) => {
+    if (state.reminded[key]) return;
+    state.reminded[key] = t;
+    fn();
+  };
+
+  // an ad that finishes tomorrow, with a renew button waiting at the route
+  (state.myAds || []).forEach(a => {
+    if (!a.endsAt || a.status !== 'live') return;
+    if (t >= a.endsAt - DAY && t < a.endsAt) {
+      once('adEnd:' + a.id + ':' + a.endsAt,
+           () => notifyKeys('adEndingTitle', 'adEndingBody', '#/my-ads', 'clock', a.bizName));
+    }
+  });
+
+  // an event they asked to be reminded about, the day before
+  savedEvents().forEach(e => {
+    const at = Date.parse(e.startsAt);
+    if (!at) return;
+    if (t >= at - DAY && t < at) {
+      once('ev:' + e.id + ':' + at,
+           () => notifyKeys('evTomorrowTitle', 'evTomorrowBody', '#/events/' + e.id, 'calendar', L(e.title)));
+    }
+  });
+
+  save();
+}
+/** the current language's side of a bilingual field, for a notification suffix */
+function L(v) {
+  if (!v) return '';
+  if (typeof v === 'string') return v;
+  return v[state.lang] || v.ar || v.en || '';
+}
+
+/* ============================================================
+   What a subscriber is actually getting
+   ------------------------------------------------------------
+   "340 people looked at your page this month" is the sentence that
+   renews a subscription. The numbers are counted on this device for
+   now and become central in V.02; the screens are built against the
+   same shape either way.
+   ============================================================ */
+const monthKey = (t) => new Date(t).toISOString().slice(0, 7);
+
+function bumpBiz(bizId, field) {
+  if (!bizId) return;
+  const all = state.bizStats[bizId] || { months: {} };
+  const k = monthKey(now());
+  all.months[k] = all.months[k] || { views: 0, calls: 0, directions: 0, saves: 0 };
+  all.months[k][field]++;
+  state.bizStats = Object.assign({}, state.bizStats, { [bizId]: all });
+  save();
+}
+export function recordBizView(bizId) { bumpBiz(bizId, 'views'); }
+export function recordBizCall(bizId) { bumpBiz(bizId, 'calls'); }
+export function recordBizDirections(bizId) { bumpBiz(bizId, 'directions'); }
+export function recordBizSave(bizId) { bumpBiz(bizId, 'saves'); }
+
+/** this month and the one before it, so the page can say which way it is going */
+export function bizStats(bizId) {
+  const all = state.bizStats[bizId] || { months: {} };
+  const t = now();
+  const thisKey = monthKey(t);
+  const prevDate = new Date(t); prevDate.setMonth(prevDate.getMonth() - 1);
+  const prevKey = monthKey(prevDate.getTime());
+  const zero = { views: 0, calls: 0, directions: 0, saves: 0 };
+  const cur = Object.assign({}, zero, all.months[thisKey] || {});
+  const prev = Object.assign({}, zero, all.months[prevKey] || {});
+  const reviews = (state.reviews || []).filter(r => r.bizId === bizId
+    && monthKey(r.when || t) === thisKey).length;
+  const delta = (k) => prev[k] ? Math.round(((cur[k] - prev[k]) / prev[k]) * 100) : null;
+  return { cur, prev, reviews, delta };
+}
+
+/* ---- what the advertiser is actually buying: eyes on the thing ---- */
+const dayKey = (t) => new Date(t).toISOString().slice(0, 10);
+
+/** counted only once the placement has genuinely been on screen */
+export function recordImpression(adId) {
+  if (!adId) return;
+  const st = state.adStats[adId] || { impressions: 0, clicks: 0, days: {} };
+  const k = dayKey(now());
+  st.impressions++;
+  st.days[k] = st.days[k] || { i: 0, c: 0 };
+  st.days[k].i++;
+  state.adStats = Object.assign({}, state.adStats, { [adId]: st });
+  save();
+}
+export function recordClick(adId) {
+  if (!adId) return;
+  const st = state.adStats[adId] || { impressions: 0, clicks: 0, days: {} };
+  const k = dayKey(now());
+  st.clicks++;
+  st.days[k] = st.days[k] || { i: 0, c: 0 };
+  st.days[k].c++;
+  state.adStats = Object.assign({}, state.adStats, { [adId]: st });
+  save();
+}
+export function adStats(adId) {
+  const st = state.adStats[adId] || { impressions: 0, clicks: 0, days: {} };
+  const ctr = st.impressions ? (st.clicks / st.impressions) * 100 : 0;
+  return Object.assign({}, st, { ctr });
+}
+/** the last `n` days, oldest first — enough for a bar per day */
+export function adStatsByDay(adId, n = 7) {
+  const st = state.adStats[adId] || { days: {} };
+  const out = [];
+  for (let k = n - 1; k >= 0; k--) {
+    const d = dayKey(now() - k * 86400000);
+    out.push(Object.assign({ date: d }, st.days[d] || { i: 0, c: 0 }));
+  }
+  return out;
 }
 
 export function addArticle(a) {
@@ -1699,16 +2548,22 @@ export function parseBusinessCsv(text) {
     if (key.length === 10) seenAt = seenPhones[key] || null;
     else if (nameEn && address) seenAt = seenNameAddr[naKey] || null;
 
-    if (seenAt) dupOf = { kind: 'file', line: seenAt };
+    if (seenAt) dupOf = { kind: 'file', line: seenAt, confidence: 'certain' };
     else {
       if (key.length === 10) seenPhones[key] = i + 1;
       else if (nameEn && address) seenNameAddr[naKey] = i + 1;
-      const hit = findDuplicates({ phone, name: nameEn, address })[0];
-      if (hit) dupOf = { kind: 'directory', name: hit.biz.name, id: hit.biz.id, reason: hit.reason };
+      // the same check the add form runs, so one rule governs both doors.
+      // A weak match is a note in the preview, not an exclusion: a file of
+      // 412 shops must not lose rows to a name that merely rhymes.
+      const hit = findDuplicates({ phone, name: nameEn, address, cat })[0];
+      if (hit) dupOf = { kind: 'directory', name: hit.biz.name, id: hit.biz.id,
+                         reason: hit.reason, confidence: hit.confidence };
     }
 
+    // only a certain or likely match holds a row back by default
+    const blocking = !!dupOf && dupOf.confidence !== 'weak';
     rows.push({
-      line: i + 1, raw, errors, warnings, dupOf, include: !errors.length && !dupOf,
+      line: i + 1, raw, errors, warnings, dupOf, include: !errors.length && !blocking,
       biz: {
         name: { ar: nameAr, en: nameEn }, cat, phone, address,
         desc: { ar: col(raw, 'desc_ar'), en: col(raw, 'desc_en') || col(raw, 'desc_ar') },
@@ -1722,15 +2577,17 @@ export function parseBusinessCsv(text) {
     header, rows,
     validCats: catIds,
     counts: {
-      ok: rows.filter(r => !r.errors.length && !r.dupOf).length,
+      // "ok" means it will import — a weak look-alike is a note, not a stop
+      ok: rows.filter(r => !r.errors.length && !(r.dupOf && r.dupOf.confidence !== 'weak')).length,
       bad: rows.filter(r => r.errors.length).length,
-      dup: rows.filter(r => !r.errors.length && r.dupOf).length,
+      dup: rows.filter(r => !r.errors.length && r.dupOf && r.dupOf.confidence !== 'weak').length,
       // a subset of `ok`: how many of the rows that will import carry a note.
       // Duplicates are counted under `dup` alone, never twice.
-      warn: rows.filter(r => !r.errors.length && !r.dupOf && r.warnings.length).length,
+      warn: rows.filter(r => !r.errors.length && !(r.dupOf && r.dupOf.confidence !== 'weak')
+        && (r.warnings.length || r.dupOf)).length,
       // …and how many of those will publish with no call button at all, which
       // is the one the operator actually wants to know before pressing go
-      noPhone: rows.filter(r => !r.errors.length && !r.dupOf
+      noPhone: rows.filter(r => !r.errors.length && !(r.dupOf && r.dupOf.confidence !== 'weak')
         && r.warnings.some(w => w.code === 'noPhone')).length,
     },
   };

@@ -3,11 +3,12 @@
    and the profile screen. Credentials live in store.js (V.02: a real staff
    account behind Supabase row-level security). */
 import { t, L, icon, $, $$, go, renderHeader, toast, wireRoutes, emptyState, fmtMoney, priceLabel,
-         confirmSheet } from '../ui.js';
-import { MAG_CATS, ARTICLES, CATEGORIES } from '../data.js';
+         confirmSheet, openSheet, closeSheet } from '../ui.js';
+import { MAG_CATS, ARTICLES, CATEGORIES, AD_PRODUCTS } from '../data.js';
 import * as S from '../store.js';
 import { passwordField, wirePasswordToggles } from './profile.js';
 import { fmtEventDate } from './events.js';
+import { fmtDate } from './directory.js';
 
 let unlocked = false;
 
@@ -52,7 +53,11 @@ function panelView(root) {
 
   const paintTabs = () => {
     const n = S.pendingCount();
-    return `
+    /* The one thing that must not slip past launch day: invented shops
+       and invented reviews sitting in a live directory. */
+    const warn = S.showDemo()
+      ? `<div class="demo-warn">${icon('alert', 17)} <span>${t('demoWarnBar')}</span></div>` : '';
+    return warn + `
       <div class="tabs" id="aTabs">
         <button class="tab ${tab === 'queue' ? 'active' : ''}" data-t="queue">${S.state.lang === 'en' ? 'Moderation' : 'المراجعة'}${n ? ` (${n})` : ''}</button>
         <button class="tab ${tab === 'mag' ? 'active' : ''}" data-t="mag">${t('magazineTitle')}</button>
@@ -117,6 +122,56 @@ function panelView(root) {
     $$('#aBody [data-bgno]').forEach(b => b.addEventListener('click', () => {
       S.rejectBadge(); toast(t('itemRejected'), 'ok'); paint();
     }));
+    // --- ad orders and the waiting list ---
+    $$('#aBody [data-adno]').forEach(b => b.addEventListener('click', () => {
+      S.rejectAd(b.dataset.adno, ''); toast(t('itemRejected'), 'ok'); paint();
+    }));
+    $$('#aBody [data-wlrm]').forEach(b => b.addEventListener('click', () => {
+      S.removeFromWaitlist(b.dataset.wlrm); toast(t('done'), 'ok'); paint();
+    }));
+
+    // --- the invented prototype data ---
+    const dsw = $('#demoSw');
+    if (dsw) dsw.addEventListener('click', () => {
+      S.setShowDemo(!S.showDemo());
+      toast(S.showDemo() ? t('demoShownToast') : t('demoHiddenToast'), 'ok');
+      paint();
+    });
+    const wipe = $('#demoWipe');
+    if (wipe) wipe.addEventListener('click', () => {
+      /* Typing the word is the confirmation: this cannot be undone from
+         the switch, and it takes the seed reviews with it. */
+      openSheet(`
+        <div class="sheet-title">${t('demoWipe')}</div>
+        <div class="sheet-sub">${t('demoWipeConfirm')}</div>
+        <div class="field"><input class="input" id="wipeWord" placeholder="${t('demoWipeWord')}" /></div>
+        <button class="btn btn-danger btn-block" id="wipeGo" disabled>${t('demoWipe')}</button>
+        <button class="btn btn-plain btn-block mt-8" id="wipeNo">${t('cancel')}</button>
+      `, (panel) => {
+        const inp = panel.querySelector('#wipeWord');
+        const btn = panel.querySelector('#wipeGo');
+        inp.addEventListener('input', () => {
+          btn.disabled = inp.value.trim() !== t('demoWipeWord');
+        });
+        btn.addEventListener('click', () => {
+          S.purgeDemoData();
+          closeSheet();
+          toast(t('demoPurged'), 'ok');
+          paint();
+        });
+        panel.querySelector('#wipeNo').addEventListener('click', () => closeSheet());
+      });
+    });
+
+    // --- the fake clock, so the trial and the renewal can be watched ---
+    $$('#aBody [data-clock]').forEach(b => b.addEventListener('click', () => {
+      S.advanceClock(+b.dataset.clock);
+      toast(t('done'), 'ok');
+      paint();
+    }));
+    const cr = $('#clockReset');
+    if (cr) cr.addEventListener('click', () => { S.resetClock(); toast(t('done'), 'ok'); paint(); });
+
     // --- admin password ---
     // --- ownership claims ---
     $$('#aBody [data-clok]').forEach(b => b.addEventListener('click', () => {
@@ -184,6 +239,70 @@ function panelView(root) {
         reader.readAsText(f, 'utf-8');
       });
     }
+
+    /* What the subscriber actually agreed to, kept word for word. A
+       chargeback or a regulator asks for exactly this. */
+    const cv = $('#consentView');
+    if (cv) cv.addEventListener('click', () => {
+      const c = (S.subscription() || {}).consent || {};
+      openSheet(`
+        <div class="sheet-title">${t('consentRecord')}</div>
+        <div class="sheet-sub">${t('consentRecordSub')}</div>
+        <div class="consent-box"><pre class="consent-text">${(c.text || '—')
+          .replace(/&/g, '&amp;').replace(/</g, '&lt;')}</pre></div>
+        <div class="info-row"><span class="i-ico">${icon('clock', 21)}</span>
+          <div class="i-txt"><b>${c.acceptedAt ? fmtDate(c.acceptedAt) : '—'}</b><span>${t('consentAcceptedAt')}</span></div></div>
+        <div class="info-row"><span class="i-ico">${icon('creditCard', 21)}</span>
+          <div class="i-txt"><b class="ltr">${c.amount ? fmtMoney(c.amount) : '—'} / ${c.cycle || '—'}</b><span>${t('consentAmount')}</span></div></div>
+        <div class="info-row"><span class="i-ico">${icon('smartphone', 21)}</span>
+          <div class="i-txt"><b class="ltr fs-12">${(c.device || '—').slice(0, 60)}</b><span>${t('consentDevice')}</span></div></div>
+      `);
+    });
+
+    // --- listings held over a certain duplicate match ---
+    $$('#aBody [data-bizok]').forEach(b => b.addEventListener('click', () => {
+      S.approvePendingBusiness(b.dataset.bizok); toast(t('done'), 'ok'); paint();
+    }));
+    $$('#aBody [data-bizno]').forEach(b => b.addEventListener('click', () => {
+      S.rejectPendingBusiness(b.dataset.bizno, ''); toast(t('itemRejected'), 'ok'); paint();
+    }));
+    $$('#aBody [data-bizmerge]').forEach(b => b.addEventListener('click', () => {
+      S.mergeBusinesses(b.dataset.into, b.dataset.bizmerge);
+      toast(t('mergeDone'), 'ok'); paint();
+    }));
+
+    /* After 486 records arrived from two separate files, "is anything in
+       here twice?" is a question with a real answer. */
+    const scan = $('#dupScan');
+    if (scan) scan.addEventListener('click', () => {
+      const out = $('#dupScanOut');
+      out.innerHTML = `<div class="hint">${t('dupScanRunning')}</div>`;
+      // let the label paint before the sweep blocks the thread
+      setTimeout(() => {
+        const pairs = S.scanDirectoryDuplicates();
+        out.innerHTML = pairs.length ? `
+          <div class="hint" style="margin:10px 0">${pairs.length} ${pairs.length === 1 ? t('dupScanFound') : t('dupScanPairs')}</div>
+          ${pairs.slice(0, 40).map((p, i) => `
+            <div class="q-card">
+              <div class="q-head"><b>${L(p.a.name)}</b>
+                <span class="conf-tag ${p.confidence}">${t(p.confidence === 'certain' ? 'confCertain' : p.confidence === 'likely' ? 'confLikely' : 'confWeak')}</span></div>
+              <div class="row-sub"><span class="ltr">${p.a.address || '—'} · ${p.a.phone || '—'}</span></div>
+              <div class="q-head" style="margin-top:8px"><b>${L(p.b.name)}</b></div>
+              <div class="row-sub"><span class="ltr">${p.b.address || '—'} · ${p.b.phone || '—'}</span></div>
+              <div class="action-grid" style="margin:10px 0 0">
+                <button class="btn btn-ghost btn-sm" data-pairsee="${p.a.id}">${icon('eye', 16)} ${t('view')}</button>
+                <button class="btn btn-danger btn-sm" data-pairmerge="${p.b.id}" data-into="${p.a.id}">${icon('refresh', 16)} ${t('mergeDuplicates')}</button>
+              </div>
+            </div>`).join('')}` : `<div class="ok-msg">${t('dupScanNone')}</div>`;
+        out.querySelectorAll('[data-pairsee]').forEach(x =>
+          x.addEventListener('click', () => go('#/directory/' + x.dataset.pairsee)));
+        out.querySelectorAll('[data-pairmerge]').forEach(x =>
+          x.addEventListener('click', () => {
+            S.mergeBusinesses(x.dataset.into, x.dataset.pairmerge);
+            toast(t('mergeDone'), 'ok'); paint();
+          }));
+      }, 30);
+    });
 
     // --- a public place is not a business: flag it either way ---
     const flip = (id, on) => {
@@ -412,12 +531,50 @@ function eventsHtml() {
 
 /* ----------------------------- SETTINGS ----------------------------- */
 function setHtml() {
+  const dc = S.demoCounts();
   return `<div class="pad mt-16">
     <div class="section-title">${t('attrGrpRamadan')}</div>
     <div class="setting-row" style="padding-inline:0">
       <span class="s-txt"><b>${t('seasonRamadan')}</b><span>${t('seasonRamadanSub')}</span></span>
       <button class="switch ${S.seasonOn('ramadan') ? 'on' : ''}" id="ramSw"></button>
     </div>
+
+    <div class="section-title mt-20">${t('demoTitle')}</div>
+    <div class="hint" style="margin-bottom:10px">${t('demoWhy')}</div>
+    ${S.state.demoPurged
+      ? `<div class="ok-msg">${icon('checkCircle', 15)} ${t('demoPurged')}</div>
+         <div class="hint" style="margin-top:8px">${t('demoPurgedNote')}</div>`
+      : `<div class="stat-row" style="padding:0;grid-template-columns:repeat(4,1fr)">
+           <div class="stat"><b>${dc.businesses}</b><span>${t('directoryTitle')}</span></div>
+           <div class="stat"><b>${dc.reviews}</b><span>${t('reviews')}</span></div>
+           <div class="stat"><b>${dc.ads}</b><span>${t('advertiseWithUs')}</span></div>
+           <div class="stat"><b>${dc.listings + dc.events + dc.articles + dc.notifications}</b><span>${t('demoOther')}</span></div>
+         </div>
+         <div class="setting-row" style="padding-inline:0">
+           <span class="s-txt"><b>${t('demoShow')}</b><span>${t('demoShowSub')}</span></span>
+           <button class="switch ${S.showDemo() ? 'on' : ''}" id="demoSw"></button>
+         </div>
+         <button class="btn btn-danger btn-block mt-8" id="demoWipe">${icon('trash', 19)} ${t('demoWipe')}</button>
+         <div class="hint" style="text-align:center;margin-top:8px">${t('demoWipeNote')}</div>`}
+
+    ${S.showDemo() ? `
+    <div class="section-title mt-20">${t('subTestTitle')}</div>
+    <div class="hint" style="margin-bottom:10px">${t('subTestWhy')}</div>
+    ${S.clockDaysAhead() ? `<div class="list-note" style="margin-inline:0">${icon('clock', 18)}
+      <span>${t('subTestAhead').replace('{x}', S.clockDaysAhead())}</span></div>` : ''}
+    ${S.subscription() ? `<div class="hint" style="margin-bottom:8px">
+        ${t(({ trialing: 'subStatusTrialing', active: 'subStatusActive',
+               canceled: 'subStatusCanceled', past_due: 'subStatusPastDue' })[S.subscription().status])}
+        · ${(S.subscription().invoices || []).length} ${t('subInvoices')}</div>`
+      : `<div class="hint" style="margin-bottom:8px">${t('subTestNone')}</div>`}
+    <div class="action-grid">
+      <button class="btn btn-ghost btn-sm" data-clock="1">${t('subTestDay')}</button>
+      <button class="btn btn-ghost btn-sm" data-clock="7">${t('subTestWeek')}</button>
+    </div>
+    <div class="action-grid">
+      <button class="btn btn-ghost btn-sm" data-clock="30">${t('subTestMonth')}</button>
+      <button class="btn btn-ghost btn-sm" id="clockReset">${t('subTestReset')}</button>
+    </div>` : ''}
 
     <div class="section-title mt-20">${t('changePassword')}</div>
     <div class="hint" style="margin-bottom:10px">${t('adminUser')}: <b class="gold ltr">${S.adminCreds().user}</b></div>
@@ -464,17 +621,46 @@ function magHtml() {
 
 function adsHtml() {
   const orders = S.state.myAds;
+  const waiting = S.adWaitlist();
+  const prodName = (id) => {
+    const p = S.adProduct(id);
+    return p ? t(p.nameKey) : id;
+  };
   return `<div class="pad mt-16">
+    <div class="section-title">${t('adInventory')}</div>
+    <div class="mt-8">
+      ${AD_PRODUCTS.filter(p => !p.perCat).map(p => `
+        <div class="setting-row" style="padding-inline:0">
+          <span class="s-txt"><b>${t(p.nameKey)}</b><span>${t('slotsLeft')
+            .replace('{left}', S.adSlotsLeft(p.id)).replace('{total}', S.adCapacity(p.id))}</span></span>
+          <span class="muted fs-12 ltr">${S.adsRunning(p.id).length}/${S.adCapacity(p.id)}</span>
+        </div>`).join('')}
+    </div>
+
+    <div class="section-title mt-20">${t('advertiseWithUs')}</div>
     ${orders.length ? orders.map(o => `
       <div class="list-row">
         <span class="row-ico">${icon('megaphone', 24)}</span>
         <div class="row-main">
           <div class="row-title">${o.bizName}
             <span class="badge ${o.status === 'live' ? 'badge-verified' : 'badge-pending'}">${o.status === 'live' ? t('statusLive') : t('statusPending')}</span></div>
-          <div class="row-sub">${t(o.product === 'slider' ? 'prodSlider' : o.product === 'mini' ? 'prodMini' : 'prodStory')} · ${fmtMoney(o.price)} · ${o.tagline || ''}</div>
-          ${o.status !== 'live' ? `<div class="row-actions"><button class="mini-btn gold" data-adok="${o.id}">${icon('check', 15)} ${S.state.lang === 'en' ? 'Approve & go live' : 'اعتماد ونشر'}</button></div>` : ''}
+          <div class="row-sub">${prodName(o.product)}${o.cat ? ' · ' + t(dirCatKey(o.cat)) : ''} · ${fmtMoney(o.price)} · ${o.tagline || ''}</div>
+          <div class="row-sub muted">${t('adImpressions')} ${S.adStats(o.id).impressions} · ${t('adClicks')} ${S.adStats(o.id).clicks}</div>
+          ${o.status !== 'live' ? `<div class="row-actions">
+            <button class="mini-btn gold" data-adok="${o.id}">${icon('check', 15)} ${S.state.lang === 'en' ? 'Approve & go live' : 'اعتماد ونشر'}</button>
+            <button class="mini-btn" data-adno="${o.id}">${icon('x', 15)} ${t('dupReject')}</button>
+          </div>` : ''}
         </div>
       </div>`).join('') : emptyState('megaphone', t('noPending'), t('adSubmittedSub'))}
+
+    <div class="section-title mt-20">${t('waitlistTitle')}${waiting.length ? ` (${waiting.length})` : ''}</div>
+    ${waiting.length ? waiting.map(w => `
+      <div class="q-card">
+        <div class="q-head"><b>${w.name}</b><span class="muted fs-12">${prodName(w.product)}</span></div>
+        <div class="row-sub"><span class="ltr">${w.phone}</span></div>
+        ${w.preferred ? `<div class="row-sub">${t('waitlistWhen')}: ${w.preferred}</div>` : ''}
+        <button class="btn btn-ghost btn-sm btn-block mt-8" data-wlrm="${w.id}">${icon('check', 16)} ${t('waitlistRemove')}</button>
+      </div>`).join('') : `<div class="hint">${t('waitlistEmpty')}</div>`}
   </div>`;
 }
 
@@ -577,8 +763,17 @@ function dirCatKey(id) {
   return c ? c.key : 'catAll';
 }
 
+/** the record a held listing was flagged against, if it is still findable */
+function dupPartner(b) {
+  const hits = S.findDuplicates({ phone: b.phone, name: b.name, address: b.address, cat: b.cat, id: b.id });
+  return hits.length ? hits[0].biz : null;
+}
+
 function dirHtml() {
-  const all = S.allBusinesses();
+  const sub = S.subscription();
+  const subBiz = sub ? S.businessById(sub.businessId) : null;
+  const all = S.everyBusiness();
+  const held = S.pendingBusinesses();
   const marked = all.filter(b => S.isNonCommercial(b));
   const paid = all.filter(b => S.businessPlan(b) === 'paid').length;
   return `<div class="pad mt-16">
@@ -604,6 +799,35 @@ function dirHtml() {
     <div class="section-title mt-20">${t('backupTitle')}</div>
     <div class="hint" style="margin-bottom:10px">${t('backupWhy')}</div>
     <button class="btn btn-ghost btn-block" id="bkExport">${icon('file', 19)} ${t('backupExport')}</button>
+
+    <div class="section-title mt-20">${t('subscribers')}</div>
+    ${sub ? `<div class="q-card">
+        <div class="q-head"><b>${subBiz ? L(subBiz.name) : sub.businessId}</b>
+          <span class="sub-status ${sub.status}">${t(({ trialing: 'subStatusTrialing', active: 'subStatusActive',
+            canceled: 'subStatusCanceled', past_due: 'subStatusPastDue' })[sub.status])}</span></div>
+        <div class="row-sub"><span class="ltr">${fmtMoney(sub.price)} / ${t(sub.plan === 'yearly' ? 'planYearly' : 'planMonthly')}</span></div>
+        <div class="row-sub"><span>${t('subNextCharge')}: ${fmtDate(sub.currentPeriodEnd)}</span></div>
+        <button class="btn btn-ghost btn-sm btn-block mt-8" id="consentView">${icon('file', 17)} ${t('consentRecord')}</button>
+      </div>` : `<div class="hint">${t('subTestNone')}</div>`}
+
+    <div class="section-title mt-20">${t('dupQueue')}</div>
+    <div class="hint" style="margin-bottom:10px">${t('similarReviewNote')}</div>
+    ${held.length ? held.map(b => `
+      <div class="q-card">
+        <div class="q-head"><b>${L(b.name)}</b><span class="muted fs-12">${t(dirCatKey(b.cat))}</span></div>
+        <div class="row-sub"><span class="ltr">${b.address || '—'}</span></div>
+        <div class="row-sub"><span class="ltr">${b.phone || '—'}</span></div>
+        ${dupPartner(b) ? `<div class="row-sub gold">${t('dupScanFound')}: ${L(dupPartner(b).name)}</div>` : ''}
+        <div class="action-grid" style="margin:10px 0 0">
+          <button class="btn btn-gold btn-sm" data-bizok="${b.id}">${icon('check', 17)} ${t('dupApprove')}</button>
+          <button class="btn btn-ghost btn-sm" data-bizno="${b.id}">${icon('x', 17)} ${t('dupReject')}</button>
+        </div>
+        ${dupPartner(b) ? `<button class="btn btn-ghost btn-sm btn-block mt-8"
+          data-bizmerge="${b.id}" data-into="${dupPartner(b).id}">${icon('refresh', 17)} ${t('dupMergeInto')}</button>` : ''}
+      </div>`).join('') : `<div class="hint">${t('dupQueueEmpty')}</div>`}
+
+    <button class="btn btn-ghost btn-block mt-12" id="dupScan">${icon('search', 19)} ${t('dupScan')}</button>
+    <div id="dupScanOut"></div>
 
     <div class="section-title mt-20">${t('nonCommercial')}</div>
     <div class="hint" style="margin-bottom:10px">${t('nonCommercialHint')}</div>
@@ -649,6 +873,16 @@ function download(name, text, mime) {
  * Step two of the import: every row accounted for, line by line, with the
  * reason it was refused. Rows can be dropped before the file is produced.
  */
+/** the rows that need a decision first: refusals, then certain matches */
+function sortedRows(rows) {
+  const rank = (r) => r.errors.length ? 0
+    : r.dupOf && r.dupOf.confidence === 'certain' ? 1
+    : r.dupOf && r.dupOf.confidence === 'likely' ? 2
+    : r.dupOf ? 3
+    : r.warnings.length ? 4 : 5;
+  return rows.slice().sort((a, b) => rank(a) - rank(b) || a.line - b.line);
+}
+
 function showImport(result, repaint) {
   const out = $('#csvOut');
   if (result.fatal === 'empty') {
@@ -686,8 +920,10 @@ function showImport(result, repaint) {
         ${t('importWarnNoPhone')}: <b>${result.counts.noPhone}</b></div>` : ''}
       <div class="hint" style="margin:8px 0 0">${t('importLegend')}</div>
       <div class="mt-12">
-        ${result.rows.map(r => `
-          <div class="imp-row ${r.errors.length ? 'bad' : r.dupOf ? 'dup' : r.warnings.length ? 'warn' : 'ok'}">
+        ${sortedRows(result.rows).map(r => `
+          <div class="imp-row ${r.errors.length ? 'bad'
+            : r.dupOf && r.dupOf.confidence !== 'weak' ? 'dup'
+            : (r.warnings.length || r.dupOf) ? 'warn' : 'ok'}">
             <label class="imp-pick">
               <input type="checkbox" data-inc="${r.line}" ${r.include ? 'checked' : ''}
                      ${r.errors.length ? 'disabled' : ''} />
@@ -700,9 +936,12 @@ function showImport(result, repaint) {
               ${r.biz.entryPrice ? `<span class="ltr muted fs-12">${r.biz.entryPrice}</span>` : ''}
               ${r.errors.length ? `<div class="imp-why err">${icon('alert', 12)} ${r.errors.map(problem).join(' · ')}</div>` : ''}
               ${r.warnings.length ? `<div class="imp-why warn">${icon('info', 12)} ${r.warnings.map(caution).join(' · ')}</div>` : ''}
-              ${!r.errors.length && r.dupOf ? `<div class="imp-why dup">${r.dupOf.kind === 'file'
-                ? `${t('importDupFile')} #${r.dupOf.line}`
-                : `${t('importDupDir')}: ${L(r.dupOf.name)}`}</div>` : ''}
+              ${!r.errors.length && r.dupOf ? `<div class="imp-why dup">
+                <span class="conf-tag ${r.dupOf.confidence}">${t(r.dupOf.confidence === 'certain'
+                  ? 'confCertain' : r.dupOf.confidence === 'likely' ? 'confLikely' : 'confWeak')}</span>
+                ${r.dupOf.kind === 'file'
+                  ? `${t('importDupFile')} #${r.dupOf.line}`
+                  : `${t('importDupDir')}: ${L(r.dupOf.name)}`}</div>` : ''}
             </div>
           </div>`).join('')}
       </div>

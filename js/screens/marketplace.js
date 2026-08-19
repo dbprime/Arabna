@@ -2,7 +2,7 @@
 import { t, L, icon, $, $$, go, back, renderHeader, confirmSheet, toast, wireRoutes,
          emptyState, query, shareItem, fmtMoney, priceLabel, statusBadge,
          openSheet, closeSheet, openFilterSheet, activeFilterCount, sectionNote,
-         showsPrices } from '../ui.js';
+         showsPrices, replaceHash, goAfterDone } from '../ui.js';
 import { MARKET_CATS, BOOST_PRICES, FREE_PRICE, SUBSCRIPTION_PRICE } from '../data.js';
 import { getLang } from '../i18n.js';
 import * as S from '../store.js';
@@ -10,11 +10,25 @@ import * as S from '../store.js';
 /* ----------------------------- LIST ----------------------------- */
 export function MarketplaceScreen(root) {
   renderHeader({});
+  /* Same rule as the directory: the state of the screen lives in the URL,
+     written with replaceState so the back button leaves the screen instead
+     of undoing filters one at a time. */
   const q = query();
   let cat = q.cat || 'all';
-  let term = '';
+  let term = q.q || '';
   const highlight = q.new || '';          // listing just published → pin it on top
-  let filters = { cat, radius: S.state.radius, sort: 'newest', priceMin: '', priceMax: '' };
+  let filters = { cat, radius: S.state.radius, sort: q.sort || 'newest',
+                  priceMin: q.min || '', priceMax: q.max || '' };
+
+  const writeUrl = () => {
+    const p = [];
+    if (cat !== 'all') p.push('cat=' + encodeURIComponent(cat));
+    if (term) p.push('q=' + encodeURIComponent(term));
+    if (filters.sort !== 'newest') p.push('sort=' + filters.sort);
+    if (filters.priceMin) p.push('min=' + encodeURIComponent(filters.priceMin));
+    if (filters.priceMax) p.push('max=' + encodeURIComponent(filters.priceMax));
+    replaceHash('#/marketplace' + (p.length ? '?' + p.join('&') : ''));
+  };
 
   /** "$14,500" / "45/hr" → 14500 so a price range can compare them */
   const priceNum = (p) => {
@@ -24,8 +38,10 @@ export function MarketplaceScreen(root) {
   };
 
   root.innerHTML = `
-    <div class="search-row">
-      <div class="search-bar">${icon('search', 21)}<input id="clSearch" placeholder="${t('searchClassifieds')}" /></div>
+    <div class="search-row solo">
+      <div class="search-bar big">${icon('search', 22)}<input id="clSearch" placeholder="${t('searchExample')}" value="${term.replace(/"/g, '&quot;')}" /></div>
+    </div>
+    <div class="search-row sub">
       <button class="loc-chip" data-loc>${icon('mapPin', 17)}<span>${S.state.location.city}</span></button>
       <button class="filter-btn" id="mkFilter" aria-label="${t('filters')}">${icon('filter', 20)}<span id="fCount"></span></button>
     </div>
@@ -107,11 +123,13 @@ export function MarketplaceScreen(root) {
 
   $$('#clChips .chip').forEach(c => c.addEventListener('click', () => {
     cat = c.dataset.cat;
+    filters.cat = cat;
     $$('#clChips .chip').forEach(x => x.classList.toggle('active', x === c));
+    writeUrl();
     paintNote();
     paint();
   }));
-  $('#clSearch').addEventListener('input', e => { term = e.target.value; paint(); });
+  $('#clSearch').addEventListener('input', e => { term = e.target.value; writeUrl(); paint(); });
   $('[data-loc]').addEventListener('click', () => import('./home.js').then(m => m.openLocationSheet()));
   $('#rulesBtn').addEventListener('click', () => openSheet(`
     <div class="sheet-title">${t('marketRules')}</div>
@@ -128,6 +146,7 @@ export function MarketplaceScreen(root) {
     onApply: (v) => {
       filters = v; cat = v.cat;
       $$('#clChips .chip').forEach(x => x.classList.toggle('active', x.dataset.cat === cat));
+      writeUrl();
       paintNote(); paint();
     },
   }));
@@ -210,7 +229,8 @@ export function ListingDetailScreen(root, params) {
         <div class="action-grid mt-12">
           <button class="btn btn-ghost btn-sm" id="shareBtn">${icon('share', 18)} ${t('share')}</button>
           <button class="btn btn-ghost btn-sm" id="repBtn">${icon('flag', 18)} ${t('report')}</button>
-        </div>`}
+        </div>
+        <button class="btn btn-plain btn-block mt-8" id="blockBtn">${icon('shield', 17)} ${t('blockSeller')}</button>`}
     </div>`;
 
   const bk = $('#bk') || $('#bk2');
@@ -227,6 +247,19 @@ export function ListingDetailScreen(root, params) {
 
   const rp = $('#repBtn');
   if (rp) rp.addEventListener('click', () => { S.reportItem(c.id, c.title); toast(t('reported'), 'ok'); });
+
+  /* Blocking takes effect on the spot — no moderator, no waiting. That is
+     what the store guidelines require, and it is the only version of it
+     that helps somebody being harassed right now. */
+  const bl = $('#blockBtn');
+  if (bl) bl.addEventListener('click', () => confirmSheet({
+    title: t('blockSeller'), sub: t('blockWhat'), confirmText: t('blockConfirm'), danger: true,
+    onConfirm: () => {
+      S.blockUser(c, L(c.title));
+      toast(t('blockedDone'), 'ok');
+      go('#/marketplace');
+    },
+  }));
   const sh = $('#shareBtn');
   if (sh) sh.addEventListener('click', () => shareItem(L(c.title), location.href));
   const rn = $('#renewBtn');
@@ -355,13 +388,13 @@ export function PostScreen(root) {
   // the user had typed and every photo they had picked.
   const draft = !editing ? S.takeDraft() : null;
 
-  if (!S.isLoggedIn()) {
-    if (draft) S.saveDraft(draft);          // keep it for the trip through verification
-    // requireTier routes to signup / email / phone depending on what is
-    // actually missing — an existing account is never sent back to signup.
-    S.requireTier(1, location.hash, go);
-    return;
-  }
+  /* A visitor may fill this in. Asking for an account before the person
+     has seen what they get is the commonest reason people leave an app,
+     and both stores dislike it; asking at the moment of publishing is
+     expected and understood. The draft (text *and* compressed photos) is
+     parked before the detour and the publish resumes itself afterwards,
+     which is machinery that already existed — this only stops the screen
+     turning people away at the door. */
 
   const startCat = editing ? editing.cat
     : (draft && draft.cat) || q.cat || MARKET_CATS[0].id;
@@ -388,6 +421,7 @@ export function PostScreen(root) {
       <div class="list-note" style="margin:0 0 14px">${icon('shield', 18)}<span>${t('phoneStripped')}</span></div>
 
       <button class="btn btn-gold btn-block mt-16" id="pubBtn">${icon('send', 19)} ${editing ? t('saveChanges') : t('publish')}</button>
+      ${S.tier() < 2 ? `<div class="hint" style="text-align:center;margin-top:8px">${t('signInToPublish')}</div>` : ''}
       <div class="hint" style="text-align:center;margin-top:10px">${t('needPhoneSub')}</div>
     </div>`;
 
@@ -485,7 +519,7 @@ export function PostScreen(root) {
       const res = S.updateClassified(editing.id, payload);
       if (!S.lastSaveOk) { toast(t('storageFull'), 'err'); return; }
       toast(res.flagged ? t('freeFlagged') : t('listingUpdated'), res.flagged ? 'err' : 'ok');
-      go('#/marketplace/' + editing.id);
+      goAfterDone('#/marketplace/' + editing.id);
       return;
     }
 
@@ -498,8 +532,10 @@ export function PostScreen(root) {
     } else {
       toast(t('done'), 'ok');
     }
-    // straight to the section it belongs to, with the new listing pinned on top
-    go(`#/marketplace?cat=${rec.cat}&new=${rec.id}`);
+    /* Straight to the section it belongs to, with the new listing pinned
+       on top — and the post form taken out of the history, so back does
+       not walk into a form that has already been submitted. */
+    goAfterDone(`#/marketplace?cat=${rec.cat}&new=${rec.id}`);
   });
 
   // Came back from verification with a rescued draft and now have the tier —
@@ -539,11 +575,25 @@ export function MessagesScreen(root, params) {
         <div class="row-sub gold"><span class="ltr">${priceLabel(c.price)}</span></div></div>
     </div>
     <div class="list-note">${icon('shield', 18)}<span>${t('scanNotice')}</span></div>
+    <div class="pad"><button class="btn btn-plain btn-sm" id="msgBlock">${icon('shield', 16)} ${t('blockSeller')}</button></div>
     <div class="msg-list" id="msgList"></div>
     <div class="msg-bar">
       <textarea class="textarea" id="msgIn" rows="1" placeholder="${t('messagePlaceholder')}"></textarea>
       <button class="btn btn-gold" id="msgSend" style="height:48px;padding:0 16px">${icon('send', 19)}</button>
     </div>`;
+
+  /* Blocking takes effect on the spot — no moderator, no waiting. That is
+     the requirement, and it is also the only version of it that helps
+     somebody who is being harassed right now. */
+  const mb = $('#msgBlock');
+  if (mb) mb.addEventListener('click', () => confirmSheet({
+    title: t('blockSeller'), sub: t('blockWhat'), confirmText: t('blockConfirm'), danger: true,
+    onConfirm: () => {
+      S.blockUser(c, L(c.title));
+      toast(t('blockedDone'), 'ok');
+      go('#/marketplace');
+    },
+  }));
 
   const paint = () => {
     const list = S.messagesFor(listingId);

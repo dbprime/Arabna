@@ -7,7 +7,7 @@ ARABNA · عربنا — a mobile-first web app for the Arab community in the U.
 **business directory + marketplace + events + magazine**, Arabic-first with a full English toggle.
 ("Classifieds / الإعلانات الشخصية" is now "Marketplace / السوق" — the old `#/classifieds`
 routes still resolve so shared links keep working.)
-Current version: **V.02.1 (prototype)**. Owner: Rai Elby (@dbprime). Deploys to Vercel (team DB Prime).
+Current version: **V.02.2 (prototype)**. Owner: Rai Elby (@dbprime). Deploys to Vercel (team DB Prime).
 
 ## Hard rules (from the product brief)
 1. **One repository, one Vercel project.** No duplicates, no stray preview projects.
@@ -54,12 +54,14 @@ Icons are sized inline via `icon('name', size)`.
 | Section | Revenue |
 |---|---|
 | Home main slider | highest-priced ad placement ($149+/week) |
-| Home mini banner | cheaper ad tier ($49+/week) |
+| Home mini banner | cheaper ad tier ($49+/month); fixed 62px box, capped at `AD_SLOTS.mini` |
+| Category slider | `catSlider` — the same strip at the top of one category page ($69+/week), 4 slots per category |
 | Directory | $29/month business subscription — unlimited photos + video, eligibility for the gold badge, category ranking, "featured this week", **"your page, only yours"**, stats, offers. **Reviews are NOT on it** (see below) |
 | Marketplace | free + paid "Boost" ($2–8); the Handyman section caps at 1 listing / 14 days and upsells the directory subscription |
 | Magazine | native banners between articles + sponsored stories ($199+) |
 | Events | "Featured Event" pin at the top of the section ($99+/week, `AD_PRODUCTS.event`) |
 | Accounts | paid blue verification badge — price lives in `VERIFY_BADGE_PRICE` (currently 0 = free while unpriced) |
+| Every placement | inventory is capped in `AD_SLOTS`; a full one takes a waiting-list entry rather than losing the buyer |
 | Outings | the ticketed half — trampolines, indoor playgrounds, rinks, museums, water parks — pays the same $29 directory subscription; the free public places carry `nonCommercial` and are deliberately outside every commercial surface |
 
 ## Auth tiers (do not weaken these)
@@ -516,12 +518,163 @@ rather than renumbered by hand.
   plaza). They are not duplicates and must not be merged; the importer will
   flag any future row against them, which is the correct behaviour.
 
+## Batch four (V.02.2) — ten things, in the order they had to be done
+
+### Duplicates are a sales moment, not an error
+`nameKey()` strips punctuation, the Arabic article and the trade word
+itself (`GENERIC_WORDS` in `data.js`), so «Al-Aseel Restaurant & Grill LLC»
+and «مطعم الأصيل» both reduce to what actually names the place.
+`similarity()` is a Dice coefficient over bigrams against `NAME_SIM_MIN`
+(0.85), plus a rule that every word of the shorter name appearing in the
+longer one counts. `addressKey()` folds street spellings, drops the unit
+number from the *comparison* key only, and keeps house number + street +
+ZIP. `findDuplicates()` returns `{biz, reason, confidence}` — certain
+(same phone, or same name + same address), likely (same name + same ZIP),
+weak (name only in the same category, or address only) — sorted strongest
+first. **A missing phone is never a match.**
+
+- **The screen never refuses and never says "duplicate".** `openSimilarSheet`
+  shows the existing page in full and offers, in this order: «هذا محلي —
+  طالب بملكيته», «لا، هذا محل مختلف», «رجوع». A shop owner typing their own
+  name in is the most valuable moment the app gets, and turning them away
+  wastes it. On a *certain* match, "different place" still saves — as
+  `status: 'pendingReview'`, visible to whoever entered it and to nobody
+  else until an admin agrees.
+- One function, three doors: the importer, the admin add form and
+  «أضف نشاطك». Admin → directory holds the review queue and a
+  **«افحص الدليل بحثاً عن تكرار»** button that sweeps all 515 records.
+
+### The demo data has a switch and a delete
+Every invented record carries `demo: true` (`markDemo()` in `data.js`;
+`DEMO_BUSINESSES` and `DEMO_REVIEWS` are separate arrays so deleting them
+before launch is deleting two arrays). `withoutDemo()` in `store.js` is
+the single gate; `showDemo()` / `setShowDemo()` / `purgeDemoData()` drive
+it, and admin → settings shows the counts, the switch and a delete that
+requires the word «حذف» typed out. **A standing warning bar sits above the
+admin tabs while any of it is visible.** The house "your ad here" slide is
+deliberately *not* demo data — it is the app's own unsold-slot filler.
+
+### Subscription: what the law wants, not what is convenient
+`startSubscription()` records plan, price, status, `trialEndsAt`,
+`currentPeriodEnd`, `cancelAtPeriodEnd`, invoices, and a **verbatim copy of
+the agreement text** with the time, device, amount and cycle. Yearly is
+derived (`planPrice`, 15% off the monthly × 12) so the two cannot drift.
+
+- **A separate consent screen stands before any card field**: amount,
+  cycle, the exact first-charge date, the words "renews automatically" and
+  the literal path to cancel. The box is never pre-ticked and the button is
+  disabled until it is. That is the point cases are lost on.
+- **Cancelling is one button and one confirmation**, in the place the
+  consent screen said it would be, and the service runs to the end of the
+  paid period with an undo.
+- `now()` is the app's clock — real time plus `state.clockOffset`, which
+  the admin test panel winds forward. Everything dated reads it, so the
+  trial ending, the renewal and both legally required notices can be
+  watched without a server. **The panel is tied to the demo flag** and goes
+  with it.
+
+### Ads: inventory is finite, and impressions have to be real
+`AD_SLOTS` in `data.js` (slider 6 · catSlider 4 *per category* · mini 8 ·
+story 4 · event 3). `adSlotsLeft()` and `adNextFreeAt()` are read off the
+running orders, never typed. A full placement shows «محجوز بالكامل» plus
+the next free date and takes a **waiting-list** entry rather than losing
+the buyer. New product: **`catSlider`**, the same strip at the top of one
+category page, cheaper because the audience is narrower.
+
+- **`mountAdRotator` in `ui.js`** rotates only while the element is on
+  screen (IntersectionObserver) and the tab is visible, and counts an
+  impression only after a full second of being seen. Selling a view that
+  did not happen buys an advertiser who does not renew.
+- The mini banner was **shrink-to-fit** — a `<button>` sized by its own
+  text, so it changed width every seven seconds. It is now a fixed
+  full-width 62px box with `text-overflow: ellipsis`. It stays small on
+  purpose: the size difference is what justifies the price difference.
+
+### The numbers that renew a subscription
+`recordBizView/Call/Directions/Save` and `bizStats()` give the subscriber
+views, call taps, directions taps, saves and new reviews, this month
+against last, ending in «صفحتك شافها N شخص هالشهر». Advertisers get
+impressions, clicks, CTR and a bar per day (CSS, no library) with the
+renew button beside them.
+
+### Notifications now come from something that happened
+`pushNotif` existed and nothing called it. Wired: ad approved/rejected,
+a review on your business, a message about your listing, trial ending,
+renewal due, each charge, an ad ending tomorrow, a saved event tomorrow —
+plus the claim, verification and moderation ones that already existed.
+Time-based ones run through `runReminders()` at boot with one-shot keys.
+**Saving an event** (`toggleSavedEvent`) was added so its reminder has
+something real behind it.
+
+### What the app stores require
+`blockUser` / `unblockUser` / `isBlocked` with `personKey()` as the single
+definition of "the same person" (real user ids replace it in V.02).
+Blocking is **immediate and needs no moderator** — that is Apple's
+requirement and the only version that helps somebody being harassed.
+Blocked people vanish from listings, messages and reviews at once, and
+`#/blocked` undoes it. `SUPPORT_EMAIL` / `SUPPORT_PHONE` are published in
+About and both legal pages, not behind a form. `deleteAccount()` now
+really deletes — listings, reviews, messages, favourites, ad orders,
+subscription, ownership — and the sheet lists what will go first.
+
+### Back puts you where you were
+`scrollMemory` is keyed to the **history entry**, not the route, so two
+visits to the directory are two places. The key is captured *before* the
+hash changes (`shownKey`), because by the time `hashchange` fires the
+browser has already moved — filing the old page's position under the new
+page's key was the first bug this had. Restore happens after two
+`requestAnimationFrame`s and is clamped to the real scroll height. The map
+is memory-only: a fresh launch starts at the top.
+
+- **Screen state lives in the hash query** on the directory, the
+  marketplace and the events list, written with **`replaceHash`** and never
+  `pushState` — otherwise back undoes filters one at a time and never
+  leaves the screen. The bonus is a link somebody can send.
+- Returning to the directory scrolls the card you opened into the middle
+  and flashes it once: the saved pixel is right until the list changes
+  length; the card is right either way.
+- `goAfterDone()` replaces the entry after something is completed, so back
+  never re-enters a submitted form or a payment screen.
+
+### Search that finds what is there
+Three stages: all words → any word (best first, with «ما لقينا … بالضبط —
+هاي الأقرب» above the results) → a useful empty state offering the longest
+word and any matching category as buttons. «صالون فلوريدا» returned zero
+while Florida Beauty Salon sat in the directory; it now returns it.
+
+- The magnifier was being squeezed to ~13px by `flex-shrink` in a crowded
+  row. **Search has its own full-width row**, the icon is `flex: 0 0 auto`
+  at 22px in gold, and the placeholder is an example.
+- **`CHIP_MAX_SHARE = 0.6`**: an attribute carried by more than 60% of a
+  category is not a filter. «يتحدثون العربية» is on 139 of 139 restaurants
+  and was taking the first slot in the row; it stays in the sheet.
+- Quick chips appear **only after a category is chosen**, capped at five.
+  A grid button opens every category at once with real counts.
+- The filter sheet: no repeated category row, everything wraps (no
+  horizontal scroll anywhere), a count beside every option, nothing with
+  zero behind it, a «الأكثر استخداماً» group first, radius as a slider, and
+  a pinned footer whose button reads «عرض N نتيجة» live.
+- Active filters show as removable pills above the results.
+
+### The "+" button
+Labelled «أضف», and it opens a choice — sell something · add your business
+· suggest an event, with «أعلن معنا» underneath — instead of jumping
+straight into the marketplace form. **A visitor fills the form and is asked
+for an account at the publish button**, with the draft (text and photos)
+parked and the publish resuming itself afterwards. Asking before a person
+knows what they get is the commonest reason they leave.
+
 ## Known open items
 - Legal pages are first drafts — a lawyer must review before public launch.
 - Push notifications: triggers are defined in Settings but not wired to a real service.
 - Admin panel is intentionally minimal (moderation queue, magazine editor, ad approval).
 - Prices are placeholders chosen by Claude — the owner will set final pricing.
 - The 29 development seeds and every seed review in `data.js` must be deleted
-  before launch (FTC rule of October 2024 on reviews).
+  before launch (FTC rule of October 2024 on reviews). They now carry `demo: true`
+  and live in `DEMO_BUSINESSES` / `DEMO_REVIEWS`, so it is two arrays and the
+  admin switch, not a hunt.
+- The subscription test clock in admin → settings goes with the demo data.
+- `personKey()` is a stand-in for real user ids: blocking keys on a listing's
+  owner or a review's author until V.02 brings accounts on a server.
 - `dist` is 0 on all 486 imported listings until geocoding lands, so "nearest"
   sorting and the radius filter do nothing for them.

@@ -1,10 +1,11 @@
 /* ======================= PROFILE & ACCOUNT SCREENS ======================= */
 import { t, L, icon, $, $$, go, renderHeader, toast, wireRoutes, emptyState, confirmSheet,
+         openSheet, closeSheet,
          fmtMoney, priceLabel, statusBadge, stars } from '../ui.js';
-import { SUBSCRIPTION_PRICE } from '../data.js';
+import { SUBSCRIPTION_PRICE, CATEGORIES } from '../data.js';
 import * as S from '../store.js';
 import { catIcon } from './home.js';
-import { openReviewSheet } from './directory.js';
+import { openReviewSheet, fmtDate } from './directory.js';
 import { mountPhotoPicker } from './marketplace.js';
 
 /* ------------------------------ PROFILE ------------------------------
@@ -251,6 +252,52 @@ export function SavedScreen(root) {
 }
 
 /* ------------------------------ MY ADS ------------------------------ */
+/**
+ * What the advertiser is paying for, in numbers.
+ *
+ * Views, clicks and the rate between them are the only argument for
+ * renewing, so the renew button sits next to them rather than on its own
+ * screen. The bars are one per day, drawn in CSS: a chart library for
+ * seven numbers would be the only dependency in the project.
+ */
+function adOrderCard(o) {
+  const p = S.adProduct(o.product);
+  const st = S.adStats(o.id);
+  const days = S.adStatsByDay(o.id, 7);
+  const peak = Math.max(1, ...days.map(d => d.i));
+  const left = o.endsAt ? Math.max(0, Math.ceil((o.endsAt - S.now()) / 86400000)) : null;
+  const ending = left !== null && left <= 1;
+
+  return `<div class="q-card">
+    <div class="q-head">
+      <b>${o.bizName}</b>
+      <span class="badge ${o.status === 'live' ? 'badge-verified' : o.status === 'rejected' ? 'badge-pending' : 'badge-pending'}">${
+        o.status === 'live' ? t('statusLive') : o.status === 'rejected' ? t('statusRejected') : t('statusPending')}</span>
+    </div>
+    <div class="row-sub">${p ? t(p.nameKey) : o.product}${o.cat ? ' · ' + t(catKeyFor(o.cat)) : ''} · <span class="ltr">${fmtMoney(o.price)}</span></div>
+    ${left !== null ? `<div class="row-sub ${ending ? 'gold' : ''}">${t('adEndsOn')}: ${fmtDate(o.endsAt)} · ${t('adDaysLeft').replace('{n}', left)}</div>` : ''}
+    ${o.reason ? `<div class="err-msg">${icon('alert', 15)} ${o.reason}</div>` : ''}
+
+    <div class="stat-row" style="padding:10px 0 0">
+      <div class="stat"><b>${st.impressions}</b><span>${t('adImpressions')}</span></div>
+      <div class="stat"><b>${st.clicks}</b><span>${t('adClicks')}</span></div>
+      <div class="stat"><b>${st.ctr.toFixed(1)}%</b><span>${t('adCtr')}</span></div>
+    </div>
+
+    <div class="spark" aria-hidden="true">
+      ${days.map(d => `<span class="spark-bar" style="height:${Math.max(3, Math.round((d.i / peak) * 40))}px"
+        title="${d.date}: ${d.i}"></span>`).join('')}
+    </div>
+    <div class="hint" style="text-align:center">${t('adLast7')}</div>
+
+    <button class="btn btn-ghost btn-sm btn-block mt-8" data-adrenew="${o.id}">${icon('refresh', 16)} ${t('adRenew')}</button>
+  </div>`;
+}
+function catKeyFor(id) {
+  const c = CATEGORIES.find(x => x.id === id);
+  return c ? c.key : 'catAll';
+}
+
 export function MyAdsScreen(root) {
   if (!memberOnly('#/my-ads')) return;
   renderHeader({ simple: true, title: t('myAds') });
@@ -279,17 +326,12 @@ export function MyAdsScreen(root) {
 
       ${orders.length ? `
         <div class="section-head" style="padding:0;margin:20px 0 10px"><div class="section-title">${t('advertiseWithUs')}</div></div>
-        ${orders.map(o => `
-          <div class="list-row">
-            <span class="row-ico">${icon('megaphone', 24)}</span>
-            <div class="row-main">
-              <div class="row-title">${o.bizName}
-                <span class="badge ${o.status === 'live' ? 'badge-verified' : 'badge-pending'}">${o.status === 'live' ? t('statusLive') : t('statusPending')}</span></div>
-              <div class="row-sub">${t(o.product === 'slider' ? 'prodSlider' : o.product === 'mini' ? 'prodMini' : 'prodStory')} · ${fmtMoney(o.price)}</div>
-            </div>
-          </div>`).join('')}` : ''}
+        ${orders.map(o => adOrderCard(o)).join('')}` : ''}
     </div>`;
 
+  $$('[data-adrenew]').forEach(b => b.addEventListener('click', () => {
+    S.renewAd(b.dataset.adrenew); toast(t('adRenewed'), 'ok'); go('#/my-ads');
+  }));
   $$('[data-renew]').forEach(b => b.addEventListener('click', () => {
     S.renewClassified(b.dataset.renew); toast(t('renewed'), 'ok'); go('#/my-ads');
   }));
@@ -337,6 +379,35 @@ export function MyReviewsScreen(root) {
 }
 
 /* --------------------------- MY BUSINESS --------------------------- */
+/**
+ * The subscriber's own numbers. The last line is the one that renews the
+ * subscription — "340 people looked at your page this month" answers the
+ * question every month's charge asks.
+ */
+function bizStatsBlock(b) {
+  const st = S.bizStats(b.id);
+  const arrow = (k) => {
+    const d = st.delta(k);
+    if (d === null || d === 0) return '';
+    return `<span class="delta ${d > 0 ? 'up' : 'down'}">${d > 0 ? '+' : ''}${d}%</span>`;
+  };
+  return `
+    <div class="section-title mt-20">${t('bizStatsTitle')}<small>${t('bizStatsSub')}</small></div>
+    <div class="stat-row" style="padding:0;grid-template-columns:repeat(2,1fr)">
+      <div class="stat"><b>${st.cur.views}${arrow('views')}</b><span>${t('bizStatViews')}</span></div>
+      <div class="stat"><b>${st.cur.calls}${arrow('calls')}</b><span>${t('bizStatCalls')}</span></div>
+    </div>
+    <div class="stat-row" style="padding:8px 0 0;grid-template-columns:repeat(3,1fr)">
+      <div class="stat"><b>${st.cur.directions}</b><span>${t('bizStatDirections')}</span></div>
+      <div class="stat"><b>${st.cur.saves}</b><span>${t('bizStatSaves')}</span></div>
+      <div class="stat"><b>${st.reviews}</b><span>${t('bizStatReviews')}</span></div>
+    </div>
+    ${st.cur.views
+      ? `<div class="list-note" style="margin-inline:0">${icon('trendingUp', 18)}
+          <span>${t('bizStatsLine').replace('{n}', st.cur.views)}</span></div>`
+      : `<div class="hint" style="margin-top:10px">${t('bizStatsEmpty')}</div>`}`;
+}
+
 export function MyBusinessScreen(root) {
   if (!memberOnly('#/my-business')) return;
   renderHeader({ simple: true, title: t('myBusiness') });
@@ -356,7 +427,8 @@ export function MyBusinessScreen(root) {
         </div>
         ${S.businessPlan(b) === 'paid'
           ? `<div class="ok-msg" style="text-align:center">${t('subActive')}</div>
-             <button class="btn btn-ghost btn-block mt-12" data-route="#/subscribe/${b.id}">${t('subscription')}</button>`
+             ${bizStatsBlock(b)}
+             <button class="btn btn-ghost btn-block mt-12" data-route="#/my-subscription">${t('mySubscription')}</button>`
           : `<div class="upsell" style="margin:14px 0">
                <div class="upsell-txt"><b>${t('upgradeBanner')}</b><span>${fmtMoney(SUBSCRIPTION_PRICE)} ${t('month')}</span></div>
                <button class="btn btn-gold btn-sm" data-route="#/subscribe/${b.id}">${t('upgradeBtn')}</button>
@@ -389,8 +461,24 @@ export function SettingsScreen(root) {
         <button class="mini-btn gold" id="addCard">${icon('plus', 15)}</button></div>
 
       <div class="dr-group-label">${t('subscription')}</div>
-      <div class="setting-row"><span class="s-txt"><b>${S.state.subscription ? t('subActive') : t('subTitle')}</b><span>${fmtMoney(SUBSCRIPTION_PRICE)} ${t('month')}</span></span>
-        <button class="mini-btn" data-route="#/subscribe">${icon(document.documentElement.dir === 'rtl' ? 'chevronL' : 'chevronR', 15)}</button></div>
+      ${(() => {
+        // the row leads where the consent screen promised cancelling would be
+        const sub = S.subscription();
+        const label = sub ? t({ trialing: 'subStatusTrialing', active: 'subStatusActive',
+                                canceled: 'subStatusCanceled', past_due: 'subStatusPastDue' }[sub.status])
+                          : t('subTitle');
+        const line = sub ? `${fmtMoney(sub.price)} ${sub.plan === 'yearly' ? t('year') : t('month')}`
+                         : `${fmtMoney(SUBSCRIPTION_PRICE)} ${t('month')}`;
+        return `<div class="setting-row"><span class="s-txt"><b>${label}</b><span>${line}</span></span>
+          <button class="mini-btn" data-route="${sub ? '#/my-subscription' : '#/subscribe'}">${icon(document.documentElement.dir === 'rtl' ? 'chevronL' : 'chevronR', 15)}</button></div>`;
+      })()}
+
+      <div class="dr-group-label">${t('blockedTitle')}</div>
+      <div class="setting-row">
+        <span class="s-txt"><b>${t('blockedTitle')}</b><span>${S.blockedList().length
+          ? S.blockedList().length : t('blockedNone')}</span></span>
+        <button class="mini-btn" data-route="#/blocked">${icon(document.documentElement.dir === 'rtl' ? 'chevronL' : 'chevronR', 15)}</button>
+      </div>
 
       <div class="dr-group-label">${t('deleteAccount')}</div>
       <div class="setting-row" style="border:none">
@@ -408,10 +496,36 @@ export function SettingsScreen(root) {
   }));
   $('#langBtn').addEventListener('click', () => import('../ui.js').then(m => m.toggleLang()));
   $('#addCard').addEventListener('click', () => { S.state.cardOnFile = 'VISA •••• 4242'; S.save(); toast(t('done'), 'ok'); go('#/settings'); });
-  $('#delAcc').addEventListener('click', () => confirmSheet({
-    title: t('deleteAccount'), sub: t('deleteAccountSub'), confirmText: t('delete'), danger: true,
-    onConfirm: () => { S.signOut(); toast(t('deleteConfirm'), 'ok'); go('#/home'); }
-  }));
+  /* Deletion says what it takes with it and then actually takes it —
+     signing out and calling it deleted would be a lie the stores ask
+     about directly. */
+  $('#delAcc').addEventListener('click', () => {
+    const d = S.deletionSummary();
+    const lines = [
+      [d.listings, t('myAds')], [d.reviews, t('myReviews')], [d.saved, t('saved')],
+      [d.messages, t('messagesTitle')], [d.ads, t('advertiseWithUs')],
+      [d.business, t('myBusiness')], [d.subscription, t('subscription')],
+    ].filter(([n]) => n > 0);
+    openSheet(`
+      <div class="sheet-title">${t('deleteAccount')}</div>
+      <div class="sheet-sub">${t('deleteWhatGoes')}</div>
+      ${lines.length ? lines.map(([n, label]) => `
+        <div class="setting-row" style="padding-inline:0">
+          <span class="s-txt"><b>${label}</b></span><span class="muted">${n}</span></div>`).join('')
+        : `<div class="hint">${t('deleteNothingElse')}</div>`}
+      <div class="list-note" style="margin-inline:0">${icon('alert', 18)}<span>${t('deleteNoUndo')}</span></div>
+      <button class="btn btn-danger btn-block mt-12" id="delGo">${t('delete')}</button>
+      <button class="btn btn-plain btn-block mt-8" id="delNo">${t('cancel')}</button>
+    `, (panel) => {
+      panel.querySelector('#delGo').addEventListener('click', () => {
+        S.deleteAccount();
+        closeSheet();
+        toast(t('deleteConfirm'), 'ok');
+        go('#/home');
+      });
+      panel.querySelector('#delNo').addEventListener('click', () => closeSheet());
+    });
+  });
   wireRoutes(root);
 }
 function sw(key, label, on) {
@@ -483,6 +597,34 @@ export function HelpScreen(root) {
     </div>`;
 }
 
+/**
+ * Who this person has blocked, and the way back. Apple wants the list to
+ * exist and to be undoable; so does anyone who blocked the wrong seller.
+ */
+export function BlockedScreen(root) {
+  if (!memberOnly('#/blocked')) return;
+  renderHeader({ simple: true, title: t('blockedTitle') });
+
+  const paint = () => {
+    const list = S.blockedList();
+    root.innerHTML = `<div class="pad mt-16">
+      <div class="list-note" style="margin-inline:0">${icon('shield', 18)}<span>${t('blockedWhat')}</span></div>
+      ${list.length ? list.map(b => `
+        <div class="setting-row">
+          <span class="s-txt"><b>${b.label}</b><span>${fmtDate(b.when)}</span></span>
+          <button class="mini-btn gold" data-unblock="${b.key}">${t('unblock')}</button>
+        </div>`).join('')
+        : emptyState('shield', t('blockedNone'), t('blockedNoneSub'))}
+    </div>`;
+    $$('[data-unblock]').forEach(b => b.addEventListener('click', () => {
+      S.unblockUser(b.dataset.unblock);
+      toast(t('unblocked'), 'ok');
+      paint();
+    }));
+  };
+  paint();
+}
+
 export function AboutScreen(root) {
   renderHeader({ simple: true, title: t('about') });
   root.innerHTML = `
@@ -493,8 +635,22 @@ export function AboutScreen(root) {
           ? 'ARABNA brings the Arab community in America together in one app: a business directory, a marketplace, and a community magazine.'
           : 'عربنا يجمع الجالية العربية في أمريكا بتطبيق واحد: دليل أعمال، ماركت بليس، ومجلة للمجتمع.'}
       </p>
+      <div class="contact-box mt-20">
+        <div class="cb-title">${t('contactUsTitle')}</div>
+        <div class="hint" style="margin-bottom:8px">${t('contactUsSub')}</div>
+        <a class="contact-line" href="mailto:${S.SUPPORT_EMAIL}">${icon('mail', 18)}<span class="ltr">${S.SUPPORT_EMAIL}</span></a>
+        <a class="contact-line" href="tel:${S.SUPPORT_PHONE.replace(/[^0-9+]/g, '')}">${icon('phone', 18)}<span class="ltr">${S.SUPPORT_PHONE}</span></a>
+      </div>
       <span class="muted fs-12 mt-16">${t('version')} 0.1 · est. 2026</span>
     </div>`;
+}
+
+/** the same published address on every page that has to carry one */
+function contactBlock(en) {
+  return `<p><a class="gold ltr" href="mailto:${S.SUPPORT_EMAIL}">${S.SUPPORT_EMAIL}</a><br>
+    <a class="gold ltr" href="tel:${S.SUPPORT_PHONE.replace(/[^0-9+]/g, '')}">${S.SUPPORT_PHONE}</a></p>
+    <p>${en ? 'We answer complaints and content removal requests within two working days.'
+            : 'نرد على الشكاوى وطلبات إزالة المحتوى خلال يومَي عمل.'}</p>`;
 }
 
 export function PrivacyScreen(root) {
@@ -521,7 +677,7 @@ export function PrivacyScreen(root) {
     <h2>${en ? '6. Age' : '٦. العمر'}</h2>
     <p>${en ? 'ARABNA accounts require users to be 18 years or older.' : 'إنشاء حساب في عربنا يتطلب أن يكون عمرك ١٨ سنة أو أكثر.'}</p>
     <h2>${en ? '7. Contact' : '٧. التواصل'}</h2>
-    <p>privacy@arabna.app</p>
+    ${contactBlock(en)}
     <p class="muted fs-12">${en ? 'Draft v0.1 — must be reviewed by a lawyer before public launch.' : 'مسودة ٠.١ — يجب مراجعتها من محامٍ قبل الإطلاق الرسمي.'}</p>
   </div>`;
 }
@@ -550,6 +706,8 @@ export function TermsScreen(root) {
     <h2>${en ? '7. Liability' : '٧. المسؤولية'}</h2>
     <p>${en ? 'ARABNA is a listing platform and is not a party to transactions between users.'
             : 'عربنا منصة عرض ولا يُعد طرفاً في المعاملات التي تتم بين المستخدمين.'}</p>
+    <h2>${en ? '8. Contact and content removal' : '٨. التواصل وطلبات إزالة المحتوى'}</h2>
+    ${contactBlock(en)}
     <p class="muted fs-12">${en ? 'Draft v0.1 — must be reviewed by a lawyer before public launch.' : 'مسودة ٠.١ — يجب مراجعتها من محامٍ قبل الإطلاق الرسمي.'}</p>
   </div>`;
 }

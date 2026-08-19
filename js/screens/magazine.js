@@ -5,7 +5,7 @@ import { ARTICLES, MAG_CATS, MINI_ADS } from '../data.js';
 import * as S from '../store.js';
 import { catKeyOf } from './home.js';
 
-function allArticles() { return S.state.extraArticles.concat(ARTICLES); }
+function allArticles() { return S.withoutDemo(S.state.extraArticles.concat(ARTICLES)); }
 
 export function MagazineScreen(root) {
   renderHeader({});
@@ -38,11 +38,12 @@ export function MagazineScreen(root) {
     list.forEach((a, i) => {
       out.push(articleCard(a));
       // native banner ad every 3 articles (same component language as the Home mini-ad)
-      if ((i + 1) % 3 === 0) {
-        const ad = MINI_ADS[Math.floor(i / 3) % MINI_ADS.length];
+      const ads = S.withoutDemo(MINI_ADS);
+      if ((i + 1) % 3 === 0 && ads.length) {
+        const ad = ads[Math.floor(i / 3) % ads.length];
         out.push(`<button class="mini-ad" style="margin:0 0 11px" data-route="${ad.link}">
           <span class="m-ico">${icon(ad.icon, 19)}</span>
-          <span><span class="m-name">${L(ad.name)}</span><br><span class="m-tag">${L(ad.tag)}</span></span>
+          <span class="m-body"><span class="m-name">${L(ad.name)}</span><br><span class="m-tag">${L(ad.tag)}</span></span>
           <span class="ad-label">${t('sponsored')}</span></button>`);
       }
     });
@@ -101,7 +102,7 @@ export function ArticleScreen(root, params) {
 
       <button class="mini-ad" style="margin:6px 0 0" data-route="#/advertise">
         <span class="m-ico">${icon('megaphone', 19)}</span>
-        <span><span class="m-name">${t('adCta')}</span><br><span class="m-tag">${t('adCtaSub')}</span></span>
+        <span class="m-body"><span class="m-name">${t('adCta')}</span><br><span class="m-tag">${t('adCtaSub')}</span></span>
         <span class="ad-label">${t('adLabel')}</span></button>
 
       <div class="action-grid mt-16">

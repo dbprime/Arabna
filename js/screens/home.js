@@ -1,27 +1,31 @@
 /* ============================ HOME ============================ */
 import { t, L, icon, $, $$, go, renderHeader, openSheet, closeSheet, toast, stars, wireRoutes,
-         distLabel } from '../ui.js';
+         distLabel, mountAdRotator } from '../ui.js';
 import { CATEGORIES, HOME_CATS, MINI_ADS, ARTICLES, ZIPS, CITY_SUGGESTIONS } from '../data.js';
 import * as S from '../store.js';
 
-let sliderTimer = null;
-let miniTimer = null;
+let sliderStop = null;
+let miniStop = null;
 
 export function HomeScreen(root) {
   renderHeader({});
 
   const ads = S.sliderAds();
   const feat = S.allBusinesses().filter(b => S.businessPlan(b) === 'paid').slice(0, 6);
-  const stories = ARTICLES.slice(0, 3);
+  const stories = S.withoutDemo(ARTICLES).slice(0, 3);
   const loc = S.state.location;
 
   root.innerHTML = `
-    <!-- search + location on one row; radius moved inside the location sheet -->
-    <div class="search-row">
-      <div class="search-bar">
-        ${icon('search', 21)}
-        <input id="homeSearch" placeholder="${t('searchPlaceholder')}" />
+    <!-- the search takes the width; the city chip sits on the row below.
+         Sharing one row squeezed the magnifier down to about 13px, which
+         is the same as not drawing it. -->
+    <div class="search-row solo">
+      <div class="search-bar big">
+        ${icon('search', 22)}
+        <input id="homeSearch" placeholder="${t('searchExample')}" />
       </div>
+    </div>
+    <div class="search-row sub">
       <button class="loc-chip" id="locBtn">${icon('mapPin', 17)}<span>${loc.city}</span></button>
     </div>
 
@@ -46,8 +50,9 @@ export function HomeScreen(root) {
       <div class="slider-dots" id="dots">${ads.map((_, i) => `<span class="dot-i ${i === 0 ? 'active' : ''}"></span>`).join('')}</div>
     </div>
 
-    <!-- featured (directory subscribers) -->
-    <div class="section">
+    <!-- featured (directory subscribers) — hidden entirely when nobody
+         has subscribed yet, rather than leaving a heading over a gap -->
+    ${!feat.length ? '' : `<div class="section">
       <div class="section-head">
         <div class="section-title">${t('featured')}<small>${t('featuredSub')}</small></div>
         <button class="link-gold" data-route="#/directory">${t('seeAll')}</button>
@@ -65,13 +70,14 @@ export function HomeScreen(root) {
             </div>
           </div>`).join('')}
       </div>
-    </div>
+    </div>`}
 
-    <!-- cheaper mini ad -->
-    <button class="mini-ad" id="miniAd"></button>
+    <!-- cheaper mini ad — not rendered at all when there is nothing to
+         put in it, so no empty box stands where a banner would be -->
+    ${S.withoutDemo(MINI_ADS).length ? `<button class="mini-ad" id="miniAd"></button>` : ''}
 
     <!-- magazine teaser -->
-    <div class="section">
+    ${!stories.length ? '' : `<div class="section">
       <div class="section-head">
         <div class="section-title">${t('topStories')}<small>${t('topStoriesSub')}</small></div>
         <button class="link-gold" data-route="#/magazine">${t('seeAll')}</button>
@@ -89,7 +95,7 @@ export function HomeScreen(root) {
             </div>
           </div>`).join('')}
       </div>
-    </div>
+    </div>`}
 
     <!-- house CTA -->
     <div class="upsell" data-route="#/advertise">
@@ -129,52 +135,61 @@ function slideHtml(a, i) {
   </div>`;
 }
 
-function startSlider(ads) {
-  clearInterval(sliderTimer);
-  const track = $('#track');
-  if (!track) return;
-  let idx = 0;
-  const show = (n) => {
-    idx = (n + ads.length) % ads.length;
-    $$('.slide', track).forEach((s, i) => s.classList.toggle('active', i === idx));
-    $$('#dots .dot-i').forEach((d, i) => d.classList.toggle('active', i === idx));
-  };
-  sliderTimer = setInterval(() => show(idx + 1), 10000);   // auto-advance: 10s
+export function startSlider(ads, hostSel = '.slider', trackSel = '#track', dotsSel = '#dots') {
+  if (sliderStop) { sliderStop(); sliderStop = null; }
+  const host = document.querySelector(hostSel);
+  const track = document.querySelector(trackSel);
+  if (!host || !track) return;
 
-  // manual swipe
+  const show = (a, idx) => {
+    $$('.slide', track).forEach((sl, i) => sl.classList.toggle('active', i === idx));
+    $$(dotsSel + ' .dot-i').forEach((d, i) => d.classList.toggle('active', i === idx));
+  };
+  let current = 0;
+  sliderStop = mountAdRotator({
+    host, items: ads, interval: 10000,
+    paint: (a, idx) => { current = idx; show(a, idx); },
+    onClick: (a) => { if (a && a.link) go(a.link); },
+  });
+
+  // manual swipe still works; the rotator keeps its own clock
+  const swipe = (dx) => {
+    if (Math.abs(dx) < 40) return;
+    const next = (current + (dx > 0 ? -1 : 1) + ads.length) % ads.length;
+    current = next; show(ads[next], next);
+  };
   let x0 = null;
   track.addEventListener('touchstart', e => { x0 = e.touches[0].clientX; }, { passive: true });
   track.addEventListener('touchend', e => {
     if (x0 === null) return;
-    const dx = e.changedTouches[0].clientX - x0;
-    if (Math.abs(dx) > 40) { show(idx + (dx > 0 ? -1 : 1)); clearInterval(sliderTimer); sliderTimer = setInterval(() => show(idx + 1), 10000); }
+    swipe(e.changedTouches[0].clientX - x0);
     x0 = null;
   });
   let mx0 = null;
   track.addEventListener('mousedown', e => { mx0 = e.clientX; });
   track.addEventListener('mouseup', e => {
     if (mx0 === null) return;
-    const dx = e.clientX - mx0;
-    if (Math.abs(dx) > 40) show(idx + (dx > 0 ? -1 : 1));
+    swipe(e.clientX - mx0);
     mx0 = null;
   });
 }
 
 function startMiniAd() {
-  clearInterval(miniTimer);
+  if (miniStop) { miniStop(); miniStop = null; }
   const el = $('#miniAd');
   if (!el) return;
-  let i = 0;
-  const paint = () => {
-    const a = MINI_ADS[i % MINI_ADS.length];
-    el.innerHTML = `<span class="m-ico">${icon(a.icon, 19)}</span>
-      <span><span class="m-name">${L(a.name)}</span><br><span class="m-tag">${L(a.tag)}</span></span>
-      <span class="ad-label">${t('adLabel')}</span>`;
-    el.dataset.link = a.link;
-  };
-  paint();
-  miniTimer = setInterval(() => { i++; paint(); }, 7000);
-  el.addEventListener('click', () => go(el.dataset.link || '#/directory'));
+  const ads = S.withoutDemo(MINI_ADS);
+  if (!ads.length) return;
+  miniStop = mountAdRotator({
+    host: el, items: ads, interval: 7000,
+    paint: (a) => {
+      el.innerHTML = `<span class="m-ico">${icon(a.icon, 19)}</span>
+        <span class="m-body"><span class="m-name">${L(a.name)}</span><br><span class="m-tag">${L(a.tag)}</span></span>
+        <span class="ad-label">${t('adLabel')}</span>`;
+      el.dataset.link = a.link;
+    },
+    onClick: (a) => go((a && a.link) || '#/directory'),
+  });
 }
 
 /* ---------------------------------------------------------------

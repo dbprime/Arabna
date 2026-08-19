@@ -1,35 +1,77 @@
 /* ======================= DIRECTORY + LISTING ======================= */
 import { t, L, icon, $, $$, go, back, renderHeader, openSheet, closeSheet, confirmSheet,
          toast, stars, wireRoutes, emptyState, query, openMaps, shareItem, fmtMoney,
-         openFilterSheet, activeFilterCount, sectionNote,
+         openFilterSheet, activeFilterCount, sectionNote, replaceHash, goAfterDone,
          showsPrices, priceGate, wirePriceGates,
          openBadge, distLabel, attrChips, fmtDay, fmtTime, bizBadge } from '../ui.js';
 import { CATEGORIES, SUBSCRIPTION_PRICE, DAY_KEYS } from '../data.js';
 import * as S from '../store.js';
-import { catIcon } from './home.js';
+import { catIcon, startSlider } from './home.js';
 import { mountPhotoPicker } from './marketplace.js';
 
 /* ----------------------------- LIST ----------------------------- */
+/* The card the reader came back from, so returning lands on the thing
+   they were looking at rather than on a pixel that may now point
+   somewhere else — the list can be a different length than it was. */
+let lastOpened = '';
+
 export function DirectoryScreen(root) {
   renderHeader({});
-  const q = query();
-  let cat = q.cat || 'all';
-  let term = q.q || '';
-  let filters = { cat, radius: S.state.radius, sort: 'newest', openNow: false, attrs: [] };
+
+  /* ---- the whole state of this screen lives in the URL ----
+     Two reasons. Leaving the screen used to destroy it: search, filters
+     and position were local variables, so coming back from the fortieth
+     listing started again from nothing — unusable in a directory of 486.
+     And a URL that carries the state is a link somebody can send: "halal
+     restaurants open now" becomes a message, which is marketing we get
+     for free. */
+  const readUrl = () => {
+    const q = query();
+    return {
+      cat: q.cat || 'all',
+      term: q.q || '',
+      openNow: q.open === '1',
+      sort: q.sort || 'newest',
+      attrs: (q.attrs || '').split(',').filter(Boolean),
+      radius: +q.radius || S.state.radius,
+    };
+  };
+  let st = readUrl();
+
+  /**
+   * Written with replaceState, never pushState: one history entry per
+   * filter would turn the back button into an undo stack and the reader
+   * would never get out of the directory.
+   */
+  const writeUrl = () => {
+    const p = [];
+    if (st.cat !== 'all') p.push('cat=' + encodeURIComponent(st.cat));
+    if (st.term) p.push('q=' + encodeURIComponent(st.term));
+    if (st.openNow) p.push('open=1');
+    if (st.sort !== 'newest') p.push('sort=' + st.sort);
+    if (st.attrs.length) p.push('attrs=' + st.attrs.join(','));
+    replaceHash('#/directory' + (p.length ? '?' + p.join('&') : ''));
+  };
 
   root.innerHTML = `
-    <div class="search-row">
-      <div class="search-bar">${icon('search', 21)}<input id="dirSearch" placeholder="${t('searchDirectory')}" value="${term}" /></div>
+    <!-- the search gets its own full-width row: sharing one with the city
+         chip and the filter button squeezed the magnifier down to 13px,
+         which is the same as not having one -->
+    <div class="search-row solo">
+      <div class="search-bar big">${icon('search', 22)}
+        <input id="dirSearch" placeholder="${t('searchExample')}" value="${attr(st.term)}" />
+        <button class="search-clear" id="dirClear" hidden aria-label="${t('clear')}">${icon('x', 16)}</button>
+      </div>
+    </div>
+    <div class="search-row sub">
       <button class="loc-chip" data-loc>${icon('mapPin', 17)}<span>${S.state.location.city}</span></button>
       <button class="filter-btn" id="dirFilter" aria-label="${t('filters')}">${icon('filter', 20)}<span id="fCount"></span></button>
     </div>
 
-    <div class="hscroll mt-12" id="catChips">
-      <button class="chip ${cat === 'all' ? 'active' : ''}" data-cat="all">${t('catAll')}</button>
-      ${CATEGORIES.filter(c => !c.route).map(c => `<button class="chip ${cat === c.id ? 'active' : ''}" data-cat="${c.id}">${icon(c.icon, 15)} ${t(c.key)}</button>`).join('')}
-    </div>
-
+    <div class="hscroll mt-12" id="catChips"></div>
     <div class="hscroll mt-8" id="attrChips"></div>
+    <div id="pills"></div>
+    <div id="catSlider"></div>
     <div id="dirNote"></div>
     <div class="pad mt-12" id="dirList"></div>
 
@@ -37,68 +79,190 @@ export function DirectoryScreen(root) {
       <span>${t('isThisYours')} <b class="gold" data-route="#/claim" style="cursor:pointer">${t('claimIt')}</b> · <b class="gold" data-route="#/add-business" style="cursor:pointer">${t('addBusiness')}</b></span>
     </div>`;
 
-  /* The quick chips are generated from the attribute registry for whichever
-     category is showing, so a new attribute needs no code here at all.
-     "Open now" always leads: it is the question people ask most. */
+  /** how many listings each category holds, for the chips and the sheet */
+  const catCounts = () => {
+    const out = {};
+    S.allBusinesses().forEach(b => { out[b.cat] = (out[b.cat] || 0) + 1; });
+    return out;
+  };
+
+  const paintCatChips = () => {
+    const counts = catCounts();
+    const cats = CATEGORIES.filter(c => !c.route);
+    $('#catChips').innerHTML =
+      `<button class="chip ${st.cat === 'all' ? 'active' : ''}" data-cat="all">${t('catAll')}
+         <span class="chip-n">${S.allBusinesses().length}</span></button>`
+      + cats.map(c => `<button class="chip ${st.cat === c.id ? 'active' : ''}" data-cat="${c.id}">
+          ${icon(c.icon, 15)} ${t(c.key)} <span class="chip-n">${counts[c.id] || 0}</span></button>`).join('')
+      + `<button class="chip chip-grid" id="catGrid" aria-label="${t('allCategories')}">${icon('grid', 16)}</button>`;
+
+    $$('#catChips .chip[data-cat]').forEach(c => c.addEventListener('click', () => {
+      setCat(c.dataset.cat);
+    }));
+    $('#catGrid').addEventListener('click', openCatSheet);
+
+    const active = $('#catChips .chip.active');
+    if (active && st.cat !== 'all') active.scrollIntoView({ inline: 'center', block: 'nearest' });
+  };
+
+  const setCat = (id) => {
+    st.cat = id;
+    const valid = S.attrsForCat(id === 'all' ? '*' : id).map(a => a.id);
+    st.attrs = st.attrs.filter(x => valid.includes(x));
+    writeUrl();
+    paintCatChips(); paintChips(); paint();
+  };
+
+  /** every category at once, three to a row, with its real count */
+  const openCatSheet = () => {
+    const counts = catCounts();
+    openSheet(`
+      <div class="sheet-title">${t('allCategories')}</div>
+      <div class="cat-box">
+        <button class="cat-box-cell ${st.cat === 'all' ? 'active' : ''}" data-c="all">
+          <span class="cc-ico">${icon('grid', 22)}</span>
+          <span class="cc-label">${t('catAll')}</span>
+          <span class="cc-count">${S.allBusinesses().length}</span></button>
+        ${CATEGORIES.filter(c => !c.route).map(c => `
+          <button class="cat-box-cell ${st.cat === c.id ? 'active' : ''}" data-c="${c.id}">
+            <span class="cc-ico">${icon(c.icon, 22)}</span>
+            <span class="cc-label">${t(c.key)}</span>
+            <span class="cc-count">${counts[c.id] || 0}</span></button>`).join('')}
+      </div>
+    `, (panel) => {
+      panel.querySelectorAll('[data-c]').forEach(b => b.addEventListener('click', () => {
+        closeSheet();
+        setCat(b.dataset.c);
+      }));
+    });
+  };
+
+  /* Quick chips belong to a category. On "all" they were a second row of
+     options nobody could act on, so there are none until a category is
+     picked, and never more than five. */
   const paintChips = () => {
-    const quick = S.quickAttrsForCat(cat);
-    $('#attrChips').innerHTML =
-      `<button class="chip ${filters.openNow ? 'active' : ''}" data-attr="__open">${icon('clock', 14)} ${t('filterOpenNow')}</button>`
-      + quick.map(a => `<button class="chip ${filters.attrs.includes(a.id) ? 'active' : ''}" data-attr="${a.id}">
-          ${icon(a.icon, 14)} ${t(a.key)}</button>`).join('');
-    $('#attrChips').style.display = 'flex';
+    const host = $('#attrChips');
+    if (st.cat === 'all') {
+      host.innerHTML = `<button class="chip ${st.openNow ? 'active' : ''}" data-attr="__open">${icon('clock', 14)} ${t('filterOpenNow')}</button>`;
+    } else {
+      const quick = S.quickAttrsForCat(st.cat, 5);
+      host.innerHTML =
+        `<button class="chip ${st.openNow ? 'active' : ''}" data-attr="__open">${icon('clock', 14)} ${t('filterOpenNow')}</button>`
+        + quick.map(a => `<button class="chip ${st.attrs.includes(a.id) ? 'active' : ''}" data-attr="${a.id}">
+            ${icon(a.icon, 14)} ${t(a.key)}</button>`).join('');
+    }
     $$('#attrChips .chip').forEach(b => b.addEventListener('click', () => {
       const id = b.dataset.attr;
-      if (id === '__open') filters.openNow = !filters.openNow;
+      if (id === '__open') st.openNow = !st.openNow;
       else {
-        const i = filters.attrs.indexOf(id);
-        if (i >= 0) filters.attrs.splice(i, 1); else filters.attrs.push(id);
+        const i = st.attrs.indexOf(id);
+        if (i >= 0) st.attrs.splice(i, 1); else st.attrs.push(id);
       }
-      // chips combine rather than replace one another
-      b.classList.toggle('active', id === '__open' ? filters.openNow : filters.attrs.includes(id));
+      b.classList.toggle('active', id === '__open' ? st.openNow : st.attrs.includes(id));
+      writeUrl();
       paint();
     }));
   };
 
+  /* Every filter that is on, as a chip with an ✕. Without this the reader
+     sees three results and no reason why. */
+  const paintPills = () => {
+    const host = $('#pills');
+    const on = [];
+    if (st.openNow) on.push({ k: '__open', label: t('filterOpenNow') });
+    st.attrs.forEach(id => {
+      const a = S.attrById(id);
+      if (a) on.push({ k: id, label: t(a.key) });
+    });
+    if (st.sort !== 'newest') on.push({ k: '__sort', label: t(sortKey(st.sort)) });
+    if (st.term) on.push({ k: '__term', label: '"' + st.term + '"' });
+
+    host.innerHTML = on.length ? `<div class="pill-row">
+      ${on.map(p => `<button class="pill" data-off="${p.k}">${p.label} ${icon('x', 13)}</button>`).join('')}
+      ${on.length > 1 ? `<button class="pill clear" id="pillClear">${t('clearAll')}</button>` : ''}
+    </div>` : '';
+
+    $$('#pills [data-off]').forEach(b => b.addEventListener('click', () => {
+      const k = b.dataset.off;
+      if (k === '__open') st.openNow = false;
+      else if (k === '__sort') st.sort = 'newest';
+      else if (k === '__term') { st.term = ''; $('#dirSearch').value = ''; }
+      else st.attrs = st.attrs.filter(x => x !== k);
+      writeUrl(); paintChips(); paint();
+    }));
+    const pc = $('#pillClear');
+    if (pc) pc.addEventListener('click', () => {
+      st.openNow = false; st.attrs = []; st.sort = 'newest'; st.term = '';
+      $('#dirSearch').value = '';
+      writeUrl(); paintChips(); paint();
+    });
+  };
+
+  /* The category slider: only drawn when somebody has actually bought
+     the slot for this category. An empty placeholder here would push the
+     results down the screen for nothing. */
+  const paintCatSlider = () => {
+    const host = $('#catSlider');
+    if (!host) return;
+    const ads = st.cat === 'all' ? [] : S.catSliderAds(st.cat);
+    if (!ads.length) { host.innerHTML = ''; return; }
+    host.innerHTML = `
+      <div class="slider">
+        <div class="slider-track" id="catTrack">${ads.map((a, i) => catSlideHtml(a, i)).join('')}</div>
+        <div class="slider-dots" id="catDots">${ads.map((_, i) => `<span class="dot-i ${i === 0 ? 'active' : ''}"></span>`).join('')}</div>
+      </div>`;
+    startSlider(ads, '#catSlider .slider', '#catTrack', '#catDots');
+  };
+
+  /** the list before the search is applied — the sheet counts against this */
+  const baseList = () => {
+    const now = new Date();
+    return S.allBusinesses()
+      .filter(b => st.cat === 'all' || b.cat === st.cat)
+      .filter(b => !b.dist || b.dist <= S.state.radius)
+      .filter(b => !st.openNow || S.isOpenNow(b, now))
+      .filter(b => S.matchesAttrs(b, st.attrs));
+  };
+
   const paint = () => {
     const now = new Date();
-    let list = S.allBusinesses()
-      .filter(b => cat === 'all' || b.cat === cat)
-      .filter(b => b.dist <= S.state.radius)
-      .filter(b => S.matchesSearch(b, term))
-      .filter(b => !filters.openNow || S.isOpenNow(b, now))
-      .filter(b => S.matchesAttrs(b, filters.attrs));
+    const found = S.searchBusinesses(baseList(), st.term);
+    let list = found.list.slice();
 
-    if (filters.sort === 'rated') {
-      list.sort((a, b) => S.ratingFor(b).avg - S.ratingFor(a).avg);
-    } else if (filters.sort === 'nearest') {
-      list.sort((a, b) => a.dist - b.dist);
-    } else if (filters.sort === 'open') {
-      list.sort((a, b) => (S.isOpenNow(b, now) - S.isOpenNow(a, now)) || a.dist - b.dist);
-    } else {
-      list.sort((a, b) => (S.businessPlan(b) === 'paid') - (S.businessPlan(a) === 'paid') || a.dist - b.dist);
-    }
+    if (st.sort === 'rated') list.sort((a, b) => S.ratingFor(b).avg - S.ratingFor(a).avg);
+    else if (st.sort === 'nearest') list.sort((a, b) => a.dist - b.dist);
+    else if (st.sort === 'open') list.sort((a, b) => (S.isOpenNow(b, now) - S.isOpenNow(a, now)) || a.dist - b.dist);
+    else if (found.mode !== 'loose') list.sort((a, b) => (S.businessPlan(b) === 'paid') - (S.businessPlan(a) === 'paid') || a.dist - b.dist);
 
-    const sec = CATEGORIES.find(c => c.id === cat);
-    $('#dirNote').innerHTML = sectionNote(sec ? t(sec.key) : '', list.length);
+    const sec = CATEGORIES.find(c => c.id === st.cat);
+    $('#dirNote').innerHTML = sectionNote(sec ? t(sec.key) : '', list.length)
+      + (found.mode === 'loose'
+        ? `<div class="near-miss">${icon('info', 15)} ${t('nearMiss').replace('{q}', attr(st.term))}</div>` : '');
+    paintPills();
+    paintCatSlider();
 
     const el = $('#dirList');
-    const filtered = filters.openNow || filters.attrs.length || term;
+    const filtered = st.openNow || st.attrs.length || st.term;
     if (!list.length && filtered) {
-      // a filtered dead end needs its own way out, not a radius suggestion
+      // a dead end offers something to press, not just an apology
       el.innerHTML = emptyState('filter', t('noFilterResults'), t('noFilterResultsSub'));
-      el.querySelector('.empty').insertAdjacentHTML('beforeend',
-        `<button class="btn btn-gold" id="clrF">${t('clearFiltersBtn')}</button>`);
+      const box = el.querySelector('.empty');
+      if (found.suggestions.length) {
+        box.insertAdjacentHTML('beforeend',
+          `<div class="sugg-row">${found.suggestions.map(sg =>
+            `<button class="pill sugg" data-sk="${sg.kind}" data-sv="${attr(sg.value)}">${sg.label} <span class="chip-n">${sg.count}</span></button>`).join('')}</div>`);
+      }
+      box.insertAdjacentHTML('beforeend', `<button class="btn btn-gold mt-8" id="clrF">${t('clearFiltersBtn')}</button>`);
+      el.querySelectorAll('[data-sk]').forEach(b => b.addEventListener('click', () => {
+        if (b.dataset.sk === 'cat') { st.term = ''; $('#dirSearch').value = ''; setCat(b.dataset.sv); }
+        else { st.term = b.dataset.sv; $('#dirSearch').value = st.term; writeUrl(); paint(); }
+      }));
       el.querySelector('#clrF').addEventListener('click', () => {
-        filters.openNow = false; filters.attrs = []; term = '';
+        st.openNow = false; st.attrs = []; st.term = '';
         $('#dirSearch').value = '';
-        paintChips(); paint();
+        writeUrl(); paintChips(); paint();
       });
-      const fc0 = $('#fCount');
-      const n0 = activeFilterCount(filters);
-      fc0.className = n0 ? 'f-count' : '';
-      fc0.textContent = n0 || '';
-      $('#dirFilter').classList.toggle('on', n0 > 0);
+      paintFilterCount();
       return;
     }
     if (!list.length) {
@@ -112,45 +276,79 @@ export function DirectoryScreen(root) {
     }
     wireRoutes(el);
     $$('#dirList [data-call]').forEach(b => b.addEventListener('click', e => { e.stopPropagation(); location.href = 'tel:' + b.dataset.call; }));
+    $$('#dirList .list-row[data-route^="#/directory/"]').forEach(r =>
+      r.addEventListener('click', () => { lastOpened = r.dataset.route.split('/').pop(); }));
     if (!list.length) $$('#dirList .empty .btn').forEach(b => b.addEventListener('click', () => import('./home.js').then(m => m.openRadiusSheet())));
 
+    paintFilterCount();
+    flashReturn();
+  };
+
+  const paintFilterCount = () => {
     const fc = $('#fCount');
-    const n = activeFilterCount(filters);
+    const n = activeFilterCount({ cat: st.cat, openNow: st.openNow, attrs: st.attrs, sort: st.sort });
     fc.className = n ? 'f-count' : '';
     fc.textContent = n || '';
     $('#dirFilter').classList.toggle('on', n > 0);
   };
+
+  /* Coming back from a listing: put that card in the middle of the screen
+     and blink it once. The saved pixel is right until the list changes
+     length; the card is right either way. */
+  const flashReturn = () => {
+    if (!lastOpened) return;
+    const row = $(`#dirList .list-row[data-route="#/directory/${lastOpened}"]`);
+    lastOpened = '';
+    if (!row) return;
+    requestAnimationFrame(() => {
+      row.scrollIntoView({ block: 'center' });
+      row.classList.add('flash');
+      setTimeout(() => row.classList.remove('flash'), 1100);
+    });
+  };
+
+  paintCatChips();
   paintChips();
   paint();
 
-  const activeChip = $('#catChips .chip.active');
-  if (activeChip && cat !== 'all') activeChip.scrollIntoView({ inline: 'center', block: 'nearest' });
-
-  $$('#catChips .chip').forEach(c => c.addEventListener('click', () => {
-    cat = c.dataset.cat;
-    $$('#catChips .chip').forEach(x => x.classList.toggle('active', x === c));
-    // the quick chips belong to the category — drop any that no longer apply
-    const valid = S.attrsForCat(cat === 'all' ? '*' : cat).map(a => a.id);
-    filters.attrs = filters.attrs.filter(id => valid.includes(id));
-    filters.cat = cat;
-    paintChips();
+  const search = $('#dirSearch');
+  const clear = $('#dirClear');
+  const syncClear = () => { clear.hidden = !search.value; };
+  syncClear();
+  search.addEventListener('input', e => {
+    st.term = e.target.value;
+    syncClear();
+    writeUrl();
     paint();
-  }));
-  $('#dirSearch').addEventListener('input', e => { term = e.target.value; paint(); });
+  });
+  clear.addEventListener('click', () => {
+    st.term = ''; search.value = ''; syncClear(); writeUrl(); paint();
+  });
+
   $('[data-loc]').addEventListener('click', () => import('./home.js').then(m => m.openLocationSheet()));
   $('#dirFilter').addEventListener('click', () => openFilterSheet({
-    cats: CATEGORIES.filter(c => !c.route).map(c => ({ id: c.id, label: t(c.key) })),
-    value: filters,
+    cat: st.cat,
+    value: { cat: st.cat, radius: S.state.radius, sort: st.sort, openNow: st.openNow, attrs: st.attrs.slice() },
     withPrice: false,
     withAttrs: true,
+    countFor: (v) => S.searchBusinesses(S.allBusinesses()
+      .filter(b => v.cat === 'all' || b.cat === v.cat)
+      .filter(b => !b.dist || b.dist <= v.radius)
+      .filter(b => !v.openNow || S.isOpenNow(b, new Date()))
+      .filter(b => S.matchesAttrs(b, v.attrs)), st.term).list.length,
     onApply: (v) => {
-      filters = v; cat = v.cat;
-      $$('#catChips .chip').forEach(x => x.classList.toggle('active', x.dataset.cat === cat));
-      paintChips();
-      paint();
+      st.openNow = v.openNow; st.sort = v.sort; st.attrs = v.attrs.slice();
+      S.setRadius(v.radius);
+      writeUrl();
+      paintChips(); paint();
     },
   }));
   wireRoutes(root);
+}
+
+/** the i18n key for a sort id, for the pill that shows it */
+function sortKey(id) {
+  return { rated: 'sortTopRated', nearest: 'sortNearest', open: 'sortOpen' }[id] || 'sortNewest';
 }
 
 /* Slim card: icon · name + verified · rating/reviews/distance on one line ·
@@ -231,6 +429,17 @@ function worshipBlock(b) {
     <div class="i-txt"><b>${langLabel}</b><span>${w.kind === 'church' ? t('massLang') : t('sermonLang')}</span></div></div>`);
 
   return `<div class="worship-block">${rows.join('')}</div>`;
+}
+
+/** one slide in a category slider — the same shape the home one uses */
+function catSlideHtml(a, i) {
+  return `<div class="slide ${i === 0 ? 'active' : ''}" style="background:${a.color}">
+    <span class="slide-badge">${t('sponsored')}</span>
+    <div class="slide-title">${L(a.name)}</div>
+    <div class="slide-sub">${L(a.tag)}</div>
+    <div class="slide-cta">${L(a.cta)} ${icon(document.documentElement.dir === 'rtl' ? 'chevronL' : 'chevronR', 15)}</div>
+    <div class="slide-icon">${icon(a.icon, 86)}</div>
+  </div>`;
 }
 
 /**
@@ -383,10 +592,19 @@ export function ListingScreen(root, params) {
     ${similarBlock(b, paid)}`;
 
   $('#bk').addEventListener('click', () => back());
+  // the page was opened — the number the subscriber is shown next month
+  S.recordBizView(b.id);
+
   const callBtn = $('#callBtn');
-  if (callBtn) callBtn.addEventListener('click', () => { location.href = 'tel:' + b.phone; });
+  if (callBtn) callBtn.addEventListener('click', () => {
+    S.recordBizCall(b.id);
+    location.href = 'tel:' + b.phone;
+  });
   const mapBtn = $('#mapBtn');
-  if (mapBtn) mapBtn.addEventListener('click', () => openMaps(b.address));
+  if (mapBtn) mapBtn.addEventListener('click', () => {
+    S.recordBizDirections(b.id);
+    openMaps(b.address);
+  });
   $('#shareBtn').addEventListener('click', () => shareItem(L(b.name), location.href));
   $('#repBtn').addEventListener('click', () => { S.reportItem(b.id); toast(t('reported'), 'ok'); });
 
@@ -395,7 +613,9 @@ export function ListingScreen(root, params) {
   paintSave();
   sb.addEventListener('click', () => {
     if (!S.requireTier(1, location.hash, go)) return;
-    S.toggleSaved(b.id); paintSave();
+    S.toggleSaved(b.id);
+    if (S.isSaved(b.id)) S.recordBizSave(b.id);
+    paintSave();
     toast(S.isSaved(b.id) ? t('saved') : t('done'), 'ok');
   });
 
@@ -719,7 +939,7 @@ export function AddBusinessScreen(root) {
     address: $('#bAddr').value.trim(),
   });
 
-  const save = () => {
+  const save = (pendingReview = false) => {
     const { name, nameAr, phone, address } = collect();
     const tags = $('#bTags').value.split(/[,\u060C\n]/).map(x => x.trim()).filter(Boolean);
     const rec = S.addBusiness({
@@ -730,8 +950,8 @@ export function AddBusinessScreen(root) {
       nonCommercial: $('#bNonComm').checked,
       entryPrice: cat === 'outings' ? $('#bEntry').value.trim() : '',
       desc: { ar: $('#bDesc').value, en: $('#bDesc').value },
-    });
-    toast(t('done'), 'ok');
+    }, { pendingReview });
+    toast(pendingReview ? t('bizHeldForReview') : t('done'), 'ok');
     go('#/directory/' + rec.id);
   };
 
@@ -741,37 +961,81 @@ export function AddBusinessScreen(root) {
     if (!name) { toast(t('required'), 'err'); return; }
     if (!S.requireTier(2, '#/add-business', go)) return;
 
-    /* 300 shops go in by hand and their owners will add themselves later
-       because they could not find their own listing. Catch it at the door. */
-    const dups = S.findDuplicates({ phone, name, address });
-    if (dups.length) { showDuplicate(dups, save); return; }
+    /* Their own shop is very often already here — they just could not
+       find it. Show them, and let them take it over instead. */
+    const dups = S.findDuplicates({ phone, name, address, cat });
+    if (dups.length) {
+      openSimilarSheet(dups, (conf) => save(conf === 'certain'));
+      return;
+    }
     save();
   });
 }
 
-/** the duplicate warning: name the match, and offer both honest answers */
-function showDuplicate(dups, proceed) {
-  const el = $('#bDup');
-  el.innerHTML = `
-    <div class="dup-warn">
-      <div class="dup-head">${icon('alert', 18)} <b>${t('dupTitle')}</b></div>
-      ${dups.slice(0, 3).map(d => `
-        <div class="dup-row">
-          <span class="row-ico">${icon(catIcon(d.biz.cat), 18)}</span>
-          <div class="row-main">
-            <div class="row-title">${L(d.biz.name)}</div>
-            <div class="row-sub"><span class="ltr">${d.biz.address}</span></div>
-            <div class="row-sub gold">${d.reason === 'phone' ? t('dupByPhone') : t('dupByName')}</div>
-          </div>
-          <button class="mini-btn" data-see="${d.biz.id}">${icon('eye', 15)}</button>
-        </div>`).join('')}
-      <button class="btn btn-ghost btn-block mt-8" id="dupCancel">${t('dupSame')}</button>
-      <button class="btn btn-gold btn-block mt-8" id="dupGo">${t('dupDifferent')}</button>
-    </div>`;
-  el.scrollIntoView({ block: 'center', behavior: 'smooth' });
-  $$('#bDup [data-see]').forEach(b => b.addEventListener('click', () => go('#/directory/' + b.dataset.see)));
-  $('#dupCancel').addEventListener('click', () => { el.innerHTML = ''; go('#/directory'); });
-  $('#dupGo').addEventListener('click', () => { el.innerHTML = ''; proceed(); });
+/**
+ * What happens when a listing looks like one we already have.
+ *
+ * It never says "duplicate" and it never refuses. Somebody typing their
+ * own shop's name into an app is the most valuable moment we get: the
+ * screen shows them the page that already exists and offers to hand it
+ * over. A blocked form turns that person away; this turns them into an
+ * ownership claim, which is the whole commercial point.
+ *
+ * @param hits      findDuplicates() output, strongest first
+ * @param onProceed (confidence) => void — they say it is a different shop
+ */
+export function openSimilarSheet(hits, onProceed) {
+  const top = hits[0];
+  const rest = hits.slice(1, 3);
+  const conf = top.confidence;
+  const why = { phone: t('dupByPhone'), nameAddress: t('dupByNameAddress'),
+                nameZip: t('dupByNameZip'), name: t('dupByName'),
+                address: t('dupByAddress') }[top.reason] || t('dupByName');
+  const hero = S.heroPhoto(top.biz);
+
+  openSheet(`
+    <div class="sheet-title">${t('similarFoundTitle')}</div>
+    <div class="sheet-sub">${t('similarFoundSub')}</div>
+
+    <div class="sim-card">
+      ${hero ? `<img class="sim-photo" src="${hero}" alt="" />`
+             : `<span class="sim-ico">${icon(catIcon(top.biz.cat), 26)}</span>`}
+      <div class="sim-main">
+        <div class="row-title">${L(top.biz.name)}${bizBadge(top.biz)}</div>
+        <div class="row-sub"><span>${t(catKey(top.biz.cat))}</span></div>
+        ${top.biz.address ? `<div class="row-sub"><span class="ltr">${top.biz.address}</span></div>` : ''}
+        ${top.biz.phone ? `<div class="row-sub"><span class="ltr">${top.biz.phone}</span></div>` : ''}
+        <div class="row-sub gold">${why}</div>
+      </div>
+    </div>
+    <button class="btn btn-ghost btn-sm btn-block" id="simOpen">${icon('eye', 17)} ${t('similarOpenPage')}</button>
+
+    ${rest.length ? `<div class="hint mt-12">${t('similarAlso')}</div>
+      ${rest.map(h => `<div class="list-row" style="margin-top:6px" data-sim="${h.biz.id}">
+        <span class="row-ico">${icon(catIcon(h.biz.cat), 20)}</span>
+        <div class="row-main"><div class="row-title">${L(h.biz.name)}</div>
+          <div class="row-sub"><span class="ltr">${h.biz.address || ''}</span></div></div>
+      </div>`).join('')}` : ''}
+
+    <button class="btn btn-gold btn-block mt-16" id="simClaim">${icon('briefcase', 19)} ${t('similarMine')}</button>
+    <button class="btn btn-ghost btn-block mt-8" id="simDiff">${t('similarDifferent')}</button>
+    ${conf === 'certain' ? `<div class="hint" style="text-align:center;margin-top:6px">${t('similarReviewNote')}</div>` : ''}
+    <button class="btn btn-plain btn-block mt-8" id="simBack">${t('back')}</button>
+  `, (panel) => {
+    panel.querySelector('#simOpen').addEventListener('click', () => {
+      closeSheet(); go('#/directory/' + top.biz.id);
+    });
+    panel.querySelectorAll('[data-sim]').forEach(r => r.addEventListener('click', () => {
+      closeSheet(); go('#/directory/' + r.dataset.sim);
+    }));
+    panel.querySelector('#simClaim').addEventListener('click', () => {
+      closeSheet(); go('#/claim/' + top.biz.id);
+    });
+    panel.querySelector('#simDiff').addEventListener('click', () => {
+      closeSheet(); onProceed(conf);
+    });
+    panel.querySelector('#simBack').addEventListener('click', () => closeSheet());
+  });
 }
 
 /**
@@ -843,7 +1107,7 @@ function pickBusinessToClaim(root) {
   renderHeader({ simple: true, title: t('claimBusiness') });
   const unclaimed = S.allBusinesses().filter(b => !b.claimed);
   root.innerHTML = `
-    <div class="search-wrap"><div class="search-bar">${icon('search', 21)}<input id="clSearch" placeholder="${t('searchDirectory')}" /></div></div>
+    <div class="search-row solo mt-12"><div class="search-bar big">${icon('search', 22)}<input id="clSearch" placeholder="${t('searchExample')}" /></div></div>
     <div class="list-note">${icon('info', 18)}<span>${t('claimFormNote')}</span></div>
     <div class="pad mt-12" id="clList"></div>
     <div class="pad"><button class="btn btn-ghost btn-block" data-route="#/add-business">${icon('plus', 19)} ${t('addBusiness')}</button></div>`;
@@ -1074,21 +1338,51 @@ function attr(v) {
 }
 
 /* --------------------------- SUBSCRIBE --------------------------- */
+/** a date the way a person reads it, in whichever language is on */
+export function fmtDate(ms) {
+  const d = new Date(ms);
+  if (isNaN(d)) return '';
+  const locale = S.state.lang === 'en' ? 'en-US' : 'ar-EG';
+  return d.toLocaleDateString(locale, { day: 'numeric', month: 'long', year: 'numeric' });
+}
+
+/**
+ * The plan. Monthly or yearly, the yearly price derived from the monthly
+ * one, a fourteen-day trial said in plain words, and no card field
+ * anywhere on this screen — that comes after the consent step.
+ */
 export function SubscribeScreen(root, params) {
   renderHeader({ simple: true, title: t('subscription') });
   const bizId = params[0] || S.state.myBusinessId;
-  const active = S.state.subscription && (!bizId || S.state.subscription.businessId === bizId);
+  const sub = S.subscription();
+  const active = sub && S.subscriptionActive() && (!bizId || sub.businessId === bizId);
+  let plan = 'monthly';
 
-  root.innerHTML = `
+  const paint = () => {
+    const price = S.planPrice(plan);
+    root.innerHTML = `
     <div class="pad mt-16 center-col">
       <div class="empty-ico" style="width:64px;height:64px">${icon('crown', 33)}</div>
       <b style="font-size:18px">${t('subTitle')}</b>
       <span class="muted fs-13">${t('subSub')}</span>
-      ${showsPrices()
-        ? `<div style="font-size:34px;font-weight:700;color:var(--gold-bright);margin:14px 0 2px">${fmtMoney(SUBSCRIPTION_PRICE)}<span style="font-size:14px;color:var(--muted)">${t('month')}</span></div>`
-        : ''}
     </div>
-    <div class="pad mt-16">
+
+    ${showsPrices() && !active ? `
+    <div class="pad">
+      <div class="seg" id="planSeg">
+        <button class="seg-btn ${plan === 'monthly' ? 'active' : ''}" data-plan="monthly">${t('planMonthly')}</button>
+        <button class="seg-btn ${plan === 'yearly' ? 'active' : ''}" data-plan="yearly">${t('planYearly')}
+          <span class="seg-tag">${t('planYearlyOff')}</span></button>
+      </div>
+      <div class="center-col mt-12">
+        <div style="font-size:34px;font-weight:700;color:var(--gold-bright)">${fmtMoney(price)}<span style="font-size:14px;color:var(--muted)">${plan === 'yearly' ? t('year') : t('month')}</span></div>
+        ${plan === 'yearly' ? `<span class="gold fs-13">${t('planSaveLine').replace('{x}', fmtMoney(S.yearlySaving()))}</span>` : ''}
+      </div>
+      <div class="list-note" style="margin-inline:0;margin-top:12px">${icon('gift', 18)}
+        <span>${t(plan === 'yearly' ? 'trialBannerYear' : 'trialBanner').replace('{x}', fmtMoney(price))}</span></div>
+    </div>` : ''}
+
+    <div class="pad">
       ${[
         ['image', 'planPhotos', ''],
         ['play', 'planVideo', ''],
@@ -1098,34 +1392,187 @@ export function SubscribeScreen(root, params) {
         ['shield', 'planOnlyYours', 'planOnlyYoursSub'],
         ['trendingUp', 'planStats', ''],
         ['gift', 'planOffers', ''],
-      ].map(([ico, key, sub]) => `
+      ].map(([ico, key, sub2]) => `
         <div class="info-row"><span class="i-ico">${icon(ico, 21)}</span>
-          <div class="i-txt"><b>${t(key)}</b>${sub ? `<span>${t(sub)}</span>` : ''}</div></div>`).join('')}
+          <div class="i-txt"><b>${t(key)}</b>${sub2 ? `<span>${t(sub2)}</span>` : ''}</div></div>`).join('')}
       <div class="list-note" style="margin-inline:0">${icon('info', 18)}<span>${t('planFreeNote')}</span></div>
       ${!showsPrices()
         ? priceGate('#/subscribe' + (params[0] ? '/' + params[0] : ''), 'unlockPrice')
         : active
           ? `<div class="ok-msg mt-16" style="text-align:center">${t('subActive')}</div>
-             <button class="btn btn-danger btn-block mt-12" id="cancelSub">${t('cancelSub')}</button>`
-          : `<button class="btn btn-gold btn-block mt-16" id="subBtn">${icon('creditCard', 20)} ${t('subscribeNow')}</button>`}
+             <button class="btn btn-ghost btn-block mt-12" data-route="#/my-subscription">${icon('creditCard', 19)} ${t('mySubscription')}</button>`
+          : `<button class="btn btn-gold btn-block mt-16" id="subBtn">${icon('gift', 20)} ${t('startTrial')}</button>`}
       <div class="hint" style="text-align:center;margin-top:10px">${t('needPhoneSub')}</div>
     </div>`;
 
-  wirePriceGates(root);
+    wirePriceGates(root);
+    wireRoutes(root);
+    $$('#planSeg .seg-btn').forEach(b => b.addEventListener('click', () => { plan = b.dataset.plan; paint(); }));
 
-  const sb = $('#subBtn');
-  if (sb) sb.addEventListener('click', async () => {
-    if (!S.requireTier(2, location.hash, go)) return;
-    if (!S.state.myBusinessId && !bizId) { go('#/claim'); return; }
-    sb.innerHTML = `<span class="spinner"></span> ${t('paying')}`;
-    await S.chargeCard(SUBSCRIPTION_PRICE, 'ARABNA business plan');
-    S.subscribeBusiness(bizId || S.state.myBusinessId);
+    const sb = $('#subBtn');
+    if (sb) sb.addEventListener('click', () => {
+      if (!S.requireTier(2, location.hash, go)) return;
+      if (!S.state.myBusinessId && !bizId) { go('#/claim'); return; }
+      // no card field on this screen: the consent step comes first, by law
+      go('#/subscribe-consent/' + (bizId || S.state.myBusinessId) + '?plan=' + plan);
+    });
+  };
+  paint();
+}
+
+/**
+ * The consent step. It stands between the plan and any card field on
+ * purpose: the amount, the cycle, the exact first-charge date, the fact
+ * that it renews itself and the words to cancel it all have to be read
+ * before the opt-in, and the opt-in cannot be pre-ticked. This is the
+ * screen a chargeback or a regulator asks to see.
+ */
+export function SubscribeConsentScreen(root, params) {
+  renderHeader({ simple: true, title: t('consentTitle') });
+  const bizId = params[0] || S.state.myBusinessId;
+  const plan = (query().plan === 'yearly') ? 'yearly' : 'monthly';
+  const price = S.planPrice(plan);
+  const firstCharge = S.now() + S.TRIAL_DAYS * 86400000;
+  const cycle = t(plan === 'yearly' ? 'planYearly' : 'planMonthly');
+
+  // stored word for word: the wording may change, and what matters later
+  // is what this person actually read
+  const consentText = [
+    `${t('consentAmount')}: ${fmtMoney(price)} / ${cycle}`,
+    `${t('consentFirstCharge')}: ${fmtDate(firstCharge)}`,
+    t('consentAuto'),
+    t('consentHowCancel'),
+    t('consentCheck'),
+  ].join('\n');
+
+  root.innerHTML = `
+    <div class="pad mt-16">
+      <div class="sheet-sub" style="margin-bottom:12px">${t('consentSub')}</div>
+      <div class="consent-box">
+        <div class="info-row"><span class="i-ico">${icon('creditCard', 21)}</span>
+          <div class="i-txt"><b class="ltr">${fmtMoney(price)}</b><span>${t('consentAmount')}</span></div></div>
+        <div class="info-row"><span class="i-ico">${icon('refresh', 21)}</span>
+          <div class="i-txt"><b>${cycle}</b><span>${t('consentCycle')}</span></div></div>
+        <div class="info-row"><span class="i-ico">${icon('calendar', 21)}</span>
+          <div class="i-txt"><b>${fmtDate(firstCharge)}</b><span>${t('consentFirstCharge')}</span></div></div>
+        <p class="fs-13" style="margin:10px 2px 0">${t('consentAuto')}</p>
+        <p class="fs-13" style="margin:6px 2px 0">${t('consentHowCancel')}</p>
+      </div>
+
+      <label class="consent-row mt-16">
+        <input type="checkbox" id="subConsent" />
+        <span>${t('consentCheck')}</span>
+      </label>
+
+      <button class="btn btn-gold btn-block mt-16" id="consentGo" disabled>
+        ${icon('creditCard', 20)} ${t('consentContinue')}</button>
+      <button class="btn btn-plain btn-block mt-8" id="consentBack">${t('back')}</button>
+    </div>`;
+
+  const box = $('#subConsent'), btn = $('#consentGo');
+  // deliberately never pre-ticked, and the button is dead until it is
+  box.addEventListener('change', () => { btn.disabled = !box.checked; });
+  $('#consentBack').addEventListener('click', () => back());
+
+  btn.addEventListener('click', async () => {
+    if (!box.checked) return;
+    btn.innerHTML = `<span class="spinner"></span> ${t('paying')}`;
+    await S.chargeCard(0, 'ARABNA business plan — trial');
+    S.startSubscription({
+      businessId: bizId, plan, consentText,
+      device: navigator.userAgent.slice(0, 120),
+    });
     toast(t('subActive'), 'ok');
-    go('#/directory/' + (bizId || S.state.myBusinessId));
+    goAfterDone('#/my-subscription');
   });
-  const cb = $('#cancelSub');
-  if (cb) cb.addEventListener('click', () => confirmSheet({
-    title: t('cancelSub'), sub: '', confirmText: t('confirm'), danger: true,
-    onConfirm: () => { S.cancelSubscription(); toast(t('subCancelled'), 'ok'); go('#/profile'); }
-  }));
+}
+
+/**
+ * My subscription. Cancelling is one button and one confirmation, in the
+ * same place the consent screen said it would be — anything longer is the
+ * pattern the rules were written against.
+ */
+export function MySubscriptionScreen(root) {
+  renderHeader({ simple: true, title: t('mySubscription') });
+
+  const paint = () => {
+    const sub = S.subscription();
+    if (!sub) {
+      root.innerHTML = `<div class="pad mt-16">
+        ${emptyState('creditCard', t('subNone'), t('subNoneSub'))}
+        <button class="btn btn-gold btn-block mt-12" data-route="#/subscribe">${t('subscribeNow')}</button>
+      </div>`;
+      wireRoutes(root);
+      return;
+    }
+    const statusKey = { trialing: 'subStatusTrialing', active: 'subStatusActive',
+                        canceled: 'subStatusCanceled', past_due: 'subStatusPastDue' }[sub.status];
+    const biz = S.businessById(sub.businessId);
+    const ended = sub.status === 'canceled';
+
+    root.innerHTML = `
+      <div class="pad mt-16">
+        <div class="sub-hero">
+          <span class="sub-status ${sub.status}">${t(statusKey)}</span>
+          <div class="sub-amount ltr">${fmtMoney(sub.price)}<span>${sub.plan === 'yearly' ? t('year') : t('month')}</span></div>
+          ${biz ? `<div class="muted fs-13">${L(biz.name)}</div>` : ''}
+        </div>
+
+        ${!ended ? `<div class="info-row"><span class="i-ico">${icon('calendar', 21)}</span>
+          <div class="i-txt"><b>${fmtDate(sub.currentPeriodEnd)}</b>
+            <span>${sub.status === 'trialing' ? t('subTrialEnds') : t('subNextCharge')}</span></div></div>` : ''}
+        ${sub.card ? `<div class="info-row"><span class="i-ico">${icon('creditCard', 21)}</span>
+          <div class="i-txt"><b class="ltr">•••• ${sub.card.last4}</b><span>${t('subCardLast4')}</span></div></div>` : ''}
+
+        ${sub.cancelAtPeriodEnd && !ended ? `
+          <div class="list-note" style="margin-inline:0">${icon('info', 18)}
+            <span>${t('subCancelKeep').replace('{x}', fmtDate(sub.currentPeriodEnd))}</span></div>
+          <button class="btn btn-gold btn-block mt-8" id="subResume">${icon('refresh', 19)} ${t('subUndoCancel')}</button>` : ''}
+
+        <div class="section-title mt-20">${t('subInvoices')}</div>
+        ${(sub.invoices || []).length
+          ? sub.invoices.slice().reverse().map(v => `
+              <div class="setting-row" style="padding-inline:0">
+                <span class="s-txt"><b>${fmtDate(v.date)}</b><span>${t('subStatusActive')}</span></span>
+                <span class="gold ltr">${fmtMoney(v.amount)}</span>
+              </div>`).join('')
+          : `<div class="hint">${t('subNoInvoices')}</div>`}
+
+        ${!ended ? `
+          <div class="section-title mt-20">${t('subChangePlan')}</div>
+          <div class="seg" id="subPlanSeg">
+            <button class="seg-btn ${sub.plan === 'monthly' ? 'active' : ''}" data-plan="monthly">${t('planMonthly')} · ${fmtMoney(S.planPrice('monthly'))}</button>
+            <button class="seg-btn ${sub.plan === 'yearly' ? 'active' : ''}" data-plan="yearly">${t('planYearly')} · ${fmtMoney(S.planPrice('yearly'))}</button>
+          </div>
+          <button class="btn btn-ghost btn-block mt-12" id="subCard">${icon('creditCard', 19)} ${t('subUpdateCard')}</button>
+          ${!sub.cancelAtPeriodEnd
+            ? `<button class="btn btn-danger btn-block mt-8" id="subCancel">${t('cancelSub')}</button>` : ''}` : ''}
+      </div>`;
+
+    wireRoutes(root);
+    $$('#subPlanSeg .seg-btn').forEach(b => b.addEventListener('click', () => {
+      S.changeSubscriptionPlan(b.dataset.plan); toast(t('done'), 'ok'); paint();
+    }));
+    const res = $('#subResume');
+    if (res) res.addEventListener('click', () => { S.resumeSubscription(); toast(t('subResumed'), 'ok'); paint(); });
+    const card = $('#subCard');
+    if (card) card.addEventListener('click', () => openSheet(`
+      <div class="sheet-title">${t('subUpdateCard')}</div>
+      <div class="field"><label class="label">${t('subCardLast4')}</label>
+        <input class="input ltr" id="cardIn" inputmode="numeric" maxlength="4" placeholder="4242" /></div>
+      <button class="btn btn-gold btn-block" id="cardGo">${t('saveChanges')}</button>
+    `, (panel) => {
+      panel.querySelector('#cardGo').addEventListener('click', () => {
+        S.updateSubscriptionCard(panel.querySelector('#cardIn').value);
+        closeSheet(); toast(t('subCardUpdated'), 'ok'); paint();
+      });
+    }));
+    // one button, one confirmation — no phone call, no second screen
+    const can = $('#subCancel');
+    if (can) can.addEventListener('click', () => confirmSheet({
+      title: t('cancelSub'), sub: t('subCancelConfirm'), confirmText: t('confirm'), danger: true,
+      onConfirm: () => { S.cancelSubscription(); toast(t('subCancelled'), 'ok'); paint(); },
+    }));
+  };
+  paint();
 }

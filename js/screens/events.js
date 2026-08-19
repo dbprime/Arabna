@@ -1,5 +1,5 @@
 /* ======================= EVENTS ======================= */
-import { t, L, icon, $, $$, go, back, renderHeader, toast, wireRoutes,
+import { t, L, icon, $, $$, go, back, renderHeader, toast, wireRoutes, replaceHash,
          emptyState, query, sectionNote } from '../ui.js';
 import { getLang } from '../i18n.js';
 import { EVENT_TYPES, nextOccurrence } from '../data.js';
@@ -73,9 +73,12 @@ export function EventsScreen(root) {
   const active = $('#evChips .chip.active');
   if (active && type !== 'all') active.scrollIntoView({ inline: 'center', block: 'nearest' });
 
+  /* The chosen type lives in the URL, replaced rather than pushed — the
+     same rule as the directory, so back leaves the screen. */
   $$('#evChips .chip').forEach(c => c.addEventListener('click', () => {
     type = c.dataset.type;
     $$('#evChips .chip').forEach(x => x.classList.toggle('active', x === c));
+    replaceHash('#/events' + (type === 'all' ? '' : '?type=' + type));
     paint();
   }));
   wireRoutes(root);
@@ -156,11 +159,23 @@ export function EventScreen(root, params) {
            <div class="hint" style="text-align:center;margin-top:8px">${t('evTicketExternal')}</div>`
         : `<div class="list-note" style="margin-inline:0">${icon('info', 18)}<span>${t('eventFree')}</span></div>`}
 
+      ${!past ? `<button class="btn ${S.isEventSaved(e.id) ? 'btn-outline-gold' : 'btn-ghost'} btn-block mt-12" id="evRemind">
+        ${icon('bell', 18)} ${S.isEventSaved(e.id) ? t('eventReminderOn') : t('saveEvent')}</button>` : ''}
       <div class="action-grid mt-12">
         <button class="btn btn-ghost btn-sm" id="mapBtn">${icon('navigation', 18)} ${t('directions')}</button>
         <button class="btn btn-ghost btn-sm" id="shareBtn">${icon('share', 18)} ${t('share')}</button>
       </div>
     </div>`;
+
+  /* Saving an event is what makes the "it is tomorrow" notification real
+     rather than a message with nothing behind it. */
+  const rem = $('#evRemind');
+  if (rem) rem.addEventListener('click', () => {
+    const on = S.toggleSavedEvent(e.id);
+    toast(on ? t('eventReminderOn') : t('eventReminderOff'), 'ok');
+    rem.className = `btn ${on ? 'btn-outline-gold' : 'btn-ghost'} btn-block mt-12`;
+    rem.innerHTML = `${icon('bell', 18)} ${on ? t('eventReminderOn') : t('saveEvent')}`;
+  });
 
   $('#mapBtn').addEventListener('click', () =>
     import('../ui.js').then(m => m.openMaps(`${L(e.venue)} ${e.city}`)));

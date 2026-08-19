@@ -7,6 +7,14 @@
 /* The first five are what Home shows as its summary strip.
    "events" is not a business category — it carries an explicit route to the
    Events screen; every other entry filters the directory. */
+/**
+ * Stamps `demo: true` on development data. Everything invented for the
+ * prototype carries it, so the owner can hide or erase the lot in one
+ * action instead of hunting fake shops among 486 real ones — and so
+ * nothing invented can be left in the directory on launch day.
+ */
+export const markDemo = (list) => list.map(x => Object.assign({ demo: true }, x));
+
 /* ============================================================
    The twenty-one directory categories (V.02.1)
    ------------------------------------------------------------
@@ -157,7 +165,7 @@ export const CITY_SUGGESTIONS = [
 ];
 
 /* ---- paid ad inventory (main slider) ---- */
-export const SLIDER_ADS = [
+export const SLIDER_ADS = markDemo([
   {
     id: 'ad1', kind: 'paid',
     name: { ar: 'مطعم الشام', en: 'Al Sham Restaurant' },
@@ -179,15 +187,19 @@ export const SLIDER_ADS = [
     cta:  { ar: 'تواصل معنا', en: 'Contact us' },
     color: 'linear-gradient(135deg,#3B3663,#1A1733)', icon: 'car', link: '#/directory/b6',
   },
-  { id: 'house', kind: 'house' }, // ARABNA "ضع إعلانك هنا"
-];
+]).concat([
+  /* Not demo data: the house slide is ARABNA's own "your ad here", and it
+     is the only thing standing in an unsold slot. It must survive both the
+     demo switch and launch day. */
+  { id: 'house', kind: 'house' },
+]);
 
 /* ---- paid ad inventory (mini banner + magazine native) ---- */
-export const MINI_ADS = [
+export const MINI_ADS = markDemo([
   { id: 'm1', name: { ar: 'سوبرماركت البركة', en: 'Al Baraka Supermarket' }, tag: { ar: 'لحوم حلال طازجة يومياً', en: 'Fresh halal meat daily' }, icon: 'bag', link: '#/directory/b5' },
   { id: 'm2', name: { ar: 'مكتب الهدى للمحاماة', en: 'Al Huda Law Office' }, tag: { ar: 'استشارة أولى مجاناً', en: 'Free first consultation' }, icon: 'scale', link: '#/directory/b4' },
   { id: 'm3', name: { ar: 'صالون ليان', en: 'Layan Salon' }, tag: { ar: 'خصم 20% هذا الشهر', en: '20% off this month' }, icon: 'sparkles', link: '#/directory/b7' },
-];
+]);
 
 /* ---- directory listings (seeded like an admin bulk import) ---- */
 /* ============================================================
@@ -644,7 +656,57 @@ export const ATTRIBUTES = withKey([
    that returns nothing, and a new speciality surfaces by itself the
    day it has content — with no code change at all.
    ============================================================ */
+/* ============================================================
+   Duplicate detection (V.01.8 batch four)
+   ------------------------------------------------------------
+   Every shop owner writes their own name differently — "Al-Aseel
+   Grill", "Al Aseel Restaurant & Grill LLC", "مطعم الأصيل",
+   "الأصيل للمشاوي". What is left after the generic trade words are
+   removed is the part that actually identifies the place.
+   ============================================================ */
+
+/** words that name a trade, not a business — dropped before comparing */
+export const GENERIC_WORDS = [
+  // Arabic
+  'مطعم', 'مطاعم', 'محل', 'محلات', 'سوبرماركت', 'ماركت', 'بقالة', 'مخبز',
+  'فرن', 'حلويات', 'مخابز', 'مقهى', 'كافيه', 'صالون', 'مركز', 'عيادة',
+  'مكتب', 'شركة', 'مؤسسة', 'متجر', 'بيت', 'دار', 'ملحمة', 'جزارة',
+  'للمشاوي', 'للحلويات', 'العربي', 'العربية', 'الحلال', 'عربي', 'عربية', 'حلال',
+  // English
+  'restaurant', 'restaurants', 'grill', 'grille', 'cafe', 'coffee', 'bakery',
+  'sweets', 'market', 'supermarket', 'grocery', 'store', 'shop', 'center',
+  'centre', 'clinic', 'salon', 'house', 'kitchen', 'llc', 'inc', 'co',
+  'company', 'the', 'and', 'of', 'halal', 'mediterranean',
+];
+
+/** Dice coefficient above this counts as the same name */
+export const NAME_SIM_MIN = 0.85;
+
+/** street-word spellings folded together before two addresses are compared */
+export const STREET_WORDS = {
+  st: 'st', 'st.': 'st', street: 'st',
+  rd: 'rd', 'rd.': 'rd', road: 'rd',
+  ave: 'ave', 'ave.': 'ave', avenue: 'ave',
+  blvd: 'blvd', 'blvd.': 'blvd', boulevard: 'blvd',
+  dr: 'dr', 'dr.': 'dr', drive: 'dr',
+  ln: 'ln', 'ln.': 'ln', lane: 'ln',
+  hwy: 'hwy', 'hwy.': 'hwy', highway: 'hwy',
+  fwy: 'fwy', 'fwy.': 'fwy', freeway: 'fwy',
+  pkwy: 'pkwy', parkway: 'pkwy',
+  n: 'n', north: 'n', s: 's', south: 's',
+  e: 'e', east: 'e', w: 'w', west: 'w',
+};
+
 export const CHIP_MIN = 5;
+
+/**
+ * …and no more than this share of the category. "Arabic spoken" sits on
+ * 438 of 515 listings and on 139 of 139 restaurants: a filter that gives
+ * back the same list is not a filter, and it was taking the first place
+ * in the row and pushing the useful ones off the screen. It stays in the
+ * filter sheet for anyone who wants it.
+ */
+export const CHIP_MAX_SHARE = 0.6;
 
 export const EVENT_TYPES = [
   { id: "concert",    key: "evTypeConcert",     icon: "play" },
@@ -670,7 +732,9 @@ export function attrInCat(attr, cat) {
 /* Which attributes earn a chip is no longer declared here: it is counted from
    the data by `quickAttrsForCat` in store.js against CHIP_MIN. */
 
-export const BUSINESSES = [
+/* The invented shops the prototype demonstrates itself with. This whole
+   array is deleted before launch — together with DEMO_REVIEWS below. */
+const DEMO_BUSINESSES = [
   {
     id: 'b1', name: { ar: 'مطعم الشام', en: 'Al Sham Restaurant' }, cat: 'restaurants',
     phone: '(713) 555-0142', address: '6821 Hillcroft Ave, Houston, TX 77081',
@@ -1024,13 +1088,14 @@ export const BUSINESSES = [
     photos: 0, videos: 0,
   },
 
-  /* --- 486 real Houston listings, entered by the owner and brought in
-         through the admin importer (V.02.1): 412 businesses as b30–b441,
-         then the 74 outings as b442–b515. Both files were exported
-         separately and both began at b30, so the outings ids were shifted
-         clear rather than renumbered by hand.
-         Everything above this line is development seed data — the ~29
-         invented shops and the seed reviews go before launch. --- */
+];
+
+/* 486 real Houston listings, entered by the owner and brought in through
+   the admin importer (V.02.1): 412 businesses as b30–b441, then the 74
+   outings as b442–b515. Both files were exported separately and both
+   began at b30, so the outings ids were shifted clear rather than
+   renumbered by hand. Nothing here carries `demo`. */
+const REAL_BUSINESSES = [
   {
     id: "b30", name: { ar: "Abdallah's", en: "Abdallah's" }, cat: "restaurants",
     phone: "(713) 952-4747", address: "2795 Katy Fwy Service Rd Ste 100, Houston, TX 77007",
@@ -5958,7 +6023,16 @@ export const BUSINESSES = [
   },
 ];
 
-export const REVIEWS = {
+/* The demo shops come first so they lead the directory while the
+   prototype is being shown. Deleting DEMO_BUSINESSES is the whole
+   pre-launch cleanup for the directory. */
+export const BUSINESSES = markDemo(DEMO_BUSINESSES).concat(REAL_BUSINESSES);
+
+/* Seed reviews — development data, and legally the most important thing
+   in this file to delete before launch: the FTC rule of October 2024 makes
+   the platform itself liable for a fabricated review. Every one carries
+   `demo`, and the admin panel erases them with the demo shops. */
+const DEMO_REVIEWS = {
   b1: [
     { user: 'Omar H.', rating: 5, when: { ar: 'قبل ٣ أيام', en: '3 days ago' }, text: { ar: 'أطيب شاورما بهيوستن بصراحة، والخدمة سريعة.', en: 'Best shawarma in Houston honestly, and fast service.' } },
     { user: 'ليلى ك.', rating: 5, when: { ar: 'قبل أسبوع', en: '1 week ago' }, text: { ar: 'الأكل بيتي وطازج والأسعار معقولة.', en: 'Homemade taste, fresh, reasonable prices.' } },
@@ -5976,8 +6050,12 @@ export const REVIEWS = {
   ],
 };
 
+export const REVIEWS = Object.fromEntries(
+  Object.entries(DEMO_REVIEWS).map(([bizId, list]) => [bizId, markDemo(list)]));
+
+
 /* ---- classifieds (person-to-person) ---- */
-export const CLASSIFIEDS = [
+export const CLASSIFIEDS = markDemo([
   { id: 'c1', cat: 'cars', title: { ar: 'تويوتا كامري ٢٠١٩ — نظيفة', en: '2019 Toyota Camry — clean' }, price: '$14,500', city: 'Houston, TX', when: { ar: 'قبل ٣ ساعات', en: '3 hours ago' }, boosted: true, icon: 'car', daysLeft: 27, owner: 'me',
     desc: { ar: 'ماشية ٦٢ ألف ميل، فحص كامل، تيتل نظيف، بدون حوادث.', en: '62k miles, fully inspected, clean title, no accidents.' } },
   { id: 'c2', cat: 'furniture', title: { ar: 'طقم كنب ٧ مقاعد', en: '7-seat sofa set' }, price: '$650', city: 'Stafford, TX', when: { ar: 'قبل يوم', en: '1 day ago' }, boosted: false, icon: 'sofa', daysLeft: 29,
@@ -5996,10 +6074,10 @@ export const CLASSIFIEDS = [
     desc: { ar: 'دهان داخلي وخارجي، تصليح جبس، خبرة ١٢ سنة.', en: 'Interior and exterior painting, drywall repair, 12 years experience.' } },
   { id: 'c9', cat: 'free', title: { ar: 'كراتين نقل — مجاني للاستلام', en: 'Moving boxes — free to collect' }, price: '__FREE__', city: 'Sugar Land, TX', when: { ar: 'قبل يوم', en: '1 day ago' }, boosted: false, icon: 'gift', daysLeft: 29,
     desc: { ar: 'حوالي ٢٠ كرتونة بحالة ممتازة، الاستلام من البيت.', en: 'About 20 boxes in good shape, pickup from the house.' } },
-];
+]);
 
 /* ---- magazine ---- */
-export const ARTICLES = [
+export const ARTICLES = markDemo([
   {
     id: 'a1', cat: 'business', sponsored: false, read: 4, author: { ar: 'فريق عربنا', en: 'ARABNA Team' },
     date: { ar: '١٢ أغسطس ٢٠٢٦', en: 'Aug 12, 2026' }, media: 'image', icon: 'trendingUp',
@@ -6065,7 +6143,7 @@ export const ARTICLES = [
            'Then a bank account, then a driver license, and finally school enrollment for children.'],
     },
   },
-];
+]);
 
 /* ============================================================
    EVENTS
@@ -6074,7 +6152,7 @@ export const ARTICLES = [
    from masjids and community centers). They stay empty for anything typed
    in by hand, and `source: 'manual'` marks a human-entered event.
    ============================================================ */
-export const EVENTS = [
+export const EVENTS = markDemo([
   {
     id: 'e1', type: 'festival', status: 'live',
     title: { ar: 'مهرجان الأكل العربي — هيوستن', en: 'Arab Food Festival — Houston' },
@@ -6117,7 +6195,7 @@ export const EVENTS = [
     repeat: { kind: 'hijri', spawned: [] },
     source: '', externalId: '', sourceUrl: '',
   },
-];
+]);
 
 /** A brand-new event record — one place that defines the shape. */
 export function blankEvent() {
@@ -6160,12 +6238,26 @@ export function nextOccurrence(iso, kind) {
 export const VERIFY_BADGE_PRICE = 0;
 
 /* ---- ad products & pricing (wired for Stripe in V.02) ---- */
+/* `days` is how long one purchase runs — it decides the availability
+   maths and the renewal reminder, so it belongs with the price. */
 export const AD_PRODUCTS = [
-  { id: 'slider', nameKey: 'prodSlider', descKey: 'prodSliderDesc', icon: 'megaphone', prices: { week1: 149, week2: 269, month1: 449 } },
-  { id: 'mini',   nameKey: 'prodMini',   descKey: 'prodMiniDesc',   icon: 'bolt',      prices: { week1: 49,  week2: 89,  month1: 149 } },
-  { id: 'story',  nameKey: 'prodStory',  descKey: 'prodStoryDesc',  icon: 'newspaper', prices: { week1: 199, week2: 349, month1: 549 } },
-  { id: 'event',  nameKey: 'prodEvent',  descKey: 'prodEventDesc',  icon: 'calendar',  prices: { week1: 99,  week2: 179, month1: 299 } },
+  { id: 'slider',    nameKey: 'prodSlider',    descKey: 'prodSliderDesc',    icon: 'megaphone',  days: 7,  prices: { week1: 149, week2: 269, month1: 449 } },
+  // the same placement, at the top of one category page: cheaper, and aimed
+  // at people already looking for that trade rather than at everybody
+  { id: 'catSlider', nameKey: 'prodCatSlider', descKey: 'prodCatSliderDesc', icon: 'compass',    days: 7,  perCat: true, prices: { week1: 69, week2: 119, month1: 199 } },
+  { id: 'mini',      nameKey: 'prodMini',      descKey: 'prodMiniDesc',      icon: 'bolt',       days: 30, prices: { week1: 49,  week2: 89,  month1: 149 } },
+  { id: 'story',     nameKey: 'prodStory',     descKey: 'prodStoryDesc',     icon: 'newspaper',  days: 14, prices: { week1: 199, week2: 349, month1: 549 } },
+  { id: 'event',     nameKey: 'prodEvent',     descKey: 'prodEventDesc',     icon: 'calendar',   days: 14, prices: { week1: 99,  week2: 179, month1: 299 } },
 ];
+
+/**
+ * How many of each placement exist at once. Kept here, not in the code,
+ * because it is a commercial decision that will be revisited: the limits
+ * rise with the number of *users*, never with the number of advertisers.
+ * A crowded ad surface loses both.
+ * `catSlider` is per category.
+ */
+export const AD_SLOTS = { slider: 6, catSlider: 4, mini: 8, story: 4, event: 3 };
 
 export const BOOST_PRICES = [
   { id: 'b3d', days: 3,  price: 2 },
@@ -6177,11 +6269,11 @@ export const SUBSCRIPTION_PRICE = 29;
 
 /* Every notification carries a `route`: tapping one must always land on the
    thing it is talking about. */
-export const NOTIFICATIONS = [
+export const NOTIFICATIONS = markDemo([
   { id: 'n1', icon: 'megaphone', unread: true, route: '#/marketplace/c1', title: { ar: 'إعلانك صار مباشر', en: 'Your ad is live' }, body: { ar: 'إعلان "تويوتا كامري" ظاهر الآن بأعلى فئة السيارات.', en: 'Your "Toyota Camry" listing is now pinned in Cars.' }, when: { ar: 'قبل ساعتين', en: '2 hours ago' } },
   { id: 'n2', icon: 'clock', unread: true, route: '#/my-ads', title: { ar: 'إعلانك ينتهي قريباً', en: 'Listing expiring soon' }, body: { ar: 'باقي ٣ أيام على انتهاء إعلان "طقم كنب".', en: '3 days left on your "sofa set" listing.' }, when: { ar: 'قبل يوم', en: '1 day ago' } },
   { id: 'n3', icon: 'star', unread: false, route: '#/my-business', title: { ar: 'مراجعة جديدة', en: 'New review' }, body: { ar: 'وصلتك مراجعة ٥ نجوم على صفحة نشاطك.', en: 'You received a 5-star review on your business page.' }, when: { ar: 'قبل ٣ أيام', en: '3 days ago' } },
-];
+]);
 
 /* The moderation queue has no seed data on purpose: it is built entirely
    from real pending listings, avatars, badge requests and scan reports, so
