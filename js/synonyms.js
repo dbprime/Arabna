@@ -457,18 +457,33 @@ function endsClean(hay, word) {
 
    So the typed word is tried a second time against a copy of the text with
    every space, hyphen, apostrophe and dot removed — the reader's own word
-   only, never a dictionary substitution, and only from four characters up:
-   below that, squashing deletes the word boundaries that keep a short query
-   from landing in the middle of an unrelated one. */
+   only, never a dictionary substitution, and only from SIX characters up:
+   squashing deletes the word boundaries that keep a short query from
+   landing in the middle of an unrelated one.
+
+   Six, not four. Four was measured on the Latin cases this was built for
+   (alshami · abuomar · dimassis · عبدالله, all seven letters or more) and
+   it is far too low for Arabic, whose words are short and whose «و» and
+   «ال» glue onto the next one. Run over all 984 dictionary words plus
+   every tag word in the directory, a floor of four invented 143 matches:
+   «نجار» (a carpenter) found nine hookah lounges inside «لاونج بار»,
+   «بترا» found three trampoline parks inside «ألعاب ترامبولين», «موال»
+   found the aquarium inside «أكواريوم وألعاب», «بارك» and «سينا» and
+   «ايوب» each found something unrelated. At six every one of those is
+   gone and every true match is kept — «سوبر ماركت» 23 · «sugarland» 32 ·
+   «coffeehouse» · «barber shop» · «water park» · «wifi» against «wi fi».
+   The break between the two is that clean, and it is not a coincidence:
+   a squashed query only earns its false positive by being short. */
 const SQUASH = /[\s\-'’.،_/]+/g;
 export function squash(s) { return String(s == null ? '' : s).replace(SQUASH, ''); }
 
 /** does this listing's haystack answer one expanded word? */
+const SQUASH_MIN = 6;
 export function hayMatches(hay, entry, squashedHay) {
   if (hay.includes(entry.typed)) return true;
-  if (squashedHay && entry.typed.length >= 4) {
+  if (squashedHay && entry.typed.length >= SQUASH_MIN) {
     const q = squash(entry.typed);
-    if (q.length >= 4 && squashedHay.includes(q)) return true;
+    if (q.length >= SQUASH_MIN && squashedHay.includes(q)) return true;
   }
   return entry.alts.some(a => endsClean(hay, a));
 }

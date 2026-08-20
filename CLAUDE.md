@@ -1453,10 +1453,24 @@ Two more faults of the same family, both from the owner's own searching:
   write the name the record spells «عبد الله», and `Alshami` / `Al Shami` /
   `Al-Shami` are one shop. A second cached copy of the haystack with every
   space, hyphen, apostrophe and dot removed is tried **only against the word
-  the reader typed, never a dictionary substitution, and only from four
+  the reader typed, never a dictionary substitution, and only from six
   characters up** — squashing erases word boundaries, so a short query would
   land in the middle of an unrelated word. `alshami` 0 → **2** · `abuomar`
   0 → **1** · `عبدالله` 0 → **2** · `dimassis` 0 → **1**.
+- **The floor is six, not four**, and this is the one number in the batch
+  that was raised rather than taken as given. Four was measured on the
+  Latin cases the rule was built for — `alshami`, `abuomar`, `dimassis`,
+  «عبدالله», every one of them seven letters or more — and Arabic words are
+  short and glue «و» and «ال» onto the next one. Run over all 984
+  dictionary words plus every tag word in the directory, **four invented
+  143 matches**: «نجار» found nine hookah lounges inside «لاونج بار»,
+  «بترا» found three trampoline parks inside «ألعاب ترامبولين», «موال»
+  found the aquarium inside «أكواريوم وألعاب», and «بارك» · «سينا» · «ايوب»
+  each found something unrelated. **At six all of them are gone and every
+  true match is kept** — «سوبر ماركت» 23 · `sugarland` 32 · `coffeehouse` ·
+  `barber shop` · `water park` · `wifi` against «wi fi». The break between
+  five and six is that clean, and it is not luck: a squashed query earns a
+  false positive by being short.
 - **One V.02.2 result was deliberately reversed.** «صالون فلوريدا» was the
   example that justified the three-stage search: it matched nothing exactly
   and fell to stage two, 24 rows under «ما لقينا … بالضبط». The record now
