@@ -7,7 +7,7 @@ ARABNA · عربنا — a mobile-first web app for the Arab community in the U.
 **business directory + marketplace + events + magazine**, Arabic-first with a full English toggle.
 ("Classifieds / الإعلانات الشخصية" is now "Marketplace / السوق" — the old `#/classifieds`
 routes still resolve so shared links keep working.)
-Current version: **V.02.6 (prototype)**. Owner: Rai Elby (@dbprime). Deploys to Vercel (team DB Prime).
+Current version: **V.02.7 (prototype)**. Owner: Rai Elby (@dbprime). Deploys to Vercel (team DB Prime).
 
 ## Hard rules (from the product brief)
 1. **One repository, one Vercel project.** No duplicates, no stray preview projects.
@@ -1041,6 +1041,162 @@ himself. So **25 records changed `name.ar`** and `name.en` was never touched.
   «عبد الله» and the English `Abdallah's` is in the record and in the search
   but is **not** printed under the title; that would be an interface change
   and this batch was data only.
+
+## V.02.7 — batch six (a): the interface pass
+
+### Latin digits, in both languages
+«٢٠٢٦» and «٩:٠٠ ص» are gone. Every `Intl` / `toLocale*` that took `'ar-EG'`
+now takes **`'ar-EG-u-nu-latn'`** — the month and day names stay Arabic and
+only the digits change — `fmtTime()` stopped converting, and 133 literal
+Arabic-Indic digits in `i18n.js`, `data.js` and the legal pages became Latin.
+**Measured: 18 screens, zero Arabic-Indic digits.** The address, the phone
+and the price on the same screen are Latin already, so an Arabic-Indic year
+beside them reads as a typo. **Digits a user typed are never converted** —
+`stripPhones()` in `store.js` still normalises Arabic-Indic input, and the
+search dictionary still carries «مفتوح ٢٤ ساعه» as a word people type.
+
+### Simple MSA, never a dialect
+115 UI strings rewritten: «ليس لديك حساب؟» not «ما عندك حساب؟» · «ابحث عن»
+not «دوّر على» · «تعذّر» not «ما قدرنا» · «يمكنك» not «تقدر» · «غداً» not
+«بكرة». The app speaks to Levantines, Egyptians, Iraqis, Yemenis and
+Moroccans in one city, and **no single dialect belongs to all of them**;
+plain MSA belongs to nobody's country in particular. Simple, not stiff:
+«أرسل رمزاً جديداً», never «يُرجى النقر لإعادة إرسال رمز التحقّق».
+**The exception is data** — business names, descriptions and search tags are
+things, not interface.
+
+### Money is isolated at the source
+`$49` was rendering as `49$` inside Arabic text: the dollar sign is a neutral
+bidi character and the paragraph direction placed it. `fmtMoney()` now wraps
+its output in **U+2066 … U+2069**, so every one of its 28 call sites — and
+every future one — is right without a wrapper, in attributes as well as text.
+`ltr()` does the same for a price we did not format (`$14,500`). Verified by
+measuring the glyph rectangles: the `$` is left of the digits.
+
+### The light/dark flip is in the header corner
+It replaces `.h-spacer` — **44px for 44px, so nothing moved**, and the logo
+is `position:absolute` on the middle of the header so it never depended on
+what stands beside it (**measured: centre at 195px in Arabic and English**).
+`.app-header` needed **`justify-content: space-between`**: with the logo out
+of the flow the two corner buttons had nothing between them and collapsed
+against each other — measured, menu at 332 and the flip at 278 instead of
+14. Now Arabic reads menu 332 / flip 14, English the mirror.
+No direction code: flex plus `dir` swap the corners by themselves, and an
+`if (rtl)` would only ever be right in one language. `applyTheme()` repaints
+the icon and its `aria-label` the same way it swaps the logo files — the
+attribute repaints what a symbol coloured, it cannot redraw what was content.
+**It is deleted from the drawer, not copied**: the same action in two places
+is the duplication banned everywhere else. Full header only, never the
+simple back+title one.
+
+### Screen by screen
+- **Home** — search and location share one row. The magnifier keeps
+  `flex: 0 0 22px`; it was squeezed to ~13px the last time this row got
+  crowded. The chip ellipsises at 44% rather than wrapping. 360px, both
+  languages, no overflow.
+- **Directory** — the quick-chip row is **deleted**. Filtering is the ⚙
+  button and the two pickers; what is *on* still shows as ✕ pills, because
+  that is state, not a control. `quickAttrsForCat` stays in `store.js`
+  untouched. And an unsold category strip now carries **the house slide** —
+  «إعلانك هنا — أول ما يفتح أحدٌ قسم «مطاعم»» opening `#/advertise/catSlider`
+  with that package already selected. The best place in the app to sell it
+  from: the restaurant owner browsing «مطاعم» is the buyer.
+- **Business page** — the strip no longer repeats the photo already filling
+  the hero. No photos still means no gallery.
+- **Marketplace** — the third copy of the section name is gone; the rules
+  dot moved onto the note, where the section is named.
+- **Advertise** — «احجز مكانك — من $49» and «أيّ باقة تناسبك؟».
+- **Subscribe** — «أهلية» is gone and the meaning stays: **«اطلب شارة «نشاط
+  موثّق»»** with the gold mark beside it and **«بعد المراجعة»** under it, in
+  `--muted`, never dropped. Not «احصل على» and not the bare badge name:
+  somebody who reads «نشاط موثّق» beside $29 expects the mark tomorrow, and
+  paying has never verified anyone.
+- **Drawer** — «تصنيفات عربنا»; الدليل and السوق dropped (both are permanent
+  bottom-bar tabs); **«إعلانات مميّزة»** in their place → `#/directory?featured=1`.
+  When no business subscribes it reads «قريباً» and does not navigate, so
+  the row can never open an empty list. Still 844px, still no scroll.
+- **Help** — ten folded questions above the contact block, one open at a
+  time, the drawer's idiom; placeholder answers for Rai to replace. The
+  phone is off this screen (it stays in About and both legal pages, where
+  the app stores expect it).
+- **Sign in** — «ليس لديك حساب؟ أنشئ حساباً», and the forgot-password link
+  carries «قريباً» before the tap.
+
+### Forgot password says what is true
+`signOut()` clears the only account record there is, so a form here would
+take an email and do nothing — the one outcome the project bans. The screen
+explains that reset needs a server account, and offers the two doors that
+open. **The third state, a screen that opens and does nothing, is the one
+thing not allowed.**
+
+### The marketplace listing
+- The owner's button and the visitor's button were near-identical labels on
+  one destination doing two jobs, so **the owner could not tell which they
+  had**. It reads **«رسائل المشترين (N)»** now, and **is not drawn at all at
+  zero** — a button onto an empty screen reads as broken, and «رسائلي» in the
+  drawer still reaches everything.
+- **Share moved beside the heart** on the business page and the listing, for
+  owner and visitor alike, and the bottom copy is gone from both (it sat at
+  y=3454 on a page that tall; it is at **y=191** now). Each ad in
+  «إعلاناتي» has its own share icon. Event and article pages keep theirs —
+  those pages are short. `shareItem()` needed no change and `location.href`
+  is the right link.
+- The conversation header carries **the listing's photo** when it has one.
+
+### Posting: four, fourteen, and hidden rather than erased
+`MAX_ACTIVE_LISTINGS = 4` and `LISTING_DAYS = 14` in `store.js` and nowhere
+else; handyman keeps its stricter one-per-fortnight. **«حذف» is «أخفِ
+الإعلان»**: off every public list at once, still under «إعلاناتي», its slot
+freed (`activeListingCount()` skips hidden), and reversible while the days
+last. Hidden is **its own list (`state.hiddenListings`)**, not a field on
+the record — a field only reaches `extraClassifieds`, and somebody can own
+a seed listing too. Every field but the photos is required, and the empty one is *marked*
+rather than announced.
+
+### Add your business
+- **The English name and the category are required**, starred, and the
+  button is dead until both are there — **the same two the importer demands,
+  not a second list invented for this screen**. The category select opens on
+  «اختر تصنيفاً» rather than defaulting to the first one.
+- **«خدمة متنقّلة»** hides the address and asks for a **ZIP** instead, saved
+  on the record for geocoding. A plumber has no shopfront, and without a ZIP
+  they would never appear under «الأقرب» at all.
+- **«مفتوح 24 ساعة»** hides the seven day rows and saves
+  `[['00:00','24:00']]` for each of them — the existing shape, no new field.
+- **Attributes are one box per group**, and the box **stays open** while you
+  pick: somebody adding a restaurant chooses two or three from one list, and
+  a panel that shut on every tap would need reopening each time. Chosen ones
+  show as ✕ pills under the box, readable with it closed. **At least one
+  from every group**, and the button names the group and scrolls to it.
+  ⚠️ **Restaurants has eight groups**, so adding one needs eight choices —
+  the highest-volume category is also the heaviest form. Worth revisiting.
+
+### Sign up
+- **First and last name, letters only** (`validName` allows letters, spaces,
+  apostrophes, hyphens — Unicode-aware, so «رامي» passes and «رامي1» does
+  not). Every error is **written under its field**; an alert names no field
+  and is gone before the reader looks up from the keyboard.
+- **The email is checked before anything is sent**; **the password rule is
+  stated before the typing** (`passwordRule`), with a strength meter and a
+  confirm field.
+- **The terms open in a sheet and close back onto the same line** with
+  everything still typed. The old link navigated away and lost the form.
+  `legalText()` harvests the screen's body and **puts the header back**,
+  because both legal screens set it as their first act.
+- **The code screen survives the app closing.** `state.pendingVerify` is
+  written at sign-up and read by `firstRoute()` in `app.js`, so reopening
+  lands on `#/auth/email` and not on an empty form — the commonest reason
+  somebody never comes back. The code has a **10-minute life**, the resend
+  button counts down **45 seconds from when the code was actually sent** (so
+  returning later finds it already available), and **«تصفّح الآن وأكمل
+  لاحقاً»** means nobody is thrown out for not having the email to hand.
+- **The phone is collected at sign-up and stored unverified.** Asking for it
+  at the moment somebody is trying to publish is the worst possible time.
+  The first action that needs it asks for the code, and **re-entering a
+  different number** says «الرقم غير مطابق — الرقم المسجّل ينتهي بـ182» —
+  **the last three digits only**, enough to jog a memory and not enough to
+  leak one. `samePhone()` compares the last ten digits, so punctuation
+  never matters.
 
 ## Known open items
 - Legal pages are first drafts — a lawyer must review before public launch.

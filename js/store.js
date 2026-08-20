@@ -50,6 +50,8 @@ const DEFAULTS = {
   notifPrefs: { messages: true, expiry: true, adLive: true, reviews: true },
   readNotifs: [],
   extraClassifieds: [],     // user-created listings
+  hiddenListings: [],       // «أخفِ الإعلان» — hidden, not erased
+  pendingVerify: null,      // the code screen survives closing the app
   extraBusinesses: [],      // user-created business listings
   extraArticles: [],        // admin-created articles
   boosted: ['c1'],
@@ -1192,9 +1194,12 @@ export function allClassifieds() {
     /* Hidden is not deleted. The owner still sees it under «إعلاناتي» and
        can put it back while its 14 days last; everyone else stops seeing
        it the moment they press the button. */
-    .filter(c => c.status !== 'hidden' || state.myListings.includes(c.id))
+    .filter(c => !isHidden(c) || state.myListings.includes(c.id))
     .filter(c => c.status !== 'pending' || state.myListings.includes(c.id))
-    .map(c => Object.assign({ status: 'live', photos: [] }, c, { boosted: state.boosted.includes(c.id) }));
+    .map(c => Object.assign({ status: 'live', photos: [] }, c, {
+      boosted: state.boosted.includes(c.id),
+      status: isHidden(c) ? 'hidden' : (c.status || 'live'),
+    }));
 }
 export function classifiedById(id) { return allClassifieds().find(c => c.id === id); }
 
@@ -1220,7 +1225,7 @@ export function catRule(catId) {
 }
 /** how many of my active listings already sit in this section */
 export function myActiveInCat(catId) {
-  return myActiveListings().filter(c => c.cat === catId && c.status !== 'hidden').length;
+  return myActiveListings().filter(c => c.cat === catId && !isHidden(c)).length;
 }
 export { FREE_PRICE };
 
@@ -1599,10 +1604,65 @@ export function chargeCard(amount, description) {
 }
 
 /* ---------------- mutations ---------------- */
-export function signUp({ name, email, password }) {
+/* ---- what the sign-up screen checks, kept beside the account itself so
+        the same rules answer the profile screen and a future server ---- */
+export const PW_MIN = 8;
+/** letters, spaces, apostrophes and hyphens — never a digit or a symbol */
+export function validName(v) {
+  return /^[\p{L}][\p{L}\s'’-]*$/u.test(String(v || '').trim());
+}
+export function validEmail(v) {
+  return /^[^\s@]+@[^\s@]+\.[A-Za-z]{2,}$/.test(String(v || '').trim());
+}
+/** 0 none · 1 weak · 2 fair · 3 strong — shown before the failure, not after */
+export function passwordScore(v) {
+  const p = String(v || '');
+  if (!p) return 0;
+  let n = 0;
+  if (p.length >= PW_MIN) n++;
+  if (/[A-Za-z\p{L}]/u.test(p) && /\d/.test(p)) n++;
+  if (p.length >= 12 || /[^\w\s]/.test(p)) n++;
+  return Math.min(n, 3);
+}
+export function passwordOk(v) {
+  const p = String(v || '');
+  return p.length >= PW_MIN && /[A-Za-z\p{L}]/u.test(p) && /\d/.test(p);
+}
+
+/* ---- the verification step is remembered, so closing the app returns to
+        it instead of to an empty form ---- */
+export const CODE_TTL_MS = 10 * 60 * 1000;
+export function setPendingVerify(kind, target) {
+  state.pendingVerify = { kind, target, sentAt: now() };
+  save();
+}
+export function pendingVerify() {
+  const pv = state.pendingVerify;
+  if (!pv) return null;
+  return Object.assign({}, pv, { expired: now() - pv.sentAt > CODE_TTL_MS });
+}
+export function clearPendingVerify() { state.pendingVerify = null; save(); }
+export function touchPendingVerify() {
+  if (state.pendingVerify) { state.pendingVerify.sentAt = now(); save(); }
+}
+
+/** the last three digits of the number on file, and nothing more */
+export function phoneTail() {
+  const d = String((state.user && state.user.phone) || '').replace(/\D/g, '');
+  return d.slice(-3);
+}
+/** the same person, however they punctuated it */
+export function samePhone(a, b) {
+  const n = (x) => String(x || '').replace(/\D/g, '').slice(-10);
+  return !!n(a) && n(a) === n(b);
+}
+
+export function signUp({ name, email, password, phone }) {
   state.user = {
     name, email, password: password || '',
-    emailVerified: false, phone: null, phoneVerified: false,
+    // collected at sign-up and stored unverified; the code is asked for at
+    // the first action that actually needs it
+    emailVerified: false, phone: phone || null, phoneVerified: false,
     joined: Date.now(),
     avatar: null,          // { url, status: 'pending' | 'live' }
     badge: null,           // { status: 'pending' | 'live', since }
@@ -1743,27 +1803,32 @@ export function updateClassified(id, patch) {
   return { rec: c, flagged };
 }
 
-/** «أخفِ الإعلان» — off every list but the owner's, and reversible */
+/**
+ * «أخفِ الإعلان» — off every list but the owner's, and reversible.
+ * It is kept as its own list rather than a field on the record, so it works
+ * for a seed listing somebody owns as well as for one they typed.
+ */
 export function hideClassified(id) {
-  const c = state.extraClassifieds.find(x => x.id === id);
-  if (!c) return false;
-  c.status = 'hidden';
+  if (!id) return false;
+  state.hiddenListings = state.hiddenListings || [];
+  if (!state.hiddenListings.includes(id)) state.hiddenListings.push(id);
   save();
   return true;
 }
 /** …and back again, as long as the listing still has days on it */
 export function unhideClassified(id) {
-  const c = state.extraClassifieds.find(x => x.id === id);
-  if (!c || c.status !== 'hidden') return false;
-  c.status = 'live';
+  state.hiddenListings = (state.hiddenListings || []).filter(x => x !== id);
   save();
   return true;
 }
-export function isHidden(c) { return !!c && c.status === 'hidden'; }
+export function isHidden(c) {
+  const id = typeof c === 'string' ? c : (c && c.id);
+  return (state.hiddenListings || []).includes(id);
+}
 
 /** what counts against the four: a hidden listing frees its slot */
 export function activeListingCount() {
-  return myActiveListings().filter(c => c.status !== 'hidden').length;
+  return myActiveListings().filter(c => !isHidden(c)).length;
 }
 
 export function deleteClassified(id) {

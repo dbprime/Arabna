@@ -890,7 +890,7 @@ function catKey(id) {
 /* --------------------- ADD / CLAIM BUSINESS --------------------- */
 export function AddBusinessScreen(root) {
   renderHeader({ simple: true, title: t('addBusiness') });
-  let cat = CATEGORIES.filter(c => !c.route)[0].id;
+  let cat = '';                 // chosen, not defaulted — it is required
   let picked = [];
 
   const dayRow = (i) => `
@@ -904,23 +904,40 @@ export function AddBusinessScreen(root) {
   root.innerHTML = `
     <div class="pad mt-16">
       <div class="list-note" style="margin:0 0 14px">${icon('info', 18)}<span>${t('needPhoneSub')}</span></div>
-      <div class="field"><label class="label">${t('nameEn')}</label><input class="input ltr" id="bName" dir="ltr" /></div>
+      <div class="field"><label class="label">${t('nameEn')} <span class="req">*</span></label>
+        <input class="input ltr" id="bName" dir="ltr" required /></div>
       <div class="field"><label class="label">${t('nameAr')} <span class="muted">(${t('optional')})</span></label>
         <input class="input" id="bNameAr" />
         <div class="hint">${t('nameArHint')}</div></div>
-      <div class="field"><label class="label">${t('category')}</label>
-        <select class="select" id="bCat">${CATEGORIES.filter(c => !c.route).map(c => `<option value="${c.id}">${t(c.key)}</option>`).join('')}</select></div>
+      <div class="field"><label class="label">${t('category')} <span class="req">*</span></label>
+        <select class="select" id="bCat">
+          <option value="">${t('chooseCategory')}</option>
+          ${CATEGORIES.filter(c => !c.route).map(c => `<option value="${c.id}">${t(c.key)}</option>`).join('')}
+        </select></div>
       <div class="field"><label class="label">${t('phoneLabel')} <span class="muted">(${t('optional')})</span></label>
         <input class="input" id="bPhone" inputmode="tel" placeholder="(713) 555-0000" />
         <div class="hint">${t('phoneOptionalHint')}</div></div>
-      <div class="field"><label class="label">${t('address')} <span class="muted">(${t('optional')})</span></label><input class="input" id="bAddr" /></div>
+      <!-- A plumber has no shopfront. Without a ZIP they never appear in
+           «الأقرب» at all, so the address field is replaced by one rather
+           than sitting there empty. -->
+      <label class="consent-row">
+        <input type="checkbox" id="bMobile" />
+        <span><b>${t('mobileService')}</b><br><span class="muted fs-12">${t('mobileServiceHint')}</span></span>
+      </label>
+      <div class="field mt-12" id="bAddrField"><label class="label">${t('address')} <span class="muted">(${t('optional')})</span></label><input class="input" id="bAddr" /></div>
+      <div class="field" id="bZipField" hidden><label class="label">${t('zipLabel')} <span class="req">*</span></label>
+        <input class="input ltr" id="bZip" dir="ltr" inputmode="numeric" maxlength="5" placeholder="77036" /></div>
 
       <div class="field"><label class="label">${t('keywords')}</label>
         <input class="input" id="bTags" placeholder="شاورما، مشاوي، shawarma" />
         <div class="hint">${t('keywordsHint')}</div></div>
 
       <div class="field"><label class="label">${t('hoursTitle')}</label>
-        <div class="hrs-grid">${[0, 1, 2, 3, 4, 5, 6].map(dayRow).join('')}</div></div>
+        <label class="consent-row" style="margin-bottom:10px">
+          <input type="checkbox" id="b24" />
+          <span><b>${t('open24Label')}</b></span>
+        </label>
+        <div class="hrs-grid" id="bHours">${[0, 1, 2, 3, 4, 5, 6].map(dayRow).join('')}</div></div>
 
       <div class="field"><label class="label">${t('features')}</label>
         <div id="bAttrs"></div></div>
@@ -943,17 +960,40 @@ export function AddBusinessScreen(root) {
   /* The checkboxes are generated from the registry for the chosen category —
      nothing about "halal" or "women only" is written here, so a new attribute
      appears in this form the moment it is added to data.js. */
+  /* Each group is a box that opens, and it *stays* open: somebody adding
+     a restaurant picks two or three from the same list, and a panel that
+     shut on every tap would have to be reopened each time. What has been
+     chosen shows as ✕ pills under the box, so the answer is visible with
+     the box closed. Nothing about "halal" or "women only" is written here
+     — the boxes are built from the registry, so a new speciality appears
+     the day it is added to data.js. */
+  let openGrp = '';
   const paintAttrs = () => {
-    $('#bAttrs').innerHTML = S.attrGroupsForCat(cat, { all: true }).map(g => `
-      <div class="attr-group">
-        <div class="attr-group-label">${t(g.group.key)}</div>
-        <div class="attr-pick">
+    const groups = cat ? S.attrGroupsForCat(cat, { all: true }) : [];
+    $('#bAttrs').innerHTML = groups.length ? groups.map(g => {
+      const mine = g.attrs.filter(a => picked.includes(a.id));
+      return `
+      <div class="attr-box ${openGrp === g.group.id ? 'open' : ''}" data-grp="${g.group.id}">
+        <button type="button" class="attr-head" data-grptoggle="${g.group.id}"
+                aria-expanded="${openGrp === g.group.id}">
+          <span>${t(g.group.key)} <span class="req">*</span></span>
+          <span class="attr-count">${mine.length || ''}</span>
+          ${icon('chevronD', 18, 'attr-arrow')}
+        </button>
+        <div class="attr-body"><div class="attr-body-inner">
           ${g.attrs.map(a => `<button type="button" class="chip ${picked.includes(a.id) ? 'active' : ''}" data-a="${a.id}">
             ${icon(a.icon, 14)} ${t(a.key)}</button>`).join('')}
-        </div>
-      </div>`).join('') || `<div class="hint">${t('noHours')}</div>`;
-    $$('#bAttrs .chip').forEach(b => b.addEventListener('click', () => {
-      const id = b.dataset.a;
+        </div></div>
+        ${mine.length ? `<div class="attr-chosen">${mine.map(a =>
+          `<button type="button" class="pill" data-off-a="${a.id}">${t(a.key)} ${icon('x', 13)}</button>`).join('')}</div>` : ''}
+      </div>`;
+    }).join('') : `<div class="hint">${t('chooseCategory')}</div>`;
+
+    $$('#bAttrs [data-grptoggle]').forEach(b => b.addEventListener('click', () => {
+      openGrp = openGrp === b.dataset.grptoggle ? '' : b.dataset.grptoggle;
+      paintAttrs();
+    }));
+    const toggle = (id) => {
       const attr = S.attrById(id);
       const i = picked.indexOf(id);
       if (i >= 0) picked.splice(i, 1);
@@ -967,8 +1007,10 @@ export function AddBusinessScreen(root) {
         }
         picked.push(id);
       }
-      $$('#bAttrs .chip').forEach(x => x.classList.toggle('active', picked.includes(x.dataset.a)));
-    }));
+      paintAttrs();
+    };
+    $$('#bAttrs .chip').forEach(b => b.addEventListener('click', () => toggle(b.dataset.a)));
+    $$('#bAttrs [data-off-a]').forEach(b => b.addEventListener('click', () => toggle(b.dataset.offA)));
   };
   paintAttrs();
 
@@ -979,19 +1021,47 @@ export function AddBusinessScreen(root) {
 
   $('#bCat').addEventListener('change', (e) => {
     cat = e.target.value;
-    const valid = S.attrsForCat(cat).map(a => a.id);
+    const valid = cat ? S.attrsForCat(cat).map(a => a.id) : [];
     picked = picked.filter(id => valid.includes(id));
     paintAttrs();
     paintEntry();
+    refreshSave();
   });
 
-  /** the seven day rows → the canonical hours array */
-  const readHours = () => [0, 1, 2, 3, 4, 5, 6].map(i => {
-    if (!$(`[data-open="${i}"]`).checked) return null;
-    const from = $(`[data-from="${i}"]`).value || '09:00';
-    const to = $(`[data-to="${i}"]`).value || '18:00';
-    return [[from, to]];
+  /* The button is dead until the two things the importer also demands are
+     there — the English name and the category. One list of required
+     fields, not a second one invented for this screen. */
+  function refreshSave() {
+    const ok = !!$('#bName').value.trim() && !!$('#bCat').value;
+    $('#bSave').disabled = !ok;
+  }
+  $('#bName').addEventListener('input', refreshSave);
+  refreshSave();
+
+  /* A mobile trade has no address to give, so the field is swapped rather
+     than left blank; the ZIP is what puts them on the map later. */
+  const mobileBox = $('#bMobile');
+  mobileBox.addEventListener('change', () => {
+    const on = mobileBox.checked;
+    $('#bAddrField').hidden = on;
+    $('#bZipField').hidden = !on;
+    if (on) $('#bAddr').value = '';
   });
+
+  /* Round the clock is one answer, not seven identical rows. */
+  const box24 = $('#b24');
+  box24.addEventListener('change', () => { $('#bHours').hidden = box24.checked; });
+
+  /** the seven day rows → the canonical hours array */
+  const readHours = () => box24.checked
+    // the existing shape, not a new field: ['00:00','24:00'] is round the clock
+    ? [0, 1, 2, 3, 4, 5, 6].map(() => [['00:00', '24:00']])
+    : [0, 1, 2, 3, 4, 5, 6].map(i => {
+        if (!$(`[data-open="${i}"]`).checked) return null;
+        const from = $(`[data-from="${i}"]`).value || '09:00';
+        const to = $(`[data-to="${i}"]`).value || '18:00';
+        return [[from, to]];
+      });
 
   const collect = () => ({
     name: $('#bName').value.trim(),
@@ -1003,10 +1073,14 @@ export function AddBusinessScreen(root) {
   const save = (pendingReview = false) => {
     const { name, nameAr, phone, address } = collect();
     const tags = $('#bTags').value.split(/[,\u060C\n]/).map(x => x.trim()).filter(Boolean);
+    const mobile = $('#bMobile').checked;
     const rec = S.addBusiness({
       // Most shops here trade under an English name only. Rather than invent
       // an Arabic one, the English name stands in both fields.
-      name: { ar: nameAr || name, en: name }, cat, phone, address,
+      name: { ar: nameAr || name, en: name }, cat, phone,
+      address: mobile ? '' : address,
+      mobileService: mobile,
+      zip: mobile ? $('#bZip').value.trim() : '',
       hours: readHours(), tags, attributes: picked.slice(),
       nonCommercial: $('#bNonComm').checked,
       entryPrice: cat === 'outings' ? $('#bEntry').value.trim() : '',
@@ -1018,19 +1092,48 @@ export function AddBusinessScreen(root) {
 
   $('#bSave').addEventListener('click', () => {
     const { name, phone, address } = collect();
-    // the name is the only thing a listing cannot do without
-    if (!name) { toast(t('required'), 'err'); return; }
-    if (!S.requireTier(2, '#/add-business', go)) return;
+    // the two the importer also demands, and nothing else invented here
+    if (!name || !cat) { toast(t('required'), 'err'); refreshSave(); return; }
 
-    /* Their own shop is very often already here — they just could not
-       find it. Show them, and let them take it over instead. */
+    /* The look-alike check runs FIRST, on the name and the phone alone.
+       Their own shop is very often already here — they just could not find
+       it — and making somebody fill eight speciality groups before telling
+       them so is exactly backwards. Show them, and let them take it over. */
     const dups = S.findDuplicates({ phone, name, address, cat });
     if (dups.length) {
-      openSimilarSheet(dups, (conf) => save(conf === 'certain'));
+      openSimilarSheet(dups, (conf) => { if (finishChecks()) save(conf === 'certain'); });
       return;
     }
+    if (!finishChecks()) return;
+    if (!S.requireTier(2, '#/add-business', go)) return;
     save();
   });
+
+  /** the rest of the form, checked only once this is really a new listing */
+  function finishChecks() {
+    if ($('#bMobile').checked && !/^\d{5}$/.test($('#bZip').value.trim())) {
+      toast(t('zipRequired'), 'err');
+      $('#bZip').classList.add('input-err');
+      $('#bZip').focus();
+      return false;
+    }
+    $('#bZip').classList.remove('input-err');
+
+    /* One speciality from every group. An empty group is a listing nobody
+       can filter to, and the button names the group rather than saying
+       "something is missing" and leaving them to hunt. */
+    const groups = S.attrGroupsForCat(cat, { all: true });
+    const empty = groups.find(g => !g.attrs.some(a => picked.includes(a.id)));
+    if (empty) {
+      toast(t('pickOneFrom').replace('{g}', t(empty.group.key)), 'err');
+      openGrp = empty.group.id;
+      paintAttrs();
+      const box = $(`.attr-box[data-grp="${empty.group.id}"]`);
+      if (box) box.scrollIntoView({ block: 'center', behavior: 'smooth' });
+      return false;
+    }
+    return S.requireTier(2, '#/add-business', go);
+  }
 }
 
 /**

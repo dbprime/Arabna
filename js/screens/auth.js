@@ -1,7 +1,8 @@
 /* ======================= AUTH & VERIFICATION ======================= */
-import { t, icon, $, $$, go, back, renderHeader, toast, wireRoutes, logoSrc } from '../ui.js';
+import { t, icon, $, $$, go, back, renderHeader, toast, wireRoutes, logoSrc,
+         openSheet, closeSheet } from '../ui.js';
 import * as S from '../store.js';
-import { passwordField, wirePasswordToggles } from './profile.js';
+import { passwordField, wirePasswordToggles, TermsScreen, PrivacyScreen } from './profile.js';
 
 function afterAuth() {
   const p = S.takePendingIntent();
@@ -22,15 +23,41 @@ export function SignUpScreen(root) {
     </div>
     ${pending ? `<div class="list-note">${icon('info', 18)}<span>${t('resumedAction')}</span></div>` : ''}
     <div class="pad mt-16">
-      <div class="field"><label class="label">${t('fullName')}</label><input class="input" id="sName" /></div>
-      <div class="field"><label class="label">${t('email')}</label><input class="input" id="sEmail" type="email" inputmode="email" placeholder="name@email.com" /></div>
-      ${passwordField('sPass', t('password'))}
+      <!-- two fields, because a directory sorts and greets by first name -->
+      <div class="two-col">
+        <div class="field"><label class="label">${t('firstName')} <span class="req">*</span></label>
+          <input class="input" id="sFirst" autocomplete="given-name" />
+          <div class="field-err" id="e_sFirst"></div></div>
+        <div class="field"><label class="label">${t('lastName')} <span class="req">*</span></label>
+          <input class="input" id="sLast" autocomplete="family-name" />
+          <div class="field-err" id="e_sLast"></div></div>
+      </div>
+
+      <div class="field"><label class="label">${t('email')} <span class="req">*</span></label>
+        <input class="input ltr" id="sEmail" dir="ltr" type="email" inputmode="email" placeholder="name@email.com" autocomplete="email" />
+        <div class="field-err" id="e_sEmail"></div></div>
+
+      <!-- the phone is taken here and stored unverified: asking for it at
+           the moment somebody is trying to publish is the worst possible
+           time. The code is asked for then, not now. -->
+      <div class="field"><label class="label">${t('phoneNumber')} <span class="muted">(${t('optional')})</span></label>
+        <input class="input ltr" id="sPhone" dir="ltr" inputmode="tel" placeholder="(713) 555-0000" autocomplete="tel" />
+        <div class="hint">${t('phoneLater')}</div></div>
+
+      ${passwordField('sPass', t('password') + ' *')}
+      <!-- the rule is stated before the typing, not after the failure -->
+      <div class="hint" id="pwRule">${t('passwordRule')}</div>
+      <div class="pw-meter" id="pwMeter" aria-hidden="true"><span></span></div>
+      <div class="field-err" id="e_sPass"></div>
+
+      ${passwordField('sPass2', t('confirmPassword') + ' *')}
+      <div class="field-err" id="e_sPass2"></div>
 
       <label class="setting-row" style="padding:8px 0;border:none;cursor:pointer">
         <input type="checkbox" id="agree1" class="check-gold" />
         <span class="s-txt"><b style="font-weight:500;font-size:12.5px">${t('agreeTo')}
-          <a class="gold" href="#/terms">${t('terms')}</a> ${t('and')}
-          <a class="gold" href="#/privacy">${t('privacy')}</a></b></span>
+          <button type="button" class="gold link-inline" data-legal="terms">${t('terms')}</button> ${t('and')}
+          <button type="button" class="gold link-inline" data-legal="privacy">${t('privacy')}</button></b></span>
       </label>
       <label class="setting-row" style="padding:8px 0;border:none;cursor:pointer">
         <input type="checkbox" id="agree2" class="check-gold" />
@@ -42,20 +69,74 @@ export function SignUpScreen(root) {
     </div>`;
 
   wirePasswordToggles(root);
+
+  /* Errors sit under the field they belong to. An alert names no field and
+     is gone before the reader has looked away from the keyboard. */
+  const setErr = (id, msg) => {
+    const box = $('#e_' + id), input = $('#' + id);
+    if (box) box.textContent = msg || '';
+    if (input) input.classList.toggle('input-err', !!msg);
+    return !msg;
+  };
+
+  const meter = () => {
+    const n = S.passwordScore($('#sPass').value);
+    const m = $('#pwMeter');
+    m.className = 'pw-meter s' + n;
+    m.setAttribute('data-label', n >= 3 ? t('pwStrong') : n === 2 ? t('pwFair') : n ? t('pwWeak') : '');
+  };
+  $('#sPass').addEventListener('input', meter);
+  meter();
+
+  /* The terms open over the screen and close back onto the same line with
+     everything still typed. The old link navigated away and lost the lot. */
+  $$('[data-legal]').forEach(b => b.addEventListener('click', (ev) => {
+    ev.preventDefault();
+    openSheet(`
+      <div class="sheet-title">${b.dataset.legal === 'terms' ? t('terms') : t('privacy')}</div>
+      <div class="sheet-body legal-body" style="padding-inline:0">${legalText(b.dataset.legal)}</div>
+      <div class="sheet-foot"><button class="btn btn-ghost btn-block" data-close>${t('close')}</button></div>
+    `, (panel) => panel.querySelector('[data-close]').addEventListener('click', closeSheet));
+  }));
+
   $('#suBtn').addEventListener('click', async (e) => {
-    const name = $('#sName').value.trim();
+    const first = $('#sFirst').value.trim();
+    const last = $('#sLast').value.trim();
     const email = $('#sEmail').value.trim();
+    const phone = $('#sPhone').value.trim();
     const pass = $('#sPass').value;
-    if (!name || !email || !pass) { toast(t('required'), 'err'); return; }
-    if (!/^\S+@\S+\.\S+$/.test(email)) { toast(t('required'), 'err'); return; }
+    const pass2 = $('#sPass2').value;
+
+    let ok = true;
+    ok = setErr('sFirst', !first ? t('required') : !S.validName(first) ? t('lettersOnly') : '') && ok;
+    ok = setErr('sLast', !last ? t('required') : !S.validName(last) ? t('lettersOnly') : '') && ok;
+    ok = setErr('sEmail', !email ? t('required') : !S.validEmail(email) ? t('badEmail') : '') && ok;
+    ok = setErr('sPass', !pass ? t('required') : !S.passwordOk(pass) ? t('passwordRule') : '') && ok;
+    ok = setErr('sPass2', !pass2 ? t('required') : pass2 !== pass ? t('passwordsDontMatch') : '') && ok;
+    if (!ok) { $('.input-err') && $('.input-err').focus(); return; }
     if (!$('#agree1').checked || !$('#agree2').checked) { toast(t('required'), 'err'); return; }
 
     e.target.innerHTML = `<span class="spinner"></span>`;
-    S.signUp({ name, email, password: pass });
+    S.signUp({ name: first + ' ' + last, email, password: pass, phone });
     await S.sendEmailCode(email);
+    S.setPendingVerify('email', email);
     go('#/auth/email');
   });
   wireRoutes(root);
+}
+
+/**
+ * The legal pages, harvested into a sheet instead of navigated to.
+ * Both screens set the app header as their first act, so it is put back
+ * afterwards — otherwise reading the terms leaves «الشروط» written across
+ * the top of the sign-up form.
+ */
+function legalText(which) {
+  const host = document.createElement('div');
+  (which === 'terms' ? TermsScreen : PrivacyScreen)(host);
+  renderHeader({ simple: true, title: t('signUp') });
+  const body = host.querySelector('.legal-body');
+  return body ? body.innerHTML : '';
 }
 
 /* ---------------------------- SIGN IN ---------------------------- */
@@ -111,26 +192,65 @@ export function ForgotScreen(root) {
 export function EmailVerifyScreen(root) {
   renderHeader({ simple: true, title: t('verifyEmail') });
   const email = S.state.user ? S.state.user.email : '';
+  const pv = S.pendingVerify();
 
   root.innerHTML = `
     <div class="pad mt-16 center-col">
       <div class="empty-ico">${icon('mail', 33)}</div>
-      <b style="font-size:17px">${t('verifyEmail')}</b>
-      <span class="muted fs-13">${t('verifyEmailSub')} <b class="gold">${email}</b></span>
+      <b style="font-size:17px">${t('checkYourEmail')}</b>
+      <span class="muted fs-13">${t('verifyEmailSub')} <b class="gold ltr">${email}</b></span>
     </div>
     <div class="pad mt-16">
       ${otpRow('e')}
       ${demoCodeCard('e')}
+      ${pv && pv.expired ? `<div class="err-msg">${icon('alert', 15)} ${t('codeExpired')}</div>` : ''}
       <button class="btn btn-gold btn-block mt-16" id="vBtn">${t('verifyBtn')}</button>
-      <button class="btn btn-ghost btn-block mt-8" id="rsBtn">${t('resendCode')}</button>
+      <button class="btn btn-ghost btn-block mt-8" id="rsBtn" disabled>${t('resendNow')}</button>
+      <!-- nobody is thrown out for not having the code to hand: they can
+           read the app now and finish this when the email arrives -->
+      <button class="btn btn-plain btn-block mt-8" id="guestBtn">${t('browseAsGuest')}</button>
     </div>`;
 
   wireOtp('e');
   wireDemoFill('e');
-  $('#rsBtn').addEventListener('click', async () => { await S.sendEmailCode(email); toast(t('sendCode'), 'ok'); });
+
+  /* A resend button that works instantly invites ten of them. The counter
+     starts from when the code was actually sent, so coming back to this
+     screen later finds it already available rather than restarting. */
+  const rs = $('#rsBtn');
+  let timer = null;
+  const tick = () => {
+    // the screen can be navigated away from mid-count; the interval has to
+    // notice that its button is gone rather than throwing every second
+    if (!document.body.contains(rs)) { clearInterval(timer); timer = null; return; }
+    const sent = (S.pendingVerify() || {}).sentAt || 0;
+    const left = Math.max(0, 45 - Math.floor((Date.now() - sent) / 1000));
+    if (left > 0) {
+      rs.disabled = true;
+      rs.textContent = t('resendIn').replace('{s}', left);
+    } else {
+      rs.disabled = false;
+      rs.textContent = t('resendNow');
+      if (timer) { clearInterval(timer); timer = null; }
+    }
+  };
+  tick();
+  timer = setInterval(tick, 1000);
+
+  rs.addEventListener('click', async () => {
+    await S.sendEmailCode(email);
+    S.touchPendingVerify();
+    toast(t('sendCode'), 'ok');
+    if (!timer) timer = setInterval(tick, 1000);
+    tick();
+  });
+  $('#guestBtn').addEventListener('click', () => go('#/home'));
+
   $('#vBtn').addEventListener('click', () => {
+    if (S.pendingVerify() && S.pendingVerify().expired) { toast(t('codeExpired'), 'err'); return; }
     if (otpValue('e') !== S.DEMO_CODE) { toast(t('wrongCode'), 'err'); return; }
     S.confirmEmail();
+    S.clearPendingVerify();
     toast(t('emailVerified'), 'ok');
     const p = S.peekPendingIntent();
     // Only continue into phone verification when the pending action really
@@ -172,6 +292,16 @@ export function PhoneVerifyScreen(root) {
   $('#sendBtn').addEventListener('click', async (e) => {
     const phone = $('#phIn').value.trim();
     if (!phone) { toast(t('required'), 'err'); return; }
+    /* The number was given at sign-up. Re-typing it is the check that the
+       person holds the account — and the message names only the last three
+       digits, which is enough to jog a memory and not enough to leak one. */
+    const onFile = S.state.user && S.state.user.phone;
+    if (onFile && !S.samePhone(onFile, phone)) {
+      $('#phIn').classList.add('input-err');
+      msg.innerHTML = `<div class="err-msg">${icon('alert', 15)} ${
+        t('phoneMismatch').replace('{last}', '<span class="ltr">' + S.phoneTail() + '</span>')}</div>`;
+      return;
+    }
     const btn = e.target;
     btn.innerHTML = `<span class="spinner"></span> ${t('checkingLine')}`;
     msg.innerHTML = '';

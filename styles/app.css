@@ -250,7 +250,9 @@ ul { margin: 0; padding: 0; list-style: none; }
   flex: 0 0 auto;
   height: calc(var(--header-h) + var(--safe-top));
   padding: var(--safe-top) 14px 0;
-  display: flex; align-items: center; gap: 10px;
+  /* space-between, because the logo is out of the flow: without it the two
+     corner buttons collapse against each other at the start of the row. */
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
   background: linear-gradient(180deg, var(--surface), var(--bar));
   border-bottom: 1px solid var(--line);
   position: relative; z-index: 20;
@@ -1139,6 +1141,58 @@ input[inputmode="tel"], input[type="email"], input[inputmode="decimal"], #zipIn 
    at a glance which items belong to the open group. */
 /* a leaf with nothing behind it yet: it says so and does not navigate */
 .dr-item.dr-soon { opacity: .55; }
+/* ---------- sign-up: errors under the field, strength before the fail ---------- */
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.field-err { font-size: 12px; color: var(--danger); margin-top: 5px; min-height: 0; }
+.field-err:empty { display: none; }
+.link-inline { background: none; border: 0; padding: 0; font: inherit; text-decoration: underline; }
+.pw-meter {
+  height: 4px; border-radius: 999px; background: var(--wash-2);
+  margin: 8px 0 0; overflow: hidden; position: relative;
+}
+.pw-meter > span { display: block; height: 100%; width: 0; transition: width .2s var(--ease), background .2s var(--ease); }
+.pw-meter.s1 > span { width: 33%; background: var(--danger); }
+.pw-meter.s2 > span { width: 66%; background: var(--gold); }
+.pw-meter.s3 > span { width: 100%; background: var(--green); }
+.pw-meter::after {
+  content: attr(data-label);
+  position: absolute; inset-block-start: 8px; inset-inline-end: 0;
+  font-size: 11.5px; color: var(--muted);
+}
+.pw-meter { margin-bottom: 18px; }
+
+/* ---------- add-business: one box per attribute group ---------- */
+.req { color: var(--danger); font-weight: 700; }
+.attr-box { border: 1px solid var(--line-soft); border-radius: var(--r-md); margin-bottom: 10px; }
+.attr-head {
+  width: 100%; display: flex; align-items: center; gap: 10px;
+  padding: 13px 14px; background: none; border: 0; text-align: start;
+  font-size: 14px; font-weight: 700; color: var(--text);
+}
+.attr-head > span:first-child { flex: 1 1 auto; }
+.attr-count {
+  min-width: 22px; height: 22px; padding: 0 6px; border-radius: 999px;
+  display: inline-grid; place-items: center;
+  font-size: 12px; font-weight: 700;
+  background: var(--gold-wash-2); color: var(--gold-bright);
+}
+.attr-count:empty { display: none; }
+.attr-head .attr-arrow { flex: 0 0 18px; color: var(--muted); transition: transform .2s var(--ease); }
+.attr-box.open .attr-head .attr-arrow { transform: rotate(180deg); }
+.attr-body { display: grid; grid-template-rows: 0fr; transition: grid-template-rows .2s var(--ease); }
+.attr-box.open .attr-body { grid-template-rows: 1fr; }
+.attr-body-inner {
+  overflow: hidden; visibility: hidden;
+  display: flex; flex-wrap: wrap; gap: 7px;
+  padding: 0 14px;
+}
+.attr-box.open .attr-body-inner { visibility: visible; padding-bottom: 13px; }
+/* what has been chosen, readable with the box shut */
+.attr-chosen {
+  display: flex; flex-wrap: wrap; gap: 6px;
+  padding: 0 14px 12px;
+}
+
 /* the heart and the share side by side at the top of a detail page */
 .top-actions { display: flex; gap: 8px; flex: 0 0 auto; }
 /* a listing's own photo in the row icon, in place of the category glyph */

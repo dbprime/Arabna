@@ -126,10 +126,22 @@ function catchUp() {
   startClock();
 }
 
+/**
+ * A sign-up that got as far as the code screen resumes there. Closing the
+ * app one step from finished and being dropped back at an empty form is
+ * the commonest reason somebody never comes back.
+ */
+function firstRoute() {
+  if (location.hash) return location.hash;
+  const pv = state.pendingVerify;
+  if (pv && state.user && !state.user.emailVerified && pv.kind === 'email') return '#/auth/email';
+  return '#/home';
+}
+
 window.addEventListener('DOMContentLoaded', () => {
   setLang(state.lang || 'ar');
   catchUp();
-  if (!location.hash) location.hash = '#/home';
+  location.hash = firstRoute();
   render();
 });
 
@@ -137,7 +149,7 @@ window.addEventListener('DOMContentLoaded', () => {
 if (document.readyState !== 'loading') {
   setLang(state.lang || 'ar');
   catchUp();
-  if (!location.hash) location.hash = '#/home';
+  location.hash = firstRoute();
   render();
 }
 
