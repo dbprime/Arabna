@@ -75,7 +75,9 @@ export function DirectoryScreen(root) {
     </div>
     <div id="ddHost"></div>
 
-    <div class="chip-wrap" id="attrChips"></div>
+    <!-- V.02.7: the quick-chip row is gone. Every filter lives behind the
+         ⚙ button and the two pickers now; what is *on* still shows below
+         as removable pills, because that is state, not a control. -->
     <div id="pills"></div>
     <div id="catSlider"></div>
     <div id="dirNote"></div>
@@ -132,34 +134,7 @@ export function DirectoryScreen(root) {
     st.attrs = st.attrs.filter(x => valid.includes(x));
     writeUrl();
     setPickerValue('ctlCat', catLabel(id));
-    paintChips(); paint();
-  };
-
-  /* Quick chips belong to a category. On "all" they were a second row of
-     options nobody could act on, so there are none until a category is
-     picked, and never more than five. */
-  const paintChips = () => {
-    const host = $('#attrChips');
-    if (st.cat === 'all') {
-      host.innerHTML = `<button class="chip ${st.openNow ? 'active' : ''}" data-attr="__open">${icon('clock', 14)} ${t('filterOpenNow')}</button>`;
-    } else {
-      const quick = S.quickAttrsForCat(st.cat, 5);
-      host.innerHTML =
-        `<button class="chip ${st.openNow ? 'active' : ''}" data-attr="__open">${icon('clock', 14)} ${t('filterOpenNow')}</button>`
-        + quick.map(a => `<button class="chip ${st.attrs.includes(a.id) ? 'active' : ''}" data-attr="${a.id}">
-            ${icon(a.icon, 14)} ${t(a.key)}</button>`).join('');
-    }
-    $$('#attrChips .chip').forEach(b => b.addEventListener('click', () => {
-      const id = b.dataset.attr;
-      if (id === '__open') st.openNow = !st.openNow;
-      else {
-        const i = st.attrs.indexOf(id);
-        if (i >= 0) st.attrs.splice(i, 1); else st.attrs.push(id);
-      }
-      b.classList.toggle('active', id === '__open' ? st.openNow : st.attrs.includes(id));
-      writeUrl();
-      paint();
-    }));
+    paint();
   };
 
   /* Every filter that is on, as a chip with an ✕. Without this the reader
@@ -188,7 +163,7 @@ export function DirectoryScreen(root) {
       else if (k === '__sort') st.sort = 'newest';
       else if (k === '__term') { st.term = ''; $('#dirSearch').value = ''; }
       else st.attrs = st.attrs.filter(x => x !== k);
-      writeUrl(); paintChips(); paint();
+      writeUrl(); paint();
       setPickerValue('ctlSort', t(sortKey(st.sort)));
     }));
     const pc = $('#pillClear');
@@ -197,18 +172,27 @@ export function DirectoryScreen(root) {
       S.setArea('all');
       $('#dirSearch').value = '';
       setPickerValue('ctlSort', t(sortKey(st.sort)));
-      writeUrl(); paintChips(); paint();
+      writeUrl(); paint();
     });
   };
 
-  /* The category slider: only drawn when somebody has actually bought
-     the slot for this category. An empty placeholder here would push the
-     results down the screen for nothing. */
+  /* The category slider. When nobody has bought the slot the house fills
+     it, exactly as it does on Home — and this is the best place in the app
+     to sell it from: the restaurant owner browsing «مطاعم» is the buyer.
+     On «الكل» there is no category to sell, so there is nothing here. */
   const paintCatSlider = () => {
     const host = $('#catSlider');
     if (!host) return;
-    const ads = st.cat === 'all' ? [] : S.catSliderAds(st.cat);
-    if (!ads.length) { host.innerHTML = ''; return; }
+    if (st.cat === 'all') { host.innerHTML = ''; return; }
+    const ads = S.catSliderAds(st.cat);
+    if (!ads.length) {
+      host.innerHTML = `
+        <div class="slider">
+          <div class="slider-track">${catHouseHtml(catLabel(st.cat))}</div>
+        </div>`;
+      wireRoutes(host);
+      return;
+    }
     host.innerHTML = `
       <div class="slider">
         <div class="slider-track" id="catTrack">${ads.map((a, i) => catSlideHtml(a, i)).join('')}</div>
@@ -288,7 +272,7 @@ export function DirectoryScreen(root) {
       el.querySelector('#clrF').addEventListener('click', () => {
         st.openNow = false; st.attrs = []; st.term = ''; st.area = 'all'; S.setArea('all');
         $('#dirSearch').value = '';
-        writeUrl(); paintChips(); paint();
+        writeUrl(); paint();
       });
       paintFilterCount();
       return;
@@ -335,7 +319,6 @@ export function DirectoryScreen(root) {
     });
   };
 
-  paintChips();
   paint();
 
   $('#ctlCat').addEventListener('click', openCatDD);
@@ -378,7 +361,7 @@ export function DirectoryScreen(root) {
       S.setArea(st.area);
       setPickerValue('ctlSort', t(sortKey(st.sort)));
       writeUrl();
-      paintChips(); paint();
+      paint();
     },
   }));
   wireRoutes(root);
@@ -480,6 +463,21 @@ function worshipBlock(b) {
     <div class="i-txt"><b>${langLabel}</b><span>${w.kind === 'church' ? t('massLang') : t('sermonLang')}</span></div></div>`);
 
   return `<div class="worship-block">${rows.join('')}</div>`;
+}
+
+/**
+ * The unsold category slot. Its ground is ours (--surface-2/--bar) and so
+ * follows the theme, therefore its ink is --text; the advertiser's slide
+ * beside it has a fixed ground and takes --ad-cta. Mixing the two is the
+ * fault fixed in ce0fc77 — do not.
+ */
+function catHouseHtml(catName) {
+  return `<div class="slide slide-house active" data-route="#/advertise/catSlider">
+    <div style="color:var(--gold);margin-bottom:6px">${icon('megaphone', 31)}</div>
+    <div class="slide-title">${t('adCtaCat').replace('{cat}', catName)}</div>
+    <div class="slide-sub" style="color:var(--text-2)">${t('adCtaCatSub')}</div>
+    <div class="slide-cta cta-center">${icon('plus', 17)} ${t('continueAction')}</div>
+  </div>`;
 }
 
 /** one slide in a category slider — the same shape the home one uses */
@@ -1393,7 +1391,7 @@ function attr(v) {
 export function fmtDate(ms) {
   const d = new Date(ms);
   if (isNaN(d)) return '';
-  const locale = S.state.lang === 'en' ? 'en-US' : 'ar-EG';
+  const locale = S.state.lang === 'en' ? 'en-US' : 'ar-EG-u-nu-latn';
   return d.toLocaleDateString(locale, { day: 'numeric', month: 'long', year: 'numeric' });
 }
 

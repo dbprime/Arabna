@@ -1065,6 +1065,9 @@ input[inputmode="tel"], input[type="email"], input[inputmode="decimal"], #zipIn 
 
 /* header: a spacer opposite the menu button keeps the logo truly centred */
 .app-header .h-spacer { width: 44px; height: 44px; flex: 0 0 44px; }
+/* The flip sits where the spacer was, same 44px, so nothing moves. Neutral
+   on purpose: the gold accent belongs to «أعلن معنا» alone. */
+.app-header #hTheme { color: var(--muted); }
 
 /* categories strip: five circles must fit a 390px screen without clipping */
 #cats { gap: 6px; }
@@ -1436,6 +1439,14 @@ input[inputmode="tel"], input[type="email"], input[inputmode="decimal"], #zipIn 
    shrink, in gold rather than the body colour. */
 .search-row.solo { padding-inline: 14px; }
 .search-row.solo .search-bar { flex: 1 1 auto; min-width: 0; }
+/* the chip shares the row with the search field: same height so the pair
+   reads as one control, never wider than 44% so the field keeps the space,
+   and its label truncates instead of wrapping the row onto two lines */
+.search-row.solo .loc-chip {
+  flex: 0 0 auto; height: 52px; max-width: 44%; min-width: 0;
+  border-radius: var(--r-md); padding-inline: 13px;
+}
+.search-row.solo .loc-chip svg { flex: 0 0 17px; }
 .search-row.sub { padding: 8px 14px 0; gap: 8px; }
 .search-bar.big {
   height: 52px;
@@ -1771,6 +1782,8 @@ input[inputmode="tel"], input[type="email"], input[inputmode="decimal"], #zipIn 
 }
 .sec-note b { font-size: 14.5px; color: var(--gold-bright); }
 .sec-note span { font-size: 12px; color: var(--muted); }
+/* the marketplace rules sit on the note, where the section is named */
+.sec-note .info-dot { margin-inline-start: auto; }
 
 /* ---------- notifications: new vs earlier ---------- */
 .notif-group-label {
@@ -1840,10 +1853,3 @@ input[inputmode="tel"], input[type="email"], input[inputmode="decimal"], #zipIn 
 .drawer-head { position: relative; }
 /* Neutral on purpose: gold in the drawer is spent on «أعلن معنا», the one
    row that earns money. An accent that marks everything marks nothing. */
-.dr-theme-btn {
-  position: absolute; inset-block-start: 0; inset-inline-end: 0;
-  width: 38px; height: 38px; border-radius: 50%;
-  display: grid; place-items: center;
-  background: var(--wash-2); border: 1px solid var(--line-soft);
-  color: var(--muted);
-}

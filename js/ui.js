@@ -383,6 +383,13 @@ export function applyTheme() {
   // is immediate and not one screen late.
   document.querySelectorAll('img[data-logo]')
     .forEach(el => el.setAttribute('src', logoSrc(el.dataset.logo)));
+  /* …and the header button, for the same reason: the attribute repaints
+     what a symbol coloured, it cannot redraw what was content. */
+  const btn = document.querySelector('[data-theme-icon]');
+  if (btn) {
+    btn.innerHTML = icon(theme === 'dark' ? 'sun' : 'moon', 22);
+    btn.setAttribute('aria-label', t(theme === 'dark' ? 'themeLight' : 'themeDark'));
+  }
   const bar = document.querySelector('meta[name="theme-color"]');
   if (bar) bar.setAttribute('content', BAR_COLOR[theme]);
   const status = document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]');
@@ -481,13 +488,23 @@ export function renderHeader(opts = {}) {
       <span class="h-spacer" aria-hidden="true"></span>`;
     $('#hBack').addEventListener('click', () => opts.onBack ? opts.onBack() : back());
   } else {
-    // menu + logo only. The spacer opposite the menu button keeps the logo
-    // optically centred instead of crowded against a stack of icons.
+    /* menu on one side, the light/dark flip on the other. The button is
+       44px and the spacer it replaces was 44px, so nothing moved; and the
+       logo is absolutely placed on the middle of the header, so it never
+       depended on what stands beside it. No direction code here — flex and
+       `dir` swap the two corners by themselves, and an `if (rtl)` would
+       only ever be right in one language. */
+    const dark = resolvedTheme() === 'dark';
     head.innerHTML = `
       <button class="icon-btn" id="hMenu" aria-label="menu">${icon('menu', 24)}${S.isMember() && S.unreadCount() ? '<span class="dot"></span>' : ''}</button>
       <img class="h-logo" data-logo="stacked" src="${logoSrc('stacked')}" alt="ARABNA عربنا" />
-      <span class="h-spacer" aria-hidden="true"></span>`;
+      <button class="icon-btn" id="hTheme" data-theme-icon
+        aria-label="${t(dark ? 'themeLight' : 'themeDark')}">${icon(dark ? 'sun' : 'moon', 22)}</button>`;
     $('#hMenu').addEventListener('click', openDrawer);
+    $('#hTheme').addEventListener('click', () => {
+      setTheme(resolvedTheme() === 'dark' ? 'light' : 'dark');
+      toast(t(resolvedTheme() === 'dark' ? 'themeDarkOn' : 'themeLightOn'), 'ok');
+    });
   }
 }
 
@@ -619,23 +636,16 @@ export function openDrawer() {
     item('file', t('terms'), '#/terms'),
   ].join('');
 
-  /* Reaching Settings to turn the lights down is too far for something
-     people do at night, one-handed, in bed. It sits in the head rather
-     than in a row of its own: the drawer's rule is that it never scrolls,
-     and an eighth row broke that the moment a group was open. */
-  const dark = resolvedTheme() === 'dark';
-  const themeBtn = `<button class="dr-theme-btn" id="drTheme"
-        aria-label="${t(dark ? 'themeLight' : 'themeDark')}">${icon(dark ? 'sun' : 'moon', 20)}</button>`;
-
+  /* The light/dark flip lives in the header corner now, not here: the same
+     action in two places is the duplication banned everywhere else, and a
+     corner is plainer than a drawer you have to open. */
   const head = member ? `
       <div class="drawer-head">
-        ${themeBtn}
         <img data-logo="wide" src="${logoSrc('wide')}" alt="ARABNA" />
         <div style="font-weight:700">${u.name}</div>
         <div class="drawer-user">${u.email} · ${tierLabel}</div>
       </div>` : `
       <div class="drawer-head">
-        ${themeBtn}
         <img data-logo="wide" src="${logoSrc('wide')}" alt="ARABNA" />
         <div style="font-weight:700">${t('guest')}</div>
       </div>
@@ -682,12 +692,6 @@ export function openDrawer() {
 
   $$('#drawer [data-route]').forEach(b => b.addEventListener('click', () => { closeDrawer(); go(b.dataset.route); }));
   const dl = $('#drLang'); if (dl) dl.addEventListener('click', () => { closeDrawer(); toggleLang(); });
-  const dt = $('#drTheme');
-  if (dt) dt.addEventListener('click', () => {
-    setTheme(resolvedTheme() === 'dark' ? 'light' : 'dark');
-    closeDrawer();
-    toast(t(resolvedTheme() === 'dark' ? 'themeDarkOn' : 'themeLightOn'), 'ok');
-  });
   const out = $('#drOut');
   if (out) out.addEventListener('click', () => {
     closeDrawer();
@@ -734,9 +738,22 @@ export function wireRoutes(root) {
 
 /* Tolerates a missing amount rather than throwing: one order row with no
    price should not take the whole admin panel down with it. */
+/**
+ * "$49", and it stays "$49" inside Arabic text. The dollar sign is a
+ * neutral character, so in an RTL run the bidi algorithm puts it after the
+ * digits and the reader sees "49$". The two invisible isolate marks
+ * (U+2066 … U+2069) fix that at the source, so no call site has to
+ * remember a wrapper — and they cost nothing in English.
+ */
 export function fmtMoney(n) {
   const v = Number(n);
-  return '$' + (isFinite(v) ? v : 0).toLocaleString('en-US');
+  return '\u2066$' + (isFinite(v) ? v : 0).toLocaleString('en-US') + '\u2069';
+}
+
+/** the same isolate for a price we did not format ourselves ("$14,500") */
+export function ltr(txt) {
+  const s = String(txt == null ? '' : txt);
+  return s ? '\u2066' + s + '\u2069' : s;
 }
 
 /* ---------------- commercial prices are for account holders ----------------
@@ -1000,7 +1017,7 @@ export function activeFilterCount(v) {
 
 /** Price as shown to the user — Free-section listings never show a number. */
 export function priceLabel(price) {
-  return price === FREE_PRICE ? t('priceFree') : (price || '');
+  return price === FREE_PRICE ? t('priceFree') : (price ? ltr(price) : '');
 }
 
 /**
@@ -1019,15 +1036,19 @@ export function statusBadge(c, showLive = false) {
    Opening hours — display
    ============================================================ */
 
-/** "17:30" → "٥:٣٠ م" / "5:30pm". Storage stays 24-hour; only the label changes. */
+/**
+ * "17:30" → "5:30 م" / "5:30pm". Storage stays 24-hour; only the label
+ * changes. The digits are Latin in both languages: the address, the phone
+ * and the price on the same screen are Latin already, so an Arabic-Indic
+ * clock beside them reads as a typo rather than as a translation.
+ */
 export function fmtTime(hhmm) {
   const [H, M] = String(hhmm).split(':').map(Number);
-  if (H === 24 || (H === 0 && M === 0)) return getLang() === 'ar' ? '١٢:٠٠ ص' : '12:00am';
+  if (H === 24 || (H === 0 && M === 0)) return getLang() === 'ar' ? '12:00 ص' : '12:00am';
   const suffix = H < 12 ? t('am') : t('pm');
   const h12 = H % 12 === 0 ? 12 : H % 12;
   const body = `${h12}:${String(M).padStart(2, '0')}`;
-  const num = getLang() === 'ar' ? body.replace(/\d/g, d => '٠١٢٣٤٥٦٧٨٩'[d]) : body;
-  return getLang() === 'ar' ? `${num} ${suffix}` : `${num}${suffix}`;
+  return getLang() === 'ar' ? `${body} ${suffix}` : `${body}${suffix}`;
 }
 
 /** one day's spans as text, or "closed" */

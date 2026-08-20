@@ -2175,7 +2175,7 @@ export function runSubscriptionCycle() {
   if (changed) save();
   return sub;
 }
-function fmtAmount(n) { return '$' + n; }
+function fmtAmount(n) { return '\u2066$' + n + '\u2069'; }
 
 /** the live record, rolled forward to today */
 export function subscription() { return runSubscriptionCycle(); }

@@ -793,7 +793,7 @@ const DEMO_BUSINESSES = [
     attributes: ['cuisSyrian', 'cuisLebanese', 'dishShawarma', 'dishGrill', 'svcCatering', 'svcLateNight',
                  'halalMeat', 'noAlcohol', 'arabicSpoken', 'delivery', 'familySeating', 'acceptsCard', 'parking', 'iftar', 'ramadanHours'],
     plan: 'paid', verified: true, rating: 4.8, reviewCount: 126, dist: 1.2, claimed: true,
-    desc: { ar: 'مطبخ شامي أصيل من ٢٠٠٤ — مشاوي، شاورما، ومقبلات بيتية.', en: 'Authentic Levantine kitchen since 2004 — grills, shawarma and homemade mezze.' },
+    desc: { ar: 'مطبخ شامي أصيل من 2004 — مشاوي، شاورما، ومقبلات بيتية.', en: 'Authentic Levantine kitchen since 2004 — grills, shawarma and homemade mezze.' },
     photos: 8, videos: 2,
   },
   {
@@ -1045,7 +1045,7 @@ const DEMO_BUSINESSES = [
     attributes: ['ocHall', 'ocDecor', 'ocPhotoVideo', 'ocZaffa', 'ocCatering',
                  'halalMeat', 'noAlcohol', 'arabicSpoken', 'parking', 'accessible'],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 4.8, claimed: false,
-    desc: { ar: 'قاعة أفراح تتسع ٤٠٠ ضيف مع تموين وزفة وتصوير.', en: 'A 400-guest wedding hall with catering, zaffa and photography.' },
+    desc: { ar: 'قاعة أفراح تتسع 400 ضيف مع تموين وزفة وتصوير.', en: 'A 400-guest wedding hall with catering, zaffa and photography.' },
     photos: 0, videos: 0,
   },
   {
@@ -6072,13 +6072,13 @@ export const BUSINESSES = markDemo(DEMO_BUSINESSES).concat(REAL_BUSINESSES);
    `demo`, and the admin panel erases them with the demo shops. */
 const DEMO_REVIEWS = {
   b1: [
-    { user: 'Omar H.', rating: 5, when: { ar: 'قبل ٣ أيام', en: '3 days ago' }, text: { ar: 'أطيب شاورما بهيوستن بصراحة، والخدمة سريعة.', en: 'Best shawarma in Houston honestly, and fast service.' } },
+    { user: 'Omar H.', rating: 5, when: { ar: 'قبل 3 أيام', en: '3 days ago' }, text: { ar: 'أطيب شاورما بهيوستن بصراحة، والخدمة سريعة.', en: 'Best shawarma in Houston honestly, and fast service.' } },
     { user: 'ليلى ك.', rating: 5, when: { ar: 'قبل أسبوع', en: '1 week ago' }, text: { ar: 'الأكل بيتي وطازج والأسعار معقولة.', en: 'Homemade taste, fresh, reasonable prices.' } },
     { user: 'Sami D.', rating: 4, when: { ar: 'قبل أسبوعين', en: '2 weeks ago' }, text: { ar: 'ممتاز بس المكان يزحم بالويكند.', en: 'Excellent but it gets crowded on weekends.' } },
   ],
   b3: [
-    { user: 'Nour A.', rating: 5, when: { ar: 'قبل ٥ أيام', en: '5 days ago' }, text: { ar: 'الدكتور صبور ويشرح كل شي بالعربي.', en: 'The doctor is patient and explains everything in Arabic.' } },
-    { user: 'محمد ص.', rating: 5, when: { ar: 'قبل ١٠ أيام', en: '10 days ago' }, text: { ar: 'موعد بنفس اليوم وما انتظرت كثير.', en: 'Same-day appointment, barely waited.' } },
+    { user: 'Nour A.', rating: 5, when: { ar: 'قبل 5 أيام', en: '5 days ago' }, text: { ar: 'الدكتور صبور ويشرح كل شي بالعربي.', en: 'The doctor is patient and explains everything in Arabic.' } },
+    { user: 'محمد ص.', rating: 5, when: { ar: 'قبل 10 أيام', en: '10 days ago' }, text: { ar: 'موعد بنفس اليوم وما انتظرت كثير.', en: 'Same-day appointment, barely waited.' } },
   ],
   b4: [
     { user: 'Rami E.', rating: 5, when: { ar: 'قبل شهر', en: '1 month ago' }, text: { ar: 'ساعدوني بملف الهجرة خطوة بخطوة.', en: 'They walked me through my immigration file step by step.' } },
@@ -6094,31 +6094,31 @@ export const REVIEWS = Object.fromEntries(
 
 /* ---- classifieds (person-to-person) ---- */
 export const CLASSIFIEDS = markDemo([
-  { id: 'c1', cat: 'cars', title: { ar: 'تويوتا كامري ٢٠١٩ — نظيفة', en: '2019 Toyota Camry — clean' }, price: '$14,500', city: 'Houston, TX', when: { ar: 'قبل ٣ ساعات', en: '3 hours ago' }, boosted: true, icon: 'car', daysLeft: 27, owner: 'me',
-    desc: { ar: 'ماشية ٦٢ ألف ميل، فحص كامل، تيتل نظيف، بدون حوادث.', en: '62k miles, fully inspected, clean title, no accidents.' } },
-  { id: 'c2', cat: 'furniture', title: { ar: 'طقم كنب ٧ مقاعد', en: '7-seat sofa set' }, price: '$650', city: 'Stafford, TX', when: { ar: 'قبل يوم', en: '1 day ago' }, boosted: false, icon: 'sofa', daysLeft: 29,
+  { id: 'c1', cat: 'cars', title: { ar: 'تويوتا كامري 2019 — نظيفة', en: '2019 Toyota Camry — clean' }, price: '$14,500', city: 'Houston, TX', when: { ar: 'قبل 3 ساعات', en: '3 hours ago' }, boosted: true, icon: 'car', daysLeft: 27, owner: 'me',
+    desc: { ar: 'ماشية 62 ألف ميل، فحص كامل، تيتل نظيف، بدون حوادث.', en: '62k miles, fully inspected, clean title, no accidents.' } },
+  { id: 'c2', cat: 'furniture', title: { ar: 'طقم كنب 7 مقاعد', en: '7-seat sofa set' }, price: '$650', city: 'Stafford, TX', when: { ar: 'قبل يوم', en: '1 day ago' }, boosted: false, icon: 'sofa', daysLeft: 29,
     desc: { ar: 'استعمال سنة واحدة، حالة ممتازة، البيع بسبب السفر.', en: 'One year of use, excellent condition, selling due to moving.' } },
   { id: 'c3', cat: 'realestate', title: { ar: 'شقة غرفتين للإيجار', en: '2BR apartment for rent' }, price: '$1,250/mo', city: 'Sugar Land, TX', when: { ar: 'قبل يومين', en: '2 days ago' }, boosted: false, icon: 'key', daysLeft: 28,
     desc: { ar: 'قريبة من المدارس والمسجد، مع موقف سيارة.', en: 'Close to schools and the masjid, parking included.' } },
-  { id: 'c4', cat: 'jobs', title: { ar: 'مطلوب كاشير دوام جزئي', en: 'Part-time cashier wanted' }, price: '$15/hr', city: 'Houston, TX', when: { ar: 'قبل ٣ أيام', en: '3 days ago' }, boosted: false, icon: 'briefcase', daysLeft: 27,
+  { id: 'c4', cat: 'jobs', title: { ar: 'مطلوب كاشير دوام جزئي', en: 'Part-time cashier wanted' }, price: '$15/hr', city: 'Houston, TX', when: { ar: 'قبل 3 أيام', en: '3 days ago' }, boosted: false, icon: 'briefcase', daysLeft: 27,
     desc: { ar: 'دوام مسائي، يفضل يتكلم عربي وإنجليزي.', en: 'Evening shift, Arabic + English preferred.' } },
-  { id: 'c5', cat: 'furniture', title: { ar: 'طاولة سفرة خشب زان', en: 'Beech wood dining table' }, price: '$300', city: 'Katy, TX', when: { ar: 'قبل ٤ أيام', en: '4 days ago' }, boosted: false, icon: 'sofa', daysLeft: 26,
-    desc: { ar: 'مع ٦ كراسي، خشب طبيعي.', en: 'With 6 chairs, solid wood.' } },
-  { id: 'c6', cat: 'cars', title: { ar: 'هوندا أكورد ٢٠١٦', en: '2016 Honda Accord' }, price: '$11,900', city: 'Houston, TX', when: { ar: 'قبل ٥ أيام', en: '5 days ago' }, boosted: false, icon: 'car', daysLeft: 25,
-    desc: { ar: 'ماشية ٩٠ ألف ميل، محرك ممتاز.', en: '90k miles, engine runs great.' } },
+  { id: 'c5', cat: 'furniture', title: { ar: 'طاولة سفرة خشب زان', en: 'Beech wood dining table' }, price: '$300', city: 'Katy, TX', when: { ar: 'قبل 4 أيام', en: '4 days ago' }, boosted: false, icon: 'sofa', daysLeft: 26,
+    desc: { ar: 'مع 6 كراسي، خشب طبيعي.', en: 'With 6 chairs, solid wood.' } },
+  { id: 'c6', cat: 'cars', title: { ar: 'هوندا أكورد 2016', en: '2016 Honda Accord' }, price: '$11,900', city: 'Houston, TX', when: { ar: 'قبل 5 أيام', en: '5 days ago' }, boosted: false, icon: 'car', daysLeft: 25,
+    desc: { ar: 'ماشية 90 ألف ميل، محرك ممتاز.', en: '90k miles, engine runs great.' } },
   { id: 'c7', cat: 'pets', title: { ar: 'قطط شيرازي — عمر شهرين', en: 'Persian kittens — 2 months' }, price: '$250', city: 'Houston, TX', when: { ar: 'قبل يومين', en: '2 days ago' }, boosted: false, icon: 'paw', daysLeft: 28,
     desc: { ar: 'مطعّمة ونظيفة، تربية منزلية.', en: 'Vaccinated and clean, raised at home.' } },
-  { id: 'c8', cat: 'handyman', title: { ar: 'خدمات دهان وترميم منازل', en: 'Painting & home repair services' }, price: '$40/hr', city: 'Stafford, TX', when: { ar: 'قبل ٣ أيام', en: '3 days ago' }, boosted: false, icon: 'hammer', daysLeft: 11,
-    desc: { ar: 'دهان داخلي وخارجي، تصليح جبس، خبرة ١٢ سنة.', en: 'Interior and exterior painting, drywall repair, 12 years experience.' } },
+  { id: 'c8', cat: 'handyman', title: { ar: 'خدمات دهان وترميم منازل', en: 'Painting & home repair services' }, price: '$40/hr', city: 'Stafford, TX', when: { ar: 'قبل 3 أيام', en: '3 days ago' }, boosted: false, icon: 'hammer', daysLeft: 11,
+    desc: { ar: 'دهان داخلي وخارجي، تصليح جبس، خبرة 12 سنة.', en: 'Interior and exterior painting, drywall repair, 12 years experience.' } },
   { id: 'c9', cat: 'free', title: { ar: 'كراتين نقل — مجاني للاستلام', en: 'Moving boxes — free to collect' }, price: '__FREE__', city: 'Sugar Land, TX', when: { ar: 'قبل يوم', en: '1 day ago' }, boosted: false, icon: 'gift', daysLeft: 29,
-    desc: { ar: 'حوالي ٢٠ كرتونة بحالة ممتازة، الاستلام من البيت.', en: 'About 20 boxes in good shape, pickup from the house.' } },
+    desc: { ar: 'حوالي 20 كرتونة بحالة ممتازة، الاستلام من البيت.', en: 'About 20 boxes in good shape, pickup from the house.' } },
 ]);
 
 /* ---- magazine ---- */
 export const ARTICLES = markDemo([
   {
     id: 'a1', cat: 'business', sponsored: false, read: 4, author: { ar: 'فريق عربنا', en: 'ARABNA Team' },
-    date: { ar: '١٢ أغسطس ٢٠٢٦', en: 'Aug 12, 2026' }, media: 'image', icon: 'trendingUp',
+    date: { ar: '12 أغسطس 2026', en: 'Aug 12, 2026' }, media: 'image', icon: 'trendingUp',
     title: { ar: 'كيف صارت هيوستن عاصمة الأعمال العربية في تكساس', en: 'How Houston became the capital of Arab business in Texas' },
     excerpt: { ar: 'من بقالة صغيرة على هيلكروفت إلى شبكة مطاعم وعيادات ومكاتب — قصة نمو ثلاثين سنة.', en: 'From a small grocery on Hillcroft to a network of restaurants, clinics and offices — a thirty-year story.' },
     body: {
@@ -6132,7 +6132,7 @@ export const ARTICLES = markDemo([
   },
   {
     id: 'a2', cat: 'community', sponsored: false, read: 3, author: { ar: 'سارة الحاج', en: 'Sara Al Hajj' },
-    date: { ar: '٩ أغسطس ٢٠٢٦', en: 'Aug 9, 2026' }, media: 'image', icon: 'users',
+    date: { ar: '9 أغسطس 2026', en: 'Aug 9, 2026' }, media: 'image', icon: 'users',
     title: { ar: 'مبادرة شبابية لتعليم العربية لأطفال الجالية', en: 'A youth initiative teaching Arabic to community kids' },
     excerpt: { ar: 'عشرون متطوعاً يفتحون صفوفاً كل سبت — والنتيجة قائمة انتظار طويلة.', en: 'Twenty volunteers open Saturday classes — and the result is a long waiting list.' },
     body: {
@@ -6145,7 +6145,7 @@ export const ARTICLES = markDemo([
   {
     id: 'a3', cat: 'business', sponsored: true, advertiser: { ar: 'مكتب الهدى للمحاماة', en: 'Al Huda Law Office' },
     read: 3, author: { ar: 'محتوى برعاية', en: 'Sponsored content' },
-    date: { ar: '٧ أغسطس ٢٠٢٦', en: 'Aug 7, 2026' }, media: 'image', icon: 'scale',
+    date: { ar: '7 أغسطس 2026', en: 'Aug 7, 2026' }, media: 'image', icon: 'scale',
     title: { ar: 'خمسة أخطاء شائعة في ملفات الهجرة — وكيف تتجنبها', en: 'Five common immigration filing mistakes — and how to avoid them' },
     excerpt: { ar: 'محتوى برعاية مكتب الهدى للمحاماة.', en: 'Sponsored by Al Huda Law Office.' },
     body: {
@@ -6159,9 +6159,9 @@ export const ARTICLES = markDemo([
   },
   {
     id: 'a4', cat: 'events', sponsored: false, read: 2, author: { ar: 'فريق عربنا', en: 'ARABNA Team' },
-    date: { ar: '٤ أغسطس ٢٠٢٦', en: 'Aug 4, 2026' }, media: 'video', icon: 'calendar',
+    date: { ar: '4 أغسطس 2026', en: 'Aug 4, 2026' }, media: 'video', icon: 'calendar',
     title: { ar: 'مهرجان الأكل العربي يعود لهيوستن هذا الخريف', en: 'The Arab Food Festival returns to Houston this fall' },
-    excerpt: { ar: 'أكثر من ٤٠ مطعماً وكشكاً، وبرنامج موسيقي على مدى يومين.', en: 'More than 40 restaurants and booths, plus a two-day music program.' },
+    excerpt: { ar: 'أكثر من 40 مطعماً وكشكاً، وبرنامج موسيقي على مدى يومين.', en: 'More than 40 restaurants and booths, plus a two-day music program.' },
     body: {
       ar: ['المهرجان راح يقام في نهاية أكتوبر، والتسجيل للمشاركين التجاريين مفتوح من الآن.',
            'المنظمون يتوقعون حضور أكثر من عشرة آلاف زائر على مدى يومين.'],
@@ -6171,8 +6171,8 @@ export const ARTICLES = markDemo([
   },
   {
     id: 'a5', cat: 'immigration', sponsored: false, read: 5, author: { ar: 'خالد ن.', en: 'Khaled N.' },
-    date: { ar: '١ أغسطس ٢٠٢٦', en: 'Aug 1, 2026' }, media: 'image', icon: 'file',
-    title: { ar: 'دليل مبسّط: أول ٩٠ يوم بعد الوصول لأمريكا', en: 'A simple guide: your first 90 days in the U.S.' },
+    date: { ar: '1 أغسطس 2026', en: 'Aug 1, 2026' }, media: 'image', icon: 'file',
+    title: { ar: 'دليل مبسّط: أول 90 يوم بعد الوصول لأمريكا', en: 'A simple guide: your first 90 days in the U.S.' },
     excerpt: { ar: 'السوشال سكيورتي، الرخصة، الحساب البنكي، والمدرسة — بالترتيب الصحيح.', en: 'Social security, license, bank account and school — in the right order.' },
     body: {
       ar: ['الترتيب مهم: ابدأ برقم الضمان الاجتماعي لأن أغلب الخطوات الأخرى تطلبه.',
@@ -6197,7 +6197,7 @@ export const EVENTS = markDemo([
     startsAt: '2026-10-24T17:00', endsAt: '2026-10-25T22:00',
     venue: { ar: 'مركز جورج آر براون', en: 'George R. Brown Convention Center' },
     city: 'Houston, TX',
-    desc: { ar: 'أكثر من ٤٠ مطعماً وكشكاً، وبرنامج موسيقي على مدى يومين، وركن للأطفال.',
+    desc: { ar: 'أكثر من 40 مطعماً وكشكاً، وبرنامج موسيقي على مدى يومين، وركن للأطفال.',
             en: 'More than 40 restaurants and booths, a two-day music program and a kids corner.' },
     organizer: { ar: 'جمعية التجار العرب', en: 'Arab Merchants Association' },
     ticketUrl: 'https://example.com/tickets/arab-food-festival',
@@ -6309,8 +6309,8 @@ export const SUBSCRIPTION_PRICE = 29;
    thing it is talking about. */
 export const NOTIFICATIONS = markDemo([
   { id: 'n1', icon: 'megaphone', unread: true, route: '#/marketplace/c1', title: { ar: 'إعلانك صار مباشر', en: 'Your ad is live' }, body: { ar: 'إعلان "تويوتا كامري" ظاهر الآن بأعلى فئة السيارات.', en: 'Your "Toyota Camry" listing is now pinned in Cars.' }, when: { ar: 'قبل ساعتين', en: '2 hours ago' } },
-  { id: 'n2', icon: 'clock', unread: true, route: '#/my-ads', title: { ar: 'إعلانك ينتهي قريباً', en: 'Listing expiring soon' }, body: { ar: 'باقي ٣ أيام على انتهاء إعلان "طقم كنب".', en: '3 days left on your "sofa set" listing.' }, when: { ar: 'قبل يوم', en: '1 day ago' } },
-  { id: 'n3', icon: 'star', unread: false, route: '#/my-business', title: { ar: 'مراجعة جديدة', en: 'New review' }, body: { ar: 'وصلتك مراجعة ٥ نجوم على صفحة نشاطك.', en: 'You received a 5-star review on your business page.' }, when: { ar: 'قبل ٣ أيام', en: '3 days ago' } },
+  { id: 'n2', icon: 'clock', unread: true, route: '#/my-ads', title: { ar: 'إعلانك ينتهي قريباً', en: 'Listing expiring soon' }, body: { ar: 'باقي 3 أيام على انتهاء إعلان "طقم كنب".', en: '3 days left on your "sofa set" listing.' }, when: { ar: 'قبل يوم', en: '1 day ago' } },
+  { id: 'n3', icon: 'star', unread: false, route: '#/my-business', title: { ar: 'مراجعة جديدة', en: 'New review' }, body: { ar: 'وصلتك مراجعة 5 نجوم على صفحة نشاطك.', en: 'You received a 5-star review on your business page.' }, when: { ar: 'قبل 3 أيام', en: '3 days ago' } },
 ]);
 
 /* The moderation queue has no seed data on purpose: it is built entirely

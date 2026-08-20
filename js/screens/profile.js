@@ -33,7 +33,7 @@ export function ProfileScreen(root) {
 
   const avatarUrl = S.visibleAvatar();
   const joined = u.joined ? new Date(u.joined).toLocaleDateString(
-    S.state.lang === 'en' ? 'en-US' : 'ar-EG', { month: 'long', year: 'numeric' }) : '—';
+    S.state.lang === 'en' ? 'en-US' : 'ar-EG-u-nu-latn', { month: 'long', year: 'numeric' }) : '—';
 
   root.innerHTML = `
     <div class="pad mt-16 center-col">
@@ -682,31 +682,31 @@ export function PrivacyScreen(root) {
   renderHeader({ simple: true, title: t('privacy') });
   const en = S.state.lang === 'en';
   root.innerHTML = `<div class="legal-body">
-    <h2>${en ? '1. What we collect' : '١. البيانات التي نجمعها'}</h2>
+    <h2>${en ? '1. What we collect' : '1. البيانات التي نجمعها'}</h2>
     <p>${en ? 'Name, email address, mobile number (for verification), your listings and content, your location when you ask for distance-based results, and payment records processed by our payment provider.'
             : 'الاسم، البريد الإلكتروني، رقم الجوال (للتحقق)، إعلاناتك ومحتواك، موقعك عند طلب نتائج مرتبة بالمسافة، وسجلات الدفع التي تُعالَج عبر مزوّد الدفع.'}</p>
-    <h2>${en ? '2. Your location' : '٢. موقعك'}</h2>
+    <h2>${en ? '2. Your location' : '2. موقعك'}</h2>
     <p>${en ? 'Your location is only requested at the moment you ask for something that needs it — sorting by what is nearest, filtering by distance, or setting your city. It is never requested when the app opens. The coordinates stay on your device, are used only to work out how far away a listing is, and are never sent to us or to anyone else. You can clear them at any time from the location sheet, and picking a city by hand needs no permission at all.'
             : 'لا نطلب موقعك إلا في اللحظة التي تطلب فيها شيئاً يحتاجه — الترتيب بالأقرب، أو الفلترة بالمسافة، أو تحديد مدينتك. ولا يُطلب أبداً عند فتح التطبيق. الإحداثيات تبقى على جهازك، وتُستعمل فقط لحساب بُعد النشاط عنك، ولا تُرسل إلينا ولا إلى أي جهة أخرى. تقدر تمسحها في أي وقت من نافذة الموقع، واختيار المدينة يدوياً لا يحتاج أي إذن.'}</p>
-    <h2>${en ? '3. Why we collect it' : '٣. سبب الجمع'}</h2>
+    <h2>${en ? '3. Why we collect it' : '3. سبب الجمع'}</h2>
     <p>${en ? 'To operate the directory and the marketplace, to verify real users, to prevent fraud and abuse, and to process paid placements and subscriptions.'
             : 'لتشغيل الدليل والماركت بليس، والتحقق من أن المستخدمين حقيقيون، ومنع الاحتيال وسوء الاستخدام، ومعالجة الاشتراكات والإعلانات المدفوعة.'}</p>
-    <h2>${en ? '4. Card data' : '٤. بيانات البطاقة'}</h2>
+    <h2>${en ? '4. Card data' : '4. بيانات البطاقة'}</h2>
     <p>${en ? 'We never store full card numbers. Payments are handled by a PCI-compliant provider.'
             : 'لا نخزّن أرقام البطاقات كاملة إطلاقاً. الدفع يتم عبر مزوّد متوافق مع معايير PCI.'}</p>
-    <h2>${en ? '5. Automated message scanning' : '٥. الفحص الآلي للرسائل'}</h2>
+    <h2>${en ? '5. Automated message scanning' : '5. الفحص الآلي للرسائل'}</h2>
     <p>${t('legalScanBody')}</p>
-    <h2>${en ? '6. Your rights' : '٦. حقوقك'}</h2>
+    <h2>${en ? '6. Your rights' : '6. حقوقك'}</h2>
     <ul>
       <li>${en ? 'Request a copy of your data' : 'طلب نسخة من بياناتك'}</li>
       <li>${en ? 'Correct or delete your data (Settings → Delete account)' : 'تصحيح أو حذف بياناتك (الإعدادات ← حذف الحساب)'}</li>
       <li>${en ? 'Withdraw notification consent at any time' : 'إيقاف الإشعارات في أي وقت'}</li>
     </ul>
-    <h2>${en ? '7. Age' : '٧. العمر'}</h2>
-    <p>${en ? 'ARABNA accounts require users to be 18 years or older.' : 'إنشاء حساب في عربنا يتطلب أن يكون عمرك ١٨ سنة أو أكثر.'}</p>
-    <h2>${en ? '8. Contact' : '٨. التواصل'}</h2>
+    <h2>${en ? '7. Age' : '7. العمر'}</h2>
+    <p>${en ? 'ARABNA accounts require users to be 18 years or older.' : 'إنشاء حساب في عربنا يتطلب أن يكون عمرك 18 سنة أو أكثر.'}</p>
+    <h2>${en ? '8. Contact' : '8. التواصل'}</h2>
     ${contactBlock(en)}
-    <p class="muted fs-12">${en ? 'Draft v0.1 — must be reviewed by a lawyer before public launch.' : 'مسودة ٠.١ — يجب مراجعتها من محامٍ قبل الإطلاق الرسمي.'}</p>
+    <p class="muted fs-12">${en ? 'Draft v0.1 — must be reviewed by a lawyer before public launch.' : 'مسودة 0.1 — يجب مراجعتها من محامٍ قبل الإطلاق الرسمي.'}</p>
   </div>`;
 }
 
@@ -714,28 +714,28 @@ export function TermsScreen(root) {
   renderHeader({ simple: true, title: t('terms') });
   const en = S.state.lang === 'en';
   root.innerHTML = `<div class="legal-body">
-    <h2>${en ? '1. Accounts' : '١. الحسابات'}</h2>
+    <h2>${en ? '1. Accounts' : '1. الحسابات'}</h2>
     <p>${en ? 'You must be 18+ to create an account. Posting, messaging and advertising require a verified real mobile number; VOIP and landline numbers are not accepted.'
-            : 'يجب أن يكون عمرك ١٨ سنة أو أكثر. النشر والتواصل والإعلان تتطلب رقم جوال حقيقي مُتحقق منه؛ أرقام الإنترنت (VOIP) والأرقام الأرضية غير مقبولة.'}</p>
-    <h2>${en ? '2. The Marketplace is for individuals' : '٢. الماركت بليس للأفراد'}</h2>
+            : 'يجب أن يكون عمرك 18 سنة أو أكثر. النشر والتواصل والإعلان تتطلب رقم جوال حقيقي مُتحقق منه؛ أرقام الإنترنت (VOIP) والأرقام الأرضية غير مقبولة.'}</p>
+    <h2>${en ? '2. The Marketplace is for individuals' : '2. الماركت بليس للأفراد'}</h2>
     <p>${en ? 'The Marketplace is for person-to-person sales only, limited to 5 active listings per account, each expiring after 30 days. The Handyman & Services section allows one active listing for 14 days. The Free section is for items given away at no cost — listings that carry a price are removed or sent for review. Business advertising belongs in the Directory.'
-            : 'الماركت بليس مخصص للبيع بين الأفراد فقط، بحد أقصى ٥ إعلانات نشطة لكل حساب، وكل إعلان ينتهي بعد ٣٠ يوماً. قسم الهاندي مان والخدمات يسمح بإعلان واحد نشط لمدة ١٤ يوماً. قسم المجاني للأغراض التي تُعطى بلا مقابل، وأي إعلان يحمل سعراً يُحذف أو يُحال للمراجعة. الإعلانات التجارية مكانها الدليل.'}</p>
-    <h2>${en ? '3. Contact stays in the app' : '٣. التواصل داخل التطبيق'}</h2>
+            : 'الماركت بليس مخصص للبيع بين الأفراد فقط، بحد أقصى 5 إعلانات نشطة لكل حساب، وكل إعلان ينتهي بعد 30 يوماً. قسم الهاندي مان والخدمات يسمح بإعلان واحد نشط لمدة 14 يوماً. قسم المجاني للأغراض التي تُعطى بلا مقابل، وأي إعلان يحمل سعراً يُحذف أو يُحال للمراجعة. الإعلانات التجارية مكانها الدليل.'}</p>
+    <h2>${en ? '3. Contact stays in the app' : '3. التواصل داخل التطبيق'}</h2>
     <p>${t('legalScanBody')}</p>
-    <h2>${en ? '4. Paid placements' : '٤. الإعلانات المدفوعة'}</h2>
+    <h2>${en ? '4. Paid placements' : '4. الإعلانات المدفوعة'}</h2>
     <p>${en ? 'Paid ads and sponsored stories are reviewed before going live. ARABNA may decline content that is misleading, illegal or offensive; declined orders are refunded.'
             : 'الإعلانات المدفوعة والمقالات المدعومة تُراجَع قبل النشر. يحق لعربنا رفض أي محتوى مضلل أو مخالف أو مسيء، ويُرد المبلغ في هذه الحالة.'}</p>
-    <h2>${en ? '5. Subscriptions' : '٥. الاشتراكات'}</h2>
+    <h2>${en ? '5. Subscriptions' : '5. الاشتراكات'}</h2>
     <p>${en ? 'Business subscriptions renew monthly until cancelled. Cancelling stops future renewals; the current period is not prorated.'
             : 'اشتراك الأعمال يتجدد شهرياً حتى الإلغاء. الإلغاء يوقف التجديد القادم، ولا تُحتسب فترة جزئية للشهر الحالي.'}</p>
-    <h2>${en ? '6. Content & conduct' : '٦. المحتوى والسلوك'}</h2>
+    <h2>${en ? '6. Content & conduct' : '6. المحتوى والسلوك'}</h2>
     <p>${en ? 'You are responsible for what you post. Fraud, harassment, illegal goods and impersonation are prohibited and result in removal and account suspension.'
             : 'أنت مسؤول عن كل ما تنشره. الاحتيال والتحرش والسلع غير القانونية وانتحال الشخصية ممنوعة وتؤدي إلى حذف المحتوى وإيقاف الحساب.'}</p>
-    <h2>${en ? '7. Liability' : '٧. المسؤولية'}</h2>
+    <h2>${en ? '7. Liability' : '7. المسؤولية'}</h2>
     <p>${en ? 'ARABNA is a listing platform and is not a party to transactions between users.'
             : 'عربنا منصة عرض ولا يُعد طرفاً في المعاملات التي تتم بين المستخدمين.'}</p>
-    <h2>${en ? '8. Contact and content removal' : '٨. التواصل وطلبات إزالة المحتوى'}</h2>
+    <h2>${en ? '8. Contact and content removal' : '8. التواصل وطلبات إزالة المحتوى'}</h2>
     ${contactBlock(en)}
-    <p class="muted fs-12">${en ? 'Draft v0.1 — must be reviewed by a lawyer before public launch.' : 'مسودة ٠.١ — يجب مراجعتها من محامٍ قبل الإطلاق الرسمي.'}</p>
+    <p class="muted fs-12">${en ? 'Draft v0.1 — must be reviewed by a lawyer before public launch.' : 'مسودة 0.1 — يجب مراجعتها من محامٍ قبل الإطلاق الرسمي.'}</p>
   </div>`;
 }

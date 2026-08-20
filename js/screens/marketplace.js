@@ -3,7 +3,7 @@ import { t, L, icon, $, $$, go, back, renderHeader, confirmSheet, toast, wireRou
          pickerBtn, setPickerValue, openDropdown,
          emptyState, query, shareItem, fmtMoney, priceLabel, statusBadge,
          openSheet, closeSheet, openFilterSheet, activeFilterCount, sectionNote,
-         showsPrices, replaceHash, goAfterDone } from '../ui.js';
+         showsPrices, replaceHash, goAfterDone, ltr } from '../ui.js';
 import { MARKET_CATS, BOOST_PRICES, FREE_PRICE, SUBSCRIPTION_PRICE } from '../data.js';
 import { getLang } from '../i18n.js';
 import * as S from '../store.js';
@@ -51,11 +51,10 @@ export function MarketplaceScreen(root) {
       <button class="loc-chip ${S.hasLocation() ? '' : 'unset'}" data-loc>${icon('mapPin', 17)}<span>${cityChipLabel()}</span></button>
     </div>
 
-    <div class="section-head" style="margin-top:14px">
-      <div class="section-title">${t('classifiedsTitle')}
-        <button class="info-dot" id="rulesBtn" aria-label="${t('marketRules')}">${icon('info', 15)}</button>
-      </div>
-    </div>
+    <!-- V.02.7: the section title is gone from here. The chosen section is
+         already written on the picker below and again in sectionNote(); a
+         third copy of the same word was eating the top of the screen. The
+         rules button moves to the note, where the section is named. -->
 
     <!-- the sections come down in a list; a row that scrolls sideways hides
          whatever does not fit, and half of these never fitted -->
@@ -103,7 +102,9 @@ export function MarketplaceScreen(root) {
                    || (b.created || 0) - (a.created || 0));
 
     const section = MARKET_CATS.find(c => c.id === cat);
-    $('#secNote').innerHTML = sectionNote(section ? t(section.key) : '', list.length);
+    $('#secNote').innerHTML = sectionNote(section ? t(section.key) : '', list.length)
+      + `<button class="info-dot" id="rulesBtn" aria-label="${t('marketRules')}">${icon('info', 15)}</button>`;
+    wireRules();
     $('#clGrid').innerHTML = list.length
       ? `<div class="grid2">${list.map(c => cardHtml(c, c.id === highlight)).join('')}</div>`
       // every section has its own designed empty state, not one generic message
@@ -143,7 +144,9 @@ export function MarketplaceScreen(root) {
   }));
   $('#clSearch').addEventListener('input', e => { term = e.target.value; writeUrl(); paint(); });
   $('[data-loc]').addEventListener('click', () => import('./home.js').then(m => m.openLocationSheet()));
-  $('#rulesBtn').addEventListener('click', () => openSheet(`
+  function wireRules() {
+    const rb = $('#rulesBtn');
+    if (rb) rb.addEventListener('click', () => openSheet(`
     <div class="sheet-title">${t('marketRules')}</div>
     <div class="sheet-sub">${t('classifiedsSub')}</div>
     <div class="list-note" style="margin-inline:0">${icon('info', 18)}<span>${t('classifiedsNote')}</span></div>
@@ -151,6 +154,7 @@ export function MarketplaceScreen(root) {
     <div class="list-note" style="margin-inline:0">${icon('gift', 18)}<span>${t('freeRule')}</span></div>
     <button class="btn btn-ghost btn-block mt-12" data-close>${t('close')}</button>
   `, (panel) => panel.querySelector('[data-close]').addEventListener('click', closeSheet)));
+  }
   $('#mkFilter').addEventListener('click', () => openFilterSheet({
     cats: MARKET_CATS.map(c => ({ id: c.id, label: t(c.key) })),
     value: filters,
@@ -512,7 +516,7 @@ export function PostScreen(root) {
     if (title.removed || desc.removed) toast(t('phoneStripped'), 'err');
 
     const price = rule.freeOnly ? FREE_PRICE
-      : (rawPrice.startsWith('$') ? rawPrice : '$' + rawPrice);
+      : ltr(rawPrice.startsWith('$') ? rawPrice : '$' + rawPrice);
     const flagged = BIZ_KEYWORDS.some(k => (rawTitle + ' ' + rawDesc).toLowerCase().includes(k.toLowerCase()));
 
     const payload = {

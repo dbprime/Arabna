@@ -16,16 +16,16 @@ export function HomeScreen(root) {
   const loc = S.state.location;
 
   root.innerHTML = `
-    <!-- the search takes the width; the city chip sits on the row below.
-         Sharing one row squeezed the magnifier down to about 13px, which
-         is the same as not drawing it. -->
+    <!-- one row: what you want and where. They are the same question, and
+         the second row was costing a whole band above the fold. The
+         magnifier keeps its 22px in the stylesheet (flex 0 0 22px) — it was
+         squeezed to ~13px the last time this row got crowded — and the
+         chip ellipsises rather than wrapping or growing the row. -->
     <div class="search-row solo">
       <div class="search-bar big">
         ${icon('search', 22)}
         <input id="homeSearch" placeholder="${t('searchExample')}" />
       </div>
-    </div>
-    <div class="search-row sub">
       <button class="loc-chip ${loc.city ? '' : 'unset'}" id="locBtn">${icon('mapPin', 17)}<span>${cityChipLabel()}</span></button>
     </div>
 

@@ -1,6 +1,6 @@
 /* ======================= EVENTS ======================= */
 import { t, L, icon, $, $$, go, back, renderHeader, toast, wireRoutes, replaceHash,
-         emptyState, query, sectionNote, pickerBtn, setPickerValue, openDropdown } from '../ui.js';
+         emptyState, query, sectionNote, pickerBtn, setPickerValue, openDropdown, ltr } from '../ui.js';
 import { getLang } from '../i18n.js';
 import { EVENT_TYPES, nextOccurrence } from '../data.js';
 import * as S from '../store.js';
@@ -8,11 +8,11 @@ import { mountPhotoPicker } from './marketplace.js';
 
 /* ---------- date helpers (Arabic + English, no dependencies) ---------- */
 
-/** "Fri 24 Oct 2026 · 5:00 PM" / "الجمعة ٢٤ أكتوبر ٢٠٢٦ · ٥:٠٠ م" */
+/** "Fri 24 Oct 2026 · 5:00 PM" / "الجمعة 24 أكتوبر 2026 · 5:00 م" */
 export function fmtEventDate(iso, withTime = true) {
   const d = new Date(iso);
   if (isNaN(d)) return iso || '';
-  const locale = getLang() === 'ar' ? 'ar-EG' : 'en-US';
+  const locale = getLang() === 'ar' ? 'ar-EG-u-nu-latn' : 'en-US';
   const date = d.toLocaleDateString(locale, { weekday: 'short', day: 'numeric', month: 'long', year: 'numeric' });
   if (!withTime) return date;
   const time = d.toLocaleTimeString(locale, { hour: 'numeric', minute: '2-digit' });
@@ -26,7 +26,7 @@ function whenLabel(iso) {
   const today = new Date();
   const sameDay = (a, b) => a.toDateString() === b.toDateString();
   const tomorrow = new Date(today.getTime() + 86400000);
-  const locale = getLang() === 'ar' ? 'ar-EG' : 'en-US';
+  const locale = getLang() === 'ar' ? 'ar-EG-u-nu-latn' : 'en-US';
   const time = d.toLocaleTimeString(locale, { hour: 'numeric', minute: '2-digit' });
   if (sameDay(d, today)) return `${t('eventToday')} · ${time}`;
   if (sameDay(d, tomorrow)) return `${t('eventTomorrow')} · ${time}`;
@@ -120,7 +120,7 @@ function concertBlock(e) {
   const rows = [];
   if (c.artist) rows.push([ 'star', c.artist, t('evArtist') ]);
   if (c.doorsAt) rows.push([ 'clock', c.doorsAt, t('evDoors') ]);
-  if (c.priceFrom) rows.push([ 'creditCard', '$' + c.priceFrom, t('evPriceFrom') ]);
+  if (c.priceFrom) rows.push([ 'creditCard', ltr('$' + c.priceFrom), t('evPriceFrom') ]);
   if (c.ageLimit) rows.push([ 'user', c.ageLimit, t('evAgeLimit') ]);
   if (c.familySeating) rows.push([ 'users', t('yes'), t('evFamilySeating') ]);
   if (!rows.length) return '';
