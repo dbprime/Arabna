@@ -1,8 +1,10 @@
 /* ============================ HOME ============================ */
 import { t, L, icon, $, $$, go, renderHeader, openSheet, closeSheet, toast, stars, wireRoutes,
          distLabel, cityChipLabel, mountAdRotator } from '../ui.js';
-import { CATEGORIES, HOME_CATS, MINI_ADS, ARTICLES, ZIPS, CITY_SUGGESTIONS, AD_SLOTS } from '../data.js';
+import { CATEGORIES, HOME_CATS, MINI_ADS, ARTICLES, ZIPS, CITY_SUGGESTIONS, AD_SLOTS,
+         CITY_POINTS } from '../data.js';
 import * as S from '../store.js';
+import { prayerBarHtml, mountPrayerBar } from './prayer.js';
 
 let sliderStop = null;
 let miniStop = null;
@@ -16,6 +18,13 @@ export function HomeScreen(root) {
   const loc = S.state.location;
 
   root.innerHTML = `
+    <!-- The prayer bar. One line, and it is the whole hook: whoever opens
+         the app to know when maghrib is has their answer before they have
+         scrolled. It rides the existing minute ticker — there is one timer
+         in this app and this does not add a second — and it never grows
+         beyond a single line above the fold. -->
+    ${prayerBarHtml()}
+
     <!-- one row: what you want and where. They are the same question, and
          the second row was costing a whole band above the fold. The
          magnifier keeps its 22px in the stylesheet (flex 0 0 22px) — it was
@@ -109,6 +118,7 @@ export function HomeScreen(root) {
   wireRoutes(root);
   startSlider(ads);
   startMiniAd();
+  mountPrayerBar();
 
   $('#homeSearch').addEventListener('keydown', e => {
     if (e.key === 'Enter') go('#/directory?q=' + encodeURIComponent(e.target.value));
@@ -404,9 +414,23 @@ export function requestGeo({ onStep, onOk, onFail }) {
          may be a place the directory has never heard of. Snapping to the
          nearest city we actually cover keeps "my city" meaning something,
          and outside the region we keep the point (the miles are still
-         real) but leave the city as the area. */
+         real) but leave the city as the area.
+
+         But the snap comes SECOND, not first. It used to run over the top
+         of a perfectly good answer: 77407 resolves to Richmond, and the
+         nearest city CENTRE to the north of that ZIP is Katy — 6.9 miles
+         against Richmond's 9.1 — so a reader standing in Richmond was told
+         they were in Katy. The arithmetic was right and the arithmetic was
+         the mistake. Ask somebody where they live and they name their
+         town; nobody says "the nearest city hall to me is Katy".
+
+         So: if the ZIP's own city is one we cover, that IS the city, and
+         nearestCity is only consulted when it is not. `inRegion` still
+         comes from nearestCity — coverage is one question, the name is
+         another. */
+      const named = r.city && CITY_POINTS.some(c => c.city === r.city) ? r.city : null;
       const near = S.nearestCity({ lat: latitude, lng: longitude });
-      onOk({ zip: r.zip || '', city: (near && near.city) || r.city, state: r.state,
+      onOk({ zip: r.zip || '', city: named || (near && near.city) || r.city, state: r.state,
              lat: latitude, lng: longitude, inRegion: !!near });
     },
     (err) => {
@@ -419,6 +443,78 @@ export function requestGeo({ onStep, onOk, onFail }) {
 }
 
 /** ask for the position wherever a distance is needed, then repaint */
+/* ---------------------------------------------------------------
+   The point goes stale the moment its owner drives away
+
+   It was read once and never read again: whoever set their location in
+   Katy and then moved to Sugar Land stayed in Katy for good, and every
+   mile the app printed from then on was wrong.
+
+   `watchPosition` is NOT the answer and must never be used here. It runs
+   the radio continuously, it flattens the battery, and it makes an app
+   feel like it is following you around — which is the one thing that gets
+   it deleted.
+
+   So the point is re-read when the reader comes BACK to the app, and only
+   when all three are true at once:
+     1. they granted the permission already (there is a point, and no refusal)
+     2. what we hold is older than thirty minutes
+     3. the page is actually visible
+   Then one quiet `getCurrentPosition`, with no sheet, no prompt and no
+   question. A failure is swallowed and the stored point stands.
+   --------------------------------------------------------------- */
+const GEO_STALE_MS = 30 * 60 * 1000;
+let lastQuietTry = 0;
+
+/** repaint the city chips in place — the new name is the whole signal */
+function repaintCityChips() {
+  const label = S.userCity() || t('setLocation');
+  $$('.loc-chip').forEach(el => {
+    const span = el.querySelector('span');
+    if (span) span.textContent = label;
+    el.classList.toggle('unset', !S.userCity());
+  });
+}
+
+/**
+ * Read the device again without asking anything. `force` is the location
+ * sheet's «حدّث موقعي», which skips the staleness test but nothing else.
+ */
+export function refreshLocationQuietly(force = false) {
+  if (!navigator.geolocation) return;
+  if (document.visibilityState !== 'visible') return;
+  const g = S.state.geo;
+  if (!g || S.state.geoDenied) return;            // never granted, or refused
+  const t0 = S.now();
+  if (!force && g.at && t0 - g.at < GEO_STALE_MS) return;
+  // a failure leaves `at` untouched, so throttle the retry ourselves
+  if (!force && t0 - lastQuietTry < GEO_STALE_MS) return;
+  lastQuietTry = t0;
+  navigator.geolocation.getCurrentPosition(
+    async (pos) => {
+      const { latitude, longitude } = pos.coords;
+      const r = await reverseGeocode(latitude, longitude);
+      if (!r || r.error) return;                  // silence: the old point stands
+      const named = r.city && CITY_POINTS.some(c => c.city === r.city) ? r.city : null;
+      const near = S.nearestCity({ lat: latitude, lng: longitude });
+      const before = S.userCity();
+      S.setUserLocation(
+        { zip: r.zip || '', city: named || (near && near.city) || r.city, state: r.state },
+        { lat: latitude, lng: longitude });
+      if (S.userCity() !== before) repaintCityChips();
+    },
+    () => { /* silent: no toast, no prompt, no second attempt */ },
+    { maximumAge: 300000, timeout: 8000 }
+  );
+}
+
+/** mounted once at boot — the only listener this feature owns */
+export function mountGeoRefresh() {
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') refreshLocationQuietly();
+  });
+}
+
 export function askForLocation(after) {
   openGeoPrompt(() => {
     toast(t('locating'));
@@ -445,6 +541,7 @@ export function openLocationSheet() {
     <div class="sheet-sub">${t('geoAskBody')}</div>
 
     <button class="btn btn-gold btn-block" id="geoBtn">${icon('navigation', 19)} ${t('useMyLocation')}</button>
+    ${S.state.geo ? `<button class="btn btn-ghost btn-block mt-8" id="geoRefresh">${icon('navigation', 17)} ${t('refreshMyLocation')}</button>` : ''}
     <div id="zipMsg" class="mt-8"></div>
 
     <div class="label mt-16">${t('pickCity')}</div>
@@ -530,6 +627,16 @@ export function openLocationSheet() {
     panel.querySelector('#geoBtn').addEventListener('click', () => {
       closeSheet();
       askForLocation();
+    });
+
+    /* «حدّث موقعي» — for somebody who has just arrived somewhere and does
+       not want to wait for the thirty minutes. Permission is already
+       granted, so there is nothing to ask: it reads and it closes. */
+    const rf = panel.querySelector('#geoRefresh');
+    if (rf) rf.addEventListener('click', () => {
+      closeSheet();
+      toast(t('locating'));
+      refreshLocationQuietly(true);
     });
 
     const clr = panel.querySelector('#clrLoc');

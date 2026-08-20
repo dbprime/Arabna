@@ -698,6 +698,9 @@ export function openDrawer() {
      subscriber yet it says «قريباً» and does not navigate. */
   const anyFeatured = S.featuredBusinesses().length > 0;
   const sections = [
+    /* Prayer times sit inside the sections group, not in the bottom bar:
+       the bar has five slots and every one of them is spoken for. */
+    item('moon', t('prayerTitle'), '#/prayer'),
     item('calendar', t('eventsTitle'), '#/events'),
     item('newspaper', t('magazineTitle'), '#/magazine'),
     anyFeatured

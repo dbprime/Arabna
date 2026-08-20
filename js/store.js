@@ -85,6 +85,11 @@ const DEFAULTS = {
   showDemo: true,            // the invented prototype data is visible until the owner hides it
   demoPurged: false,         // …or erased for good, which the switch cannot undo
   seasons: { ramadan: false },   // seasonal attribute groups the owner has switched on
+  /* The calculation method is a SETTING, never a constant. Houston holds a
+     large Iraqi and Lebanese Shia community whose times genuinely differ,
+     and one fixed set of times tells them the app is not for them. */
+  prayer: { method: 'isna', asr: 1 },
+  worshipFixes: [],          // «الوقت غير صحيح؟» — one line from a regular, for the admin
 };
 
 export const state = Object.assign({}, DEFAULTS, load() || {});
@@ -537,6 +542,110 @@ export function cityOf(biz) {
   const city = m ? m[1].trim() : '';
   cityCache.set(addr, city);
   return city;
+}
+
+/* ============================================================
+   PRAYER — the settings, the point, and the mosques nearby
+   ============================================================ */
+
+/** 'isna' · 'mwl' · 'makkah' · 'jafari' — a setting, never a constant */
+export function prayerMethod() { return (state.prayer && state.prayer.method) || 'isna'; }
+export function setPrayerMethod(m) {
+  state.prayer = Object.assign({ method: 'isna', asr: 1 }, state.prayer, { method: m });
+  save();
+}
+/** 1 = the majority, 2 = Hanafi */
+export function asrShadow() { return (state.prayer && state.prayer.asr) === 2 ? 2 : 1; }
+export function setAsrShadow(n) {
+  state.prayer = Object.assign({ method: 'isna', asr: 1 }, state.prayer, { asr: n === 2 ? 2 : 1 });
+  save();
+}
+
+/**
+ * The point the times are computed from.
+ *
+ * The device's own position when there is one; otherwise the centre of the
+ * city the reader picked by hand, which is accurate to well under the
+ * minute we print. Nothing at all when neither exists — and then the app
+ * asks for a location instead of computing from a city it invented.
+ */
+export function prayerPoint() {
+  if (state.geo && isFinite(state.geo.lat) && isFinite(state.geo.lng)) {
+    return { lat: state.geo.lat, lng: state.geo.lng, source: 'device' };
+  }
+  const city = userCity();
+  const hit = city && CITY_POINTS.find(c => c.city === city);
+  return hit ? { lat: hit.lat, lng: hit.lng, source: 'city' } : null;
+}
+
+/**
+ * The mosques nearest the reader. Empty outside the region we cover — the
+ * times work anywhere in the United States, the DIRECTORY does not, and a
+ * "mosques near you" list with nothing in it reads as a broken app rather
+ * than as an honest boundary.
+ */
+export function nearbyMosques(n = 5) {
+  if (!inCoverage()) return [];
+  const list = allBusinesses().filter(isMosque);
+  const withD = list.map(b => ({ b, d: distanceTo(b) }));
+  const known = withD.filter(x => x.d !== null).sort((a, b) => a.d - b.d);
+  const rest = withD.filter(x => x.d === null)
+    .sort((a, b) => (sameCity(b.b) ? 1 : 0) - (sameCity(a.b) ? 1 : 0)
+                 || (b.b.rating || 0) - (a.b.rating || 0));
+  return known.concat(rest).slice(0, n).map(x => x.b);
+}
+
+/**
+ * Mosque or church, read from the record's OWN declared kind — never
+ * guessed from its name and never assigned by us. The 33 imported places
+ * of worship carried no kind at all until V.03.1, so the app could not
+ * tell a masjid from a parish and showed neither the adhan nor the honest
+ * blank; the fix was the data, not the code.
+ */
+const MOSQUE_KINDS = ['wkMosque', 'wkMusalla', 'wkIslamicCenter'];
+export function worshipKind(biz) {
+  if (!biz || biz.cat !== 'worship') return null;
+  const attrs = biz.attributes || [];
+  if (attrs.some(a => MOSQUE_KINDS.includes(a))) return 'mosque';
+  if (attrs.some(a => a.indexOf('wk') === 0)) return 'church';
+  const w = biz.worship;
+  return w && w.kind ? (w.kind === 'church' ? 'church' : 'mosque') : null;
+}
+export function isMosque(biz) { return worshipKind(biz) === 'mosque'; }
+
+/** the jumuah / iqama a place of worship has actually published */
+export function worshipOf(biz) { return (biz && biz.worship) || null; }
+
+/**
+ * The mosque's own times, entered by whoever claimed it. They are NOT
+ * computed and never can be: ISGH prays jumuah at 1:30 and the mosque
+ * down the road at 2:00, and that is a decision, not astronomy.
+ */
+export function saveWorshipTimes(bizId, worship) {
+  const before = businessById(bizId);
+  applyBusinessEdit(bizId, { worship: Object.assign({}, (before && before.worship) || {}, worship) });
+}
+
+/**
+ * «الوقت غير صحيح؟ صحّحه» — every mosque has hundreds who go each Friday,
+ * and one of them fixes it in half a minute. It goes to the admin queue,
+ * never straight onto the listing.
+ */
+export function reportWorshipTime(bizId, text) {
+  const line = String(text || '').trim();
+  if (!line) return null;
+  const item = { id: 'wf' + Date.now(), bizId, text: line, when: now(), status: 'pending' };
+  state.worshipFixes = (state.worshipFixes || []).concat(item);
+  save();
+  return item;
+}
+export function pendingWorshipFixes() {
+  return (state.worshipFixes || []).filter(f => f.status === 'pending');
+}
+export function resolveWorshipFix(id) {
+  state.worshipFixes = (state.worshipFixes || [])
+    .map(f => f.id === id ? Object.assign({}, f, { status: 'done' }) : f);
+  save();
 }
 
 /** every city the directory actually covers, with how many listings each holds */

@@ -285,6 +285,18 @@ function panelView(root) {
       toast(t('geoExported'), 'ok');
     });
 
+    // a correction is opened in the same edit form the mosque itself uses —
+    // two forms for one piece of data would be two shapes of it
+    $$('[data-wfedit]').forEach(b => b.addEventListener('click', () => {
+      S.resolveWorshipFix(b.dataset.wfid);
+      go('#/business/edit/' + b.dataset.wfedit);
+    }));
+    $$('[data-wfdone]').forEach(b => b.addEventListener('click', () => {
+      S.resolveWorshipFix(b.dataset.wfdone);
+      toast(t('done'), 'ok');
+      paint();
+    }));
+
     const scan = $('#dupScan');
     if (scan) scan.addEventListener('click', () => {
       const out = $('#dupScanOut');
@@ -1189,6 +1201,24 @@ function dirHtml() {
     </div>
     <button class="btn btn-ghost btn-block mt-8" id="geoExport" ${S.needsGeoList().length ? '' : 'disabled'}>
       ${icon('file', 19)} ${t('exportMissingGeo')}</button>
+
+    <!-- the congregation's corrections. A wrong Friday time sends somebody
+         late to jumuah, so a regular's line goes to a human here and never
+         straight onto the page. -->
+    <div class="section-title mt-20">${t('prWrongTimeTitle')}</div>
+    ${!S.pendingWorshipFixes().length
+      ? `<div class="hint">${t('noPending')}</div>`
+      : `<div class="list">${S.pendingWorshipFixes().map(f => {
+          const biz = S.businessById(f.bizId);
+          return `<div class="list-row">
+            <span class="row-main">
+              <span class="row-title">${biz ? L(biz.name) : f.bizId}</span>
+              <span class="row-sub">${f.text}</span>
+            </span>
+            <button class="btn btn-ghost btn-sm" data-wfedit="${f.bizId}" data-wfid="${f.id}">${t('edit')}</button>
+            <button class="btn btn-ghost btn-sm" data-wfdone="${f.id}">${icon('check', 16)}</button>
+          </div>`;
+        }).join('')}</div>`}
 
     <div class="section-title mt-20">${t('nonCommercial')}</div>
     <div class="hint" style="margin-bottom:10px">${t('nonCommercialHint')}</div>

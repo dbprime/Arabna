@@ -1463,6 +1463,59 @@ input[inputmode="tel"], input[type="email"], input[inputmode="decimal"], #zipIn 
 .wor-cell b { display: block; font-size: 11.5px; font-weight: 700; }
 .wor-cell span { font-size: 11.5px; color: var(--gold-bright); }
 
+/* ============================================================
+   PRAYER TIMES
+   The bar is one line and must stay one line: it sits above the
+   fold on Home, and a second line costs the whole app a band of
+   screen for something that is read in a glance.
+   ============================================================ */
+.pr-bar {
+  display: flex; align-items: center; gap: 8px;
+  width: calc(100% - 32px); margin: 10px 16px 0;
+  min-height: 44px; padding: 0 12px;
+  background: var(--surface); border: 1px solid var(--line-soft);
+  border-radius: 12px; color: var(--text);
+  font-size: 13.5px; text-align: start;
+}
+.pr-bar > svg { flex: 0 0 auto; color: var(--gold); }
+.pr-bar-name { font-weight: 700; white-space: nowrap; }
+.pr-bar-at { font-weight: 700; color: var(--gold-bright); white-space: nowrap; }
+.pr-bar-left {
+  color: var(--muted); margin-inline-start: auto;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.pr-bar.unset { border-style: dashed; color: var(--muted); }
+
+.pr-next {
+  background: var(--surface-2); border: 1px solid var(--line-soft);
+  border-radius: 16px; padding: 18px 16px; text-align: center;
+}
+.pr-next-label { font-size: 12.5px; color: var(--muted); }
+.pr-next-name { font-size: 22px; font-weight: 700; margin-block-start: 4px; }
+.pr-next-at { font-size: 30px; font-weight: 700; color: var(--gold-bright); line-height: 1.2; }
+.pr-next-left { font-size: 13.5px; color: var(--text-2); margin-block-start: 4px; }
+
+.pr-list { margin-block-start: 14px; border: 1px solid var(--line-soft); border-radius: 14px; overflow: hidden; }
+.pr-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 13px 14px; background: var(--surface);
+  border-block-end: 1px solid var(--line-soft);
+}
+.pr-row:last-child { border-block-end: 0; }
+.pr-row-name { font-weight: 600; display: flex; align-items: center; gap: 8px; }
+.pr-row-at { font-weight: 700; color: var(--gold-bright); }
+/* sunrise is not a prayer. It is printed among them because it is what a
+   fasting person is actually asking about, and greyed so it is not one. */
+.pr-row.sun .pr-row-name, .pr-row.sun .pr-row-at { color: var(--muted); font-weight: 600; }
+.pr-row.next { background: var(--wash-2); }
+.pr-group { font-size: 11px; color: var(--muted); font-weight: 500; }
+
+.wor-fix {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 12.5px; font-weight: 600; color: var(--muted);
+  background: none; border: 0; padding: 8px 0;
+}
+
 /* the attribute pills under a description */
 .attr-chips { display: flex; flex-wrap: wrap; gap: 7px; margin-block-start: 12px; }
 .attr-chip {

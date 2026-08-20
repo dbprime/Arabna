@@ -10,6 +10,8 @@ import { CATEGORIES, SUBSCRIPTION_PRICE, DAY_KEYS } from '../data.js';
 import * as S from '../store.js';
 import { catIcon, startSlider } from './home.js';
 import { mountPhotoPicker } from './marketplace.js';
+import { prayerTimes, fmtPrayer } from '../prayer.js';
+import { openTimeFix } from './prayer.js';
 
 /* ----------------------------- LIST ----------------------------- */
 /* The card the reader came back from, so returning lands on the thing
@@ -482,33 +484,135 @@ function hoursBlock(b) {
   </div>`;
 }
 
-/** prayer, Jumuah or mass times — only ever rendered for a place of worship */
+/**
+ * A place of worship's times — and the distinction that governs the whole
+ * block: **the adhan is computed, the iqama is the mosque's own decision.**
+ *
+ * ISGH prays jumuah at 1:30 and the mosque down the road at 2:00 and a
+ * third holds two khutbahs. No API in the world has those numbers, because
+ * they are not arithmetic. So the calculated times are printed under
+ * «الأذان (حساب فلكي)» and whatever the mosque published under «الإقامة»,
+ * and they are never mixed: confusing the two gets people to the mosque
+ * late.
+ *
+ * And where the mosque has published nothing, the app says so. An invented
+ * Friday time sends a man late to jumuah, and that is not forgivable —
+ * the empty line is what creates the pressure to fill it.
+ */
 function worshipBlock(b) {
-  const w = b.worship;
-  if (!w) return '';
+  const kind = S.worshipKind(b);
+  if (!kind && !b.worship) return '';
+  const w = b.worship || {};
+  const mosque = kind ? kind === 'mosque' : w.kind !== 'church';
   const langLabel = w.lang === 'ar' ? t('langAr') : w.lang === 'en' ? t('langEn') : t('langBoth');
   const rows = [];
 
+  if (mosque) {
+    const p = S.prayerPoint();
+    const times = p ? prayerTimes({
+      lat: S.hasCoords(b) ? b.lat : p.lat, lng: S.hasCoords(b) ? b.lng : p.lng,
+      method: S.prayerMethod(), asrShadow: S.asrShadow(),
+    }) : null;
+    if (times) {
+      rows.push(`<div class="wor-head">${icon('moon', 17)} ${t('prAdhanCalc')}</div>
+        <div class="wor-grid">
+          ${['fajr', 'dhuhr', 'asr', 'maghrib', 'isha'].map(k =>
+            `<div class="wor-cell"><b>${t('pr' + k[0].toUpperCase() + k.slice(1))}</b>
+             <span class="ltr">${fmtPrayer(times[k], S.state.lang)}</span></div>`).join('')}
+        </div>`);
+    }
+  }
+
   if (w.prayers) {
-    rows.push(`<div class="wor-head">${icon('moon', 17)} ${t('prayerTimes')}</div>
+    rows.push(`<div class="wor-head">${icon('clock', 17)} ${t('prIqama')}</div>
       <div class="wor-grid">
         ${['fajr', 'dhuhr', 'asr', 'maghrib', 'isha'].filter(k => w.prayers[k]).map(k =>
           `<div class="wor-cell"><b>${t('pr' + k[0].toUpperCase() + k.slice(1))}</b><span class="ltr">${fmtTime(w.prayers[k])}</span></div>`).join('')}
       </div>`);
+  } else if (mosque) {
+    rows.push(`<div class="info-row"><span class="i-ico">${icon('clock', 21)}</span>
+      <div class="i-txt"><b class="muted">${t('prNoIqama')}</b></div></div>`);
   }
+
   if (w.jumuah && w.jumuah.length) {
     rows.push(`<div class="info-row"><span class="i-ico">${icon('users', 21)}</span>
       <div class="i-txt"><b class="ltr">${w.jumuah.map(fmtTime).join(' · ')}</b><span>${t('jumuahTime')}</span></div></div>`);
+  } else if (mosque) {
+    rows.push(`<div class="info-row"><span class="i-ico">${icon('users', 21)}</span>
+      <div class="i-txt"><b class="muted">${t('prNoJumuah')}</b></div></div>`);
   }
+
   if (w.mass && w.mass.length) {
     rows.push(`<div class="info-row"><span class="i-ico">${icon('landmark', 21)}</span>
       <div class="i-txt"><b>${w.mass.map(m => `${t(DAY_KEYS[m.day])} <span class="ltr">${fmtTime(m.time)}</span>`).join(' · ')}</b>
       <span>${t('massTimes')}</span></div></div>`);
+  } else if (kind === 'church') {
+    // the same rule as the mosque's: the blank is what gets it filled in
+    rows.push(`<div class="info-row"><span class="i-ico">${icon('landmark', 21)}</span>
+      <div class="i-txt"><b class="muted">${t('prNoMass')}</b></div></div>`);
   }
-  rows.push(`<div class="info-row"><span class="i-ico">${icon('languages', 21)}</span>
-    <div class="i-txt"><b>${langLabel}</b><span>${w.kind === 'church' ? t('massLang') : t('sermonLang')}</span></div></div>`);
+  if (w.lang) {
+    rows.push(`<div class="info-row"><span class="i-ico">${icon('languages', 21)}</span>
+      <div class="i-txt"><b>${langLabel}</b><span>${mosque ? t('sermonLang') : t('massLang')}</span></div></div>`);
+  }
+
+  /* The congregation corrects it. Every mosque has hundreds who go each
+     Friday and one of them fixes a wrong time in half a minute; it goes to
+     the review queue, never straight onto the page. */
+  rows.push(`<button class="wor-fix" data-timefix="${b.id}">${icon('edit', 16)} ${t('prWrongTime')}</button>`);
 
   return `<div class="worship-block">${rows.join('')}</div>`;
+}
+
+/* ---------------------------------------------------------------
+   The mosque enters its own Friday and iqama times
+
+   This is the half no calculation can reach, and the whole reason the
+   block above is split in two. A mosque WANTS this filled in — people
+   knowing when its jumuah is serves the mosque, it is not a chore — and
+   the claim flow already decides who is allowed to write it.
+
+   Never a school, never a sect, never a label of our own. Whoever wants
+   to declare an identity declares it themselves when they claim the page.
+   --------------------------------------------------------------- */
+const IQAMA_KEYS = ['fajr', 'dhuhr', 'asr', 'maghrib', 'isha'];
+
+function worshipFields(b) {
+  if (b.cat !== 'worship') return '';
+  const w = b.worship || {};
+  const j = w.jumuah || [];
+  return `
+    <div class="field"><label class="label">${t('prEditWorship')}</label>
+      <div class="hint">${t('prCalcNote')}</div>
+    </div>
+    <div class="field"><label class="label">${t('jumuahTime')}</label>
+      <div class="hours-row">
+        <input class="input ltr" id="eJum1" dir="ltr" placeholder="13:30" value="${attr(j[0] || '')}" />
+        <input class="input ltr" id="eJum2" dir="ltr" placeholder="${t('prJumuahTwo')}" value="${attr(j[1] || '')}" />
+      </div>
+    </div>
+    <div class="field"><label class="label">${t('prIqama')}</label>
+      ${IQAMA_KEYS.map(k => `<div class="hours-row">
+        <span>${t('pr' + k[0].toUpperCase() + k.slice(1))}</span>
+        <input class="input ltr" dir="ltr" data-iq="${k}" placeholder="—"
+               value="${attr((w.prayers && w.prayers[k]) || '')}" />
+      </div>`).join('')}
+    </div>`;
+}
+
+function readWorshipFields(b) {
+  /* `kind` is never written here: the place's own worshipKind attribute is
+     the answer, and stamping a default would have this form deciding what
+     a building is. */
+  const w = Object.assign({}, b.worship || {});
+  const jum = [$('#eJum1'), $('#eJum2')].map(el => (el && el.value.trim()) || '').filter(Boolean);
+  const prayers = {};
+  $$('[data-iq]').forEach(el => { if (el.value.trim()) prayers[el.dataset.iq] = el.value.trim(); });
+  return Object.assign({}, w, {
+    jumuah: jum,
+    // an empty object would print an empty grid; no times means no block
+    prayers: Object.keys(prayers).length ? prayers : null,
+  });
 }
 
 /**
@@ -748,6 +852,8 @@ export function ListingScreen(root, params) {
     title: t('delete'), sub: t('myReviewOn') + ' ' + L(b.name), confirmText: t('delete'), danger: true,
     onConfirm: () => { S.deleteReview(btn.dataset.delrev); toast(t('reviewDeleted'), 'ok'); go('#/directory/' + b.id); }
   })));
+
+  $$('[data-timefix]').forEach(btn => btn.addEventListener('click', () => openTimeFix(btn.dataset.timefix)));
 
   wireRoutes(root);
 }
@@ -1382,6 +1488,7 @@ export function BusinessEditScreen(root, params) {
       ${cat === 'outings' ? `<div class="field"><label class="label">${t('entryPrice')} <span class="muted">(${t('optional')})</span></label>
         <input class="input ltr" id="eEntry" dir="ltr" value="${attr(b.entryPrice || '')}" placeholder="$12 / person" />
         <div class="hint">${t('entryPriceHint')}</div></div>` : ''}
+      ${worshipFields(b)}
       <label class="consent-row" style="margin:4px 0 16px">
         <input type="checkbox" id="eNonComm" ${b.nonCommercial ? 'checked' : ''} />
         <span><b>${t('nonCommercial')}</b><br><span class="muted fs-12">${t('nonCommercialHint')}</span></span>
@@ -1424,6 +1531,7 @@ export function BusinessEditScreen(root, params) {
       tags: $('#eTags').value.split(/[,\u060C\n]/).map(x => x.trim()).filter(Boolean),
       attributes: picked.slice(),
       nonCommercial: $('#eNonComm').checked,
+      ...(b.cat === 'worship' ? { worship: readWorshipFields(b) } : {}),
       entryPrice: cat === 'outings' ? $('#eEntry').value.trim() : (b.entryPrice || ''),
     });
     toast(t('done'), 'ok');

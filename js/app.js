@@ -8,7 +8,7 @@ import { $, renderHeader, renderNav, hideNav, closeSheet, closeDrawer, closeDrop
          mountScrollMemory, restoreScroll, historyKey, markShown, startClock,
          applyTheme, mountThemeWatch } from './ui.js';
 
-import { HomeScreen } from './screens/home.js';
+import { HomeScreen, mountGeoRefresh } from './screens/home.js';
 import { CategoriesScreen } from './screens/categories.js';
 import { EventsScreen, EventScreen, EventFormScreen } from './screens/events.js';
 import { DirectoryScreen, ListingScreen, AddBusinessScreen, ClaimScreen, SubscribeScreen,
@@ -21,11 +21,13 @@ import { ProfileScreen, EditProfileScreen, ChangePasswordScreen, SavedScreen, My
          HelpScreen, AboutScreen, PrivacyScreen, TermsScreen, BlockedScreen } from './screens/profile.js';
 import { SignUpScreen, SignInScreen, EmailVerifyScreen, PhoneVerifyScreen, ForgotScreen } from './screens/auth.js';
 import { AdvertiseScreen } from './screens/advertise.js';
+import { PrayerScreen } from './screens/prayer.js';
 import { AdminScreen } from './screens/admin.js';
 
 const ROUTES = [
   { re: /^#\/home$/,              screen: HomeScreen,        nav: 'home' },
   { re: /^#\/categories$/,        screen: CategoriesScreen,  nav: 'home' },
+  { re: /^#\/prayer$/,            screen: PrayerScreen,      nav: 'home' },
   { re: /^#\/events$/,            screen: EventsScreen,      nav: 'home' },
   { re: /^#\/events\/propose$/,   screen: EventFormScreen,   nav: 'home' },
   { re: /^#\/events\/edit\/(.+)$/, screen: EventFormScreen, nav: null },
@@ -124,6 +126,7 @@ function catchUp() {
   mountThemeWatch();
   mountScrollMemory();
   startClock();
+  mountGeoRefresh();
 }
 
 /**

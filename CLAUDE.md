@@ -7,7 +7,7 @@ ARABNA · عربنا — a mobile-first web app for the Arab community in the U.
 **business directory + marketplace + events + magazine**, Arabic-first with a full English toggle.
 ("Classifieds / الإعلانات الشخصية" is now "Marketplace / السوق" — the old `#/classifieds`
 routes still resolve so shared links keep working.)
-Current version: **V.03.0 (prototype)**. Owner: Rai Elby (@dbprime). Deploys to Vercel (team DB Prime).
+Current version: **V.03.1 (prototype)**. Owner: Rai Elby (@dbprime). Deploys to Vercel (team DB Prime).
 
 ## Hard rules (from the product brief)
 1. **One repository, one Vercel project.** No duplicates, no stray preview projects.
@@ -34,12 +34,13 @@ js/app.js             hash router + bootstrap
 js/i18n.js            all UI strings (ar + en)
 js/data.js            seed data — replaced by Supabase queries in V.02
 js/store.js           state, entitlements, and ALL backend seams
+js/prayer.js          the prayer-time arithmetic — no API, no library
 js/synonyms.js        the search dictionary — expands the QUERY, never the data
 tools/synonyms.test.mjs  runs all 984 words against the real listings
 js/ui.js              toast / sheet / drawer / header / nav primitives
 js/icons.js           inline SVG icons
 js/screens/*.js       home · categories · directory · marketplace · events · magazine ·
-                      auth · advertise · profile · admin
+                      auth · advertise · profile · admin · prayer
 manifest.json         PWA manifest (installable; NO service worker until V.02)
 assets/icons/         32 · 180 · 192 · 512 · 1024 icons generated from logo.png,
                       solid navy background (iOS rejects transparency)
@@ -1505,9 +1506,164 @@ store uses. **100 groups · 984 words**, and the confusion bar is unmoved:
 حلاق · كوافير · صالون · كنيسة · شاورما · محامي · ضرائب · ترامبولين → **0%**,
 ملحمة 5% · بقالة 5% · مسجد 8% · حديقة 14%.
 
+## V.03.1 — batch seven (a): the location, and the prayer times
+
+### The ZIP names the city; the snap only fills the gaps
+Rai opened the app at home in **77407 — Richmond** and was told he was in
+**Katy**. The reverse lookup had resolved the ZIP correctly and one line
+then threw the right answer away:
+
+```js
+const near = S.nearestCity({ lat, lng });
+onOk({ city: (near && near.city) || r.city, … });   // ← Katy
+```
+
+North 77407 is **6.9 miles** from the centre of Katy and **9.1** from the
+centre of Richmond, so the arithmetic was right — **and the arithmetic was
+the mistake.** Ask somebody where they live and they name their town;
+nobody says "the nearest city hall to me is Katy".
+
+- **If the ZIP's own city is one of the 25 we cover, that IS the city.**
+  `nearestCity()` is consulted only when it is not — which is what it was
+  written for: keeping «مدينتي» from naming a place the directory has never
+  heard of.
+- **`inRegion` still comes from `nearestCity`.** Coverage is one question
+  and the name is another, and merging them is what caused this.
+
+### The point goes stale the moment its owner drives away
+`state.geo` was written once and never read again: whoever set their
+location in Katy and moved to Sugar Land stayed in Katy for good.
+
+- **`watchPosition` is banned and is not used.** It runs the radio
+  continuously, flattens the battery, and makes an app feel like it is
+  following you — which is the one thing that gets it deleted.
+- The point is re-read when the reader comes **back** to the app, and only
+  when all three hold at once: **the permission was already granted** (a
+  point exists and there is no refusal), **what we hold is older than
+  thirty minutes**, and **the page is visible**. Then one quiet
+  `getCurrentPosition` (`maximumAge: 300000`, `timeout: 8000`) with no
+  sheet, no prompt and no question. A failure is swallowed and the stored
+  point stands — and a failed attempt does not refresh `at`, so the retry
+  is throttled by its own timestamp rather than firing on every switch.
+- **The permission is never asked for twice.** iOS asks once and a refusal
+  is permanent; `geoDenied` stops the quiet path dead.
+- The changed city repaints **the chips in place** — the new name is the
+  whole signal — and «حدّث موقعي» in the location sheet skips the thirty
+  minutes for somebody who has just arrived somewhere.
+
+### Prayer times: computed here, asking nothing of anybody
+`js/prayer.js` — **no API and no library**, and it imports nothing. Three
+reasons, in order of weight: it **works with no internet**, and somebody
+opening the app to know when maghrib is may be standing outside with no
+signal; it is **instant**; and it does not stop the day a website changes
+its terms. Zero dependencies has been the rule since the first day, and a
+table of angles is not a reason to break it.
+
+- Julian day → the sun's declination and the equation of time → solar noon
+  → an hour angle per time. Asr from the shadow ratio, sunrise and sunset
+  at **0.833°** below the horizon (refraction plus the disc's own radius).
+- **The timezone comes from the device** (`-new Date().getTimezoneOffset()`),
+  which is why this project carries no timezone database: the phone already
+  knows, daylight saving included.
+- **Four methods, and this is not a technical detail.** ISNA (15/15) ·
+  Muslim World League (18/17) · Umm al-Qura (18.5 / isha +90 min) ·
+  **Jafari (16/14, maghrib 4° below the horizon)**. Houston holds a large
+  Iraqi and Lebanese Shia community whose times genuinely differ, and an
+  app that hands them one set of times that is not theirs is telling them
+  it is not for them. Plus the asr school: **standard (shadow 1) or Hanafi
+  (shadow 2)**.
+- **The labels are method names, never sect names** — ISNA, أم القرى,
+  الجعفري — which is what every prayer app does; whoever wants the Jafari
+  method finds it in one tap and the app never stands in a queue it has no
+  business standing in. **And no mosque is ever tagged with a school or a
+  sect by us.** Whoever wants to declare an identity declares it themselves
+  when they claim the page. One mistake here costs the trust of a whole
+  community.
+- **When Jafari is chosen the times are shown grouped** (ظهر+عصر ·
+  مغرب+عشاء), because that is how they are actually prayed, and it costs a
+  line.
+- **A time that cannot exist comes back `null` and prints «—».** At 69°N in
+  June the sun never reaches the fajr angle; the app says so rather than
+  inventing a number somebody would pray by.
+- Measured against the reference table for Houston, **to the minute**:
+  20 Aug 2026 ISNA 05:43 · 06:52 · 13:25 · 17:01 · 19:58 · 21:07 · Jafari
+  maghrib **20:13** · Hanafi asr **18:05** · 21 Dec 2026 06:02 · 07:13 ·
+  12:19 · 15:08 · 17:26 · 18:37. And the order fajr < شروق < ظهر < عصر <
+  مغرب < عشاء holds on **every day of the year in all four methods and both
+  asr schools**.
+
+### Four places, and one of them is the hook
+- **A single line under the header on Home**: «المغرب 7:52 · باقي ساعة و12
+  دقيقة». It rides **the existing minute ticker** (`onMinute` in `ui.js`) —
+  there is one minute timer in this app and this adds none — repaints only
+  itself, and never grows to a second line above the fold. With no location
+  it reads «حدّد موقعك لتظهر مواقيت الصلاة» and opens the existing flow.
+- **`#/prayer`**: the five plus sunrise, the next one on a live countdown,
+  the mosques nearby, the settings, and the standing line **«الحساب فلكي —
+  والإقامة يحدّدها كل مسجد»**. Sunrise is printed among them and greyed: it
+  is not a prayer, it is what a fasting person is asking about.
+- **The mosque's page** — see below.
+- **A drawer row** under «تصنيفات عربنا». **The bottom bar is untouched**:
+  five tabs, all five spoken for.
+- **The times work anywhere in the United States** — the calculation needs a
+  point and a date and nothing else — while the **directory** covers Houston
+  and its suburbs. So outside the region «مساجد قريبة منك» is **hidden
+  rather than empty** and one honest line says «المواقيت تعمل أينما كنت —
+  والدليل يغطّي هيوستن وضواحيها حالياً».
+
+### The adhan is computed; the iqama is the mosque's own decision
+This is the distinction the whole worship block is built around. ISGH prays
+jumuah at 1:30, the mosque down the road at 2:00, a third holds two
+khutbahs. No API in the world has those numbers, because they are not
+arithmetic.
+
+- Calculated times under **«الأذان (حساب فلكي)»**, whatever the mosque
+  published under **«الإقامة»**, and never mixed — confusing the two gets
+  people there late.
+- **Where nothing is published the app says so**: «الإقامة: غير متوفّرة —
+  اتصل بالمسجد» · «وقت الجمعة: غير متوفّر — اتصل بالمسجد» (and the same for
+  a church's mass times). **An invented Friday time sends a man late to
+  jumuah, and that is not forgivable** — the blank is what creates the
+  pressure that fills it.
+- **The mosque enters its own**: the edit form a claimed listing already
+  opens now carries jumuah (one khutbah or two) and the five iqamas. A
+  mosque *wants* this filled in — people knowing when its jumuah is serves
+  the mosque.
+- **The congregation corrects it**: «الوقت غير صحيح؟ صحّحه» takes one line
+  into the admin queue — **never straight onto the page** — and the admin
+  opens it in the same edit form the mosque uses. Every mosque has hundreds
+  who go each Friday and one of them fixes it in half a minute.
+
+### Thirty-three places of worship did not say what they were
+The block above needs to know a masjid from a parish, and **33 of the 35
+records carried no kind at all** — `worship` was empty on everything except
+the two development seeds, and not one imported row carried a `worshipKind`
+attribute. So the app could show neither the adhan nor the honest blank
+where they mattered most.
+
+**The fix was the data, not the code.** Each of the 33 now carries the kind
+its own name states — `wkMosque` · `wkIslamicCenter` · `wkCoptic` ·
+`wkAntiochian` · `wkMelkite` · `wkBaptist` — and `worshipKind()` in
+`store.js` reads that attribute and **never the name and never a guess**.
+**23 mosques and 12 churches**, and the filter sheet gained a working group
+in the same move.
+
+- **`wkChurch` is a new attribute** for the three churches whose own name
+  states no denomination. Naming one for them would be us deciding somebody
+  else's identity — the same rule that forbids tagging a mosque with a
+  school. A new attribute is one line in `data.js` and two in `i18n.js`,
+  exactly as the registry promises.
+
 ## Known open items
 - Legal pages are first drafts — a lawyer must review before public launch.
 - Push notifications: triggers are defined in Settings but not wired to a real service.
+  The prayer settings name a pre-adhan alert as coming later, for the same reason.
+- **The jumuah and iqama times are empty on 33 of the 35 places of worship.**
+  They cannot be computed and no service publishes them; they arrive from the
+  mosques themselves and from the congregation's corrections. Six of the
+  masjids are ISGH and three share one central line, so the real number of
+  calls is nearer fifteen than thirty-three — that is the owner's job, not
+  the code's.
 - Admin panel is intentionally minimal (moderation queue, magazine editor, ad approval).
 - Prices are placeholders chosen by Claude — the owner will set final pricing.
 - The 29 development seeds and every seed review in `data.js` must be deleted
