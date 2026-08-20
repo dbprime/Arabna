@@ -4,7 +4,7 @@
 
 import { BUSINESSES, CATEGORIES } from '../js/data.js';
 import { bothPacks } from '../js/i18n.js';
-import { SYNONYM_GROUPS, expandQuery, hayMatches } from '../js/synonyms.js';
+import { SYNONYM_GROUPS, expandQuery, hayMatches, catMatches, squash } from '../js/synonyms.js';
 
 /* the proposed haystack: what searchHaystack() indexes today PLUS the
    attribute labels, which it does not index at all — see the report */
@@ -27,14 +27,23 @@ function normalize(str) {
     .trim();
 }
 
-const HAY = new Map();
+const HAY = new Map(), SQ = new Map(), CAT = new Map();
+const catName = (id) => {
+  const c = CATEGORIES.find(x => x.id === id);
+  return c ? normalize([PACKS.ar[c.key], PACKS.en[c.key]].filter(Boolean).join(' ')) : '';
+};
 for (const b of BUSINESSES) {
   const parts = [
     b.name?.ar, b.name?.en, b.desc?.ar, b.desc?.en, b.address,
     ...(b.tags || []),
     ...(b.attributes || []).map(attrLabel),
   ];
-  HAY.set(b.id, normalize(parts.filter(Boolean).join(' ')));
+  const hay = normalize(parts.filter(Boolean).join(' '));
+  HAY.set(b.id, hay);
+  SQ.set(b.id, squash(hay));
+  /* the category name is held apart and matched as a whole word — the
+     store does exactly this, and the two must not drift */
+  CAT.set(b.id, catName(b.cat));
 }
 
 const hits = (word) => BUSINESSES.filter(b => HAY.get(b.id).includes(normalize(word)));
@@ -44,7 +53,7 @@ function withSyn(term) {
   const entries = expandQuery(term, normalize);
   return BUSINESSES.filter(b => {
     const hay = HAY.get(b.id);
-    return entries.every(e => hayMatches(hay, e));
+    return entries.every(e => hayMatches(hay, e, SQ.get(b.id)) || catMatches(CAT.get(b.id), e));
   });
 }
 

@@ -7,7 +7,7 @@ ARABNA · عربنا — a mobile-first web app for the Arab community in the U.
 **business directory + marketplace + events + magazine**, Arabic-first with a full English toggle.
 ("Classifieds / الإعلانات الشخصية" is now "Marketplace / السوق" — the old `#/classifieds`
 routes still resolve so shared links keep working.)
-Current version: **V.02.9 (prototype)**. Owner: Rai Elby (@dbprime). Deploys to Vercel (team DB Prime).
+Current version: **V.03.0 (prototype)**. Owner: Rai Elby (@dbprime). Deploys to Vercel (team DB Prime).
 
 ## Hard rules (from the product brief)
 1. **One repository, one Vercel project.** No duplicates, no stray preview projects.
@@ -35,7 +35,7 @@ js/i18n.js            all UI strings (ar + en)
 js/data.js            seed data — replaced by Supabase queries in V.02
 js/store.js           state, entitlements, and ALL backend seams
 js/synonyms.js        the search dictionary — expands the QUERY, never the data
-tools/synonyms.test.mjs  runs all 989 words against the real listings
+tools/synonyms.test.mjs  runs all 984 words against the real listings
 js/ui.js              toast / sheet / drawer / header / nav primitives
 js/icons.js           inline SVG icons
 js/screens/*.js       home · categories · directory · marketplace · events · magazine ·
@@ -962,7 +962,8 @@ behind the logo — a different problem entirely.
 ## V.02.6 — the words people actually type
 
 ### The dictionary expands the query and never the data
-`js/synonyms.js` — **100 groups, 989 words**. Every array is a set of words
+`js/synonyms.js` — **100 groups, 984 words** (989 until V.03.0 moved «صالون»
+to `SYNONYM_ONEWAY` and took «تجميل» / «beauty» out of the salon group). Every array is a set of words
 that mean the same thing to somebody searching; typing any member searches
 for all of them. **No record is touched, no tag is rewritten, `data.js` does
 not grow**, and adding a word is one line here and nothing anywhere else.
@@ -1381,6 +1382,108 @@ The tab bar reached eight and stopped fitting in 390px. **It wraps onto a
 second line rather than scrolling sideways** — the magazine chips' answer,
 and the same rule: a row somebody chooses from must not run off the edge.
 That rule covers the panel too.
+
+## V.03.0 — batch seven: the search says what it means
+
+### One-way entries: a word may be wide without making its neighbours wide
+`SYNONYM_GROUPS` is symmetric — every word in a group drags every other
+word with it — and «صالون» sat in **both** the women's-salon group and the
+barber group so that it would find both. It did, and it also made «حلاق»
+find every women's salon and «كوافير» find every barbershop: **the two
+returned exactly the same 24 rows**, one of them marked «للنساء فقط».
+
+- **`SYNONYM_ONEWAY` in `synonyms.js`** is a second table that **widens and
+  is never widened into**. «صالون» left both groups and lives there alone,
+  carrying both vocabularies. `expandQuery` asks the one-way table first —
+  for the whole phrase, then per word — and only then the symmetric index.
+- **Measured: حلاق 24 → 13 · كوافير 24 → 15 · صالون 24 → 24.** The single
+  women's salon still in «حلاق» carries «قص شعر» in its own tags, and the
+  three barbershops still in «كوافير» are the three trading as
+  "Hair Salon" — both are the listing's own words, not a substitution, and
+  the project's rule is explicit that a salon serving both appears under
+  women and under men alike.
+
+### A category name is a label, not a description
+The fix above was necessary and **not sufficient**, and the reason was two
+levels down: `searchHaystack()` appends **the category name** to every
+listing, so typing «مطاعم» returns the restaurants. Two of the twenty-one
+names carry two trades at once — **«تجميل وحلاقة»** and **«أسواق وملاحم»**
+— and matched loosely they merge them. «حلاق» sits inside «وحلاقة», so a
+barber search returned all 24 beauty listings **no matter what the
+dictionary did**. The same fault handed «ملحمة» the whole grocery aisle.
+
+- **The label is now held apart** (`catHaystack()` beside `searchHaystack()`,
+  same `WeakMap` idiom, no second pass over the record) and matched by
+  **`catMatches()` — a whole word, on both sides**. `answers(biz, entry)` in
+  `store.js` is the single place the two are combined, so the three call
+  sites cannot drift.
+- **This is the one place a clean START is demanded.** Everywhere else
+  Arabic's glued «ال» and «و» forbid it — that is the V.02.6 boundary rule
+  and it stands. It is safe here because the label is **our own text**: we
+  wrote its «و», and the reader is never typing it.
+- **Measured, and it fixed a second category nobody had reported:**
+  ملحمة 43 → **19**, بقالة 62 → **41**. Nineteen is the number V.02.6
+  argued for when it threw «لحوم» out of the dictionary — the label had
+  quietly put the inflation back.
+- **Nothing that should return a category stopped doing so:** «مطعم» 176,
+  «تجميل» 24, «beauty» 24, «مسجد» 25, «شاورما» 27, «مواقف» 130 — all
+  unchanged. `registerStrings()` now throws **all three** caches away, not
+  only the first: every one of them was built from the old pack.
+- **Two words left the women's-salon group: «تجميل» and «beauty».** They
+  are the category's own name, not salon words, and expanding «كوافير» into
+  them handed back the whole section, barbers included. Typing either still
+  returns all 24 — through the label, which is what they name.
+
+### The name people type, and the space they leave out
+Two more faults of the same family, both from the owner's own searching:
+
+- **162 transliteration tags on 126 records.** V.02.6 tagged the names whose
+  Arabic *looked* wrong; the right question was **which names an Arab types
+  in Arabic**. «ديماسي», «الشامي», «الأقصى», «سنابرة», «حضرموت» are Arabic
+  names already, so they never looked wrong and never got tagged — and all
+  returned **zero**. Three families: Arabic names in Latin letters, the
+  churches (the Coptic and Antiochian parishes carried the denomination but
+  **not the saint** — مار مرقس, العذراء مريم, مار جرجس), and places people
+  say in Arabic (اسطنبول, الغاليريا, بترا, غالفستون). **`name.ar` and
+  `name.en` were not touched** — a tag is never displayed.
+  **Foreign brands were deliberately left out**: Dave & Buster's, Meow Wolf,
+  Puttshack. **A wrong tag is worse than no tag** — it sends the reader to
+  the wrong shop.
+- **`squash()`**: the space is not spelling. «عبدالله» is how most people
+  write the name the record spells «عبد الله», and `Alshami` / `Al Shami` /
+  `Al-Shami` are one shop. A second cached copy of the haystack with every
+  space, hyphen, apostrophe and dot removed is tried **only against the word
+  the reader typed, never a dictionary substitution, and only from four
+  characters up** — squashing erases word boundaries, so a short query would
+  land in the middle of an unrelated word. `alshami` 0 → **2** · `abuomar`
+  0 → **1** · `عبدالله` 0 → **2** · `dimassis` 0 → **1**.
+
+### An id is an id
+The admin search box says «بالاسم أو الهاتف أو العنوان أو المعرّف» and the
+id was the one that did not work: **`b281` returned 145 rows** with the
+right one buried, because the three-digit phone rule took `281` — **Houston's
+area code**. So did `b713` and `b832`.
+
+- **A word shaped `/^b\d+$/` is never a name, an address or a phone
+  number**, so it is matched alone and **returned alone**. `b281` → 1.
+  `b9999` → **0, and zero is the true and useful answer**.
+- **The small rule itself was not wrong** — three digits matching anywhere
+  in a number helps whoever remembers the last four. It was only swallowing
+  the id.
+- **Everything else is ranked instead of mixed**: whole phone · name ·
+  partial phone · address. `Array#sort` is stable, so equals keep the order
+  of the file. `713` still returns 168 and `Hillcroft` still returns 65 —
+  but Hillcroft now leads with **b187 Aisha's Salon (the name)** instead of
+  **b1 Al Sham (the address)**, which is what whoever typed a name wanted.
+
+### The dictionary's own test reads what the app reads
+`tools/synonyms.test.mjs` built its haystack **without** the category name
+at all, which is why the label fault survived a batch that measured
+everything else. It now holds the label apart and matches it with
+`catMatches`, and squashes the haystack too — the same three pieces the
+store uses. **100 groups · 984 words**, and the confusion bar is unmoved:
+حلاق · كوافير · صالون · كنيسة · شاورما · محامي · ضرائب · ترامبولين → **0%**,
+ملحمة 5% · بقالة 5% · مسجد 8% · حديقة 14%.
 
 ## Known open items
 - Legal pages are first drafts — a lawyer must review before public launch.

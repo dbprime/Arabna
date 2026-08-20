@@ -11,7 +11,7 @@ import { CLASSIFIEDS, BUSINESSES, NOTIFICATIONS, SLIDER_ADS, MINI_ADS, ARTICLES,
          CITY_POINTS, REGION_RADIUS_MI,
          AD_PRODUCTS, AD_SLOTS,
          attrById, attrInCat, isAllDay, week, nextOccurrence } from './data.js';
-import { expandQuery, hayMatches } from './synonyms.js';
+import { expandQuery, hayMatches, catMatches, squash } from './synonyms.js';
 
 export { ATTRIBUTES, ATTR_GROUPS, DAY_KEYS, CHIP_MIN, CHIP_MAX_SHARE, EVENT_TYPES,
          attrById, attrInCat, isAllDay, week, nextOccurrence };
@@ -747,7 +747,17 @@ export function normalize(str) {
    misses, which is correct rather than stale. */
 let haystackCache = new WeakMap();
 
-/** everything a business can be found by, both languages at once */
+let squashCache = new WeakMap();
+let catCache = new WeakMap();
+
+/** the same text with every separator removed — see synonyms.js */
+export function squashedHaystack(biz) {
+  if (!squashCache.has(biz)) searchHaystack(biz);
+  return squashCache.get(biz) || '';
+}
+
+/** everything a business can be found by, both languages at once — its own
+    words only: the category name is a label and is held apart, below */
 export function searchHaystack(biz) {
   const hit = haystackCache.get(biz);
   if (hit !== undefined) return hit;
@@ -762,10 +772,24 @@ export function searchHaystack(biz) {
        listings carried the parking attribute. */
     ...(Array.isArray(biz.attributes) ? biz.attributes.map(attrLabel) : []),
   ];
-  if (cat) parts.push(catNames(cat.key));
   const hay = normalize(parts.filter(Boolean).join(' '));
   haystackCache.set(biz, hay);
+  squashCache.set(biz, squash(hay));
+  catCache.set(biz, normalize(cat ? catNames(cat.key) : ''));
   return hay;
+}
+
+/** the category name, kept apart from the record's own words because it is
+    matched by a different rule — see catMatches() in synonyms.js */
+export function catHaystack(biz) {
+  if (!catCache.has(biz)) searchHaystack(biz);
+  return catCache.get(biz) || '';
+}
+
+/** one expanded word against one listing: its own text, or its category name */
+function answers(biz, entry) {
+  return hayMatches(searchHaystack(biz), entry, squashedHaystack(biz))
+      || catMatches(catHaystack(biz), entry);
 }
 
 /** both translations of one attribute id — the key is derived from the id
@@ -793,23 +817,24 @@ function i18nPacks() {
 /** i18n hands its tables over at boot; store must not import a screen module */
 export function registerStrings(packs) {
   _packs = packs;
-  haystackCache = new WeakMap();   // the labels in it came from the old pack
+  // every cached string was built from the old pack — all three go together
+  haystackCache = new WeakMap();
+  squashCache = new WeakMap();
+  catCache = new WeakMap();
 }
 
 export function matchesSearch(biz, term) {
   const q = normalize(term);
   if (!q) return true;
-  const hay = searchHaystack(biz);
   // every word must appear somewhere — "مطعم حلال" should narrow, not widen.
   // The filter sheet uses this too, so it reads the dictionary as the
   // search does and the two can never disagree.
-  return expandQuery(term, normalize).every(p => hayMatches(hay, p));
+  return expandQuery(term, normalize).every(p => answers(biz, p));
 }
 
 /** how many of the typed words, dictionary included, this listing matches */
 function wordHits(biz, parts) {
-  const hay = searchHaystack(biz);
-  return parts.reduce((n, p) => n + (hayMatches(hay, p) ? 1 : 0), 0);
+  return parts.reduce((n, p) => n + (answers(biz, p) ? 1 : 0), 0);
 }
 
 /**
@@ -836,8 +861,7 @@ export function searchBusinesses(list, term) {
   const parts = expandQuery(term, normalize);
 
   const exact = list.filter(b => {
-    const hay = searchHaystack(b);
-    return parts.every(p => hayMatches(hay, p));
+    return parts.every(p => answers(b, p));
   });
   if (exact.length) return { list: exact, mode: 'exact', suggestions: [] };
 
@@ -998,20 +1022,46 @@ export function phoneKey(phone) {
  * The phone matches on the last ten digits through `phoneKey()` — the very
  * rule `findDuplicates()` uses, so the two can never disagree — and the
  * text goes through `normalize()`, so «الاصيل» finds «الأصيل».
+ *
+ * An id is matched first and alone, and the rest is ranked rather than
+ * mixed: whole phone · name · partial phone · address.
  */
+const ID_RE = /^b\d+$/i;
+
 export function adminSearchBusinesses(list, term) {
-  const q = normalize(term || '').trim();
+  const raw = String(term || '').trim();
+  const q = normalize(raw);
   if (!q) return list;
-  const digits = String(term).replace(/\D/g, '');
-  const pk = digits.length >= 10 ? phoneKey(term) : '';
-  return list.filter(b => {
-    if (pk && phoneKey(b.phone) === pk) return true;
+
+  /* A business id is never a name, an address or a phone number, so it is
+     matched alone and returned alone. «b281» used to take the three-digit
+     phone rule with it — and 281 is Houston's area code — so the one row
+     asked for came back buried in 145. Zero results here is a true and
+     useful answer: no business carries that id. */
+  if (ID_RE.test(raw)) {
+    const hit = list.find(b => String(b.id).toLowerCase() === raw.toLowerCase());
+    return hit ? [hit] : [];
+  }
+
+  const digits = raw.replace(/\D/g, '');
+  const pk = digits.length >= 10 ? phoneKey(raw) : '';
+
+  /* everything else is ranked rather than mixed: whoever typed a name
+     wants the name first, and the address matches come after it */
+  const tier = (b) => {
+    if (pk && phoneKey(b.phone) === pk) return 0;
+    const nm = normalize([b.name && b.name.ar, b.name && b.name.en]
+      .filter(Boolean).join(' '));
+    if (nm.includes(q)) return 1;
     // a short run of digits still matches anywhere in the number
-    if (digits.length >= 3 && phoneKey(b.phone).includes(digits)) return true;
-    if (String(b.id).toLowerCase() === q) return true;
-    const hay = normalize([b.name && b.name.ar, b.name && b.name.en, b.address].filter(Boolean).join(' '));
-    return hay.includes(q);
-  });
+    if (digits.length >= 3 && phoneKey(b.phone).includes(digits)) return 2;
+    if (normalize(b.address || '').includes(q)) return 3;
+    return 9;
+  };
+
+  // Array#sort is stable, so equals keep the order of the file
+  return list.map(b => [b, tier(b)]).filter(([, t]) => t < 9)
+    .sort((a, c) => a[1] - c[1]).map(([b]) => b);
 }
 
 export function findDuplicates({ phone, name, address, cat, id } = {}) {

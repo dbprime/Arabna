@@ -9,19 +9,22 @@
    HOW A GROUP WORKS
    Every array below is a set of words that mean the same thing
    to somebody searching. Typing any member searches for all of
-   them. A word may appear in MORE THAN ONE group on purpose —
-   «صالون» is in both the women's-salon group and the barber
-   group, so it finds both, while «حلاق» is only in the barber
-   group and finds only barbers. That asymmetry is the whole
-   design: it is how an ambiguous word stays wide and a precise
-   word stays narrow.
+   them. A group is SYMMETRIC: every word in it drags every
+   other word with it, in both directions.
+
+   That is why an ambiguous word cannot simply be put in two
+   groups. «صالون» in the women's group and the barber group
+   made «حلاق» widen into «صالون» and «صالون» widen into every
+   women's salon — the two searches returned the same 24 rows.
+   An ambiguous word goes in SYNONYM_ONEWAY instead, below: it
+   widens, and nothing widens into it.
 
    WHAT MUST NEVER GO IN A GROUP
    - A word that would drag in a different trade. «بار» is not
      here: `includes()` would match it inside «باركنج».
    - A brand name. Brands belong in that listing's own tags.
    - A word with no listing behind it. Every entry below was run
-     against the real 515 records; see tools/synonyms.test.mjs.
+     against the real 514 records; see tools/synonyms.test.mjs.
    ============================================================ */
 
 export const SYNONYM_GROUPS = [
@@ -60,13 +63,15 @@ export const SYNONYM_GROUPS = [
   ['ارجيله', 'نرجيله', 'شيشه', 'حقه', 'معسل', 'دخان', 'تنباك',
    'hookah', 'shisha', 'sheesha', 'narghile', 'smoke shop', 'vape'],
 
-  // صالون نسائي / كوافير  ← «صالون» مشترك عمداً
-  ['صالون', 'صالونات', 'كوافير', 'كوافيره', 'كوافيرة', 'مشغل', 'تجميل',
+  // صالون نسائي / كوافير  — «صالون» ليست هنا: انظر SYNONYM_ONEWAY تحت
+  // «تجميل» و«beauty» ليستا هنا أيضاً: هما اسم التصنيف نفسه («تجميل وحلاقة»)،
+  // فتوسيع «كوافير» إليهما كان يعيد القسم كلّه بحلاقيه. من يكتبهما يجدهما.
+  ['صالونات', 'كوافير', 'كوافيره', 'كوافيرة', 'مشغل',
    'صالون نسائى', 'حواجب', 'مكياج', 'اظافر', 'شمع', 'سبا',
-   'salon', 'beauty', 'beauty salon', 'hair salon', 'spa', 'nails', 'brows', 'waxing'],
+   'salon', 'beauty salon', 'hair salon', 'spa', 'nails', 'brows', 'waxing'],
 
-  // حلاق رجالي  ← «صالون» مشترك عمداً، «كوافير» ليست هنا
-  ['صالون', 'حلاق', 'حلاقه', 'مزين', 'بربر', 'بربر شوب', 'حلاق رجالى', 'قص شعر',
+  // حلاق رجالي — «صالون» ليست هنا: انظر SYNONYM_ONEWAY تحت
+  ['حلاق', 'حلاقه', 'مزين', 'بربر', 'بربر شوب', 'حلاق رجالى', 'قص شعر',
    'barber', 'barbershop', 'barber shop', 'haircut', 'mens haircut', 'fade'],
 
   // مسجد
@@ -336,12 +341,41 @@ export const SYNONYM_GROUPS = [
   ['هيلكروفت', 'hillcroft', 'mahatma gandhi district'],
 ];
 
+
+/* ------------------------------------------------------------
+   مداخل باتجاه واحد
+
+   بعض الكلمات غامضة في فم الباحث ودقيقة في فم غيره. «صالون» تعني
+   عند واحد صالون السيدات وعند آخر محلّ الحلاقة، فمن يكتبها يريد
+   الاثنين. أما «حلاق» فدقيقة: من يكتبها يريد الرجالي وحده.
+
+   المجموعة العادية متناظرة — كل كلمة فيها تجرّ كل أخواتها — فوضع
+   «صالون» في المجموعتين جعل «حلاق» تتوسّع إلى «صالون» وهذه تتوسّع
+   إلى كل الصالونات: 24 نتيجة فيها 11 صالوناً نسائياً، أحدها مكتوب
+   عليه «للنساء فقط».
+
+   فهنا يوسّع المفتاح ولا يُوسَّع إليه أبداً.
+   ------------------------------------------------------------ */
+export const SYNONYM_ONEWAY = {
+  'صالون': ['صالونات', 'كوافير', 'كوافيره', 'مشغل', 'صالون نسائى', 'حواجب',
+            'مكياج', 'اظافر', 'salon', 'beauty salon', 'hair salon', 'nails',
+            'حلاق', 'حلاقه', 'مزين', 'بربر', 'بربر شوب', 'حلاق رجالى', 'قص شعر',
+            'barber', 'barbershop', 'barber shop', 'haircut'],
+};
+
 /* ------------------------------------------------------------
    The index: word → every group it belongs to, flattened once
    at module load. A word in two groups yields the union, which
    is what keeps «صالون» wide and «حلاق» narrow.
    ------------------------------------------------------------ */
 let INDEX = null;
+
+let ONEWAY = null;
+function buildOneway(normalize) {
+  const m = {};
+  for (const k of Object.keys(SYNONYM_ONEWAY)) m[normalize(k)] = SYNONYM_ONEWAY[k];
+  return m;
+}
 
 function buildIndex(normalize) {
   const map = new Map();
@@ -368,15 +402,20 @@ function buildIndex(normalize) {
  */
 export function expandQuery(term, normalize) {
   if (!INDEX) INDEX = buildIndex(normalize);
+  if (!ONEWAY) ONEWAY = buildOneway(normalize);
   const q = normalize(term);
   if (!q) return [];
 
   const one = (w) => {
+    // one-way first: it widens, and nothing widens into it
+    const ow = ONEWAY[w];
+    if (ow) return { typed: w, alts: ow.map(x => normalize(x)).filter(x => x !== w) };
     const set = INDEX.get(w);
     return { typed: w, alts: set ? [...set].filter(x => x !== w) : [] };
   };
 
   // the whole phrase, if the dictionary knows it as one thing
+  if (ONEWAY && ONEWAY[q]) return [one(q)];
   if (INDEX.get(q)) return [one(q)];
   return q.split(/\s+/).filter(Boolean).map(one);
 }
@@ -411,10 +450,63 @@ function endsClean(hay, word) {
   return re.test(hay);
 }
 
+/* Spacing is not spelling. «عبدالله» and «عبد الله» are the same name, and
+   so are Alshami / Al Shami / Al-Shami and Dimassis / Dimassi's. The
+   haystack keeps whatever the record happened to use, so a reader who
+   closes the gap finds nothing at all.
+
+   So the typed word is tried a second time against a copy of the text with
+   every space, hyphen, apostrophe and dot removed — the reader's own word
+   only, never a dictionary substitution, and only from four characters up:
+   below that, squashing deletes the word boundaries that keep a short query
+   from landing in the middle of an unrelated one. */
+const SQUASH = /[\s\-'’.،_/]+/g;
+export function squash(s) { return String(s == null ? '' : s).replace(SQUASH, ''); }
+
 /** does this listing's haystack answer one expanded word? */
-export function hayMatches(hay, entry) {
+export function hayMatches(hay, entry, squashedHay) {
   if (hay.includes(entry.typed)) return true;
+  if (squashedHay && entry.typed.length >= 4) {
+    const q = squash(entry.typed);
+    if (q.length >= 4 && squashedHay.includes(q)) return true;
+  }
   return entry.alts.some(a => endsClean(hay, a));
+}
+
+/* ------------------------------------------------------------
+   A CATEGORY NAME IS A LABEL, NOT A DESCRIPTION
+
+   The category name is indexed with every listing, so typing
+   «مطاعم» returns the restaurants — which is right, and must
+   stay. But two of the twenty-one names carry two trades at
+   once, «تجميل وحلاقة» and «أسواق وملاحم», and a label matched
+   loosely merges them: «حلاق» sits inside «وحلاقة», so a barber
+   search returned all 24 beauty listings, women's salons and
+   one «للنساء فقط» included. The same fault handed «ملحمة» the
+   whole grocery aisle.
+
+   So the label is matched as a WHOLE WORD, on both sides. This
+   is the one place a clean start is demanded — everywhere else
+   Arabic's glued «ال» and «و» forbid it — and it is safe here
+   for the same reason: the label is our own text, we wrote its
+   «و», and the reader is never typing it.
+   ------------------------------------------------------------ */
+const WORDS = new Map();
+function wholeWord(hay, word) {
+  let re = WORDS.get(word);
+  if (!re) {
+    re = new RegExp('(?<![\\p{L}\\p{N}])' +
+      word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '(?![\\p{L}\\p{N}])', 'u');
+    WORDS.set(word, re);
+  }
+  return re.test(hay);
+}
+
+/** does the listing's category name answer one expanded word? */
+export function catMatches(catHay, entry) {
+  if (!catHay) return false;
+  if (wholeWord(catHay, entry.typed)) return true;
+  return entry.alts.some(a => wholeWord(catHay, a));
 }
 
 /** for the test harness and for admin diagnostics */
