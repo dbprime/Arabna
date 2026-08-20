@@ -1139,6 +1139,12 @@ input[inputmode="tel"], input[type="email"], input[inputmode="decimal"], #zipIn 
    at a glance which items belong to the open group. */
 /* a leaf with nothing behind it yet: it says so and does not navigate */
 .dr-item.dr-soon { opacity: .55; }
+/* the heart and the share side by side at the top of a detail page */
+.top-actions { display: flex; gap: 8px; flex: 0 0 auto; }
+/* a listing's own photo in the row icon, in place of the category glyph */
+.row-ico.shot { padding: 0; overflow: hidden; }
+.row-ico.shot img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
 /* ---------- help: the questions, folded ---------- */
 .faq { margin-top: 10px; }
 .faq-item { border-block-end: 1px solid var(--line-soft); }

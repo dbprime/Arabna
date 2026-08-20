@@ -63,7 +63,7 @@ export const HOME_CATS = ['restaurants', 'doctors', 'events', 'homeservices', 's
 
 /* ---- Marketplace sections ----
    maxActive / days / freeOnly override the account-wide defaults
-   (5 active listings, 30 days) for that one section. */
+   (4 active listings, 14 days) for that one section. */
 export const MARKET_CATS = [
   { id: 'cars',       key: 'filterCars',       icon: 'car',       emptyKey: 'emptyCars' },
   { id: 'furniture',  key: 'filterFurniture',  icon: 'sofa',      emptyKey: 'emptyFurniture' },

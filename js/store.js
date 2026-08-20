@@ -1189,6 +1189,10 @@ export function allClassifieds() {
   return list
     .filter(c => !isBlocked(c))
     .filter(c => c.status !== 'rejected')
+    /* Hidden is not deleted. The owner still sees it under «إعلاناتي» and
+       can put it back while its 14 days last; everyone else stops seeing
+       it the moment they press the button. */
+    .filter(c => c.status !== 'hidden' || state.myListings.includes(c.id))
     .filter(c => c.status !== 'pending' || state.myListings.includes(c.id))
     .map(c => Object.assign({ status: 'live', photos: [] }, c, { boosted: state.boosted.includes(c.id) }));
 }
@@ -1197,7 +1201,11 @@ export function classifiedById(id) { return allClassifieds().find(c => c.id === 
 export function myActiveListings() {
   return allClassifieds().filter(c => state.myListings.includes(c.id));
 }
-export const MAX_ACTIVE_LISTINGS = 5;
+/* Four active listings, fourteen days each. The numbers live here and
+   nowhere else: a screen that carries its own copy is a second source of
+   truth, and the two drift. Handyman keeps its own stricter rule below. */
+export const MAX_ACTIVE_LISTINGS = 4;
+export const LISTING_DAYS = 14;
 export const MAX_PHOTOS = 5;
 
 /* ---- per-section rules (Handyman = 1 listing / 14 days, Free = no price) ---- */
@@ -1205,14 +1213,14 @@ export function catRule(catId) {
   const c = MARKET_CATS.find(x => x.id === catId) || {};
   return {
     maxActive: c.maxActive || MAX_ACTIVE_LISTINGS,
-    days: c.days || 30,
+    days: c.days || LISTING_DAYS,
     freeOnly: !!c.freeOnly,
     upsell: !!c.upsell,
   };
 }
 /** how many of my active listings already sit in this section */
 export function myActiveInCat(catId) {
-  return myActiveListings().filter(c => c.cat === catId).length;
+  return myActiveListings().filter(c => c.cat === catId && c.status !== 'hidden').length;
 }
 export { FREE_PRICE };
 
@@ -1735,6 +1743,29 @@ export function updateClassified(id, patch) {
   return { rec: c, flagged };
 }
 
+/** «أخفِ الإعلان» — off every list but the owner's, and reversible */
+export function hideClassified(id) {
+  const c = state.extraClassifieds.find(x => x.id === id);
+  if (!c) return false;
+  c.status = 'hidden';
+  save();
+  return true;
+}
+/** …and back again, as long as the listing still has days on it */
+export function unhideClassified(id) {
+  const c = state.extraClassifieds.find(x => x.id === id);
+  if (!c || c.status !== 'hidden') return false;
+  c.status = 'live';
+  save();
+  return true;
+}
+export function isHidden(c) { return !!c && c.status === 'hidden'; }
+
+/** what counts against the four: a hidden listing frees its slot */
+export function activeListingCount() {
+  return myActiveListings().filter(c => c.status !== 'hidden').length;
+}
+
 export function deleteClassified(id) {
   state.extraClassifieds = state.extraClassifieds.filter(c => c.id !== id);
   state.myListings = state.myListings.filter(x => x !== id);
@@ -1979,6 +2010,11 @@ export function pendingCount() {
 
 export function messagesFor(listingId) {
   return state.messages.filter(m => m.listingId === listingId);
+}
+
+/** what the owner's button counts: messages from buyers, not their own */
+export function buyerMessageCount(listingId) {
+  return state.messages.filter(m => m.listingId === listingId && m.from !== 'me').length;
 }
 export function messageThreads() {
   const seen = {};

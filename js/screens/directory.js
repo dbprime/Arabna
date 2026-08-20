@@ -591,7 +591,12 @@ export function ListingScreen(root, params) {
             ? stars(rate.avg) + `<span>· ${rate.count} ${t('reviews')}</span>`
             : `<span class="muted fs-12">${t('noReviewsYet')}</span>`}</div>
         </div>
-        <button class="icon-btn" id="saveBtn">${icon('heart', 22)}</button>
+        <div class="top-actions">
+          <!-- share beside the heart. It used to sit at the very bottom of a
+               page 3454px tall, which is the same as not having it. -->
+          <button class="icon-btn" id="shareTop" aria-label="${t('share')}">${icon('share', 21)}</button>
+          <button class="icon-btn" id="saveBtn" aria-label="${t('save')}">${icon('heart', 22)}</button>
+        </div>
       </div>
 
       <p class="fs-13 muted mt-12">${L(b.desc || '')}</p>
@@ -641,10 +646,7 @@ export function ListingScreen(root, params) {
 
       ${ownerBlock(b, mine, paid, claim)}
 
-      <div class="action-grid mt-16">
-        <button class="btn btn-ghost btn-sm" id="shareBtn">${icon('share', 18)} ${t('share')}</button>
-        <button class="btn btn-ghost btn-sm" id="repBtn">${icon('flag', 18)} ${t('report')}</button>
-      </div>
+      <button class="btn btn-ghost btn-sm btn-block mt-16" id="repBtn">${icon('flag', 18)} ${t('report')}</button>
     </div>
 
     ${halalNearbyBlock(b)}
@@ -664,7 +666,7 @@ export function ListingScreen(root, params) {
     S.recordBizDirections(b.id);
     openMaps(b.address);
   });
-  $('#shareBtn').addEventListener('click', () => shareItem(L(b.name), location.href));
+  $('#shareTop').addEventListener('click', () => shareItem(L(b.name), location.href));
   $('#repBtn').addEventListener('click', () => { S.reportItem(b.id); toast(t('reported'), 'ok'); });
 
   const sb = $('#saveBtn');

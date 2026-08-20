@@ -1035,6 +1035,8 @@ export function priceLabel(price) {
 export function statusBadge(c, showLive = false) {
   if (!c) return '';
   if (c.status === 'pending') return `<span class="badge badge-pending">${icon('clock', 12)}${t('statusPending')}</span>`;
+  // hidden is the owner's own doing, so it is marked plainly, not as an error
+  if (c.status === 'hidden') return `<span class="badge badge-free">${icon('eye', 12)}${t('statusHidden')}</span>`;
   if (showLive) return `<span class="badge badge-verified">${icon('check', 12)}${t('statusLive')}</span>`;
   return '';
 }

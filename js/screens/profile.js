@@ -1,7 +1,7 @@
 /* ======================= PROFILE & ACCOUNT SCREENS ======================= */
 import { t, L, icon, $, $$, go, renderHeader, toast, wireRoutes, emptyState, confirmSheet,
          openSheet, closeSheet,
-         fmtMoney, priceLabel, statusBadge, stars, logoSrc } from '../ui.js';
+         fmtMoney, priceLabel, statusBadge, stars, logoSrc, shareItem } from '../ui.js';
 import { SUBSCRIPTION_PRICE, CATEGORIES } from '../data.js';
 import * as S from '../store.js';
 import { catIcon } from './home.js';
@@ -318,7 +318,12 @@ export function MyAdsScreen(root) {
               <button class="mini-btn gold" data-route="#/boost/${c.id}">${icon('bolt', 15)} ${t('boost')}</button>
               <button class="mini-btn" data-route="#/post?edit=${c.id}">${icon('edit', 15)} ${t('edit')}</button>
               <button class="mini-btn" data-renew="${c.id}">${icon('refresh', 15)} ${t('renew')}</button>
-              <button class="mini-btn" data-del="${c.id}">${icon('trash', 15)}</button>
+              ${c.status === 'hidden'
+                ? `<button class="mini-btn gold" data-unhide="${c.id}">${icon('eye', 15)} ${t('republish')}</button>`
+                : `<button class="mini-btn" data-hide="${c.id}" aria-label="${t('hideListing')}">${icon('eye', 15)}</button>`}
+              <!-- somebody who has just posted wants to send it to a
+                   WhatsApp group now, not open it and hunt for a button -->
+              <button class="mini-btn" data-share="${c.id}" aria-label="${t('share')}">${icon('share', 15)}</button>
               <button class="mini-btn" data-route="#/marketplace/${c.id}">${icon('eye', 15)}</button>
             </div>
           </div>
@@ -335,11 +340,21 @@ export function MyAdsScreen(root) {
   $$('[data-renew]').forEach(b => b.addEventListener('click', () => {
     S.renewClassified(b.dataset.renew); toast(t('renewed'), 'ok'); go('#/my-ads');
   }));
-  $$('[data-del]').forEach(b => b.addEventListener('click', () => {
-    const c = S.classifiedById(b.dataset.del);
+  $$('[data-share]').forEach(b => b.addEventListener('click', () => {
+    const c = S.classifiedById(b.dataset.share);
+    if (!c) return;
+    // the link somebody receives opens the listing itself
+    const url = location.origin + location.pathname + '#/marketplace/' + c.id;
+    shareItem(L(c.title), url);
+  }));
+  $$('[data-unhide]').forEach(b => b.addEventListener('click', () => {
+    S.unhideClassified(b.dataset.unhide); toast(t('listingRepublished'), 'ok'); go('#/my-ads');
+  }));
+  $$('[data-hide]').forEach(b => b.addEventListener('click', () => {
+    const c = S.classifiedById(b.dataset.hide);
     confirmSheet({
-      title: t('delete'), sub: c ? L(c.title) : '', confirmText: t('delete'), danger: true,
-      onConfirm: () => { S.deleteClassified(b.dataset.del); toast(t('done'), 'ok'); go('#/my-ads'); }
+      title: t('hideListing'), sub: c ? L(c.title) : '', confirmText: t('hideListing'),
+      onConfirm: () => { S.hideClassified(b.dataset.hide); toast(t('listingHidden'), 'ok'); go('#/my-ads'); }
     });
   }));
   wireRoutes(root);
@@ -752,8 +767,8 @@ export function TermsScreen(root) {
     <p>${en ? 'You must be 18+ to create an account. Posting, messaging and advertising require a verified real mobile number; VOIP and landline numbers are not accepted.'
             : 'يجب أن يكون عمرك 18 سنة أو أكثر. النشر والتواصل والإعلان تتطلب رقم جوال حقيقي مُتحقق منه؛ أرقام الإنترنت (VOIP) والأرقام الأرضية غير مقبولة.'}</p>
     <h2>${en ? '2. The Marketplace is for individuals' : '2. الماركت بليس للأفراد'}</h2>
-    <p>${en ? 'The Marketplace is for person-to-person sales only, limited to 5 active listings per account, each expiring after 30 days. The Handyman & Services section allows one active listing for 14 days. The Free section is for items given away at no cost — listings that carry a price are removed or sent for review. Business advertising belongs in the Directory.'
-            : 'الماركت بليس مخصص للبيع بين الأفراد فقط، بحد أقصى 5 إعلانات نشطة لكل حساب، وكل إعلان ينتهي بعد 30 يوماً. قسم الهاندي مان والخدمات يسمح بإعلان واحد نشط لمدة 14 يوماً. قسم المجاني للأغراض التي تُعطى بلا مقابل، وأي إعلان يحمل سعراً يُحذف أو يُحال للمراجعة. الإعلانات التجارية مكانها الدليل.'}</p>
+    <p>${en ? 'The Marketplace is for person-to-person sales only, limited to 4 active listings per account, each expiring after 14 days. The Handyman & Services section allows one active listing for 14 days. The Free section is for items given away at no cost — listings that carry a price are removed or sent for review. Business advertising belongs in the Directory.'
+            : 'الماركت بليس مخصص للبيع بين الأفراد فقط، بحد أقصى 4 إعلانات نشطة لكل حساب، وكل إعلان ينتهي بعد 14 يوماً. قسم الهاندي مان والخدمات يسمح بإعلان واحد نشط لمدة 14 يوماً. قسم المجاني للأغراض التي تُعطى بلا مقابل، وأي إعلان يحمل سعراً يُحذف أو يُحال للمراجعة. الإعلانات التجارية مكانها الدليل.'}</p>
     <h2>${en ? '3. Contact stays in the app' : '3. التواصل داخل التطبيق'}</h2>
     <p>${t('legalScanBody')}</p>
     <h2>${en ? '4. Paid placements' : '4. الإعلانات المدفوعة'}</h2>

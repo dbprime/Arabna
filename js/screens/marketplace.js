@@ -218,7 +218,14 @@ export function ListingDetailScreen(root, params) {
           <div class="detail-title" style="font-size:17px">${L(c.title)}</div>
           <div class="mt-8">${statusBadge(c, mine)}</div>
         </div>
-        <button class="icon-btn" id="saveBtn">${icon('heart', 22)}</button>
+        <div class="top-actions">
+          <!-- share sits beside the heart, where it is seen. It used to be
+               below every other control and only for a visitor — and the
+               owner is the first person who wants to send their own ad to
+               a WhatsApp group. -->
+          <button class="icon-btn" id="shareTop" aria-label="${t('share')}">${icon('share', 21)}</button>
+          <button class="icon-btn" id="saveBtn" aria-label="${t('save')}">${icon('heart', 22)}</button>
+        </div>
       </div>
       <div class="row-sub mt-8">${icon('mapPin', 14)} <span class="ltr">${c.city}</span> · ${icon('clock', 14)} ${L(c.when)}</div>
       <p class="fs-13 muted mt-12" style="white-space:pre-wrap">${L(c.desc || '')}</p>
@@ -236,16 +243,27 @@ export function ListingDetailScreen(root, params) {
         </div>
         <div class="action-grid mt-8">
           <button class="btn btn-ghost" id="renewBtn">${icon('refresh', 19)} ${t('renew')}</button>
-          <button class="btn btn-ghost" data-route="#/messages/${c.id}">${icon('message', 19)} ${t('messagesTitle')}</button>
+          ${/* The owner's button opened *buyers' messages about this ad*,
+                and the visitor's opened "message the seller" — two jobs,
+                one destination, near-identical labels, so the owner could
+                not tell which one they were looking at. It says what it is
+                now, and it is not drawn at all when nobody has written:
+                a button onto an empty screen reads as broken. */
+            S.buyerMessageCount(c.id)
+              ? `<button class="btn btn-ghost" data-route="#/messages/${c.id}">${icon('message', 19)}
+                   ${t('buyerMessages')} (${S.buyerMessageCount(c.id)})</button>`
+              : ''}
         </div>
-        <button class="btn btn-danger btn-block mt-8" id="delBtn">${icon('trash', 19)} ${t('delete')}</button>
+        ${/* «حذف» became «أخفِ الإعلان»: what people mean by it is «stop
+              showing this», and an erased listing takes its messages and
+              its remaining days with it. Hidden is reversible. */
+          c.status === 'hidden'
+            ? `<button class="btn btn-gold btn-block mt-8" id="unhideBtn">${icon('eye', 19)} ${t('republish')}</button>`
+            : `<button class="btn btn-ghost btn-block mt-8" id="hideBtn">${icon('eye', 19)} ${t('hideListing')}</button>`}
       ` : `
         <button class="btn btn-gold btn-block mt-16" data-route="#/messages/${c.id}">${icon('message', 20)} ${t('contactSeller')}</button>
         <div class="hint" style="text-align:center">${t('inAppOnly')}</div>
-        <div class="action-grid mt-12">
-          <button class="btn btn-ghost btn-sm" id="shareBtn">${icon('share', 18)} ${t('share')}</button>
-          <button class="btn btn-ghost btn-sm" id="repBtn">${icon('flag', 18)} ${t('report')}</button>
-        </div>
+        <button class="btn btn-ghost btn-sm btn-block mt-12" id="repBtn">${icon('flag', 18)} ${t('report')}</button>
         <button class="btn btn-plain btn-block mt-8" id="blockBtn">${icon('shield', 17)} ${t('blockSeller')}</button>`}
     </div>`;
 
@@ -276,7 +294,7 @@ export function ListingDetailScreen(root, params) {
       go('#/marketplace');
     },
   }));
-  const sh = $('#shareBtn');
+  const sh = $('#shareTop');
   if (sh) sh.addEventListener('click', () => shareItem(L(c.title), location.href));
   const rn = $('#renewBtn');
   if (rn) rn.addEventListener('click', () => {
@@ -284,11 +302,15 @@ export function ListingDetailScreen(root, params) {
     toast(t('renewed'), 'ok');
     go('#/marketplace/' + c.id);
   });
-  const dl = $('#delBtn');
-  if (dl) dl.addEventListener('click', () => confirmSheet({
-    title: t('delete'), sub: L(c.title), confirmText: t('delete'), danger: true,
-    onConfirm: () => { S.deleteClassified(c.id); toast(t('done'), 'ok'); go('#/marketplace'); }
+  const hd = $('#hideBtn');
+  if (hd) hd.addEventListener('click', () => confirmSheet({
+    title: t('hideListing'), sub: L(c.title), confirmText: t('hideListing'),
+    onConfirm: () => { S.hideClassified(c.id); toast(t('listingHidden'), 'ok'); go('#/my-ads'); }
   }));
+  const uh = $('#unhideBtn');
+  if (uh) uh.addEventListener('click', () => {
+    S.unhideClassified(c.id); toast(t('listingRepublished'), 'ok'); go('#/marketplace/' + c.id);
+  });
   wireRoutes(root);
 }
 
@@ -478,8 +500,24 @@ export function PostScreen(root) {
     const rawDesc = $('#pDesc').value.trim();
     const rawPrice = priceIn.value.trim();
 
-    if (!rawTitle) { toast(t('required'), 'err'); return; }
-    if (!rule.freeOnly && !rawPrice) { toast(t('required'), 'err'); return; }
+    /* Everything but the photos is required. A listing with no city or no
+       description wastes the reader's tap, and the field that is empty is
+       marked so nobody has to guess which one. */
+    const rawCity = $('#pCity').value.trim();
+    const need = [
+      ['#pTitle', rawTitle],
+      ['#pCity', rawCity],
+      ['#pDesc', rawDesc],
+    ];
+    if (!rule.freeOnly) need.push(['#pPrice', rawPrice]);
+    let missing = null;
+    need.forEach(([sel, val]) => {
+      const el = $(sel);
+      if (!el) return;
+      el.classList.toggle('input-err', !val);
+      if (!val && !missing) missing = el;
+    });
+    if (missing) { toast(t('required'), 'err'); missing.focus(); return; }
 
     // Free section, new listing: refuse outright before anything is stored.
     // An *edit* that adds a price is not refused — it is published back into
@@ -497,7 +535,7 @@ export function PostScreen(root) {
       toast(cat === 'handyman' || rule.maxActive !== S.MAX_ACTIVE_LISTINGS ? t('catLimitReached') : t('limitReached'), 'err');
       return;
     }
-    if (!editing && S.myActiveListings().length >= S.MAX_ACTIVE_LISTINGS && rule.maxActive === S.MAX_ACTIVE_LISTINGS) {
+    if (!editing && S.activeListingCount() >= S.MAX_ACTIVE_LISTINGS && rule.maxActive === S.MAX_ACTIVE_LISTINGS) {
       toast(t('limitReached'), 'err'); return;
     }
     // Park the entire draft — text *and* compressed photos — before any
@@ -586,7 +624,10 @@ export function MessagesScreen(root, params) {
 
   root.innerHTML = `
     <div class="list-row" data-route="#/marketplace/${c.id}" style="margin:14px">
-      <span class="row-ico">${icon(c.icon || 'image', 22)}</span>
+      ${/* the photo is what people remember of an ad, not its title */
+        (c.photos && c.photos.length)
+          ? `<span class="row-ico shot"><img src="${c.photos[0]}" alt="" /></span>`
+          : `<span class="row-ico">${icon(c.icon || 'image', 22)}</span>`}
       <div class="row-main"><div class="row-title">${L(c.title)}</div>
         <div class="row-sub gold"><span class="ltr">${priceLabel(c.price)}</span></div></div>
     </div>
