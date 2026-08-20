@@ -7,7 +7,7 @@ ARABNA · عربنا — a mobile-first web app for the Arab community in the U.
 **business directory + marketplace + events + magazine**, Arabic-first with a full English toggle.
 ("Classifieds / الإعلانات الشخصية" is now "Marketplace / السوق" — the old `#/classifieds`
 routes still resolve so shared links keep working.)
-Current version: **V.02.5 (prototype)**. Owner: Rai Elby (@dbprime). Deploys to Vercel (team DB Prime).
+Current version: **V.02.6 (prototype)**. Owner: Rai Elby (@dbprime). Deploys to Vercel (team DB Prime).
 
 ## Hard rules (from the product brief)
 1. **One repository, one Vercel project.** No duplicates, no stray preview projects.
@@ -34,6 +34,8 @@ js/app.js             hash router + bootstrap
 js/i18n.js            all UI strings (ar + en)
 js/data.js            seed data — replaced by Supabase queries in V.02
 js/store.js           state, entitlements, and ALL backend seams
+js/synonyms.js        the search dictionary — expands the QUERY, never the data
+tools/synonyms.test.mjs  runs all 989 words against the real listings
 js/ui.js              toast / sheet / drawer / header / nav primitives
 js/icons.js           inline SVG icons
 js/screens/*.js       home · categories · directory · marketplace · events · magazine ·
@@ -492,15 +494,18 @@ and `outingFeature` (15).
 4. Regenerate the single-file build if you changed any source file.
 
 ## What is actually in `data.js` now (V.02.1)
-**515 businesses**: 29 invented development seeds (`b1`–`b29`) and **486 real
-Houston listings** entered by the owner and brought in through the admin
-importer — 412 businesses as `b30`–`b441` and 74 outings as `b442`–`b515`.
+**514 businesses** (V.02.6): 29 invented development seeds (`b1`–`b29`) and
+**485 real Houston listings** entered by the owner and brought in through the
+admin importer — `b30`–`b441` less `b321`, and 74 outings as `b442`–`b515`.
 Both export files began at `b30`, so the outings ids were shifted by 412
-rather than renumbered by hand.
+rather than renumbered by hand. **`b321` (Cafe Mawal, Bay Area) closed for
+good and its record was deleted — nothing was renumbered.** An id is a key:
+`b322` staying `b322` is what keeps reviews, favourites and ownership on the
+shop they belong to.
 
 | | | | |
 |---|---|---|---|
-| restaurants 139 | grocery 42 | worship 35 | cafe 32 |
+| restaurants 138 | grocery 42 | worship 35 | cafe 32 |
 | beauty 24 | shopping 21 | community 21 | sweets 16 |
 | education 16 | finance 13 | occasions 12 | doctors 11 |
 | auto 11 | lawyers 10 | homegoods 9 | electronics 8 |
@@ -752,7 +757,7 @@ every reader in every city. Nothing reads it any more.
   clears `lat`/`lng` and sets the flag again** (a shop that moved and kept its
   old point is worse than one with none), and admin → directory carries the
   «بانتظار الإحداثيات» queue with its count and an «تصدير العناوين الناقصة»
-  CSV. Geocoding the 515 addresses is a data job done outside the app; the
+  CSV. Geocoding the 514 addresses is a data job done outside the app; the
   day they arrive the miles appear by themselves.
 - The privacy page says all of it, in both languages, as its own section.
 
@@ -954,6 +959,89 @@ behind the logo — a different problem entirely.
   lockup had no use left; it still has three, and they dissolved the same
   way (78% under 2:1 on the light page).
 
+## V.02.6 — the words people actually type
+
+### The dictionary expands the query and never the data
+`js/synonyms.js` — **100 groups, 989 words**. Every array is a set of words
+that mean the same thing to somebody searching; typing any member searches
+for all of them. **No record is touched, no tag is rewritten, `data.js` does
+not grow**, and adding a word is one line here and nothing anywhere else.
+`store.js` calls `expandQuery(term, normalize)` and `hayMatches(hay, entry)`
+in stages one and two of `searchBusinesses()` and in `matchesSearch()`; the
+file imports nothing and takes `normalize` as an argument so it cannot drift
+from the search's own folding. **517 words that returned zero now return
+something real.**
+
+- **A word may be in two groups on purpose.** «صالون» is in the women's
+  salon group *and* the barber group, so it finds both; «كوافير» is only in
+  the first and «حلاق» only in the second. That asymmetry is the whole
+  design — an ambiguous word stays wide and a precise word stays narrow,
+  with no extra code.
+- **The boundary rule, which prevented three disasters.** A word the reader
+  typed matches anywhere; **a word the dictionary put in their mouth must end
+  at a word boundary.** Without it `حلا` inside «حلال» returned 93 halal
+  shops for "sweets", `سبا` inside «مناسبات» returned wedding halls for
+  "salon", and `park` inside "parkway" returned every address on a highway.
+  The boundary is required at the **end only** — Arabic glues «ال» and «و»
+  and «ب» onto the front, so demanding a clean start would lose «الحديقة».
+- **Three words are deliberately absent**, each with the measurement that
+  removed it: **«عربية»** (the car, in Egyptian) folds onto «يتحدثون
+  العربية», which is on 438 of 514, so «سيارات» returned the whole
+  directory. **«لحوم» / «لحمة» / `meat`** match the halal-meat attribute on
+  88 restaurants, so somebody looking for a butcher got 58 restaurants — a
+  butcher is a shop, and eating meat is not a butcher (19 results instead of
+  96). **«قانونى»** matches «محاسب قانوني», the CPA, and — measured after
+  this batch's own renames — hits 2 finance records and **0 lawyers**, so it
+  rescued nothing and pushed «محامي» from 0% off-category to 17%.
+- **Never add a word without running the check.** `node tools/synonyms.test.mjs`
+  prints the dead groups, the biggest gains, the rescued words and the
+  **confusion check**. The bar: حلاق · كوافير · صالون · شاورما · أرجيلة ·
+  محامي · ضرائب · ترامبولين · كنيسة → **0%**; ملحمة 5% · بقالة 5% ·
+  مسجد 8% · حديقة 14% (real address matches containing the word Park).
+- Two groups have nothing behind them — **عصير** and **سوداني**. There is no
+  juice bar and no Sudanese restaurant among the listings. They stay: they
+  start working by themselves the day the first one arrives.
+
+### The search reads the specialities at last
+`searchHaystack()` indexed name, description, address, tags and the category
+name — and **not `attributes`**, so 342 specialities carried by every listing
+were reachable only from the filter sheet. Three lines and an `attrLabel()`
+that derives the i18n key from the id the same way the registry does:
+«مواقف» / "parking" **0 → 130**, «بدون كحول» 0 → 10, «واي فاي» 0 → 8,
+«بولينج» 0 → 2. This is also what exposed the «عربية» and «لحوم» faults
+above — anything added to the dictionary from now on has to be measured
+against the attribute labels too.
+
+### The haystack is built once per listing
+`searchHaystack()` is read once per listing per search, and the filter
+sheet asks for a count **per option** — about ninety searches in one tap.
+With the attribute labels in it that measured **260ms to open the sheet**.
+A `WeakMap` keyed by the record fixed it: an unedited listing is the same
+object on every call so it always hits, an edited one is a fresh object and
+misses, which is correct rather than stale, and `registerStrings()` throws
+the whole cache away because the labels in it came from the old pack.
+**260ms → 59ms, and a single search 2.9ms → 0.63ms** — faster than before
+the attributes went in.
+
+### The name on the sign, the transliteration in the search
+Rai went through the 179 names that had been guessed at and settled all of
+them: 154 stay English, 21 take the Arabic name, 4 take a name he wrote
+himself. So **25 records changed `name.ar`** and `name.en` was never touched.
+
+- **154 English names created a hole:** the record had no Arabic anywhere,
+  so nobody typing the name in Arabic could find it. «فادي» — a name every
+  Arab in Houston knows — returned **1 of 5**. «بترا», «قهوة هاوس»,
+  «حديقة هيرمان», «مسجد حمزة» all returned **zero**.
+- **113 transliteration tags** went into `tags`, added and never replacing.
+  A tag is never displayed; its only job is search. فادي 1 → **5** ·
+  بترا 0 → **4** · قهوة هاوس 0 → **2** · حديقة هيرمان 0 → **3**.
+- This is exactly the promise made when the foreign names were kept English:
+  **the name on the shopfront, the transliteration in the search words.**
+- The detail page prints one name — the current language's. b30 now reads
+  «عبد الله» and the English `Abdallah's` is in the record and in the search
+  but is **not** printed under the title; that would be an interface change
+  and this batch was data only.
+
 ## Known open items
 - Legal pages are first drafts — a lawyer must review before public launch.
 - Push notifications: triggers are defined in Settings but not wired to a real service.
@@ -966,7 +1054,7 @@ behind the logo — a different problem entirely.
 - The subscription test clock in admin → settings goes with the demo data.
 - `personKey()` is a stand-in for real user ids: blocking keys on a listing's
   owner or a review's author until V.02 brings accounts on a server.
-- **None of the 515 listings has coordinates yet.** That is a data job done
+- **None of the 514 listings has coordinates yet.** That is a data job done
   outside the app (admin → directory exports the addresses). Until they
   arrive the app shows each listing's area name, never a figure in miles,
   the mile options stay out of the filter sheet, and "nearest" falls back to

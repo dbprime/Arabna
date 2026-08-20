@@ -11,6 +11,7 @@ import { CLASSIFIEDS, BUSINESSES, NOTIFICATIONS, SLIDER_ADS, MINI_ADS, ARTICLES,
          CITY_POINTS, REGION_RADIUS_MI,
          AD_PRODUCTS, AD_SLOTS,
          attrById, attrInCat, isAllDay, week, nextOccurrence } from './data.js';
+import { expandQuery, hayMatches } from './synonyms.js';
 
 export { ATTRIBUTES, ATTR_GROUPS, DAY_KEYS, CHIP_MIN, CHIP_MAX_SHARE, EVENT_TYPES,
          attrById, attrInCat, isAllDay, week, nextOccurrence };
@@ -33,7 +34,7 @@ const DEFAULTS = {
      mode on their phone already expects the app to do. */
   theme: 'auto',                 // 'auto' | 'light' | 'dark'
   /* No city until the person tells us or the device does. A city written
-     in advance lies to everyone who is not in it — and 138 of the 515
+     in advance lies to everyone who is not in it — and 138 of the 514
      listings are not in Houston. */
   location: { zip: '', city: '', state: 'TX' },
   geo: null,                 // { lat, lng, at } — the user's own point, never sent anywhere
@@ -486,13 +487,13 @@ export function quickAttrsForCat(cat, limit = 0) {
    Where things are
    ------------------------------------------------------------
    A distance needs two points. The device can give us the user's;
-   the listings have none yet — geocoding the 515 addresses is a data
+   the listings have none yet — geocoding the 514 addresses is a data
    job done outside the app. Until a listing has coordinates, the app
    shows the area it is in and never a number: one invented mile
    undoes the trust the whole directory runs on.
    ============================================================ */
 
-/** the city out of "…, Katy, TX 77450" — works on 513 of the 515 */
+/** the city out of "…, Katy, TX 77450" — works on all 514 */
 const cityCache = new Map();
 export function themeMode() { return state.theme || 'auto'; }
 export function setThemeMode(mode) {
@@ -713,17 +714,43 @@ export function normalize(str) {
     .trim();
 }
 
+/* The haystack is read once per listing per search, and the filter sheet
+   asks for a count per option — about ninety searches in one tap. Once the
+   attribute labels went in, rebuilding it every time cost 260ms to open
+   that sheet. Unedited listings are the same object every call, so the
+   cache hits on all of them; an edited one is a fresh object and simply
+   misses, which is correct rather than stale. */
+let haystackCache = new WeakMap();
+
 /** everything a business can be found by, both languages at once */
 export function searchHaystack(biz) {
+  const hit = haystackCache.get(biz);
+  if (hit !== undefined) return hit;
   const cat = CATEGORIES.find(c => c.id === biz.cat);
   const parts = [
     biz.name && biz.name.ar, biz.name && biz.name.en,
     biz.desc && biz.desc.ar, biz.desc && biz.desc.en,
     biz.address,
     ...(Array.isArray(biz.tags) ? biz.tags : []),
+    /* 342 specialities, at least one on every listing, and the search
+       could not reach a single one: «مواقف» returned nothing while 130
+       listings carried the parking attribute. */
+    ...(Array.isArray(biz.attributes) ? biz.attributes.map(attrLabel) : []),
   ];
   if (cat) parts.push(catNames(cat.key));
-  return normalize(parts.filter(Boolean).join(' '));
+  const hay = normalize(parts.filter(Boolean).join(' '));
+  haystackCache.set(biz, hay);
+  return hay;
+}
+
+/** both translations of one attribute id — the key is derived from the id
+    exactly as the registry derives it, so the two cannot drift */
+function attrLabel(id) {
+  try {
+    const packs = i18nPacks();
+    const k = 'attr' + id[0].toUpperCase() + id.slice(1);
+    return [packs.ar[k], packs.en[k]].filter(Boolean).join(' ');
+  } catch (e) { return ''; }
 }
 
 /** both translations of a category key, so either language finds it */
@@ -739,20 +766,25 @@ function i18nPacks() {
   return _packs;
 }
 /** i18n hands its tables over at boot; store must not import a screen module */
-export function registerStrings(packs) { _packs = packs; }
+export function registerStrings(packs) {
+  _packs = packs;
+  haystackCache = new WeakMap();   // the labels in it came from the old pack
+}
 
 export function matchesSearch(biz, term) {
   const q = normalize(term);
   if (!q) return true;
   const hay = searchHaystack(biz);
-  // every word must appear somewhere — "مطعم حلال" should narrow, not widen
-  return q.split(/\s+/).filter(Boolean).every(w => hay.includes(w));
+  // every word must appear somewhere — "مطعم حلال" should narrow, not widen.
+  // The filter sheet uses this too, so it reads the dictionary as the
+  // search does and the two can never disagree.
+  return expandQuery(term, normalize).every(p => hayMatches(hay, p));
 }
 
-/** how many of the typed words this listing matches */
-function wordHits(biz, words) {
+/** how many of the typed words, dictionary included, this listing matches */
+function wordHits(biz, parts) {
   const hay = searchHaystack(biz);
-  return words.reduce((n, w) => n + (hay.includes(w) ? 1 : 0), 0);
+  return parts.reduce((n, p) => n + (hayMatches(hay, p) ? 1 : 0), 0);
 }
 
 /**
@@ -773,12 +805,19 @@ export function searchBusinesses(list, term) {
   const q = normalize(term);
   if (!q) return { list, mode: 'all', suggestions: [] };
   const words = q.split(/\s+/).filter(Boolean);
+  /* what the reader typed, plus every word that means the same thing to
+     somebody searching. The three stages are unchanged — the dictionary
+     makes the first one succeed more often, it does not replace it. */
+  const parts = expandQuery(term, normalize);
 
-  const exact = list.filter(b => words.every(w => searchHaystack(b).includes(w)));
+  const exact = list.filter(b => {
+    const hay = searchHaystack(b);
+    return parts.every(p => hayMatches(hay, p));
+  });
   if (exact.length) return { list: exact, mode: 'exact', suggestions: [] };
 
   const loose = list
-    .map(b => ({ b, n: wordHits(b, words) }))
+    .map(b => ({ b, n: wordHits(b, parts) }))
     .filter(x => x.n > 0)
     .sort((x, y) => y.n - x.n)
     .map(x => x.b);

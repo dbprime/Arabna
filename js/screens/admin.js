@@ -835,7 +835,7 @@ function dirHtml() {
     <button class="btn btn-ghost btn-block mt-12" id="dupScan">${icon('search', 19)} ${t('dupScan')}</button>
     <div id="dupScanOut"></div>
 
-    <!-- the coordinates queue. Turning 515 addresses into points is a data
+    <!-- the coordinates queue. Turning 514 addresses into points is a data
          job done outside the app; what the panel owes the owner is the
          count, so the gap is a number somebody can work through rather
          than a silence, and the addresses in a file they can hand over. -->
