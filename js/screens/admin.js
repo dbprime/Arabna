@@ -4,7 +4,7 @@
    account behind Supabase row-level security). */
 import { t, L, icon, $, $$, go, renderHeader, toast, wireRoutes, emptyState, fmtMoney, priceLabel,
          confirmSheet, openSheet, closeSheet } from '../ui.js';
-import { MAG_CATS, ARTICLES, CATEGORIES, AD_PRODUCTS } from '../data.js';
+import { MAG_CATS, ARTICLES, CATEGORIES, AD_PRODUCTS, MARKET_CATS } from '../data.js';
 import * as S from '../store.js';
 import { passwordField, wirePasswordToggles } from './profile.js';
 import { fmtEventDate } from './events.js';
@@ -41,6 +41,7 @@ function lockView(root) {
       return;
     }
     unlocked = true;
+    S.setAdminUnlocked(true);
     go('#/admin');
   };
   wirePasswordToggles(root);
@@ -64,6 +65,9 @@ function panelView(root) {
         <button class="tab ${tab === 'ads' ? 'active' : ''}" data-t="ads">${t('advertiseWithUs')}</button>
         <button class="tab ${tab === 'events' ? 'active' : ''}" data-t="events">${t('eventsTitle')}</button>
         <button class="tab ${tab === 'dir' ? 'active' : ''}" data-t="dir">${t('directoryTitle')}</button>
+        <button class="tab ${tab === 'mkt' ? 'active' : ''}" data-t="mkt">${t('adminMarket')}${
+          S.adminListings().filter(c => c.reports).length ? ` (${S.adminListings().filter(c => c.reports).length})` : ''}</button>
+        <button class="tab ${tab === 'stats' ? 'active' : ''}" data-t="stats">${t('adminStats')}</button>
         <button class="tab ${tab === 'set' ? 'active' : ''}" data-t="set">${t('settings')}</button>
       </div>`;
   };
@@ -75,6 +79,8 @@ function panelView(root) {
     else if (tab === 'mag') body.innerHTML = magHtml();
     else if (tab === 'ads') body.innerHTML = adsHtml();
     else if (tab === 'events') body.innerHTML = repeatsHtml() + eventsHtml();
+    else if (tab === 'mkt') body.innerHTML = mktHtml();
+    else if (tab === 'stats') body.innerHTML = statsHtml();
     else if (tab === 'set') body.innerHTML = setHtml();
     else body.innerHTML = dirHtml();
 
@@ -318,6 +324,85 @@ function panelView(root) {
     };
     const ncOn = $('#ncOn');
     if (ncOn) ncOn.addEventListener('click', () => flip($('#ncPick').value, true));
+    /* --- the statistics tab --- */
+    const sr = $('#statRange');
+    if (sr) sr.addEventListener('change', () => { statRange = +sr.value; paint(); });
+    const sa = $('#statA');
+    if (sa) sa.addEventListener('change', () => { statA = sa.value; paint(); });
+    const sb = $('#statB');
+    if (sb) sb.addEventListener('change', () => { statB = sb.value; paint(); });
+
+    /* --- the marketplace tab --- */
+    const mq = $('#mktQ');
+    if (mq) mq.addEventListener('input', () => {
+      mktQ = mq.value;
+      paint();
+      const again = $('#mktQ');
+      if (again) { again.focus(); again.setSelectionRange(again.value.length, again.value.length); }
+    });
+    const ms = $('#mktSt');
+    if (ms) ms.addEventListener('change', () => { mktStatus = ms.value; paint(); });
+
+    $$('#aBody [data-mktopen]').forEach(b =>
+      b.addEventListener('click', () => go('#/marketplace/' + b.dataset.mktopen)));
+    $$('#aBody [data-mktshow]').forEach(b => b.addEventListener('click', () => {
+      S.unhideClassified(b.dataset.mktshow); toast(t('listingRepublished'), 'ok'); paint();
+    }));
+    $$('#aBody [data-mkthide]').forEach(b => b.addEventListener('click', () => {
+      const id = b.dataset.mkthide;
+      askReason({
+        title: t('adminHide'), sub: t('adminHideAsk'), confirmText: t('adminHide'),
+        onGo: (why) => { S.adminHideListing(id, why); toast(t('listingHidden'), 'ok'); paint(); },
+      });
+    }));
+    $$('#aBody [data-mktdel]').forEach(b => b.addEventListener('click', () => {
+      const id = b.dataset.mktdel;
+      askReason({
+        title: t('adminRemove'), sub: t('adminRemoveAsk'), confirmText: t('delete'), danger: true,
+        onGo: (why) => { S.adminDeleteListing(id, why); toast(t('done'), 'ok'); paint(); },
+      });
+    }));
+    $$('#aBody [data-mktnote]').forEach(b => b.addEventListener('click', () => {
+      const id = b.dataset.mktnote;
+      askReason({
+        title: t('adminNotice'), sub: t('adminNoticeAsk'), confirmText: t('send'),
+        onGo: (why) => { S.adminNotify(id, why); toast(t('adminNoticeSent'), 'ok'); },
+      });
+    }));
+
+    /* --- the directory browser: search, filter, edit, delete --- */
+    const dq = $('#dirQ');
+    if (dq) {
+      dq.addEventListener('input', () => {
+        dirQ = dq.value; dirShown = 20;
+        paint();
+        // repainting the tab replaces the field, so the caret goes back
+        const again = $('#dirQ');
+        if (again) { again.focus(); again.setSelectionRange(again.value.length, again.value.length); }
+      });
+    }
+    const dcs = $('#dirCatSel');
+    if (dcs) dcs.addEventListener('change', () => { dirCat = dcs.value; dirShown = 20; paint(); });
+    const dg = $('#dirGeo');
+    if (dg) dg.addEventListener('change', () => { dirGeoOnly = dg.checked; dirShown = 20; paint(); });
+    const dm = $('#dirMore');
+    if (dm) dm.addEventListener('click', () => { dirShown += 20; paint(); });
+
+    $$('#aBody [data-bizopen]').forEach(b =>
+      b.addEventListener('click', () => go('#/directory/' + b.dataset.bizopen)));
+    // the same form the owner edits with — two forms mean two shapes of data
+    $$('#aBody [data-bizedit]').forEach(b =>
+      b.addEventListener('click', () => go('#/business/edit/' + b.dataset.bizedit)));
+    $$('#aBody [data-bizdel]').forEach(b => b.addEventListener('click', () => {
+      const biz = S.businessById(b.dataset.bizdel);
+      confirmSheet({
+        title: t('adminDelBiz'),
+        sub: t('adminDelBizAsk').replace('{name}', biz ? L(biz.name) : b.dataset.bizdel),
+        confirmText: t('delete'), danger: true,
+        onConfirm: () => { S.deleteBusiness(b.dataset.bizdel); toast(t('adminDeleted'), 'ok'); paint(); },
+      });
+    }));
+
     const ncOff = $('#ncOff');
     if (ncOff) ncOff.addEventListener('click', () => flip($('#ncPick').value, false));
     $$('#aBody [data-ncoff]').forEach(b =>
@@ -544,6 +629,10 @@ function setHtml() {
       <span class="s-txt"><b>${t('seasonRamadan')}</b><span>${t('seasonRamadanSub')}</span></span>
       <button class="switch ${S.seasonOn('ramadan') ? 'on' : ''}" id="ramSw"></button>
     </div>
+    ${/* The switch is not broken — the data is empty. Saying the real
+          number turns "nothing happened" into a job somebody can do. */''}
+    <div class="hint">${t('seasonCountLine')
+      .replace('{n}', S.seasonCount('ramadan')).replace('{min}', S.CHIP_MIN)}</div>
 
     <div class="section-title mt-20">${t('demoTitle')}</div>
     <div class="hint" style="margin-bottom:10px">${t('demoWhy')}</div>
@@ -775,6 +864,257 @@ function dupPartner(b) {
   return hits.length ? hits[0].biz : null;
 }
 
+/* The directory browser's own state. 514 records with no search means a
+   particular one cannot be reached at all; the list is capped and grows on
+   request so the panel does not paint five hundred rows to show three. */
+let dirQ = '', dirCat = 'all', dirGeoOnly = false, dirShown = 20;
+
+/** a value safe to put inside an HTML attribute */
+const attr = (v) => String(v == null ? '' : v).replace(/"/g, '&quot;');
+
+function dirBrowseHtml() {
+  const all = S.everyBusiness();
+  let list = all;
+  if (dirCat !== 'all') list = list.filter(b => b.cat === dirCat);
+  if (dirGeoOnly) { const need = new Set(S.needsGeoList().map(b => b.id)); list = list.filter(b => need.has(b.id)); }
+  list = S.adminSearchBusinesses(list, dirQ);
+  const rows = list.slice(0, dirShown);
+
+  return `
+    <div class="section-title mt-16">${t('adminDirBrowse')}</div>
+    <div class="search-bar" style="margin-bottom:10px">${icon('search', 20)}
+      <input id="dirQ" placeholder="${t('adminDirSearch')}" value="${attr(dirQ)}" /></div>
+    <div class="field" style="margin-bottom:8px">
+      <select class="select" id="dirCatSel">
+        <option value="all">${t('catAll')} — ${all.length}</option>
+        ${CATEGORIES.filter(c => !c.route).map(c =>
+          `<option value="${c.id}" ${dirCat === c.id ? 'selected' : ''}>${t(c.key)} — ${all.filter(b => b.cat === c.id).length}</option>`).join('')}
+      </select></div>
+    <label class="consent-row" style="margin-bottom:10px">
+      <input type="checkbox" id="dirGeo" ${dirGeoOnly ? 'checked' : ''} />
+      <span>${t('adminOnlyGeo')} — ${S.needsGeoList().length}</span>
+    </label>
+    <div class="hint" style="margin-bottom:8px">${t('adminDirCount')
+      .replace('{n}', list.length).replace('{total}', all.length)}</div>
+
+    ${rows.length ? rows.map(b => `
+      <div class="setting-row">
+        <span class="s-txt"><b>${L(b.name)}</b>
+          <span class="muted fs-12 ltr">${b.phone || b.address || b.id}</span></span>
+        <button class="mini-btn" data-bizopen="${b.id}" aria-label="${t('adminOpen')}">${icon('eye', 15)}</button>
+        <button class="mini-btn gold" data-bizedit="${b.id}" aria-label="${t('adminEdit')}">${icon('edit', 15)}</button>
+        <button class="mini-btn" data-bizdel="${b.id}" aria-label="${t('adminDelBiz')}">${icon('trash', 15)}</button>
+      </div>`).join('')
+      : `<div class="hint">${t('adminDirNone')}</div>`}
+    ${list.length > rows.length
+      ? `<button class="btn btn-ghost btn-sm btn-block mt-8" id="dirMore">${t('adminShowMore')} (${list.length - rows.length})</button>` : ''}
+  `;
+}
+
+/* ---------------- the statistics tab ----------------
+   Every number is computed from the data, not from a counter that could
+   drift. The chart is the `.spark` component the ads tab already uses —
+   no library, the project is zero-dependency and will not break that for
+   a drawing. What needs other people's devices to report in says so. */
+let statRange = 30, statA = 'directory', statB = 'market';
+
+const STAT_SECTIONS = ['directory', 'market', 'events', 'magazine'];
+const statSecKey = { directory: 'statDirectory', market: 'statMarketSec',
+                     events: 'statEventsSec', magazine: 'statMagazineSec' };
+
+/** the one number that stands for a section, for the comparison */
+function statTotalOf(counts, id) {
+  if (id === 'directory') return counts.directory.total;
+  if (id === 'market') return counts.market.live;
+  if (id === 'events') return counts.events.upcoming;
+  if (id === 'magazine') return counts.magazine.published;
+  const cat = CATEGORIES.find(c => c.id === id);
+  return cat ? S.allBusinesses().filter(b => b.cat === id).length : 0;
+}
+function statLabelOf(id) {
+  if (statSecKey[id]) return t(statSecKey[id]);
+  const cat = CATEGORIES.find(c => c.id === id);
+  return cat ? t(cat.key) : id;
+}
+
+function cardRow(titleKey, pairs) {
+  return `<div class="section-title mt-20">${t(titleKey)}</div>
+    <div class="stat-row" style="padding:0;flex-wrap:wrap">
+      ${pairs.map(([n, k]) => `<div class="stat"><b>${n}</b><span>${t(k)}</span></div>`).join('')}
+    </div>`;
+}
+
+function statsHtml() {
+  const c = S.adminCounts();
+  const days = S.impressionsByDay(statRange);
+  const peak = Math.max(1, ...days.map(d => d.i));
+  const anyImpressions = days.some(d => d.i > 0);
+  const viewed = S.topViewedBusinesses(10);
+  const searches = S.topSearches(10);
+  const thin = S.thinnestCategories(5);
+
+  const aN = statTotalOf(c, statA), bN = statTotalOf(c, statB);
+  const hi = Math.max(aN, bN) || 1;
+  /* 138 against 1 is not "13700% more" — that is a true number nobody can
+     read. Past ten times over, it is said as a multiple. */
+  const hiN = Math.max(aN, bN), loN = Math.min(aN, bN);
+  const ratio = loN > 0 ? hiN / loN : Infinity;
+  const winner = statLabelOf(aN > bN ? statA : statB);
+  const diff = aN === bN ? t('statDiffSame')
+    : ratio >= 10 || loN === 0
+      ? t('statDiffTimes').replace('{a}', winner).replace('{n}', loN ? Math.round(ratio) : hiN)
+      : t('statDiff').replace('{a}', winner).replace('{n}', Math.round((ratio - 1) * 100));
+
+  const pickOptions = () => STAT_SECTIONS.map(id => ({ id, label: t(statSecKey[id]) }))
+    .concat(CATEGORIES.filter(x => !x.route).map(x => ({ id: x.id, label: t(x.key) })));
+
+  return `<div class="pad mt-16">
+    ${cardRow('statDirectory', [
+      [c.directory.total, 'statTotal'], [c.directory.verified, 'statVerified'],
+      [c.directory.paid, 'statPaid'], [c.directory.noPhone, 'statNoPhone'],
+      [c.directory.needsGeo, 'statNeedsGeo']])}
+    ${cardRow('statMarketSec', [
+      [c.market.live, 'statLive'], [c.market.pending, 'statPending'],
+      [c.market.hidden, 'statHidden'], [c.market.expired, 'statExpired']])}
+    ${cardRow('statEventsSec', [
+      [c.events.upcoming, 'statUpcoming'], [c.events.pending, 'statPending'], [c.events.past, 'statPast']])}
+    ${cardRow('statMagazineSec', [
+      [c.magazine.total, 'statTotal'], [c.magazine.published, 'statPublished'], [c.magazine.drafts, 'statDrafts']])}
+
+    <div class="section-title mt-20">${t('statAdsSec')}</div>
+    ${c.ads.map(a => `<div class="setting-row">
+      <span class="s-txt"><b>${t((AD_PRODUCTS.find(p => p.id === a.id) || {}).nameKey || a.id)}</b>
+        <span class="muted fs-12">${t('statSold')} ${a.sold} · ${t('statLeft')} ${a.left} / ${a.capacity}${
+          a.waiting ? ` · ${t('statWaiting')} ${a.waiting}` : ''}</span></span>
+    </div>`).join('')}
+
+    <div class="section-title mt-20">${t('statImpressions')}</div>
+    <div class="field" style="margin-bottom:8px">
+      <select class="select" id="statRange">
+        ${[[7, 'statRange7'], [30, 'statRange30'], [90, 'statRange90']].map(([n, k]) =>
+          `<option value="${n}" ${statRange === n ? 'selected' : ''}>${t(k)}</option>`).join('')}
+      </select></div>
+    ${anyImpressions ? `
+      <div class="spark" aria-hidden="true">
+        ${days.map(d => `<span class="spark-bar" style="height:${Math.max(3, Math.round((d.i / peak) * 40))}px"
+          title="${d.date}: ${d.i}"></span>`).join('')}
+      </div>`
+      : `<div class="hint">${t('statNoServer')}</div>`}
+
+    <div class="section-title mt-20">${t('statCompare')}</div>
+    <div class="field" style="margin-bottom:8px">
+      <select class="select" id="statA">${pickOptions().map(o =>
+        `<option value="${o.id}" ${statA === o.id ? 'selected' : ''}>${o.label}</option>`).join('')}</select></div>
+    <div class="field" style="margin-bottom:10px">
+      <select class="select" id="statB">${pickOptions().map(o =>
+        `<option value="${o.id}" ${statB === o.id ? 'selected' : ''}>${o.label}</option>`).join('')}</select></div>
+    <div class="cmp-bars">
+      <div class="cmp-col"><span class="cmp-bar a" style="height:${Math.round((aN / hi) * 90) + 4}px"></span><b>${aN}</b><span>${statLabelOf(statA)}</span></div>
+      <div class="cmp-col"><span class="cmp-bar b" style="height:${Math.round((bN / hi) * 90) + 4}px"></span><b>${bN}</b><span>${statLabelOf(statB)}</span></div>
+    </div>
+    <div class="hint" style="text-align:center">${diff}</div>
+
+    <div class="section-title mt-20">${t('statTopViewed')}</div>
+    ${viewed.length ? viewed.map(v => `<div class="setting-row">
+      <span class="s-txt"><b>${L(v.biz.name)}</b></span>
+      <span class="muted fs-12">${v.views}</span></div>`).join('')
+      : `<div class="hint">${t('statNoServer')}</div>`}
+
+    <div class="section-title mt-20">${t('statTopSearches')}</div>
+    ${searches.length ? searches.map(x => `<div class="setting-row">
+      <span class="s-txt"><b>${x.term}</b></span>
+      <span class="muted fs-12">${x.count}</span></div>`).join('')
+      : `<div class="hint">${t('statEmpty')}</div>`}
+
+    <div class="section-title mt-20">${t('statThinnest')}</div>
+    <div class="hint" style="margin-bottom:8px">${t('statThinnestWhy')}</div>
+    ${thin.map(x => `<div class="setting-row">
+      <span class="s-txt"><b>${t(x.cat.key)}</b></span>
+      <span class="muted fs-12">${x.count}</span></div>`).join('')}
+  </div>`;
+}
+
+/* ---------------- the marketplace tab ----------------
+   Approving a listing used to remove it from the panel for good, so a
+   report arriving two days later had nowhere to be opened. This holds
+   everything, and the reported ones come first because that is what the
+   screen gets opened for. */
+let mktQ = '', mktStatus = 'all';
+
+const MKT_STATES = ['all', 'reported', 'pending', 'live', 'hidden', 'rejected'];
+const mktStateKey = { all: 'adminStAll', reported: 'adminStReported', pending: 'adminStPending',
+                      live: 'adminStLive', hidden: 'adminStHidden', rejected: 'adminStRejected' };
+
+function mktHtml() {
+  const all = S.adminListings();
+  let list = all.slice();
+  if (mktStatus === 'reported') list = list.filter(c => c.reports > 0);
+  else if (mktStatus !== 'all') list = list.filter(c => (c.status || 'live') === mktStatus);
+  const q = (mktQ || '').trim().toLowerCase();
+  if (q) list = list.filter(c => [L(c.title), c.cat, c.price, c.id]
+    .filter(Boolean).join(' ').toLowerCase().includes(q));
+  // the reported first, then the newest
+  list.sort((a, b) => (b.reports - a.reports) || ((b.created || 0) - (a.created || 0)));
+
+  const count = (st) => st === 'all' ? all.length
+    : st === 'reported' ? all.filter(c => c.reports > 0).length
+    : all.filter(c => (c.status || 'live') === st).length;
+
+  return `<div class="pad mt-16">
+    <div class="search-bar" style="margin-bottom:10px">${icon('search', 20)}
+      <input id="mktQ" placeholder="${t('adminMktSearch')}" value="${attr(mktQ)}" /></div>
+    <div class="field" style="margin-bottom:10px">
+      <select class="select" id="mktSt">
+        ${MKT_STATES.map(st => `<option value="${st}" ${mktStatus === st ? 'selected' : ''}>${t(mktStateKey[st])} — ${count(st)}</option>`).join('')}
+      </select></div>
+
+    ${list.length ? list.map(c => `
+      <div class="q-card">
+        <div class="q-head">
+          <b>${L(c.title)}</b>
+          ${c.reports ? `<span class="badge badge-pending">${icon('flag', 12)}${c.reports} ${t('adminReports')}</span>`
+                      : `<span class="muted fs-12">${t(mktStateKey[c.status] || 'adminStLive')}</span>`}
+        </div>
+        <div class="row-sub"><span>${t(mktCatKey(c.cat))} · <span class="ltr">${priceLabel(c.price)}</span>${
+          c.created ? ' · ' + fmtDate(c.created) : ''}</span></div>
+        <div class="action-grid" style="margin:10px 0 0">
+          <button class="btn btn-ghost btn-sm" data-mktopen="${c.id}">${icon('eye', 17)} ${t('adminOpen')}</button>
+          <button class="btn btn-ghost btn-sm" data-mktnote="${c.id}">${icon('bell', 17)} ${t('adminNotice')}</button>
+        </div>
+        <div class="action-grid" style="margin:8px 0 0">
+          ${c.status === 'hidden'
+            ? `<button class="btn btn-gold btn-sm" data-mktshow="${c.id}">${icon('eye', 17)} ${t('republish')}</button>`
+            : `<button class="btn btn-ghost btn-sm" data-mkthide="${c.id}">${icon('eye', 17)} ${t('adminHide')}</button>`}
+          <button class="btn btn-danger btn-sm" data-mktdel="${c.id}">${icon('trash', 17)} ${t('adminRemove')}</button>
+        </div>
+      </div>`).join('') : `<div class="hint">${t('adminMktNone')}</div>`}
+  </div>`;
+}
+
+function mktCatKey(id) {
+  const c = MARKET_CATS.find(x => x.id === id);
+  return c ? c.key : 'catAll';
+}
+
+/** hide and delete both ask for a reason, and the reason reaches the owner */
+function askReason({ title, sub, confirmText, danger, onGo }) {
+  openSheet(`
+    <div class="sheet-title">${title}</div>
+    <div class="sheet-sub">${sub}</div>
+    <textarea class="textarea" id="adminWhy" rows="3"></textarea>
+    <button class="btn ${danger ? 'btn-danger' : 'btn-gold'} btn-block mt-12" id="adminGo">${confirmText}</button>
+    <button class="btn btn-ghost btn-block mt-8" data-close>${t('cancel')}</button>
+  `, (panel) => {
+    panel.querySelector('[data-close]').addEventListener('click', closeSheet);
+    panel.querySelector('#adminGo').addEventListener('click', () => {
+      const why = panel.querySelector('#adminWhy').value.trim();
+      if (!why) { toast(t('adminReasonNeeded'), 'err'); return; }
+      closeSheet();
+      onGo(why);
+    });
+  });
+}
+
 function dirHtml() {
   const sub = S.subscription();
   const subBiz = sub ? S.businessById(sub.businessId) : null;
@@ -791,6 +1131,8 @@ function dirHtml() {
     <div class="section-title mt-16">${t('addBusiness')}</div>
     <div class="hint" style="margin-bottom:10px">${t('adminAddNote')}</div>
     <button class="btn btn-gold btn-block" data-route="#/add-business">${icon('plus', 19)} ${t('addBusiness')}</button>
+
+    ${dirBrowseHtml()}
 
     <div class="section-title mt-20">${t('importTitle')}</div>
     <div class="hint" style="margin-bottom:10px">${t('importWhy')}</div>

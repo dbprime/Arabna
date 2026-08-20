@@ -856,6 +856,12 @@ html[dir="rtl"] .drawer-panel { --drawer-off: 100%; }
 
 /* ---------- misc ---------- */
 .tabs { display: flex; gap: 6px; padding: 12px 14px 0; }
+/* The admin bar carries eight tabs and stopped fitting in 390px. It wraps
+   onto a second line rather than scrolling sideways — the same answer the
+   magazine's chips got, and the same rule: a row somebody chooses from
+   must not run off the edge. It applies to the panel too. */
+#aTabs { flex-wrap: wrap; }
+#aTabs .tab { flex: 1 1 auto; min-width: calc(25% - 5px); padding-inline: 8px; font-size: 13px; }
 .tab {
   flex: 1; height: 46px; border-radius: var(--r-md);
   display: grid; place-items: center;
@@ -1214,6 +1220,18 @@ input[inputmode="tel"], input[type="email"], input[inputmode="decimal"], #zipIn 
 /* a listing's own photo in the row icon, in place of the category glyph */
 .row-ico.shot { padding: 0; overflow: hidden; }
 .row-ico.shot img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+/* ---------- admin: the two-bar comparison ---------- */
+.cmp-bars {
+  display: flex; gap: 26px; justify-content: center; align-items: flex-end;
+  padding: 12px 0 4px;
+}
+.cmp-col { display: flex; flex-direction: column; align-items: center; gap: 5px; }
+.cmp-bar { width: 46px; border-radius: 6px 6px 0 0; display: block; }
+.cmp-bar.a { background: var(--gold); }
+.cmp-bar.b { background: var(--blue); }
+.cmp-col b { font-size: 17px; }
+.cmp-col > span:last-child { font-size: 12px; color: var(--muted); text-align: center; }
 
 /* ---------- help: the questions, folded ---------- */
 .faq { margin-top: 10px; }

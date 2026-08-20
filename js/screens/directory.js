@@ -372,11 +372,18 @@ export function DirectoryScreen(root) {
   const clear = $('#dirClear');
   const syncClear = () => { clear.hidden = !search.value; };
   syncClear();
+  /* What people look for is worth knowing, but not once per keystroke —
+     that would record «م», «مط», «مطع» as three searches. It is recorded
+     when the typing stops. */
+  let searchTimer = null;
   search.addEventListener('input', e => {
     st.term = e.target.value;
     syncClear();
     writeUrl();
     paint();
+    clearTimeout(searchTimer);
+    const typed = st.term;
+    searchTimer = setTimeout(() => { if (typed) S.recordSearch(typed); }, 900);
   });
   clear.addEventListener('click', () => {
     st.term = ''; search.value = ''; syncClear(); writeUrl(); paint();
@@ -1332,15 +1339,24 @@ function pickBusinessToClaim(root) {
 /* ------------------- OWNER: EDIT + PHOTOS + VERIFY ------------------- */
 
 /** only the approved owner may open these */
-function ownerOnly(bizId) {
-  if (!S.ownsBusiness(bizId)) { go('#/directory/' + bizId); return false; }
+/**
+ * @param allowAdmin  only the EDIT screen sets this. The panel edits a
+ *   listing through the owner's own form — two forms would be two shapes
+ *   of the same data — but it must not reach `#/verify-business`, which is
+ *   the owner *applying* for the gold badge. The admin reviews those
+ *   applications in the panel; filing one on somebody's behalf is a
+ *   different thing entirely.
+ */
+function ownerOnly(bizId, allowAdmin = false) {
+  const ok = S.ownsBusiness(bizId) || (allowAdmin && S.adminUnlocked());
+  if (!ok) { go('#/directory/' + bizId); return false; }
   return true;
 }
 
 export function BusinessEditScreen(root, params) {
   const b = S.businessById(params[0]);
   if (!b) { go('#/directory'); return; }
-  if (!ownerOnly(b.id)) return;
+  if (!ownerOnly(b.id, true)) return;   // the admin panel edits through here
   renderHeader({ simple: true, title: t('editBusiness') });
 
   let picked = (b.attributes || []).slice();

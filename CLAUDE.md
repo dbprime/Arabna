@@ -7,7 +7,7 @@ ARABNA · عربنا — a mobile-first web app for the Arab community in the U.
 **business directory + marketplace + events + magazine**, Arabic-first with a full English toggle.
 ("Classifieds / الإعلانات الشخصية" is now "Marketplace / السوق" — the old `#/classifieds`
 routes still resolve so shared links keep working.)
-Current version: **V.02.8 (prototype)**. Owner: Rai Elby (@dbprime). Deploys to Vercel (team DB Prime).
+Current version: **V.02.9 (prototype)**. Owner: Rai Elby (@dbprime). Deploys to Vercel (team DB Prime).
 
 ## Hard rules (from the product brief)
 1. **One repository, one Vercel project.** No duplicates, no stray preview projects.
@@ -1294,6 +1294,94 @@ counts an impression only while the element is on screen, the tab is
 visible, and a full second has passed. Anything else sells a view that did
 not happen.
 
+## V.02.9 — batch six (b): the admin panel
+
+### Two things were not built, on purpose
+**A users section, and view counts across users.** There are no user
+accounts in this build: `state.user` is one person — whoever holds the
+device — and `personKey()` says in `store.js` that it stands in for real
+identities until there is a server. A «المستخدمون» screen today would show
+one row, Rai looking at himself, which is worse than no screen: it looks
+like a tool and is a mirror. Same for `bizStats` and `adStats` — they count
+this device. **Where a number needs a server, the panel writes «يبدأ العدّ
+مع السيرفر»** rather than a zero or an invented figure.
+
+### The directory is browsable, searchable and editable
+514 records with no search meant a particular one could not be reached at
+all, and every row offered a ✕ and nothing else.
+
+- **The search** matches name in both languages, phone, address and id, and
+  prints «12 من 514». The phone goes through **`phoneKey()` — the very
+  function `findDuplicates()` uses** — so the last-ten-digits rule cannot
+  drift into a second version; the text goes through `normalize()`, so
+  «الامانة» finds «الأمانة». Two quick filters: category and «بانتظار
+  الإحداثيات», each with its live count.
+- **✎ opens `#/business/edit/:id`** — the same form the owner uses. Two
+  forms would be two shapes of the same data. `ownerOnly()` now lets an
+  unlocked panel through via **`adminUnlocked()`, which is memory-only**: a
+  reload asks for the password again.
+- **✕ asks first and names the business.** `deleteBusiness()` takes the
+  reviews, favourites, photos and edits with it, or they would attach to
+  whatever takes the id next. A seed cannot be spliced out of `data.js`, so
+  the removal is recorded in `state.removedBusinesses` and `everyBusiness()`
+  filters it.
+- The list is capped at 20 rows with «اعرض المزيد» — painting 514 rows to
+  show three is not a list, it is a wait.
+
+### The marketplace tab: an approved listing is still reachable
+Until now the moderation queue held **only the pending**, so the moment a
+listing was approved it left the panel for good — and a report arriving two
+days later, or an approval given by mistake, had nowhere to be opened.
+
+- `adminListings()` returns **everything**, seeds included, each with its
+  report count. Filter by all · reported · pending · live · hidden ·
+  rejected, each option carrying its own count; search by title, section,
+  price or id. **Reported first by default**, because that is what the
+  screen gets opened for, and the tab label carries the number.
+- **«أخفِ» is the default and «احذف» is not.** Most cases are a breach that
+  can be fixed, and an erased listing takes its messages and its remaining
+  days with it. Hiding reuses **`hideClassified()` — the same list the
+  owner's own «أخفِ الإعلان» writes to**, so it works on a seed listing too.
+- **Both ask for a reason, and refuse an empty one, and the reason reaches
+  the owner verbatim as a notification.** One report can be malicious; the
+  person on the other end is owed the sentence that explains it.
+
+### The statistics tab
+Every figure is computed from the data, never from a counter that could
+drift: the directory (total, verified, subscribed, phoneless, awaiting
+coordinates), the marketplace (live, pending, hidden, expired), events,
+the magazine, and every ad placement's sold / left / waiting list.
+
+- **The chart is the `.spark` component the ads tab already had.** No
+  library was added — the project is zero-dependency and does not break
+  that for a drawing. Range 7 · 30 · 90 days, 30 by default.
+- **The comparison** takes two dropdowns — either two sections or two
+  categories — and draws two bars with a line naming the gap. **138 against
+  1 is not «13700% أكثر»**: past ten times over it is said as a multiple,
+  because a true number nobody can read is not a measurement.
+- **Three lists**: the ten most-viewed businesses, the ten most-searched
+  terms, and **the thinnest categories** — the last is the commercially
+  useful one, since it says where there is not enough content to be worth
+  opening, which is exactly where a subscription needs selling. Today:
+  gyms 1, homeservices 3, realestate 6.
+- **`recordSearch()` stores the NORMALIZED term**, or «مطعم» and «مطاعم»
+  become two rows saying the same thing, and it fires 900ms after the
+  typing stops — recording every keystroke would count «م», «مط», «مطع» as
+  three searches.
+
+### The Ramadan switch was never broken
+Three seasonal attributes exist; **four businesses carry them and all four
+are demo seeds**, and `CHIP_MIN` is 5 — so the switch opened onto nothing
+and looked dead. The fix is not code. One computed line now sits under it:
+**«خصائص رمضان — على 4 أنشطة اليوم (تحتاج 5 لتظهر كشريحة)»**. The work is
+data, and it belongs weeks before Ramadan, not on the night.
+
+### The panel obeys the app's own rules
+The tab bar reached eight and stopped fitting in 390px. **It wraps onto a
+second line rather than scrolling sideways** — the magazine chips' answer,
+and the same rule: a row somebody chooses from must not run off the edge.
+That rule covers the panel too.
+
 ## Known open items
 - Legal pages are first drafts — a lawyer must review before public launch.
 - Push notifications: triggers are defined in Settings but not wired to a real service.
@@ -1306,6 +1394,9 @@ not happen.
 - The subscription test clock in admin → settings goes with the demo data.
 - `personKey()` is a stand-in for real user ids: blocking keys on a listing's
   owner or a review's author until V.02 brings accounts on a server.
+- **The admin users section is deferred to the server batch**, and so is any
+  count that spans devices. One account exists on one device, so the screen
+  would show Rai looking at himself.
 - **None of the 514 listings has coordinates yet.** That is a data job done
   outside the app (admin → directory exports the addresses). Until they
   arrive the app shows each listing's area name, never a figure in miles,

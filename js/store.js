@@ -72,6 +72,8 @@ const DEFAULTS = {
   claims: [],                // ownership requests awaiting an admin decision
   reviewReplies: {},         // { reviewId: { text, when } } — the owner's answer
   mergedBusinesses: [],      // { keepId, dropId, when } — duplicates folded together
+  removedBusinesses: [],     // ids the admin deleted; seeds live in data.js so
+                             // the removal is recorded rather than spliced out
   myPendingBusinesses: [],   // listings this device added over a certain duplicate match
   clockOffset: 0,            // the admin test panel's fake clock, in ms — demo only
   adWaitlist: [],            // { id, product, cat, name, phone, when, preferred } when a placement is full
@@ -115,6 +117,14 @@ export const ADMIN_USER = 'arabna.admin';
 export const ADMIN_PASS = 'Arabna@2026!';
 
 /** Current staff credentials — the shipped defaults until the owner changes them. */
+/* Whether the admin panel is unlocked in THIS session. Memory only and
+   never saved: a reload must ask for the password again. The edit screen
+   reads it so the panel's ✎ can open the very same form the owner uses —
+   a second form would be a second shape of the same data. */
+let adminSession = false;
+export function adminUnlocked() { return adminSession; }
+export function setAdminUnlocked(on) { adminSession = !!on; }
+
 export function adminCreds() {
   return state.adminAuth || { user: ADMIN_USER, pass: ADMIN_PASS };
 }
@@ -430,6 +440,18 @@ export function closingSoon(biz, now = new Date()) {
 export function seasonOn(season) {
   return !season || !!(state.seasons && state.seasons[season]);
 }
+/**
+ * How many live listings actually carry a seasonal speciality. The switch
+ * works; the data is what is missing, and a switch that opens onto nothing
+ * reads as broken. The panel prints this number beside it so the owner can
+ * see what is wanted rather than guess.
+ */
+export function seasonCount(season) {
+  const ids = ATTRIBUTES.filter(a => a.season === season).map(a => a.id);
+  if (!ids.length) return 0;
+  return allBusinesses().filter(b => (b.attributes || []).some(id => ids.includes(id))).length;
+}
+
 export function setSeason(season, on) {
   state.seasons = Object.assign({}, state.seasons, { [season]: !!on });
   save();
@@ -971,6 +993,27 @@ export function phoneKey(phone) {
  *
  * @returns [{ biz, reason, confidence, score }] — certain first
  */
+/**
+ * The admin's directory search: name in both languages, phone, address, id.
+ * The phone matches on the last ten digits through `phoneKey()` — the very
+ * rule `findDuplicates()` uses, so the two can never disagree — and the
+ * text goes through `normalize()`, so «الاصيل» finds «الأصيل».
+ */
+export function adminSearchBusinesses(list, term) {
+  const q = normalize(term || '').trim();
+  if (!q) return list;
+  const digits = String(term).replace(/\D/g, '');
+  const pk = digits.length >= 10 ? phoneKey(term) : '';
+  return list.filter(b => {
+    if (pk && phoneKey(b.phone) === pk) return true;
+    // a short run of digits still matches anywhere in the number
+    if (digits.length >= 3 && phoneKey(b.phone).includes(digits)) return true;
+    if (String(b.id).toLowerCase() === q) return true;
+    const hay = normalize([b.name && b.name.ar, b.name && b.name.en, b.address].filter(Boolean).join(' '));
+    return hay.includes(q);
+  });
+}
+
 export function findDuplicates({ phone, name, address, cat, id } = {}) {
   const key = phoneKey(phone);
   const inName = typeof name === 'string' ? name : (name && (name.en || name.ar)) || '';
@@ -1140,7 +1183,8 @@ export function purgeDemoData() {
  * Screens call `allBusinesses()` instead.
  */
 export function everyBusiness() {
-  const dropped = (state.mergedBusinesses || []).map(m => m.dropId);
+  const dropped = (state.mergedBusinesses || []).map(m => m.dropId)
+    .concat(state.removedBusinesses || []);
   return withoutDemo(state.extraBusinesses.concat(BUSINESSES))
     .filter(b => !dropped.includes(b.id))
     .map(b => {
@@ -2123,6 +2167,79 @@ export function resolveFlag(id) {
 export function pendingListings() {
   return state.extraClassifieds.filter(c => c.status === 'pending');
 }
+
+/**
+ * EVERY listing the panel can act on, whatever its state. Approving one
+ * used to remove it from the panel for good, so a report arriving two days
+ * later had nowhere to be opened — which is the whole reason this exists.
+ * Seeded listings are included: a report can land on one of those too.
+ */
+export function adminListings() {
+  const seen = new Set();
+  const all = (state.extraClassifieds || []).concat(CLASSIFIEDS)
+    .filter(c => { if (seen.has(c.id)) return false; seen.add(c.id); return true; })
+    .map(c => Object.assign({ status: 'live' }, c));
+  return all.map(c => Object.assign({}, c, {
+    status: isHidden(c.id) ? 'hidden' : c.status,
+    reports: reportCount(c.id),
+  }));
+}
+
+/** how many open reports point at this thing */
+export function reportCount(refId) {
+  return (state.flags || []).filter(f => f.refId === refId).length;
+}
+
+/**
+ * The admin takes a listing down. Not a delete: most cases are a breach
+ * that can be fixed, and an erased listing takes its messages and its
+ * remaining days with it. The owner is told, and told why.
+ */
+export function adminHideListing(id, reason) {
+  // the same list «أخفِ الإعلان» uses, so it works on a seed listing too
+  hideClassified(id);
+  (state.flags || []).filter(f => f.refId === id).forEach(f => resolveFlag(f.id));
+  pushNotif({
+    icon: 'shield',
+    title: strOf('adminHiddenTitle'),
+    body: reason || strOf('adminHiddenBody'),
+    route: '#/my-ads',
+  });
+  save();
+  return true;
+}
+
+/** …and the permanent one, which asks for a reason and delivers it */
+export function adminDeleteListing(id, reason) {
+  pushNotif({
+    icon: 'alert',
+    title: strOf('adminRemovedTitle'),
+    body: reason || strOf('adminRemovedBody'),
+    route: '#/my-ads',
+  });
+  deleteClassified(id);
+  (state.flags || []).filter(f => f.refId === id).forEach(f => resolveFlag(f.id));
+  return true;
+}
+
+/** a free-text notice from the panel to whoever owns the listing */
+export function adminNotify(id, text) {
+  const c = classifiedById(id);
+  pushNotif({
+    icon: 'bell',
+    title: strOf('adminNoticeTitle'),
+    body: text,
+    route: c ? '#/marketplace/' + id : '#/my-ads',
+  });
+  return true;
+}
+
+/** one i18n string, in the reader's language, without importing i18n */
+function strOf(key) {
+  const packs = i18nPacks();
+  const lang = state.lang === 'en' ? 'en' : 'ar';
+  return (packs[lang] && packs[lang][key]) || (packs.ar && packs.ar[key]) || key;
+}
 /** profile photo waiting on review */
 export function pendingAvatar() {
   const a = state.user && state.user.avatar;
@@ -2203,6 +2320,30 @@ export function sendMessage(listingId, text, lang = 'ar') {
 }
 
 let bizSeq = 0;
+/**
+ * Delete a listing from the directory. A user-added one goes out of
+ * `extraBusinesses`; a seed cannot, because it lives in `data.js` and is
+ * shipped to everyone — so the removal is recorded and `everyBusiness()`
+ * filters it. Either way the reviews, favourites and photos that hung off
+ * it go too, or they would attach to whatever takes the id next.
+ */
+export function deleteBusiness(id) {
+  if (!id) return false;
+  const wasExtra = (state.extraBusinesses || []).some(b => b.id === id);
+  state.extraBusinesses = (state.extraBusinesses || []).filter(b => b.id !== id);
+  if (!wasExtra && !(state.removedBusinesses || []).includes(id)) {
+    state.removedBusinesses = (state.removedBusinesses || []).concat(id);
+  }
+  if (state.businessEdits) delete state.businessEdits[id];
+  if (state.bizPhotos) delete state.bizPhotos[id];
+  if (state.bizVerify) delete state.bizVerify[id];
+  state.saved = (state.saved || []).filter(x => x !== id);
+  state.reviews = (state.reviews || []).filter(r => r.bizId !== id);
+  if (state.myBusinessId === id) state.myBusinessId = null;
+  save();
+  return true;
+}
+
 export function addBusiness(biz, { pendingReview = false } = {}) {
   // a counter as well as the clock: two records added inside the same
   // millisecond must not share an id
@@ -2719,6 +2860,114 @@ export function adStatsByDay(adId, n = 7) {
   for (let k = n - 1; k >= 0; k--) {
     const d = dayKey(now() - k * 86400000);
     out.push(Object.assign({ date: d }, st.days[d] || { i: 0, c: 0 }));
+  }
+  return out;
+}
+
+/* ============================================================
+   What the panel can honestly count
+   ------------------------------------------------------------
+   Every figure here is computed from the data itself, never from a stored
+   counter that could drift. What has no source yet — anything that needs
+   other people's devices to report in — is not given a zero and not given
+   an invented number: the screen says so instead.
+   ============================================================ */
+
+/** the whole directory, marketplace, events, magazine and ad inventory */
+export function adminCounts() {
+  const biz = allBusinesses();
+  const mkt = adminListings();
+  const evs = allEvents();
+  const arts = withoutDemo((state.extraArticles || []).concat(ARTICLES));
+  const t = now();
+  return {
+    directory: {
+      total: biz.length,
+      verified: biz.filter(b => businessVerified(b)).length,
+      paid: biz.filter(isPaid).length,
+      noPhone: biz.filter(b => !b.phone).length,
+      needsGeo: needsGeoList().length,
+    },
+    market: {
+      live: mkt.filter(c => (c.status || 'live') === 'live').length,
+      pending: mkt.filter(c => c.status === 'pending').length,
+      hidden: mkt.filter(c => c.status === 'hidden').length,
+      expired: mkt.filter(c => c.daysLeft === 0).length,
+    },
+    events: {
+      upcoming: evs.filter(e => !eventIsPast(e) && e.status !== 'pending').length,
+      pending: evs.filter(e => e.status === 'pending').length,
+      past: evs.filter(e => eventIsPast(e)).length,
+    },
+    magazine: {
+      total: arts.length,
+      published: arts.filter(a => a.published !== false).length,
+      drafts: arts.filter(a => a.published === false).length,
+    },
+    ads: AD_PRODUCTS.map(p => ({
+      id: p.id,
+      sold: (state.myAds || []).filter(a => a.product === p.id && a.status === 'live' && (!a.endsAt || a.endsAt > t)).length,
+      left: adSlotsLeft(p.id),
+      capacity: adCapacity(p.id),
+      waiting: (state.adWaitlist || []).filter(w => w.product === p.id).length,
+    })),
+  };
+}
+
+/** the ten most-viewed businesses this month, from what this device saw */
+export function topViewedBusinesses(n = 10) {
+  const key = monthKey(now());
+  return Object.entries(state.bizStats || {})
+    .map(([id, st]) => ({ id, views: ((st.months || {})[key] || {}).views || 0 }))
+    .filter(x => x.views > 0)
+    .sort((a, b) => b.views - a.views)
+    .slice(0, n)
+    .map(x => ({ biz: businessById(x.id), views: x.views }))
+    .filter(x => x.biz);
+}
+
+/**
+ * What people search for. The NORMALIZED term is stored, not the raw one,
+ * or «مطعم» and «مطاعم» become two rows saying the same thing.
+ */
+export function recordSearch(term) {
+  const q = normalize(term || '').trim();
+  if (q.length < 2) return;
+  state.searchStats = state.searchStats || {};
+  state.searchStats[q] = (state.searchStats[q] || 0) + 1;
+  save();
+}
+export function topSearches(n = 10) {
+  return Object.entries(state.searchStats || {})
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, n)
+    .map(([term, count]) => ({ term, count }));
+}
+
+/**
+ * The categories with the least behind them — the most commercially useful
+ * list on the screen. It says where there is not enough content to be worth
+ * opening, which is exactly where a subscription needs selling.
+ */
+export function thinnestCategories(n = 5) {
+  const biz = allBusinesses();
+  return CATEGORIES.filter(c => !c.route)
+    .map(c => ({ cat: c, count: biz.filter(b => b.cat === c.id).length }))
+    .sort((a, b) => a.count - b.count)
+    .slice(0, n);
+}
+
+/** every ad order's impressions per day, summed — the panel's own chart */
+export function impressionsByDay(n = 30) {
+  const out = [];
+  for (let k = n - 1; k >= 0; k--) {
+    const d = dayKey(now() - k * 86400000);
+    let i = 0, c = 0;
+    Object.values(state.adStats || {}).forEach(st => {
+      const day = (st.days || {})[d];
+      if (day) { i += day.i || 0; c += day.c || 0; }
+    });
+    out.push({ date: d, i, c });
   }
   return out;
 }
