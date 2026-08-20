@@ -412,6 +412,76 @@ export function mountThemeWatch() {
   else if (mq.addListener) mq.addListener(onChange);
 }
 
+/* ============================================================
+   The ad block that every section carries
+   ------------------------------------------------------------
+   Read top to bottom, each section is the same shape:
+
+       slider          — rotates; the house slide when nothing is sold
+       sponsored ×2    — labelled, from the chosen category
+       the content
+
+   Two sponsored rows and never three: a first screen that is all
+   advertising teaches the reader to scroll past it, and a slot nobody
+   looks at is a slot nobody renews. Scarcity is the thing being sold.
+   ============================================================ */
+
+/**
+ * The slider markup for one section — an advertiser's slide when there is
+ * one, the house's when there is not.
+ *
+ * The two are NOT interchangeable: an advertiser's ground is their own
+ * colour and does not follow the theme, so its ink is fixed (`--ad-cta`);
+ * the house slide sits on our own surface, which does follow, so its ink
+ * must follow too (`--text`). Mixing them is the fault fixed in ce0fc77.
+ */
+export function sectionSlider(ads, { product, sectionName }) {
+  if (ads && ads.length) {
+    return `<div class="slider"><div class="slider-track" id="secTrack">
+        ${ads.map((a, i) => `<div class="slide ${i === 0 ? 'active' : ''}" data-route="${a.link || '#/home'}" style="background:${a.color}">
+          <span class="slide-badge">${t('sponsored')}</span>
+          <div class="slide-title">${L(a.name)}</div>
+          <div class="slide-sub">${L(a.tag)}</div>
+          <div class="slide-cta">${L(a.cta)} ${icon(document.documentElement.dir === 'rtl' ? 'chevronL' : 'chevronR', 15)}</div>
+          <div class="slide-icon">${icon(a.icon, 86)}</div>
+        </div>`).join('')}
+      </div>
+      <div class="slider-dots" id="secDots">${ads.map((_, i) =>
+        `<span class="dot-i ${i === 0 ? 'active' : ''}"></span>`).join('')}</div>
+    </div>`;
+  }
+  /* Nothing sold. The house slide is how a shop owner learns the slot is
+     for sale at all — without it the section reads as having no room for
+     advertising, and nobody asks. */
+  return `<div class="slider"><div class="slider-track">
+      <div class="slide slide-house active" data-route="#/advertise/${product}">
+        <div style="color:var(--gold);margin-bottom:6px">${icon('megaphone', 31)}</div>
+        <div class="slide-title">${t('adCtaSection').replace('{sec}', sectionName)}</div>
+        <div class="slide-sub" style="color:var(--text-2)">${t('adCtaSub')}</div>
+        <div class="slide-cta cta-center">${icon('plus', 17)} ${t('continueAction')}</div>
+      </div>
+    </div></div>`;
+}
+
+/**
+ * The two sponsored rows. Each `row` is `{ id, route, icon, img, title, sub }`.
+ * Nothing is drawn when the pool is empty — an empty labelled band is worse
+ * than no band.
+ */
+export function sponsoredRows(rows) {
+  if (!rows || !rows.length) return '';
+  return `<div class="spon-block">${rows.map(r => `
+    <div class="list-row spon" data-route="${r.route}">
+      ${r.img ? `<span class="row-ico shot"><img src="${r.img}" alt="" loading="lazy" /></span>`
+              : `<span class="row-ico">${icon(r.icon || 'megaphone', 22)}</span>`}
+      <div class="row-main">
+        <div class="row-title">${r.title}<span class="badge badge-sponsored">${t('sponsored')}</span></div>
+        ${r.sub ? `<div class="row-sub">${r.sub}</div>` : ''}
+      </div>
+      <span class="chev">${icon(document.documentElement.dir === 'rtl' ? 'chevronL' : 'chevronR', 19)}</span>
+    </div>`).join('')}</div>`;
+}
+
 /* ---------------- toast ---------------- */
 export function toast(msg, kind = '') {
   const root = $('#toast');

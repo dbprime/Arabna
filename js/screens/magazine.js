@@ -1,9 +1,9 @@
 /* ======================= MAGAZINE ======================= */
 import { t, L, icon, $, $$, go, back, renderHeader, toast, wireRoutes, emptyState, shareItem,
-         query, sectionNote } from '../ui.js';
-import { ARTICLES, MAG_CATS, MINI_ADS } from '../data.js';
+         query, sectionNote, sectionSlider, sponsoredRows, historyKey } from '../ui.js';
+import { ARTICLES, MAG_CATS, MINI_ADS, AD_SLOTS } from '../data.js';
 import * as S from '../store.js';
-import { catKeyOf } from './home.js';
+import { catKeyOf, startSlider } from './home.js';
 
 function allArticles() { return S.withoutDemo(S.state.extraArticles.concat(ARTICLES)); }
 
@@ -29,13 +29,43 @@ export function MagazineScreen(root) {
       <button class="chip ${cat === 'all' ? 'active' : ''}" data-cat="all">${t('catAll')}</button>
       ${MAG_CATS.map(c => `<button class="chip ${cat === c.id ? 'active' : ''}" data-cat="${c.id}">${t(c.key)}</button>`).join('')}
     </div>
+    <!-- slider · two sponsored · the articles -->
+    <div id="secAds"></div>
+    <div id="sponRows"></div>
+
     <div id="magNote"></div>
     <div class="pad mt-12" id="magList"></div>
     <div style="height:16px"></div>`;
 
+  /* The sponsored stories move to the top and are labelled there. They
+     still appear in their place in the list — this is the shop window, not
+     a replacement for the shelf. */
+  const paintAds = (sec, list) => {
+    const key = historyKey();
+    const ads = S.rotate(S.sectionAds('magazine'), AD_SLOTS.magazine, key);
+    $('#secAds').innerHTML = sectionSlider(ads, {
+      product: 'magazine',
+      sectionName: sec ? t(sec.key) : t('magazineTitle'),
+    });
+    if (ads.length) startSlider(ads, '#secAds .slider', '#secTrack', '#secDots');
+    wireRoutes($('#secAds'));
+
+    const shown = ads.map(a => a.id);
+    const rows = S.rotate(list.filter(a => a.sponsored), 2, key, shown).map(a => ({
+      id: a.id,
+      route: '#/magazine/' + a.id,
+      icon: a.icon || 'newspaper',
+      title: L(a.title),
+      sub: L(a.advertiser || '') || L(a.excerpt || ''),
+    }));
+    $('#sponRows').innerHTML = sponsoredRows(rows);
+    wireRoutes($('#sponRows'));
+  };
+
   const paint = () => {
     const list = allArticles().filter(a => cat === 'all' || a.cat === cat);
     const sec = MAG_CATS.find(c => c.id === cat);
+    paintAds(sec, list);
     $('#magNote').innerHTML = sectionNote(sec ? t(sec.key) : '', list.length);
     const out = [];
     list.forEach((a, i) => {

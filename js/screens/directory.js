@@ -4,7 +4,8 @@ import { t, L, icon, $, $$, go, back, renderHeader, openSheet, closeSheet, confi
          openFilterSheet, activeFilterCount, sectionNote, replaceHash, goAfterDone,
          pickerBtn, setPickerValue, openDropdown, closeDropdown,
          showsPrices, priceGate, wirePriceGates,
-         openBadge, openBadgeSlot, onMinute, distLabel, cityChipLabel, fmtMiles, attrChips, fmtDay, fmtTime, bizBadge } from '../ui.js';
+         openBadge, openBadgeSlot, onMinute, distLabel, cityChipLabel, fmtMiles, attrChips, fmtDay, fmtTime, bizBadge,
+         sponsoredRows, historyKey } from '../ui.js';
 import { CATEGORIES, SUBSCRIPTION_PRICE, DAY_KEYS } from '../data.js';
 import * as S from '../store.js';
 import { catIcon, startSlider } from './home.js';
@@ -82,6 +83,7 @@ export function DirectoryScreen(root) {
          as removable pills, because that is state, not a control. -->
     <div id="pills"></div>
     <div id="catSlider"></div>
+    <div id="sponRows"></div>
     <div id="dirNote"></div>
     <div class="pad mt-12" id="dirList"></div>
 
@@ -187,7 +189,17 @@ export function DirectoryScreen(root) {
   const paintCatSlider = () => {
     const host = $('#catSlider');
     if (!host) return;
-    if (st.cat === 'all') { host.innerHTML = ''; return; }
+    /* On «الكل» there is no one category to sell, but the section still
+       reads the same way top to bottom, so the house slide stands there
+       and invites them to pick the category they want to be at the top of. */
+    if (st.cat === 'all') {
+      host.innerHTML = `
+        <div class="slider">
+          <div class="slider-track">${catHouseHtml('')}</div>
+        </div>`;
+      wireRoutes(host);
+      return;
+    }
     const ads = S.catSliderAds(st.cat);
     if (!ads.length) {
       host.innerHTML = `
@@ -247,7 +259,29 @@ export function DirectoryScreen(root) {
        one that is, and everywhere only while we do not. Whatever is pinned
        is labelled and keeps its distance line: the money buys the position,
        not the right to hide how far away the shop is. */
-    const pin = found.mode === 'loose' ? { list, ids: [] } : S.pinSponsored(list);
+    /* Two sponsored rows above the results, from the chosen category —
+       somebody who opened «مطاعم» wants a restaurant. Whatever the strip
+       above is already showing is left out, and so is whatever lands here:
+       one advertiser three times on one screen reads as a bug. */
+    const key = historyKey();
+    const stripIds = (st.cat === 'all' ? [] : S.catSliderAds(st.cat)).map(a => a.id);
+    const sponPool = list.filter(b => S.isPaid(b));
+    const sponTop = S.rotate(sponPool, 2, key, stripIds);
+    $('#sponRows').innerHTML = sponsoredRows(sponTop.map(b => ({
+      id: b.id,
+      route: '#/directory/' + b.id,
+      icon: catIcon(b.cat),
+      title: L(b.name),
+      sub: distLabel(b) || t(catKey(b.cat)),
+    })));
+    wireRoutes($('#sponRows'));
+    /* They stay in the list, in their own place — a business lifted into
+       the band must not vanish from the directory, and the count has to
+       keep adding up. What must not happen is the same shop twice in one
+       viewport, so the pin at the top of the results skips them. */
+    const above = sponTop.map(b => b.id);
+
+    const pin = found.mode === 'loose' ? { list, ids: [] } : S.pinSponsored(list, 1, above);
     list = pin.list;
     const sponsored = new Set(pin.ids);
 
@@ -479,7 +513,7 @@ function worshipBlock(b) {
 function catHouseHtml(catName) {
   return `<div class="slide slide-house active" data-route="#/advertise/catSlider">
     <div style="color:var(--gold);margin-bottom:6px">${icon('megaphone', 31)}</div>
-    <div class="slide-title">${t('adCtaCat').replace('{cat}', catName)}</div>
+    <div class="slide-title">${catName ? t('adCtaCat').replace('{cat}', catName) : t('adCta')}</div>
     <div class="slide-sub" style="color:var(--text-2)">${t('adCtaCatSub')}</div>
     <div class="slide-cta cta-center">${icon('plus', 17)} ${t('continueAction')}</div>
   </div>`;

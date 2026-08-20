@@ -600,6 +600,15 @@ ul { margin: 0; padding: 0; list-style: none; }
 .mini-ad .m-tag { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .mini-ad .m-name { font-size: 14.5px; font-weight: 700; }
 .mini-ad .m-tag { font-size: 12.5px; color: var(--muted); }
+/* The dots live BELOW the box, never inside it: the 62px box is fixed and
+   its smallness is what the price difference rests on. They are smaller
+   than the main slider's for the same reason. */
+.mini-dots {
+  display: flex; gap: 4px; justify-content: center;
+  margin: 7px 14px 0; min-height: 5px;
+}
+.mini-dots .dot-i { width: 5px; height: 5px; }
+.mini-dots .dot-i.active { width: 13px; }
 .ad-label {
   margin-inline-start: auto; flex: 0 0 auto;
   font-size: 11px; font-weight: 700; letter-spacing: .4px;
@@ -1192,6 +1201,13 @@ input[inputmode="tel"], input[type="email"], input[inputmode="decimal"], #zipIn 
   display: flex; flex-wrap: wrap; gap: 6px;
   padding: 0 14px 12px;
 }
+
+/* ---------- the sponsored rows under a section slider ---------- */
+.spon-block { margin: 12px 14px 0; display: grid; gap: 8px; }
+/* marked, not disguised: the tint says paid before the badge is read */
+.spon-block .list-row.spon { background: var(--gold-wash-1); border-color: var(--gold-wash-3); }
+.spon-block .list-row.spon .row-title { display: flex; align-items: center; gap: 7px; }
+.spon-block .badge-sponsored { flex: 0 0 auto; }
 
 /* the heart and the share side by side at the top of a detail page */
 .top-actions { display: flex; gap: 8px; flex: 0 0 auto; }

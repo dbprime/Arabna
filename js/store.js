@@ -657,9 +657,10 @@ export function inCoverage() {
  * مموّل» and carries exactly the same distance line as every other row —
  * real miles where both points exist, the area name where they do not.
  */
-export function pinSponsored(list, n = 1) {
+export function pinSponsored(list, n = 1, skip = []) {
   if (!inCoverage()) return { list, ids: [] };
-  const paid = list.filter(isPaid).slice(0, n);
+  const avoid = new Set(skip);
+  const paid = list.filter(b => isPaid(b) && !avoid.has(b.id)).slice(0, n);
   if (!paid.length) return { list, ids: [] };
   const ids = paid.map(b => b.id);
   const seen = new Set(ids);
@@ -1273,12 +1274,79 @@ export function sliderAds() {
   return live.concat(withoutDemo(SLIDER_ADS));
 }
 
+/** every live order for one placement, as slides */
+export function sectionAds(product) {
+  const t = now();
+  return (state.myAds || [])
+    .filter(a => a.product === product && a.status === 'live' && (!a.endsAt || a.endsAt > t))
+    .map(orderAsSlide);
+}
+
+/* ------------------------------------------------------------
+   Rotation that is fair, and that survives Back
+   ------------------------------------------------------------
+   Rai asked for the sponsored rows to change every time, and plain
+   randomness gets that wrong twice.
+
+   It breaks Back. Scroll the directory, open a shop, come back, and the
+   order beneath you has changed — the pixel we saved belongs to a page
+   that no longer exists. Back has been fixed three times; an advertisement
+   does not get to break it again. So the seed is chosen ONCE per visit and
+   filed under the history entry, exactly as scrollMemory is: a new visit
+   is a new order, and Back is the same order.
+
+   And it is not fair. With four advertisers, real randomness hands one of
+   them four impressions and another none on the same day — and all four
+   paid the same. So it is a round robin from a random start: it looks
+   different on every visit, and the distribution is even by construction.
+   That is the version you can put in a contract and defend when an
+   advertiser asks how many times they ran.
+   ------------------------------------------------------------ */
+const visitSeeds = new Map();
+let rotBase = null, rotSeen = 0;
+
+/**
+ * The visit's place in the rotation. The FIRST visit of a session starts
+ * somewhere random — so it looks different every time the app is opened —
+ * and every visit after it advances by one. A fresh random number per
+ * visit would look the same to a reader and be measurably unfair to the
+ * advertisers: over twenty opens it gives one of four buyers nine
+ * impressions and another seven. Advancing gives them ten each.
+ * Memory only: a new launch starts somewhere new.
+ */
+export function visitSeed(key) {
+  if (!key) return 0;
+  if (!visitSeeds.has(key)) {
+    if (rotBase === null) rotBase = Math.floor(Math.random() * 1e6);
+    visitSeeds.set(key, rotBase + rotSeen);
+    rotSeen += 1;
+  }
+  return visitSeeds.get(key);
+}
+
+/**
+ * `n` items from `pool`, taken in order from a per-visit starting point.
+ * @param pool  everything eligible
+ * @param n     how many to show
+ * @param key   the history entry — the same one scrollMemory uses
+ * @param skip  ids already shown elsewhere on this screen
+ */
+export function rotate(pool, n, key, skip = []) {
+  const avoid = new Set(skip);
+  const list = pool.filter(x => !avoid.has(x.id));
+  if (!list.length || n <= 0) return [];
+  const start = visitSeed(key) % list.length;
+  const out = [];
+  for (let i = 0; i < Math.min(n, list.length); i++) out.push(list[(start + i) % list.length]);
+  return out;
+}
+
 /**
  * The slider that sits at the top of one category. Cheaper than the home
  * one and better targeted — a restaurant would rather reach someone who
  * is already looking at restaurants than everyone who opens the app.
- * Nothing is rendered when nobody has bought it: the results matter more
- * than the pitch, and the pitch lives on #/advertise.
+ * A section with nothing sold shows the house slide instead, which is how
+ * a shop owner learns the slot is for sale at all.
  */
 export function catSliderAds(cat) {
   const t = now();

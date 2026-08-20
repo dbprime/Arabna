@@ -44,9 +44,15 @@ function placement(productId) {
     event:  [row('ph-bar'), row('ph-line'), lit('height:24px'), row('ph-block', 'height:20px'), row('ph-block', 'height:20px')],
     // a category page: the chips first, then the strip that was bought
     catSlider: [row('ph-bar'), cats, lit('height:30px'), row('ph-block', 'height:22px'), row('ph-block', 'height:22px')],
+    // the three section sliders: the picker row, then the strip on top of
+    // that section's own content
+    market:   [row('ph-bar'), row('ph-line'), lit('height:30px'), row('ph-block', 'height:22px'), row('ph-block', 'height:22px')],
+    events:   [row('ph-bar'), row('ph-line'), lit('height:30px'), row('ph-block', 'height:22px'), row('ph-block', 'height:22px')],
+    magazine: [row('ph-bar'), row('ph-line'), lit('height:30px'), row('ph-block', 'height:22px'), row('ph-block', 'height:22px')],
   };
   const where = { slider: 'placeSlider', mini: 'placeMini', story: 'placeStory',
-                  event: 'placeEvent', catSlider: 'placeCatSlider' };
+                  event: 'placeEvent', catSlider: 'placeCatSlider',
+                  market: 'placeMarket', events: 'placeEvents', magazine: 'placeMagazine' };
 
   return `<div class="ad-preview">
     <div class="ph">${(screens[productId] || screens.slider).join('')}<span class="ph-nav"></span></div>

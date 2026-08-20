@@ -6286,6 +6286,14 @@ export const AD_PRODUCTS = [
   { id: 'mini',      nameKey: 'prodMini',      descKey: 'prodMiniDesc',      icon: 'bolt',       days: 30, prices: { week1: 49,  week2: 89,  month1: 149 } },
   { id: 'story',     nameKey: 'prodStory',     descKey: 'prodStoryDesc',     icon: 'newspaper',  days: 14, prices: { week1: 199, week2: 349, month1: 549 } },
   { id: 'event',     nameKey: 'prodEvent',     descKey: 'prodEventDesc',     icon: 'calendar',   days: 14, prices: { week1: 99,  week2: 179, month1: 299 } },
+  /* The three section sliders. PRICES ARE PLACEHOLDERS — Rai sets the real
+     ones; the rule is that pricing lives with the owner, not in the code.
+     The ordering behind these numbers: the marketplace carries the highest
+     traffic and the most direct buying intent, events draw a seasonal
+     crowd, the magazine is a quieter read but held for longer. */
+  { id: 'market',    nameKey: 'prodMarket',    descKey: 'prodMarketDesc',    icon: 'bag',        days: 7,  prices: { week1: 79, week2: 139, month1: 229 } },
+  { id: 'events',    nameKey: 'prodEvents',    descKey: 'prodEventsDesc',    icon: 'calendar',   days: 7,  prices: { week1: 59, week2: 105, month1: 179 } },
+  { id: 'magazine',  nameKey: 'prodMagazine',  descKey: 'prodMagazineDesc',  icon: 'newspaper',  days: 7,  prices: { week1: 49, week2: 89,  month1: 149 } },
 ];
 
 /**
@@ -6295,7 +6303,17 @@ export const AD_PRODUCTS = [
  * A crowded ad surface loses both.
  * `catSlider` is per category.
  */
-export const AD_SLOTS = { slider: 6, catSlider: 4, mini: 8, story: 4, event: 3 };
+/* mini went 8 → 4 deliberately, and that is an increase not a cut: at
+   eight slides of 16 seconds the cycle is 128s and a buyer is on screen an
+   eighth of the time — nobody stays two minutes, so most buyers were never
+   seen at all. At four the cycle is 64s and each is up a quarter of the
+   time. Half the slots, twice the slot's worth, and an advertiser who saw
+   a result is the one who renews. */
+export const AD_SLOTS = {
+  slider: 6, catSlider: 4, mini: 4,
+  market: 4, events: 4, magazine: 4,
+  story: 4, event: 3,
+};
 
 export const BOOST_PRICES = [
   { id: 'b3d', days: 3,  price: 2 },

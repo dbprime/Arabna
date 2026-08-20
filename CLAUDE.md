@@ -7,7 +7,7 @@ ARABNA · عربنا — a mobile-first web app for the Arab community in the U.
 **business directory + marketplace + events + magazine**, Arabic-first with a full English toggle.
 ("Classifieds / الإعلانات الشخصية" is now "Marketplace / السوق" — the old `#/classifieds`
 routes still resolve so shared links keep working.)
-Current version: **V.02.7 (prototype)**. Owner: Rai Elby (@dbprime). Deploys to Vercel (team DB Prime).
+Current version: **V.02.8 (prototype)**. Owner: Rai Elby (@dbprime). Deploys to Vercel (team DB Prime).
 
 ## Hard rules (from the product brief)
 1. **One repository, one Vercel project.** No duplicates, no stray preview projects.
@@ -1197,6 +1197,102 @@ rather than announced.
   **the last three digits only**, enough to jog a memory and not enough to
   leak one. `samePhone()` compares the last ten digits, so punctuation
   never matters.
+
+## V.02.8 — batch six (c): an ad block in every section
+
+### One shape, four sections
+Every section now reads top to bottom the same way — **slider · two
+sponsored · the content** — the order Home already had. The four are the
+directory, the marketplace, events and the magazine.
+
+### The mini banner is a slider that says so
+It always rotated (`home.js`), but with nothing to indicate it and at
+**7 seconds — faster than the main slider's 10**, which is backwards. The
+main one is above the fold and is looked at on opening; this one is passed
+on the way down, and at 7s it could change its text under the reader's eye.
+It is **16 seconds** now, with **small dots below the box**. The box stays
+62px with `text-overflow: ellipsis`: its smallness is what justifies the
+price difference, and the dots never go inside it.
+
+**`AD_SLOTS.mini` went 8 → 4, and that is an increase.** Eight slides at
+16s is a 128-second cycle and each buyer is on screen an eighth of the
+time — nobody stays two minutes, so most buyers were never seen at all.
+Four is a 64-second cycle and a quarter of the time each: half the slots,
+twice the slot's worth, and an advertiser who saw a result is the one who
+renews.
+
+### Three new products, at prices the owner will set
+```js
+AD_SLOTS = { slider: 6, catSlider: 4, mini: 4,
+             market: 4, events: 4, magazine: 4,
+             story: 4, event: 3 };
+```
+`AD_PRODUCTS` gains `market` ($79/wk), `events` ($59) and `magazine` ($49).
+**Those numbers are placeholders and are marked as such in `data.js`** —
+the standing rule is that pricing belongs to the owner, not the code. The
+ordering behind them: the marketplace has the most traffic and the most
+direct buying intent, events draw a seasonal crowd, the magazine is a
+quieter read held for longer.
+
+### The house slide is compulsory, and it is the advertisement for advertising
+When a section has sold nothing it shows **«إعلانك هنا — أعلى قسم …»**
+opening `#/advertise` **on that section's package, already selected**.
+Without it the section reads as having no room for advertising and no shop
+owner ever learns the slot is for sale. `sectionSlider()` in `ui.js` draws
+both cases so no screen writes its own.
+
+- **The directory shows one on «الكل» too.** There is no single category to
+  sell there, so the slide carries the generic wording and invites them to
+  pick the category they want to be at the top of — the section still reads
+  the same way top to bottom.
+- **The two slides are not interchangeable.** An advertiser's ground is
+  their own colour and does not follow the theme, so its ink is fixed
+  (`--ad-cta`); the house slide sits on our surface, which does follow, so
+  its ink must follow too (`--text`). That is the ce0fc77 fault, and both
+  halves are measured in v21.
+
+### Two sponsored rows, and never three
+Between the slider and the content, each labelled «إعلان مموّل» with the
+badge the directory results already use. **Three would make the first
+screen of a section entirely advertising**, and a reader who learns to
+scroll past it makes the slot worth nothing — scarcity is what is being
+sold. Each section draws from what it actually sells: paid businesses in
+the directory, boosted listings in the marketplace, the other featured
+events, the sponsored stories. **With a category chosen they come from that
+category alone** — somebody who opened «مطاعم» wants a restaurant.
+
+### The rotation: fair, and it survives Back
+Rai asked for them to change every time. Plain randomness gets that wrong
+twice, and both were designed out.
+
+- **It would break Back.** Scroll the directory, open a shop, come back —
+  and the order beneath you has changed, so the pixel we saved belongs to a
+  page that no longer exists. Back has been fixed three times (V.02.3,
+  V.02.4); an advertisement does not get to break it again. **The seed is
+  chosen once per visit and filed under the history entry**, the same key
+  `scrollMemory` uses. A new visit is a new order; Back is the same order.
+- **It would not be fair.** With four advertisers, real randomness hands one
+  of them nine impressions and another seven over twenty opens — and all
+  four paid the same. `rotate(pool, n, key, skip)` is a **round robin whose
+  first visit of a session starts somewhere random and every visit after it
+  advances by one**. Measured over twenty visits with four advertisers:
+  **ten impressions each, spread 0** (with three: spread 1). That is the
+  version you can put in a contract and defend when an advertiser asks how
+  many times they ran.
+- **Nobody appears twice on one screen.** What the slider showed is excluded
+  from the sponsored rows, and what lands in the sponsored rows is removed
+  from the results before `pinSponsored()` runs. One advertiser three times
+  on one screen reads as a fault, not as luck.
+
+`pinSponsored()` is untouched — it is the pin *inside* the results, and the
+sponsored rows are a band above them. The two are not merged; they only
+avoid each other.
+
+### And the counting rule stands
+Every one of these uses **`mountAdRotator`** — no second timer anywhere. It
+counts an impression only while the element is on screen, the tab is
+visible, and a full second has passed. Anything else sells a view that did
+not happen.
 
 ## Known open items
 - Legal pages are first drafts — a lawyer must review before public launch.

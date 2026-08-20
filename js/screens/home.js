@@ -1,7 +1,7 @@
 /* ============================ HOME ============================ */
 import { t, L, icon, $, $$, go, renderHeader, openSheet, closeSheet, toast, stars, wireRoutes,
          distLabel, cityChipLabel, mountAdRotator } from '../ui.js';
-import { CATEGORIES, HOME_CATS, MINI_ADS, ARTICLES, ZIPS, CITY_SUGGESTIONS } from '../data.js';
+import { CATEGORIES, HOME_CATS, MINI_ADS, ARTICLES, ZIPS, CITY_SUGGESTIONS, AD_SLOTS } from '../data.js';
 import * as S from '../store.js';
 
 let sliderStop = null;
@@ -74,7 +74,8 @@ export function HomeScreen(root) {
 
     <!-- cheaper mini ad — not rendered at all when there is nothing to
          put in it, so no empty box stands where a banner would be -->
-    ${S.withoutDemo(MINI_ADS).length ? `<button class="mini-ad" id="miniAd"></button>` : ''}
+    ${S.withoutDemo(MINI_ADS).length ? `<button class="mini-ad" id="miniAd"></button>
+    <div class="mini-dots" id="miniDots"></div>` : ''}
 
     <!-- magazine teaser -->
     ${!stories.length ? '' : `<div class="section">
@@ -174,19 +175,31 @@ export function startSlider(ads, hostSel = '.slider', trackSel = '#track', dotsS
   });
 }
 
+/**
+ * The mini banner. It always rotated, but with nothing to say so and at
+ * 7 seconds — faster than the main slider above it, which is backwards.
+ * The main one is above the fold and is looked at on opening; this one is
+ * passed on the way down, and at 7s it could change its text under the
+ * reader's eye. 16 seconds is read. The dots go BELOW the box: the box
+ * stays 62px, and its smallness is what justifies its price.
+ */
 function startMiniAd() {
   if (miniStop) { miniStop(); miniStop = null; }
   const el = $('#miniAd');
   if (!el) return;
-  const ads = S.withoutDemo(MINI_ADS);
+  const ads = S.withoutDemo(MINI_ADS).slice(0, AD_SLOTS.mini);
   if (!ads.length) return;
+  const dots = $('#miniDots');
+  if (dots) dots.innerHTML = ads.length > 1
+    ? ads.map((_, i) => `<span class="dot-i ${i === 0 ? 'active' : ''}"></span>`).join('') : '';
   miniStop = mountAdRotator({
-    host: el, items: ads, interval: 7000,
-    paint: (a) => {
+    host: el, items: ads, interval: 16000,
+    paint: (a, i) => {
       el.innerHTML = `<span class="m-ico">${icon(a.icon, 19)}</span>
         <span class="m-body"><span class="m-name">${L(a.name)}</span><br><span class="m-tag">${L(a.tag)}</span></span>
         <span class="ad-label">${t('adLabel')}</span>`;
       el.dataset.link = a.link;
+      if (dots) [...dots.children].forEach((d, n) => d.classList.toggle('active', n === i));
     },
     onClick: (a) => go((a && a.link) || '#/directory'),
   });

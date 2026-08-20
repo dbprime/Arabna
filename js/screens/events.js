@@ -1,8 +1,10 @@
 /* ======================= EVENTS ======================= */
 import { t, L, icon, $, $$, go, back, renderHeader, toast, wireRoutes, replaceHash,
-         emptyState, query, sectionNote, pickerBtn, setPickerValue, openDropdown, ltr } from '../ui.js';
+         emptyState, query, sectionNote, pickerBtn, setPickerValue, openDropdown, ltr,
+         sectionSlider, sponsoredRows, historyKey } from '../ui.js';
 import { getLang } from '../i18n.js';
-import { EVENT_TYPES, nextOccurrence } from '../data.js';
+import { EVENT_TYPES, nextOccurrence, AD_SLOTS } from '../data.js';
+import { startSlider } from './home.js';
 import * as S from '../store.js';
 import { mountPhotoPicker } from './marketplace.js';
 
@@ -54,13 +56,47 @@ export function EventsScreen(root) {
       ${pickerBtn({ id: 'ctlType', label: t('lblType'), value: typeLabel(type) })}
     </div>
     <div id="ddHost"></div>
+
+    <!-- slider · two sponsored · the list, the same shape as every section -->
+    <div id="secAds"></div>
+    <div id="sponRows"></div>
+
     <div id="evNote"></div>
     <div class="pad mt-12" id="evList"></div>
     <div style="height:18px"></div>`;
 
+  /* The featured pin stays where it is — it is a different product. These
+     are the other featured events, labelled, above the list. */
+  const paintAds = (sec, list) => {
+    const key = historyKey();
+    const ads = S.rotate(S.sectionAds('events'), AD_SLOTS.events, key);
+    $('#secAds').innerHTML = sectionSlider(ads, {
+      product: 'events',
+      sectionName: sec ? t(sec.key) : t('eventsTitle'),
+    });
+    if (ads.length) startSlider(ads, '#secAds .slider', '#secTrack', '#secDots');
+    wireRoutes($('#secAds'));
+
+    const shown = ads.map(a => a.id);
+    // the one already pinned at the top of the list is not repeated here
+    const pinned = list.find(e => e.featured);
+    const pool = list.filter(e => e.featured && (!pinned || e.id !== pinned.id));
+    const rows = S.rotate(pool, 2, key, shown).map(e => ({
+      id: e.id,
+      route: '#/events/' + e.id,
+      img: e.photo || '',
+      icon: e.icon || 'calendar',
+      title: L(e.title),
+      sub: fmtEventDate(e.date, false),
+    }));
+    $('#sponRows').innerHTML = sponsoredRows(rows);
+    wireRoutes($('#sponRows'));
+  };
+
   const paint = () => {
     const list = all.filter(e => type === 'all' || (e.type || 'community') === type);
     const sec = EVENT_TYPES.find(x => x.id === type);
+    paintAds(sec, list);
     $('#evNote').innerHTML = sectionNote(sec ? t(sec.key) : '', list.length);
     const el = $('#evList');
     el.innerHTML = list.length

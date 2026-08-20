@@ -3,8 +3,10 @@ import { t, L, icon, $, $$, go, back, renderHeader, confirmSheet, toast, wireRou
          pickerBtn, setPickerValue, openDropdown,
          emptyState, query, shareItem, fmtMoney, priceLabel, statusBadge,
          openSheet, closeSheet, openFilterSheet, activeFilterCount, sectionNote,
-         showsPrices, replaceHash, goAfterDone, ltr } from '../ui.js';
-import { MARKET_CATS, BOOST_PRICES, FREE_PRICE, SUBSCRIPTION_PRICE } from '../data.js';
+         showsPrices, replaceHash, goAfterDone, ltr,
+         sectionSlider, sponsoredRows, historyKey } from '../ui.js';
+import { MARKET_CATS, BOOST_PRICES, FREE_PRICE, SUBSCRIPTION_PRICE, AD_SLOTS } from '../data.js';
+import { startSlider } from './home.js';
 import { getLang } from '../i18n.js';
 import * as S from '../store.js';
 
@@ -64,10 +66,45 @@ export function MarketplaceScreen(root) {
     </div>
     <div id="ddHost"></div>
 
+    <!-- every section reads the same way: slider · two sponsored · content -->
+    <div id="secAds"></div>
+    <div id="sponRows"></div>
+
     <div id="secNote"></div>
     <div id="catNote"></div>
     <div class="mt-12" id="clGrid"></div>
     <div style="height:16px"></div>`;
+
+  /**
+   * The slider and the two sponsored rows. The boost is what this section
+   * sells, so the sponsored rows are boosted listings — from the chosen
+   * section when one is chosen, because somebody who opened «سيارات» wants
+   * a car. Whatever the slider is showing is excluded: the same advertiser
+   * three times on one screen looks like a fault, not like luck.
+   */
+  const paintAds = (section, list) => {
+    const key = historyKey();
+    const ads = S.rotate(S.sectionAds('market'), AD_SLOTS.market, key);
+    $('#secAds').innerHTML = sectionSlider(ads, {
+      product: 'market',
+      sectionName: section ? t(section.key) : t('classifiedsTitle'),
+    });
+    if (ads.length) startSlider(ads, '#secAds .slider', '#secTrack', '#secDots');
+    wireRoutes($('#secAds'));
+
+    const shown = ads.map(a => a.id);
+    const pool = list.filter(c => c.boosted);
+    const rows = S.rotate(pool, 2, key, shown).map(c => ({
+      id: c.id,
+      route: '#/marketplace/' + c.id,
+      img: (c.photos && c.photos.length) ? c.photos[c.mainPhoto || 0] || c.photos[0] : '',
+      icon: c.icon || 'bag',
+      title: L(c.title),
+      sub: priceLabel(c.price),
+    }));
+    $('#sponRows').innerHTML = sponsoredRows(rows);
+    wireRoutes($('#sponRows'));
+  };
 
   const paintNote = () => {
     const el = $('#catNote');
@@ -102,6 +139,7 @@ export function MarketplaceScreen(root) {
                    || (b.created || 0) - (a.created || 0));
 
     const section = MARKET_CATS.find(c => c.id === cat);
+    paintAds(section, list);
     $('#secNote').innerHTML = sectionNote(section ? t(section.key) : '', list.length)
       + `<button class="info-dot" id="rulesBtn" aria-label="${t('marketRules')}">${icon('info', 15)}</button>`;
     wireRules();
