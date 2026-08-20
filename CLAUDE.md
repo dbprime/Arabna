@@ -1457,6 +1457,12 @@ Two more faults of the same family, both from the owner's own searching:
   characters up** — squashing erases word boundaries, so a short query would
   land in the middle of an unrelated word. `alshami` 0 → **2** · `abuomar`
   0 → **1** · `عبدالله` 0 → **2** · `dimassis` 0 → **1**.
+- **One V.02.2 result was deliberately reversed.** «صالون فلوريدا» was the
+  example that justified the three-stage search: it matched nothing exactly
+  and fell to stage two, 24 rows under «ما لقينا … بالضبط». The record now
+  carries the Arabic «فلوريدا», so the query is **exact and returns the one
+  salon** — the near-miss line correctly does not appear. The three stages
+  are untouched; this query simply no longer needs the second one.
 
 ### An id is an id
 The admin search box says «بالاسم أو الهاتف أو العنوان أو المعرّف» and the
