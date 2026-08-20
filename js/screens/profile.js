@@ -609,17 +609,51 @@ export function NotificationsScreen(root) {
 }
 
 /* ------------------------------ STATIC ------------------------------ */
+/**
+ * The questions first, the way to reach a human second — most people who
+ * open Help have one of ten questions, and reading an answer beats waiting
+ * for a reply. One panel open at a time, the same idiom as the drawer.
+ * The phone is gone from this screen on purpose; it is still published in
+ * About and in both legal pages, where the app stores expect to find it.
+ */
 export function HelpScreen(root) {
   renderHeader({ simple: true, title: t('help') });
+  const N = 10;
   root.innerHTML = `
+    <div class="pad mt-16">
+      <div class="section-title">${t('faqTitle')}</div>
+      <div class="faq" id="faq">
+        ${Array.from({ length: N }, (_, i) => i + 1).map(n => `
+          <div class="faq-item" data-q="${n}">
+            <button class="faq-head" aria-expanded="false" data-toggle="${n}">
+              <span>${t('faqQ' + n)}</span>${icon('chevronD', 19, 'faq-arrow')}
+            </button>
+            <div class="faq-body"><div class="faq-body-inner"><p>${t('faqA' + n)}</p></div></div>
+          </div>`).join('')}
+      </div>
+      <div class="hint" style="margin-top:10px">${t('faqNote')}</div>
+    </div>
+
     <div class="legal-body">
-      <h2>${t('help')}</h2>
+      <h2>${t('contactUsTitle')}</h2>
       <p>${S.state.lang === 'en'
-        ? 'Questions, problems or business inquiries — reach the ARABNA team any time.'
-        : 'أي سؤال أو مشكلة أو استفسار عن الإعلانات — تواصل مع فريق عربنا بأي وقت.'}</p>
-      <div class="info-row"><span class="i-ico">${icon('mail', 21)}</span><div class="i-txt"><b>support@arabna.app</b><span>Email</span></div></div>
-      <div class="info-row"><span class="i-ico">${icon('phone', 21)}</span><div class="i-txt"><b>(713) 555-0100</b><span>${t('phoneLabel')}</span></div></div>
+        ? 'Anything the answers above do not cover — write to the ARABNA team any time.'
+        : 'أي شيء لا تغطّيه الإجابات أعلاه — راسل فريق عربنا في أي وقت.'}</p>
+      <a class="contact-line" href="mailto:${S.SUPPORT_EMAIL}">${icon('mail', 18)}<span class="ltr">${S.SUPPORT_EMAIL}</span></a>
     </div>`;
+
+  /* one open at a time: two open panels turn the list back into the wall
+     of text the accordion was there to avoid */
+  let open = 0;
+  $$('#faq [data-toggle]').forEach(btn => btn.addEventListener('click', () => {
+    const n = +btn.dataset.toggle;
+    open = open === n ? 0 : n;
+    $$('#faq .faq-item').forEach(it => {
+      const on = +it.dataset.q === open;
+      it.classList.toggle('open', on);
+      it.querySelector('.faq-head').setAttribute('aria-expanded', String(on));
+    });
+  }));
 }
 
 /**

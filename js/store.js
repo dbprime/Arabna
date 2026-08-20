@@ -1300,6 +1300,10 @@ export function canSeeReviews() { return true; }
 /** Paying does not verify anybody — see businessVerified(). */
 export function isPaid(b) { return businessPlan(b) === 'paid'; }
 
+/** the subscribers, for «إعلانات مميّزة». Empty once the demo seeds go, and
+    the drawer reads that and says «قريباً» instead of opening a void. */
+export function featuredBusinesses() { return allBusinesses().filter(isPaid); }
+
 /* ============================================================
    Verification — deliberately not a consequence of paying
    ------------------------------------------------------------

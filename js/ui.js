@@ -621,11 +621,19 @@ export function openDrawer() {
   // Home is deliberately absent: the app opens on it and it holds a permanent
   // tab in the bottom bar, so listing it here made the drawer read like a
   // website menu. Directory stays — it is a destination people look for.
+  /* الدليل and السوق are permanent tabs in the bottom bar; listing them
+     here as well made the drawer a second copy of the nav. «إعلانات
+     مميّزة» takes their place — and only when there is something behind
+     it. A row that opens an empty list reads as a broken app, so with no
+     subscriber yet it says «قريباً» and does not navigate. */
+  const anyFeatured = S.featuredBusinesses().length > 0;
   const sections = [
-    item('compass', t('navExplore'), '#/directory'),
-    item('bag', t('classifiedsTitle'), '#/marketplace'),
     item('calendar', t('eventsTitle'), '#/events'),
     item('newspaper', t('magazineTitle'), '#/magazine'),
+    anyFeatured
+      ? item('crown', t('drFeatured'), '#/directory?featured=1')
+      : `<button class="dr-item dr-soon" disabled aria-disabled="true">${icon('crown', 22)}
+           <span>${t('drFeatured')}</span><span class="soon-tag">${t('soon')}</span></button>`,
     item('grid', t('allCategories'), '#/categories'),
   ].join('');
 

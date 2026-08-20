@@ -67,7 +67,8 @@ export function SignInScreen(root) {
       <div class="field"><label class="label">${t('email')}</label><input class="input" id="iEmail" type="email" /></div>
       ${passwordField('iPass', t('password'))}
       <button class="btn btn-gold btn-block" id="siBtn">${t('signIn')}</button>
-      <button class="btn btn-ghost btn-block mt-8" data-route="#/auth/forgot">${t('forgotPassword')}</button>
+      <button class="btn btn-ghost btn-block mt-8" data-route="#/auth/forgot">${t('forgotPassword')}
+        <span class="soon-tag">${t('soon')}</span></button>
       <button class="btn btn-ghost btn-block mt-8" data-route="#/auth/signup">${t('noAccount')}</button>
     </div>`;
 
@@ -84,14 +85,26 @@ export function SignInScreen(root) {
   wireRoutes(root);
 }
 
+/**
+ * There is no server account to reset against yet — `signOut()` clears the
+ * only record there is — so a form here would take an email and do nothing,
+ * which is the one outcome the project bans. It says so instead, and gives
+ * the two doors that actually open.
+ */
 export function ForgotScreen(root) {
   renderHeader({ simple: true, title: t('forgotPassword') });
   root.innerHTML = `
+    <div class="pad mt-16 center-col">
+      <div class="empty-ico">${icon('lock', 33)}</div>
+      <b style="font-size:17px">${t('forgotSoonTitle')}</b>
+      <span class="muted fs-13" style="text-align:center">${t('forgotSoonBody')}</span>
+    </div>
     <div class="pad mt-16">
-      <div class="field"><label class="label">${t('email')}</label><input class="input" id="fEmail" type="email" /></div>
-      <button class="btn btn-gold btn-block" id="fBtn">${t('sendCode')}</button>
+      <div class="list-note" style="margin-inline:0">${icon('info', 18)}<span>${t('forgotSoonHelp')}</span></div>
+      <button class="btn btn-gold btn-block mt-12" data-route="#/auth/signup">${t('signUp')}</button>
+      <button class="btn btn-ghost btn-block mt-8" data-route="#/auth/signin">${t('signIn')}</button>
     </div>`;
-  $('#fBtn').addEventListener('click', () => { toast(t('resetSent'), 'ok'); go('#/auth/signin'); });
+  wireRoutes(root);
 }
 
 /* ------------------------ EMAIL VERIFICATION ------------------------ */

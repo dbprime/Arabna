@@ -1137,6 +1137,47 @@ input[inputmode="tel"], input[type="email"], input[inputmode="decimal"], #zipIn 
 .dr-group.open .dr-sub-inner { visibility: visible; }
 /* The vertical rule does the work a row of separators used to do: it shows
    at a glance which items belong to the open group. */
+/* a leaf with nothing behind it yet: it says so and does not navigate */
+.dr-item.dr-soon { opacity: .55; }
+/* ---------- help: the questions, folded ---------- */
+.faq { margin-top: 10px; }
+.faq-item { border-block-end: 1px solid var(--line-soft); }
+.faq-item:first-child { border-block-start: 1px solid var(--line-soft); }
+.faq-head {
+  width: 100%; display: flex; align-items: center; gap: 12px;
+  padding: 15px 2px; text-align: start;
+  font-size: 14.5px; font-weight: 700; color: var(--text);
+  background: none; border: 0;
+}
+.faq-head span { flex: 1 1 auto; }
+.faq-head .faq-arrow { flex: 0 0 19px; color: var(--muted); transition: transform .2s var(--ease); }
+.faq-item.open .faq-head .faq-arrow { transform: rotate(180deg); }
+/* one grid child only, or the rows fall into implicit tracks and the
+   panel never actually collapses — the same trap the drawer hit */
+.faq-body { display: grid; grid-template-rows: 0fr; transition: grid-template-rows .2s var(--ease); }
+.faq-item.open .faq-body { grid-template-rows: 1fr; }
+.faq-body-inner { overflow: hidden; visibility: hidden; }
+.faq-item.open .faq-body-inner { visibility: visible; }
+.faq-body-inner p {
+  margin: 0 0 15px; font-size: 14px; line-height: 1.9; color: var(--text-2);
+}
+
+/* a soon-tag on a normal button, not just a drawer row */
+.btn .soon-tag {
+  margin-inline-start: 8px;
+  font-size: 11px; font-weight: 700;
+  padding: 2px 8px; border-radius: 999px;
+  background: var(--wash-2); color: var(--muted);
+  border: 1px solid var(--line-soft);
+}
+.dr-item.dr-soon .soon-tag {
+  margin-inline-start: auto;
+  font-size: 11px; font-weight: 700;
+  padding: 2px 8px; border-radius: 999px;
+  background: var(--wash-2); color: var(--muted);
+  border: 1px solid var(--line-soft);
+}
+
 .dr-sub-inner::before {
   content: ""; position: absolute; inset-block: 6px;
   inset-inline-start: 26px; width: 2px; border-radius: 2px;
@@ -1679,6 +1720,9 @@ input[inputmode="tel"], input[type="email"], input[inputmode="decimal"], #zipIn 
   margin-inline-start: 6px;
 }
 .badge-bizverified svg { flex: 0 0 12px; }
+/* the mark alone, standing beside a line that already names it. The
+   selector is specific enough to beat `.i-txt span`, which is grey. */
+.i-txt .badge-bizverified.mark { color: var(--on-gold); padding: 3px 6px; }
 
 /* a real hero photo replaces the category icon when there is one */
 .detail-hero.has-photo { padding: 0; }

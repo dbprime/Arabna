@@ -35,6 +35,7 @@ export function DirectoryScreen(root) {
       sort: q.sort || 'newest',
       attrs: (q.attrs || '').split(',').filter(Boolean),
       area: q.area || S.state.area || 'all',
+      featured: q.featured === '1',
     };
   };
   let st = readUrl();
@@ -52,6 +53,7 @@ export function DirectoryScreen(root) {
     if (st.sort !== 'newest') p.push('sort=' + st.sort);
     if (st.attrs.length) p.push('attrs=' + st.attrs.join(','));
     if (st.area && st.area !== 'all') p.push('area=' + encodeURIComponent(st.area));
+    if (st.featured) p.push('featured=1');
     replaceHash('#/directory' + (p.length ? '?' + p.join('&') : ''));
   };
 
@@ -150,6 +152,7 @@ export function DirectoryScreen(root) {
     if (st.sort !== 'newest') on.push({ k: '__sort', label: t(sortKey(st.sort)) });
     if (st.area && st.area !== 'all') on.push({ k: '__area', label: areaLabel(st.area) });
     if (st.term) on.push({ k: '__term', label: '"' + st.term + '"' });
+    if (st.featured) on.push({ k: '__featured', label: t('drFeatured') });
 
     host.innerHTML = on.length ? `<div class="pill-row">
       ${on.map(p => `<button class="pill" data-off="${p.k}">${p.label} ${icon('x', 13)}</button>`).join('')}
@@ -159,6 +162,7 @@ export function DirectoryScreen(root) {
     $$('#pills [data-off]').forEach(b => b.addEventListener('click', () => {
       const k = b.dataset.off;
       if (k === '__open') st.openNow = false;
+      else if (k === '__featured') st.featured = false;
       else if (k === '__area') { st.area = 'all'; S.setArea('all'); }
       else if (k === '__sort') st.sort = 'newest';
       else if (k === '__term') { st.term = ''; $('#dirSearch').value = ''; }
@@ -168,7 +172,7 @@ export function DirectoryScreen(root) {
     }));
     const pc = $('#pillClear');
     if (pc) pc.addEventListener('click', () => {
-      st.openNow = false; st.attrs = []; st.sort = 'newest'; st.term = ''; st.area = 'all';
+      st.openNow = false; st.attrs = []; st.sort = 'newest'; st.term = ''; st.area = 'all'; st.featured = false;
       S.setArea('all');
       $('#dirSearch').value = '';
       setPickerValue('ctlSort', t(sortKey(st.sort)));
@@ -205,6 +209,7 @@ export function DirectoryScreen(root) {
   const baseList = () => {
     const now = new Date();
     return S.allBusinesses()
+      .filter(b => !st.featured || S.isPaid(b))
       .filter(b => st.cat === 'all' || b.cat === st.cat)
       .filter(b => S.inArea(b, st.area))
       .filter(b => !st.openNow || S.isOpenNow(b, now))
@@ -254,7 +259,7 @@ export function DirectoryScreen(root) {
     paintCatSlider();
 
     const el = $('#dirList');
-    const filtered = st.openNow || st.attrs.length || st.term || (st.area && st.area !== 'all');
+    const filtered = st.openNow || st.attrs.length || st.term || st.featured || (st.area && st.area !== 'all');
     if (!list.length && filtered) {
       // a dead end offers something to press, not just an apology
       el.innerHTML = emptyState('filter', t('noFilterResults'), t('noFilterResultsSub'));
@@ -270,7 +275,7 @@ export function DirectoryScreen(root) {
         else { st.term = b.dataset.sv; $('#dirSearch').value = st.term; writeUrl(); paint(); }
       }));
       el.querySelector('#clrF').addEventListener('click', () => {
-        st.openNow = false; st.attrs = []; st.term = ''; st.area = 'all'; S.setArea('all');
+        st.openNow = false; st.attrs = []; st.term = ''; st.area = 'all'; st.featured = false; S.setArea('all');
         $('#dirSearch').value = '';
         writeUrl(); paint();
       });
@@ -563,6 +568,11 @@ export function ListingScreen(root, params) {
   const myRev = S.myReviewFor(b.id);
   const mine = S.ownsBusiness(b.id);
   const photos = S.visiblePhotos(b);
+  /* The first approved photo is the header. The strip below carries what
+     is left — printing the hero again as the first tile is the same photo
+     twice on one screen. A business with none renders no gallery at all;
+     that rule has not changed. */
+  const strip = photos.filter(ph => ph.url !== S.heroPhoto(b));
   const hero = S.heroPhoto(b);
   const claim = S.claimFor(b.id);
 
@@ -609,10 +619,10 @@ export function ListingScreen(root, params) {
       <div class="info-row">${`<span class="i-ico">${icon('bookmark', 21)}</span>`}<div class="i-txt"><b>${t(catKey(b.cat))}</b><span>${t('category')}</span></div></div>
       ${outingBlock(b)}
 
-      ${photos.length ? `
+      ${strip.length ? `
         <div class="section-head" style="padding:0;margin-top:20px"><div class="section-title">${t('photos')}</div></div>
         <div class="photo-strip">
-          ${photos.map(p => `<div class="photo-tile shot ${p.status === 'pending' ? 'pending' : ''}">
+          ${strip.map(p => `<div class="photo-tile shot ${p.status === 'pending' ? 'pending' : ''}">
             <img src="${p.url}" alt="" loading="lazy" />
             ${p.status === 'pending' ? `<span class="shot-flag">${t('statusPending')}</span>` : ''}
           </div>`).join('')}
@@ -1435,7 +1445,13 @@ export function SubscribeScreen(root, params) {
       ${[
         ['image', 'planPhotos', ''],
         ['play', 'planVideo', ''],
-        ['checkCircle', 'planVerify', ''],
+        /* Rai asked for the cold word «أهلية» to go, and it goes — but the
+           meaning stays: paying is the precondition for applying, never
+           the badge itself. Somebody reading «نشاط موثّق» beside $29
+           expects the mark tomorrow, and when it does not come they have
+           bought something they did not receive. «بعد المراجعة» is three
+           words and it prevents all of that, so it is never dropped. */
+        ['checkCircle', 'planVerify', 'planVerifySub'],
         ['trendingUp', 'planRank', ''],
         ['crown', 'planFeatured', ''],
         ['shield', 'planOnlyYours', 'planOnlyYoursSub'],
@@ -1443,7 +1459,9 @@ export function SubscribeScreen(root, params) {
         ['gift', 'planOffers', ''],
       ].map(([ico, key, sub2]) => `
         <div class="info-row"><span class="i-ico">${icon(ico, 21)}</span>
-          <div class="i-txt"><b>${t(key)}</b>${sub2 ? `<span>${t(sub2)}</span>` : ''}</div></div>`).join('')}
+          <div class="i-txt"><b>${t(key)}${key === 'planVerify'
+            ? `<span class="badge badge-bizverified mark" aria-hidden="true">${icon('checkCircle', 12)}</span>` : ''}</b>${
+            sub2 ? `<span>${t(sub2)}</span>` : ''}</div></div>`).join('')}
       <div class="list-note" style="margin-inline:0">${icon('info', 18)}<span>${t('planFreeNote')}</span></div>
       ${!showsPrices()
         ? priceGate('#/subscribe' + (params[0] ? '/' + params[0] : ''), 'unlockPrice')
