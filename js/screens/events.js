@@ -276,7 +276,7 @@ export function EventFormScreen(root, params) {
           <input class="input" id="cnAge" placeholder="${t('evAgeHint')}" value="${attr((e.concert || {}).ageLimit || '')}" /></div>
         <label class="setting-row" style="padding:8px 0;border:none">
           <input type="checkbox" id="cnFamily" ${(e.concert || {}).familySeating ? 'checked' : ''} class="check-gold" />
-          <span class="s-txt"><b style="font-weight:500;font-size:12.5px">${t('evFamilySeating')}</b></span></label>
+          <span class="s-txt"><b style="font-weight:500;font-size:.78125rem">${t('evFamilySeating')}</b></span></label>
         <div class="list-note" style="margin-inline:0">${icon('info', 18)}<span>${t('evTicketNote')}</span></div>
       </div>
 
@@ -305,7 +305,7 @@ export function EventFormScreen(root, params) {
       ${isAdmin ? `
         <label class="setting-row" style="padding:8px 0;border:none">
           <input type="checkbox" id="evFeat" ${e.featured ? 'checked' : ''} class="check-gold" />
-          <span class="s-txt"><b style="font-weight:500;font-size:12.5px">${t('featuredEvent')}</b></span></label>
+          <span class="s-txt"><b style="font-weight:500;font-size:.78125rem">${t('featuredEvent')}</b></span></label>
 
         <div class="field mt-12"><label class="label">${t('evRepeat')}</label>
           <select class="select" id="evRepeat">

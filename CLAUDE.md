@@ -7,7 +7,7 @@ ARABNA · عربنا — a mobile-first web app for the Arab community in the U.
 **business directory + marketplace + events + magazine**, Arabic-first with a full English toggle.
 ("Classifieds / الإعلانات الشخصية" is now "Marketplace / السوق" — the old `#/classifieds`
 routes still resolve so shared links keep working.)
-Current version: **V.03.4 (prototype)**. Owner: Rai Elby (@dbprime). Deploys to Vercel (team DB Prime).
+Current version: **V.03.5 (prototype)**. Owner: Rai Elby (@dbprime). Deploys to Vercel (team DB Prime).
 
 ## Hard rules (from the product brief)
 1. **One repository, one Vercel project.** No duplicates, no stray preview projects.
@@ -493,10 +493,10 @@ and `outingFeature` (15).
 ```
 python3 -m http.server 8099        # from the repo root
 node tools/e2e/chk_i18n.mjs        # both packs, every derived key, seconds
-tools/e2e/run.sh                   # 25 suites × 2 builds, ~25 minutes
+tools/e2e/run.sh                   # 26 suites × 2 builds, ~25 minutes
 python3 tools/build_single.py > index-single-file.html
 ```
-1. `tools/e2e/` holds every suite, v3 to v27, one per batch, and `run.sh`
+1. `tools/e2e/` holds every suite, v3 to v28, one per batch, and `run.sh`
    runs all of them against **both** `index.html` and the generated
    `index-single-file.html`. A change is not finished until both are green.
 2. Check **both** languages (the AR/EN button in the header) and **both**
@@ -2018,6 +2018,105 @@ period (`autoRenew: false`, `cancelAtPeriodEnd: true`), the panel warns
 keeps. Card and cash are two figures in the statistics: mixed together the
 revenue never matches the bank statement.
 
+## V.03.5 — batch eight (5): Back out of the drawer, and the size of the text
+
+### The drawer never told the browser it was there
+The drawer is a layer painted over the screen and wiped again; history knew
+nothing about it. So Back from an open drawer left the screen entirely, and
+Back after choosing a leaf returned to the previous page rather than to the
+list the reader had just been reading — they are still in the menu in their
+own head, and they picked one thing meaning to come back for another.
+
+The pattern was already in the file: the dropdown panels (`ui.js:250–330`)
+solve exactly this with **one history entry** and a token in
+`history.state`. The drawer copies it — a second scheme fighting over
+history is what caused the three separate Back bugs this project has
+already fixed.
+
+- **`hideDrawer()` and `closeDrawer()` are the whole batch.** `hideDrawer()`
+  removes the panel and **leaves the entry**, so Back lands on it and the
+  drawer comes back — with its group still expanded, because `openGroup` is
+  a module variable that already survived a close. `closeDrawer()` — the ✕,
+  a tap outside, the language, signing out — **winds the entry back**, so a
+  drawer closed on purpose never reappears.
+- **The mark lives on the entry, not in a variable**, and this is the fault
+  that cost the batch its afternoon. Setting `location.hash` fires a
+  **`popstate` with a null state BEFORE `hashchange`** — the fragment
+  navigation algorithm does both, in that order — so a handler that tore its
+  own bookkeeping down on the first pop it saw destroyed the entry at the
+  one moment it had to survive: the instant a route was picked. Reading
+  `history.state.drawer` makes that stray pop harmless.
+- **`historyKey()` and `replaceHash()` now MERGE state instead of replacing
+  it.** Stamping a bare `{ key }` over the entry wiped the drawer's mark
+  before its own handler could read it. Anything else that ever puts a field
+  on an entry is protected by the same line.
+- **The entry carries the key of the page it was opened from**, so it is the
+  same page as far as scroll memory is concerned and Back lands on the
+  directory exactly where it was left.
+- The guard is `if (!drawerOwnsEntry())`, so reopening from a pop pushes
+  nothing and **ten opens and closes are still one Back**. `openDD.close(true)`
+  ('abandon') hands a dropdown's entry over rather than leaving a second one:
+  **one Back closes the drawer and keeps the screen.**
+- Every `history` call stays inside `try` — the project is opened from
+  `file://` sometimes, where `pushState` throws and the drawer must simply
+  work as it did.
+
+### The text was small, and the phone's own setting did nothing at all
+196 `font-size` declarations, **every one of them in `px`**, commonest value
+**12.5px** against a declared base of 16 that almost nothing used. The size
+was the smaller half of the problem: **`px` is absolute, so a reader who
+enlarged the text on their iPhone saw no difference here whatsoever** — and
+that reader is the one who needs us most.
+
+**Four steps, and the order cannot be reversed.**
+
+**1. One line, for a fault that was already there.** `.search-bar input` had
+`min-width: auto` — every flex item's default, meaning "never shrink below
+your own content". Its content is the long placeholder, so the input refused
+to shrink and **spilled out of the bar it sits in, over the location chip**.
+The parent shrank as told and the child walked out of it. Measured at 390px:
+**14px of overlap today at base 16**, hidden under the rounded corner — and
+**105px at base 22**, one word printed on top of another. `min-width: 0;
+width: 100%` → **0 at 16, 20, 22 and 26**. Required whether or not the text
+ever grows.
+
+**2. `px` → `rem`, and nothing else.** 196 declarations in `app.css` and
+**27 more inline in the modules** — leaving those would have left a 17px
+heading beside body text that had grown. **Five decimals, not four**: at four,
+12.5px becomes `.7813rem` = 12.5008px, invisible and enough to make every
+later before/after comparison stop matching literally. At five all 22 values
+map back exactly. **`font-size` only** — no padding, no radius, no width, or
+every enlargement would inflate the whole app instead of the words. The
+mini banner's **62px box is untouched**: its size is sold and is written into
+this file. **Verified pixel-identical**: computed `font-size` of every
+element on 14 screens, old stylesheet against new, **zero differences**.
+
+**3. The base — and it is a percentage, not `17px`.** The spec asked for
+`html, body { font-size: 17px }`, and its own test asked for **zero px
+font-sizes in the file**; the two cannot both be true, and the px version
+also quietly cancels the device setting this batch exists to honour. So
+**`html { font-size: 106.25% }`** — 17px on a stock browser, and 106.25% of
+*the reader's own number* on a phone whose text was enlarged. Measured with
+the browser default moved to 24px: **before, the app stayed at 16px and a
+card title at 15px whatever the device said; now the root follows to 25.5px.**
+Only `html` carries it — on `body` as well it would compound, which `px`
+never did. 17 and not 18: 18 turns 12.5px into 14px, a 12% jump nobody could
+judge one piece of afterwards.
+
+**4. Settings → حجم الخط**, four steps `16 · 17 · 19 · 21` in
+`state.fontScale`, applied by `applyFontScale()` **before the first paint**,
+beside `applyTheme()` and for the same reason — after it, every launch
+flashes the old size. Written as a percentage too, so the reader's choice
+**multiplies** with their device's rather than replacing it: device 24 +
+«أكبر» = 31.5px, and that is correct, they know their own eyes. **A live
+sample sits under the buttons** — four words named «كبير» tell nobody how
+large large is — and «عادي» is the default, so anybody who never opens the
+screen is never moved.
+
+**Measured after all four**: nine screens × two languages × bases 17 and 21
+— no horizontal scroll, nothing off the edge, nothing clipped, zero console
+errors.
+
 ## Known open items
 - Legal pages are first drafts — a lawyer must review before public launch.
 - Push notifications: triggers are defined in Settings but not wired to a real service.
@@ -2080,9 +2179,12 @@ revenue never matches the bank statement.
   The switch, the bar, the filters and the counts all work; filling
   `iftar` / `suhoor` / `ramadanHours` on the real listings is a data job,
   and its moment is a month before Ramadan, not the night of.
-- **The drawer scrolls when a group is open** — 882/844 with «تصنيفات
-  عربنا» open (the newcomer row), 932/844 with «حسابي» (pre-existing).
-  Which row to drop is the owner's call.
+- **The drawer scrolls when a group is open** — measured again at the new
+  base: 890/844 at 16px, **916/844 at 17**, 939 at «كبير» and 971 at
+  «أكبر», with «تصنيفات عربنا» open (the newcomer row); «حسابي» has been
+  over since before V.03.1. The larger text widens a gap that was already
+  there rather than opening one, and one row anywhere fixes every size.
+  Which row to drop is the owner's call, not the code's.
 - **None of the 514 listings has coordinates yet.** That is a data job done
   outside the app (admin → directory exports the addresses). Until they
   arrive the app shows each listing's area name, never a figure in miles,

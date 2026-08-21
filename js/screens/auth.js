@@ -19,7 +19,7 @@ export function SignUpScreen(root) {
   root.innerHTML = `
     <div class="pad mt-16 center-col">
       <img data-logo="wide" src="${logoSrc('wide')}" style="height:56px" alt="ARABNA" />
-      <b style="font-size:17px;margin-top:12px">${t('needAccount')}</b>
+      <b style="font-size:1.0625rem;margin-top:12px">${t('needAccount')}</b>
       <span class="muted fs-13">${t('needAccountSub')}</span>
     </div>
     ${pending ? `<div class="list-note">${icon('info', 18)}<span>${t('resumedAction')}</span></div>` : ''}
@@ -58,13 +58,13 @@ export function SignUpScreen(root) {
 
       <label class="setting-row" style="padding:8px 0;border:none;cursor:pointer">
         <input type="checkbox" id="agree1" class="check-gold" />
-        <span class="s-txt"><b style="font-weight:500;font-size:12.5px">${t('agreeTo')}
+        <span class="s-txt"><b style="font-weight:500;font-size:.78125rem">${t('agreeTo')}
           <button type="button" class="gold link-inline" data-legal="terms">${t('terms')}</button> ${t('and')}
           <button type="button" class="gold link-inline" data-legal="privacy">${t('privacy')}</button></b></span>
       </label>
       <label class="setting-row" style="padding:8px 0;border:none;cursor:pointer">
         <input type="checkbox" id="agree2" class="check-gold" />
-        <span class="s-txt"><b style="font-weight:500;font-size:12.5px">${t('age18')}</b></span>
+        <span class="s-txt"><b style="font-weight:500;font-size:.78125rem">${t('age18')}</b></span>
       </label>
 
       <button class="btn btn-gold btn-block mt-12" id="suBtn">${t('createAccount')}</button>
@@ -176,7 +176,7 @@ export function ForgotScreen(root) {
   root.innerHTML = `
     <div class="pad mt-16 center-col">
       <div class="empty-ico">${icon('lock', 33)}</div>
-      <b style="font-size:17px">${t('forgotSoonTitle')}</b>
+      <b style="font-size:1.0625rem">${t('forgotSoonTitle')}</b>
       <span class="muted fs-13" style="text-align:center">${t('forgotSoonBody')}</span>
     </div>
     <div class="pad mt-16">
@@ -196,7 +196,7 @@ export function EmailVerifyScreen(root) {
   root.innerHTML = `
     <div class="pad mt-16 center-col">
       <div class="empty-ico">${icon('mail', 33)}</div>
-      <b style="font-size:17px">${t('checkYourEmail')}</b>
+      <b style="font-size:1.0625rem">${t('checkYourEmail')}</b>
       <span class="muted fs-13">${t('verifyEmailSub')} <b class="gold ltr">${email}</b></span>
     </div>
     <div class="pad mt-16">
@@ -267,7 +267,7 @@ export function PhoneVerifyScreen(root) {
   root.innerHTML = `
     <div class="pad mt-16 center-col">
       <div class="empty-ico">${icon('phone', 33)}</div>
-      <b style="font-size:17px">${t('needPhone')}</b>
+      <b style="font-size:1.0625rem">${t('needPhone')}</b>
       <span class="muted fs-13">${t('verifyPhoneSub')}</span>
     </div>
     <div class="pad mt-16" id="step1">
@@ -336,7 +336,7 @@ function demoCodeCard(ns) {
   return `
     <div class="card mt-16" style="padding:14px;text-align:center;border:1px dashed var(--gold)">
       <div class="fs-12 muted">${t('demoCodeIs')}</div>
-      <div class="ltr" style="font-size:34px;font-weight:700;letter-spacing:8px;color:var(--gold-bright);line-height:1.3">${S.DEMO_CODE}</div>
+      <div class="ltr" style="font-size:2.125rem;font-weight:700;letter-spacing:8px;color:var(--gold-bright);line-height:1.3">${S.DEMO_CODE}</div>
       <button class="btn btn-outline-gold btn-sm mt-8" data-fill="${ns}" style="width:100%">${icon('edit', 17)} ${t('fillDemoCode')}</button>
     </div>`;
 }

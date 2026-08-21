@@ -287,7 +287,7 @@ export function AdvertiseScreen(root, params) {
 
           <div class="row-between mt-16" style="padding:0 4px">
             <span style="font-weight:700">${t('total')}</span>
-            <span style="font-size:22px;font-weight:700;color:var(--gold-bright)">${fmtMoney(price())}</span>
+            <span style="font-size:1.375rem;font-weight:700;color:var(--gold-bright)">${fmtMoney(price())}</span>
           </div>
 
           <div class="field mt-16"><label class="label">${t('paymentMethods')}</label>
@@ -319,7 +319,7 @@ export function AdvertiseScreen(root, params) {
         <div class="pad" style="margin-top:60px">
           <div class="center-col">
             <div class="empty-ico done-mark">${icon('checkCircle', 42)}</div>
-            <b style="font-size:19px">${t('adSubmitted')}</b>
+            <b style="font-size:1.1875rem">${t('adSubmitted')}</b>
             <span class="muted fs-13" style="max-width:280px;margin-top:6px">${t('adSubmittedSub')}</span>
             <button class="btn btn-gold mt-20" data-route="#/home">${t('backHome')}</button>
             <button class="btn btn-ghost mt-8" data-route="#/my-ads">${t('myAds')}</button>

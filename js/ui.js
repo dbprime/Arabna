@@ -43,7 +43,12 @@ export function historyKey() {
   const st = history.state;
   if (st && st.key) return st.key;
   const key = 'h' + (++historySeq);
-  try { history.replaceState({ key }, ''); } catch (e) { /* file:// */ }
+  /* MERGE, never replace. The drawer keeps its token on the same entry
+     (see openDrawer), and stamping a bare { key } over it wiped the token
+     before the drawer's own popstate handler could read it — so Back
+     closed the drawer instead of reopening it. Anything else that puts a
+     field on an entry is protected by the same line. */
+  try { history.replaceState(Object.assign({}, st, { key }), ''); } catch (e) { /* file:// */ }
   return key;
 }
 
@@ -117,7 +122,8 @@ export function go(hash) {
 export function replaceHash(hash) {
   if (location.hash === hash) return;
   const key = historyKey();
-  history.replaceState({ key }, '', hash);
+  // the same entry with a different URL — keep whatever else is on it
+  history.replaceState(Object.assign({}, history.state, { key }), '', hash);
 }
 
 /**
@@ -397,6 +403,28 @@ export function applyTheme() {
   if (status) status.setAttribute('content', theme === 'light' ? 'default' : 'black-translucent');
 }
 
+/**
+ * The reader's own choice, on top of their device's.
+ *
+ * Written as a percentage for the same reason the stylesheet's base is:
+ * a percentage on the root multiplies the reader's default font size
+ * instead of replacing it, so somebody who enlarged the text on their
+ * phone AND picked «كبير» here gets both. An absolute px would have
+ * silently thrown the first of those away.
+ *
+ * Called before the first screen is drawn, like applyTheme — applying it
+ * afterwards gives a flash of the old size on every launch.
+ */
+export function applyFontScale() {
+  const px = S.fontScale();
+  document.documentElement.style.fontSize = (px / 16 * 100) + '%';
+}
+
+export function setFontScale(px) {
+  S.setFontScale(px);
+  applyFontScale();
+}
+
 export function setTheme(mode) {
   S.setThemeMode(mode);
   applyTheme();
@@ -659,8 +687,86 @@ export function hideNav() { $('#bottomNav').style.display = 'none'; }
 let drawerSeq = 0;
 let openGroup = null;          // remembered while the drawer is on screen
 
+/* ------------------------------------------------------------
+   BACK, FROM INSIDE THE DRAWER
+
+   The drawer records nothing in history: it is a layer painted
+   over the screen and wiped, and the browser never hears about
+   it. So «directory → drawer → cafés» left the history reading
+   [directory, cafés], and Back went to the directory — right by
+   the browser's reckoning and wrong by the reader's, who is
+   still standing in the list they picked from and wants the row
+   next to the one they chose. Worse, Back with the drawer OPEN
+   left the screen entirely while the drawer was still, in their
+   mind, in front of them.
+
+   The dropdown panels already solve exactly this, with ONE
+   history entry and a token in history.state, so the drawer uses
+   the same mechanism rather than a second one — two things
+   fighting over history is the bug that has been fixed three
+   times in this project already.
+
+   The whole file turns on the difference between two functions:
+
+     closeDrawer()  ✕ · a tap outside · language · sign-out
+                    → WINDS the entry back, as if it never opened
+     hideDrawer()   choosing a route
+                    → LEAVES it, so Back reopens the drawer with
+                      its group still open
+
+   `openGroup` already survives a close, so the group comes back
+   open on its own — the entry was the only missing half.
+   ------------------------------------------------------------ */
+/* The entry carries the mark, not a variable. Setting `location.hash`
+   fires a spec-mandated `popstate` with a null state BEFORE `hashchange`
+   (the fragment-navigation algorithm does both, in that order) — so a
+   handler that tore its own bookkeeping down on the first pop it saw
+   destroyed the entry at the moment a route was picked, which is the one
+   moment the entry has to survive. Reading `history.state.drawer` instead
+   makes that stray pop harmless: it is not a drawer entry, so the drawer
+   is hidden, and nothing else happens.
+
+   The entry is stamped with the CURRENT key, so it is the same page as far
+   as scroll memory is concerned and Back lands on the directory where it
+   was left. */
+
+/** does history currently sit on a drawer entry? */
+export function drawerOwnsEntry() {
+  try { return !!(history.state && history.state.drawer); }
+  catch (e) { return false; }        // file://
+}
+
+/* One listener, mounted once, for the life of the app: decide by WHERE we
+   are in history, never by whether the drawer looks open. */
+function onDrawerPop() {
+  if (drawerOwnsEntry()) openDrawer();
+  else hideDrawer();
+}
+let drawerPopWired = false;
+
+/** visual only: the panel goes, the history entry stays behind */
+export function hideDrawer() {
+  const root = $('#drawer');
+  if (!root) return;
+  root.classList.remove('open');
+  root.setAttribute('aria-hidden', 'true');
+  const seq = drawerSeq;
+  setTimeout(() => { if (seq === drawerSeq) root.innerHTML = ''; }, 340);
+}
+
 export function openDrawer() {
   drawerSeq++;
+  /* One open layer at a time. A dropdown hands its entry over instead of
+     leaving a second one behind — 'abandon' forgets it without winding it,
+     because the drawer is about to push its own. */
+  if (openDD) openDD.close(true);
+
+  if (!drawerPopWired) { window.addEventListener('popstate', onDrawerPop); drawerPopWired = true; }
+  /* Never a second entry: reopening from a pop is already standing on one,
+     and ten opens and closes must still be one Back. */
+  if (!drawerOwnsEntry()) {
+    try { history.pushState({ key: historyKey(), drawer: 1 }, ''); } catch (e) { /* file:// */ }
+  }
   const root = $('#drawer');
   const member = S.isMember();
   const u = S.state.user;
@@ -764,7 +870,7 @@ export function openDrawer() {
 
   root.setAttribute('aria-hidden', 'false');
   requestAnimationFrame(() => root.classList.add('open'));
-  root.querySelector('[data-close]').addEventListener('click', closeDrawer);
+  root.querySelector('[data-close]').addEventListener('click', () => closeDrawer());
 
   // accordion: opening one group closes the others
   $$('#drawer [data-toggle]').forEach(btn => btn.addEventListener('click', () => {
@@ -777,7 +883,10 @@ export function openDrawer() {
     });
   }));
 
-  $$('#drawer [data-route]').forEach(b => b.addEventListener('click', () => { closeDrawer(); go(b.dataset.route); }));
+  /* hideDrawer, not closeDrawer: the entry stays, so Back lands on it and
+     the drawer opens again with the same group expanded. */
+  $$('#drawer [data-route]').forEach(b => b.addEventListener('click', () => { hideDrawer(); go(b.dataset.route); }));
+  // nobody wants Back to return them to a drawer after switching language
   const dl = $('#drLang'); if (dl) dl.addEventListener('click', () => { closeDrawer(); toggleLang(); });
   const out = $('#drOut');
   if (out) out.addEventListener('click', () => {
@@ -785,14 +894,20 @@ export function openDrawer() {
     confirmSheet({ title: t('signOut'), sub: '', confirmText: t('signOut'), danger: true, onConfirm: () => { S.signOut(); toast(t('done'), 'ok'); go('#/home'); } });
   });
 }
+/**
+ * Closed on purpose — the ✕, a tap outside, the language, signing out.
+ * The history entry is wound back, so Back goes on to wherever the reader
+ * was before the drawer, and a drawer closed deliberately never reappears.
+ *
+ * Winding it back is what makes a deliberate close different from
+ * picking a route: hideDrawer() leaves the entry, so Back reopens the
+ * drawer with its group still expanded; closeDrawer() takes the entry
+ * with it, so Back carries on past it.
+ */
 export function closeDrawer() {
-  const root = $('#drawer');
-  root.classList.remove('open');
-  root.setAttribute('aria-hidden', 'true');
-  // Only wipe the markup if the drawer was not reopened during the animation —
-  // otherwise a close that overlaps an open leaves an empty panel behind.
-  const seq = drawerSeq;
-  setTimeout(() => { if (seq === drawerSeq) root.innerHTML = ''; }, 340);
+  const ours = drawerOwnsEntry();
+  hideDrawer();
+  if (ours) { try { history.back(); } catch (e) { /* file:// */ } }
 }
 
 /* ---------------- small builders ---------------- */

@@ -23,7 +23,7 @@ function lockView(root) {
   root.innerHTML = `
     <div class="pad mt-20 center-col">
       <div class="empty-ico">${icon('lock', 33)}</div>
-      <b style="font-size:17px">${t('adminPanel')}</b>
+      <b style="font-size:1.0625rem">${t('adminPanel')}</b>
       <span class="muted fs-13">${S.state.lang === 'en' ? 'Internal staff access only — separate from consumer accounts.' : 'دخول داخلي لفريق عربنا فقط — منفصل عن حسابات المستخدمين.'}</span>
     </div>
     <div class="pad mt-16">
@@ -779,7 +779,7 @@ function magHtml() {
     <div class="field"><label class="label">${S.state.lang === 'en' ? 'Body' : 'نص المقال'}</label><textarea class="textarea" id="artBody"></textarea></div>
     <label class="setting-row" style="padding:8px 0;border:none">
       <input type="checkbox" id="artSpon" class="check-gold" />
-      <span class="s-txt"><b style="font-weight:500;font-size:12.5px">${t('sponsoredStory')}</b></span></label>
+      <span class="s-txt"><b style="font-weight:500;font-size:.78125rem">${t('sponsoredStory')}</b></span></label>
     <div class="field"><label class="label">${S.state.lang === 'en' ? 'Advertiser' : 'المعلن'} <span class="muted">(${t('optional')})</span></label><input class="input" id="artAdv" /></div>
     <button class="btn btn-gold btn-block" id="pubArt">${icon('send', 19)} ${S.state.lang === 'en' ? 'Publish' : 'نشر'}</button>
 

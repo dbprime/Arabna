@@ -22,8 +22,8 @@ export function ProfileScreen(root) {
   if (!u) {
     root.innerHTML = `
       <div class="pad mt-20 center-col">
-        <div class="avatar" style="width:66px;height:66px;font-size:24px">${icon('user', 31)}</div>
-        <b style="font-size:18px;margin-top:10px">${t('guest')}</b>
+        <div class="avatar" style="width:66px;height:66px;font-size:1.5rem">${icon('user', 31)}</div>
+        <b style="font-size:1.125rem;margin-top:10px">${t('guest')}</b>
         <span class="muted fs-13">${t('needAccountSub')}</span>
         <button class="btn btn-gold mt-16" data-route="#/auth/signup">${t('signUp')}</button>
         <button class="btn btn-ghost btn-sm mt-8" data-route="#/auth/signin">${t('haveAccount')}</button>
@@ -38,11 +38,11 @@ export function ProfileScreen(root) {
 
   root.innerHTML = `
     <div class="pad mt-16 center-col">
-      <div class="avatar" style="width:66px;height:66px;font-size:24px;overflow:hidden">
+      <div class="avatar" style="width:66px;height:66px;font-size:1.5rem;overflow:hidden">
         ${avatarUrl ? `<img src="${avatarUrl}" alt="" style="width:100%;height:100%;object-fit:cover" />`
                     : u.name[0].toUpperCase()}
       </div>
-      <b style="font-size:18px;margin-top:10px">${u.name}
+      <b style="font-size:1.125rem;margin-top:10px">${u.name}
         ${S.hasBadge() ? `<span class="badge-check" title="${t('verifiedBadge')}">${icon('check', 12)}</span>` : ''}</b>
       <span class="badge ${S.tier() === 2 ? 'badge-verified' : 'badge-free'} mt-8">${tierLabel}</span>
       ${u.avatar && u.avatar.status === 'pending' ? `<span class="hint">${t('photoPendingReview')}</span>` : ''}
@@ -579,6 +579,22 @@ export function SettingsScreen(root) {
       </div>
       <div class="hint" style="padding:0 16px 4px">${t('themeAutoNote')}</div>
 
+      <div class="dr-group-label">${t('fontSize')}</div>
+      <div class="font-pick" id="fontPick" role="radiogroup" aria-label="${t('fontSize')}">
+        ${S.FONT_SIZES.map((px, i) => `
+          <button class="font-opt ${S.fontScale() === px ? 'on' : ''}" data-font="${px}"
+                  role="radio" aria-checked="${S.fontScale() === px}">
+            <span class="fo-a" style="font-size:${(px / 16).toFixed(5)}rem">A</span>
+            <span class="fo-name">${t(['fontSmall', 'fontNormal', 'fontLarge', 'fontXLarge'][i])}</span>
+          </button>`).join('')}
+      </div>
+      <!-- The sample is the whole point of the screen: four words named
+           «كبير» tell nobody how large large is. It is a real row from the
+           directory, at the size being offered, and it changes on the tap
+           rather than after leaving the screen. -->
+      <div class="font-sample" id="fontSample">${t('fontSample')}</div>
+      <div class="hint" style="padding:0 16px 4px">${t('fontNote')}</div>
+
       <div class="dr-group-label">${t('notifPrefs')}</div>
       ${sw('messages', t('notifMessages'), p.messages)}
       ${sw('expiry', t('notifExpiry'), p.expiry)}
@@ -643,6 +659,19 @@ export function SettingsScreen(root) {
         x.classList.toggle('on', on);
         x.setAttribute('aria-checked', on);
         x.querySelector('.tp-tick').innerHTML = on ? icon('check', 16) : '';
+      });
+    });
+  }));
+
+  $$('[data-font]').forEach(b => b.addEventListener('click', () => {
+    const px = Number(b.dataset.font);
+    import('../ui.js').then(m => {
+      m.setFontScale(px);
+      // repainted in place, like the theme: no reload and no losing your spot
+      $$('[data-font]').forEach(x => {
+        const on = x === b;
+        x.classList.toggle('on', on);
+        x.setAttribute('aria-checked', on);
       });
     });
   }));

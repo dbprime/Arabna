@@ -1510,7 +1510,7 @@ export function ClaimScreen(root, params) {
     root.innerHTML = `
       <div class="pad mt-20 center-col">
         <div class="empty-ico">${icon('clock', 33)}</div>
-        <b style="font-size:17px">${t('claimPendingTitle')}</b>
+        <b style="font-size:1.0625rem">${t('claimPendingTitle')}</b>
         <span class="muted fs-13">${t('claimPending')}</span>
         <button class="btn btn-ghost mt-16" data-route="#/directory/${bizId}">${t('back')}</button>
       </div>`;
@@ -1745,14 +1745,14 @@ export function BusinessVerifyScreen(root, params) {
   if (S.businessVerified(b)) {
     root.innerHTML = `<div class="pad mt-20 center-col">
       <div class="empty-ico" style="color:var(--gold-bright)">${icon('checkCircle', 33)}</div>
-      <b style="font-size:17px">${t('bizVerifiedOn')}</b>
+      <b style="font-size:1.0625rem">${t('bizVerifiedOn')}</b>
       <button class="btn btn-ghost mt-16" data-route="#/directory/${b.id}">${t('back')}</button></div>`;
     wireRoutes(root); return;
   }
   if (st && st.status === 'pending') {
     root.innerHTML = `<div class="pad mt-20 center-col">
       <div class="empty-ico">${icon('clock', 33)}</div>
-      <b style="font-size:17px">${t('bizVerifyPendingTitle')}</b>
+      <b style="font-size:1.0625rem">${t('bizVerifyPendingTitle')}</b>
       <span class="muted fs-13">${t('bizVerifyPending')}</span>
       <button class="btn btn-ghost mt-16" data-route="#/directory/${b.id}">${t('back')}</button></div>`;
     wireRoutes(root); return;
@@ -1760,7 +1760,7 @@ export function BusinessVerifyScreen(root, params) {
   if (!S.isPaid(b)) {
     root.innerHTML = `<div class="pad mt-20 center-col">
       <div class="empty-ico">${icon('lock', 33)}</div>
-      <b style="font-size:17px">${t('verifyNeedsPlan')}</b>
+      <b style="font-size:1.0625rem">${t('verifyNeedsPlan')}</b>
       <button class="btn btn-gold mt-16" data-route="#/subscribe/${b.id}">${t('upgradeBtn')}</button></div>`;
     wireRoutes(root); return;
   }
@@ -1844,7 +1844,7 @@ export function SubscribeScreen(root, params) {
     root.innerHTML = `
     <div class="pad mt-16 center-col">
       <div class="empty-ico" style="width:64px;height:64px">${icon('crown', 33)}</div>
-      <b style="font-size:18px">${t('subTitle')}</b>
+      <b style="font-size:1.125rem">${t('subTitle')}</b>
       <span class="muted fs-13">${t('subSub')}</span>
     </div>
 
@@ -1856,7 +1856,7 @@ export function SubscribeScreen(root, params) {
           <span class="seg-tag">${t('planYearlyOff')}</span></button>
       </div>
       <div class="center-col mt-12">
-        <div style="font-size:34px;font-weight:700;color:var(--gold-bright)">${fmtMoney(price)}<span style="font-size:14px;color:var(--muted)">${plan === 'yearly' ? t('year') : t('month')}</span></div>
+        <div style="font-size:2.125rem;font-weight:700;color:var(--gold-bright)">${fmtMoney(price)}<span style="font-size:.875rem;color:var(--muted)">${plan === 'yearly' ? t('year') : t('month')}</span></div>
         ${plan === 'yearly' ? `<span class="gold fs-13">${t('planSaveLine').replace('{x}', fmtMoney(S.yearlySaving()))}</span>` : ''}
       </div>
       <div class="list-note" style="margin-inline:0;margin-top:12px">${icon('gift', 18)}

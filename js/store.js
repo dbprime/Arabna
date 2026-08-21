@@ -33,6 +33,7 @@ const DEFAULTS = {
   /* 'auto' follows the device, which is what somebody who schedules night
      mode on their phone already expects the app to do. */
   theme: 'auto',                 // 'auto' | 'light' | 'dark'
+  fontScale: 17,                 // the base in px — 16 · 17 · 19 · 21
   /* No city until the person tells us or the device does. A city written
      in advance lies to everyone who is not in it — and 138 of the 514
      listings are not in Houston. */
@@ -528,6 +529,28 @@ export function quickAttrsForCat(cat, limit = 0) {
 
 /** the city out of "…, Katy, TX 77450" — works on all 514 */
 const cityCache = new Map();
+/* Four steps and no slider: a slider invites a value nobody chose and
+   there is no right answer between 17 and 19. «عادي» is 17 — the base the
+   stylesheet declares — so a reader who never opens this screen is never
+   moved.
+
+   This is deliberately IN ADDITION to the device's own text setting, not
+   instead of it: every size is a `rem`, so the phone's setting already
+   comes through by itself, and the two multiply. Somebody who enlarged
+   their phone AND picks «كبير» here gets both, which is correct — they
+   know their own eyes better than we do. */
+export const FONT_SIZES = [16, 17, 19, 21];
+export const FONT_DEFAULT = 17;
+export function fontScale() {
+  const n = Number(state.fontScale);
+  return FONT_SIZES.includes(n) ? n : FONT_DEFAULT;
+}
+export function setFontScale(px) {
+  const n = Number(px);
+  state.fontScale = FONT_SIZES.includes(n) ? n : FONT_DEFAULT;
+  save();
+}
+
 export function themeMode() { return state.theme || 'auto'; }
 export function setThemeMode(mode) {
   state.theme = (mode === 'light' || mode === 'dark') ? mode : 'auto';

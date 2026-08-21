@@ -252,8 +252,8 @@ export function ListingDetailScreen(root, params) {
     <div class="detail-body">
       <div class="row-between">
         <div>
-          <div class="cl-price" style="font-size:24px">${priceLabel(c.price)}</div>
-          <div class="detail-title" style="font-size:17px">${L(c.title)}</div>
+          <div class="cl-price" style="font-size:1.5rem">${priceLabel(c.price)}</div>
+          <div class="detail-title" style="font-size:1.0625rem">${L(c.title)}</div>
           <div class="mt-8">${statusBadge(c, mine)}</div>
         </div>
         <div class="top-actions">
@@ -747,7 +747,7 @@ export function BoostScreen(root, params) {
   root.innerHTML = `
     <div class="pad mt-16 center-col">
       <div class="empty-ico" style="width:60px;height:60px">${icon('bolt', 31)}</div>
-      <b style="font-size:17px">${t('boost')}</b>
+      <b style="font-size:1.0625rem">${t('boost')}</b>
       <span class="muted fs-13">${t('boostDesc')}</span>
     </div>
     <div class="pad mt-16" id="opts">

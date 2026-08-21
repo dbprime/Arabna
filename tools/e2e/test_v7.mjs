@@ -269,6 +269,7 @@ const opened = await page.evaluate(() => {
     subIcon: (() => { const s = sub.querySelector('svg'); return s ? Math.round(s.getBoundingClientRect().width) : 0; })(),
     subPad: cs.paddingInlineStart,
     headSize: getComputedStyle(head).fontSize, headWeight: getComputedStyle(head).fontWeight,
+    rootSize: parseFloat(getComputedStyle(document.documentElement).fontSize),
   };
 });
 ok('open head does NOT turn gold', !/228,\s*199,\s*126/.test(opened.headColour), opened.headColour);
@@ -279,7 +280,14 @@ ok('sub-items are a step smaller than the head',
    parseFloat(opened.subSize) < parseFloat(opened.headSize), opened.subSize + ' vs ' + opened.headSize);
 ok('sub-items are lighter than the head',
    Number(opened.subWeight) < Number(opened.headWeight), opened.subWeight + ' vs ' + opened.headWeight);
-ok('sub-item font is 13.8px', opened.subSize === '13.8px', opened.subSize);
+/* V.03.5 reversed the literal here, not the design. Every font-size in
+   the stylesheet is a `rem` now and the base moved 16 -> 17, so 13.8px is
+   .8625rem and prints 14.6625px. The invariant was always the RATIO — a
+   step below the head — so that is what is asserted, and it survives the
+   reader picking «كبير» too. */
+ok('sub-item font is .8625rem — 13.8px at a stock base',
+   Math.abs(parseFloat(opened.subSize) / opened.rootSize - 0.8625) < 0.001,
+   opened.subSize + ' of ' + opened.rootSize + 'px');
 ok('sub-item icons are 18px', opened.subIcon === 18, opened.subIcon + 'px');
 ok('sub-items indent past the rule', parseFloat(opened.subPad) === 40, opened.subPad);
 await closeDrawer();
@@ -325,8 +333,16 @@ const folded = await page.evaluate(() => {
   return { s: p.scrollHeight, c: p.clientHeight };
 });
 ok('member drawer fits with every group folded', folded.s <= folded.c + 2, folded.s + ' / ' + folded.c);
+/* V.03.5: measured against a real row rather than a frozen 40. The base
+   moved 16 -> 17, so every row in here is 6.25% taller and a hard pixel
+   would have failed for the arithmetic rather than for the fault it
+   guards. The bound is still exactly one row. */
+const rowH = await page.evaluate(() => {
+  const r = document.querySelector('.drawer-panel .dr-item');
+  return r ? Math.round(r.getBoundingClientRect().height) : 44;
+});
 ok('…and an open group overflows by no more than one row',
-   fitInfo.s - fitInfo.c <= 40, (fitInfo.s - fitInfo.c) + 'px over');
+   fitInfo.s - fitInfo.c <= rowH, (fitInfo.s - fitInfo.c) + 'px over, one row is ' + rowH);
 const badge = await page.evaluate(() => {
   const r = Array.from(document.querySelectorAll('.drawer-panel > .dr-item'))
     .find(x => x.dataset.route === '#/notifications');

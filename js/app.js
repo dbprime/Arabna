@@ -4,9 +4,9 @@
 
 import { setLang, bothPacks } from './i18n.js';
 import { state, registerStrings, runReminders, runSubscriptionCycle } from './store.js';
-import { $, renderHeader, renderNav, hideNav, closeSheet, closeDrawer, closeDropdown,
+import { $, renderHeader, renderNav, hideNav, closeSheet, hideDrawer, drawerOwnsEntry, closeDropdown,
          mountScrollMemory, restoreScroll, historyKey, markShown, startClock,
-         applyTheme, mountThemeWatch } from './ui.js';
+         applyTheme, applyFontScale, mountThemeWatch } from './ui.js';
 
 import { OffersScreen, HomeScreen, mountGeoRefresh } from './screens/home.js';
 import { CategoriesScreen } from './screens/categories.js';
@@ -92,7 +92,11 @@ function render() {
   const hash = full.split('?')[0];
   const app = $('#app');
   closeSheet();
-  closeDrawer();
+  /* Hide, never close: closing winds the drawer's history entry back, and
+     picking a route from the drawer deliberately leaves that entry behind
+     so Back returns to the list. And when the pop LANDS on that entry the
+     drawer has just reopened itself — render must not wipe it. */
+  if (!drawerOwnsEntry()) hideDrawer();
   closeDropdown(true);   // the navigation owns the history, not the panel
 
   let match = null, params = [];
@@ -128,6 +132,7 @@ registerStrings(bothPacks());
 function catchUp() {
   try { runSubscriptionCycle(); runReminders(); } catch (e) { /* never block boot */ }
   applyTheme();          // before anything is drawn, so there is no flash
+  applyFontScale();      // …and the same for the size, for the same reason
   mountThemeWatch();
   mountScrollMemory();
   startClock();
