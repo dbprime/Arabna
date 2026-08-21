@@ -314,7 +314,7 @@ export const STRINGS = {
     offerPending: 'قيد المراجعة',
     offerRejected: 'مرفوض',
     offerRemove: 'احذف',
-    offerLeft: 'تقدر تنشر',
+    offerLeft: 'يمكنك نشر',
     offerLeftOf: 'من 3',
     offerErrNoText: 'اكتب نصّ العرض',
     offerErrNoEnd: 'حدّد تاريخ الانتهاء',
