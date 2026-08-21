@@ -92,11 +92,16 @@ ok('1.9 …while «صالون» carries both vocabularies',
 
 /* ---- 2. a category name is a label, matched as a whole word ---- */
 console.log('--- the category label ---');
+/* The invariant is that the category LABEL is not inside the record's own
+   text — not that the word never appears there. V.03.3 gave b410 the
+   description «Men's barber in Sugar Land», which is the record's own
+   words and belongs in the haystack. */
 ok('2.1 the label is held apart from the record\'s own words',
    await page.evaluate(() => {
      const { S, D } = window.__m;
      const b = D.BUSINESSES.find(x => x.id === 'b410');
-     return /barber/.test(S.catHaystack(b)) && !/barber/.test(S.searchHaystack(b).replace(/alibaba barber/g, ''));
+     const label = S.catHaystack(b);
+     return label.includes('barbers') && !S.searchHaystack(b).includes(label);
    }));
 ok('2.2 typing a whole category word still returns the category',
    (await search('مطعم')).n === 176, String((await search('مطعم')).n));
@@ -106,8 +111,17 @@ ok('2.4 «beauty» does too, from the English half',
    (await search('beauty')).n === 24, String((await search('beauty')).n));
 ok('2.5 «ملحمة» no longer drags in the whole grocery aisle',
    (await search('ملحمة')).n === 19, String((await search('ملحمة')).n));
-ok('2.6 «بقالة» is the groceries, not the butchers too',
-   (await search('بقاله')).n === 41, String((await search('بقاله')).n));
+/* 41 before V.03.3. The 485 descriptions added one: a bakery whose own
+   description says supermarket, which is a find and not a leak — the two
+   non-grocery hits are both shops that really do sell groceries. */
+const baqala = await search('بقاله');
+ok('2.6 «بقالة» is the groceries, not the butchers too', baqala.n === 42, String(baqala.n));
+ok('2.7 …and every stray one really is a grocer too', await page.evaluate(() => {
+  const { S, D } = window.__m;
+  return S.searchBusinesses(D.BUSINESSES, 'بقاله').list
+    .filter(b => b.cat !== 'grocery')
+    .every(b => /سوبرماركت|supermarket/i.test(b.desc.ar + ' ' + b.desc.en));
+}));
 ok('2.7 «مسجد» is untouched', (await search('مسجد')).n === 25, String((await search('مسجد')).n));
 ok('2.8 «كنيسة» is untouched', (await search('كنيسة')).n === 12, String((await search('كنيسة')).n));
 
