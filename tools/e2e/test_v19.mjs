@@ -57,10 +57,15 @@ ok('1.4 b322 still exists and is still itself', await page.evaluate(async () => 
 
 /* ============ 2 — the transliteration tags ============ */
 console.log('--- the tags ---');
+/* «فانوس» left the table above and is measured on its own below. V.03.0
+   gave b226 the tag «استفانوس» (St Stephen), and «فانوس» sits inside it —
+   a real substring collision in Arabic, not a fault in the tag. A word the
+   READER typed matches anywhere by design; only a word the dictionary put
+   in their mouth has to end on a boundary. So the count is 2. */
 const cases = [
   ['فادي', 5], ['بترا', 4], ['قهوة هاوس', 2],
   ['حديقة هيرمان', 3], ['مسجد حمزة', 1],
-  ['دروبي', 1], ['زعفران', 1], ['طازة', 1], ['فانوس', 1], ['سوزي', 1],
+  ['دروبي', 1], ['زعفران', 1], ['طازة', 1], ['سوزي', 1],
 ];
 let i = 0;
 for (const [term, want] of cases) {
@@ -72,6 +77,13 @@ for (const [term, want] of cases) {
 const fadi = await search('فادي');
 ok('2.11 the tag itself is never printed as a name',
    !fadi.names.some(n => n === 'فادي (جاليريا)'), fadi.names.slice(0, 3).join(' | '));
+
+const fanoos = await search('فانوس');
+ok('2.9 «فانوس» finds the restaurant',
+   fanoos.names.some(n => /Fanoosh/i.test(n)), fanoos.names.join(' | '));
+ok('2.10 …alongside «استفانوس», which legitimately contains it',
+   fanoos.n === 2 && fanoos.names.some(n => /Stephen|استفانوس/i.test(n)),
+   fanoos.n + ' · ' + fanoos.names.join(' | '));
 
 /* ============ 3 — the dictionary ============ */
 console.log('--- the dictionary ---');

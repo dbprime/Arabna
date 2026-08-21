@@ -1801,6 +1801,14 @@ which row goes is a product decision, not a code one.
 - **The admin users section is deferred to the server batch**, and so is any
   count that spans devices. One account exists on one device, so the screen
   would show Rai looking at himself.
+- **«فانوس» returns two, and the wrong one leads.** V.03.0 tagged b226
+  «استفانوس» (St Stephen), and «فانوس» sits inside it — a real Arabic
+  substring collision, not a bad tag: a word the reader typed matches
+  anywhere by design, and only a dictionary substitution has to end on a
+  boundary. Both results are found; the church is first because stage one
+  returns file order. Ranking a name match ahead of an incidental one — the
+  tier `adminSearchBusinesses` already uses — would fix it, and is a search
+  change that belongs in a search batch, not at the end of this one.
 - **The newcomer's guide is a shell with working doorways.** Eight parts,
   eight buttons that all land on real listings, and placeholder copy that
   says so. Rai writes the text; nothing may invent a government procedure.
