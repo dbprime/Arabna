@@ -16,6 +16,7 @@ import { DirectoryScreen, ListingScreen, AddBusinessScreen, ClaimScreen, Subscri
          BusinessEditScreen, BusinessPhotosScreen, BusinessVerifyScreen } from './screens/directory.js';
 import { MarketplaceScreen, ListingDetailScreen, PostScreen, BoostScreen, MessagesScreen } from './screens/marketplace.js';
 import { NewcomerScreen, MagazineScreen, ArticleScreen } from './screens/magazine.js';
+import { ReceiptsScreen, ReceiptScreen } from './screens/receipts.js';
 import { ProfileScreen, EditProfileScreen, ChangePasswordScreen, SavedScreen, MyAdsScreen,
          MyBusinessScreen, MyReviewsScreen, SettingsScreen, NotificationsScreen,
          HelpScreen, AboutScreen, PrivacyScreen, TermsScreen, BlockedScreen } from './screens/profile.js';
@@ -43,6 +44,8 @@ const ROUTES = [
   { re: /^#\/verify-business\/(.+)$/,  screen: BusinessVerifyScreen, nav: 'directory' },
   { re: /^#\/subscribe-consent\/([^?]+)/, screen: SubscribeConsentScreen, nav: null },
   { re: /^#\/my-subscription$/,   screen: MySubscriptionScreen, nav: 'profile' },
+  { re: /^#\/receipts$/,          screen: ReceiptsScreen,    nav: 'profile' },
+  { re: /^#\/receipt\/(.+)$/,     screen: ReceiptScreen,     nav: 'profile' },
   { re: /^#\/subscribe(?:\/(.+))?$/, screen: SubscribeScreen, nav: 'directory' },
   { re: /^#\/newcomer$/,          screen: NewcomerScreen,    nav: 'directory' },
   { re: /^#\/magazine$/,          screen: MagazineScreen,    nav: 'directory' },

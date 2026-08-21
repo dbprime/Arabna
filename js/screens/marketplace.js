@@ -771,6 +771,8 @@ export function BoostScreen(root, params) {
     e.target.innerHTML = `<span class="spinner"></span> ${t('paying')}`;
     await S.chargeCard(sel.price, 'Marketplace boost');
     S.boostClassified(c.id);
+    S.addReceipt({ kind: 'boost', amount: sel.price, method: 'card',
+                   refId: c.id, description: `${t('boost')} — ${L(c.title)}` });
     toast(t('done'), 'ok');
     go('#/marketplace/' + c.id);
   });

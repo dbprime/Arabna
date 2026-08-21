@@ -92,6 +92,7 @@ const DEFAULTS = {
   worshipFixes: [],          // «الوقت غير صحيح؟» — one line from a regular, for the admin
   offers: {},                // { bizId: [{ id, text, price, endsAt, status, when, reason }] }
   adminLog: [],              // { at, bizId, field, from, to } — the panel's hand, never the owner's
+  receipts: [],              // every amount taken, card or cash; survives deleteAccount
 };
 
 export const state = Object.assign({}, DEFAULTS, load() || {});
@@ -2058,6 +2059,110 @@ export function chargeCard(amount, description) {
   return new Promise(res => setTimeout(() => res({ ok: true, id: 'pay_' + Date.now(), amount, description }), 1400));
 }
 
+/* ============================================================
+   RECEIPTS — a transaction number for every amount taken
+   ------------------------------------------------------------
+   A receipt is not a courtesy. It is the piece of paper that
+   settles «I paid» against «no you didn't», and it is what makes
+   a shop owner handing over $29 feel they dealt with a company
+   rather than with somebody they know.
+
+   `inv1` · `inv2` · `inv3` was wrong, and not because it is
+   ugly: a sequential number PUBLISHES THE SIZE OF THE BUSINESS.
+   An advertiser reading `inv3` knows they are the third customer
+   since it opened, and in a small community that talks to itself
+   that is not a thing to hand out.
+
+   The alphabet drops 0/O and 1/I/L. The number is read down a
+   phone and typed into a message, and one ambiguous character
+   turns half those calls into "no, it isn't there".
+   ============================================================ */
+const RCPT_ALPHABET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';   // no 0 O 1 I L
+export const RECEIPT_PREFIX = 'ARB';
+
+function receiptCode() {
+  let out = '';
+  for (let i = 0; i < 5; i++) {
+    out += RCPT_ALPHABET[Math.floor(Math.random() * RCPT_ALPHABET.length)];
+  }
+  return out;
+}
+
+/** unique before it is issued — a duplicate receipt number is a nightmare */
+export function newReceiptNumber() {
+  const yy = String(new Date(now()).getFullYear()).slice(-2);
+  const taken = new Set((state.receipts || []).map(r => r.id));
+  for (let i = 0; i < 200; i++) {
+    const id = `${RECEIPT_PREFIX}-${yy}-${receiptCode()}`;
+    if (!taken.has(id)) return id;
+  }
+  return `${RECEIPT_PREFIX}-${yy}-${receiptCode()}${receiptCode()}`;
+}
+
+/**
+ * Issue one. `kind` is what was bought, `method` how it was paid
+ * ('card' | 'cash' | 'check' | 'transfer'), and `covers` the period the
+ * money bought — «I paid and got nothing» ends at a line saying what the
+ * amount covered.
+ */
+export function addReceipt({ kind, description, amount, method = 'card',
+                             bizId = null, refId = null, covers = null,
+                             receivedBy = '', reference = '', autoRenew = false,
+                             refundOf = null }) {
+  const u = state.user || {};
+  const item = {
+    id: newReceiptNumber(),
+    at: now(),
+    kind, description,
+    amount: Number(amount) || 0,
+    tax: 0,                       // a line, not a missing line — see below
+    method, bizId, refId, covers,
+    receivedBy, reference, autoRenew, refundOf,
+    buyer: { name: u.name || '', email: u.email || '' },
+    status: refundOf ? 'refunded' : 'paid',
+  };
+  state.receipts = (state.receipts || []).concat(item);
+  save();
+  return item;
+}
+
+/** newest first */
+export function receipts() {
+  return (state.receipts || []).slice().sort((a, b) => b.at - a.at);
+}
+export function receiptById(id) {
+  return (state.receipts || []).find(r => r.id === id) || null;
+}
+
+/**
+ * A refund is a SECOND receipt with a negative amount pointing at the
+ * first. Editing an issued receipt is the definition of cooking the books,
+ * so the original is never touched and both appear in the list.
+ */
+export function refundReceipt(id, reason = '') {
+  const src = receiptById(id);
+  if (!src || src.refundOf) return null;
+  return addReceipt({
+    kind: 'refund',
+    description: reason || src.description,
+    amount: -Math.abs(src.amount),
+    method: src.method, bizId: src.bizId, refId: src.refId,
+    receivedBy: src.receivedBy, refundOf: src.id,
+  });
+}
+
+/** the two totals kept apart, or the revenue figure never matches the bank */
+export function receiptTotals(fromMs = 0) {
+  const rows = (state.receipts || []).filter(r => r.at >= fromMs);
+  const sum = (f) => rows.filter(f).reduce((n, r) => n + r.amount, 0);
+  return {
+    card: sum(r => r.method === 'card'),
+    cash: sum(r => r.method !== 'card'),
+    all: sum(() => true),
+    count: rows.length,
+  };
+}
+
 /* ---------------- mutations ---------------- */
 /* ---- what the sign-up screen checks, kept beside the account itself so
         the same rules answer the profile screen and a future server ---- */
@@ -2941,8 +3046,16 @@ export function runSubscriptionCycle() {
       changed = true;
       break;
     }
+    /* The invoice row stays for the subscription screen's own history;
+       the RECEIPT is the document, and it carries the number. */
+    const rec = addReceipt({
+      kind: 'subscription', amount: sub.price, method: sub.method || 'card',
+      bizId: sub.businessId, autoRenew: sub.autoRenew !== false,
+      description: strOf('subscription'),
+      covers: { from: sub.currentPeriodEnd, to: periodEnd(sub.currentPeriodEnd, sub.plan) },
+    });
     sub.invoices = (sub.invoices || []).concat([{
-      id: 'inv' + (sub.invoices.length + 1),
+      id: rec.id,
       date: sub.currentPeriodEnd, amount: sub.price, status: 'paid',
     }]);
     const wasTrial = sub.status === 'trialing';
@@ -3155,6 +3268,19 @@ export function deleteAccount() {
   state.blocked = [];
   state.extraNotifs = [];
   state.draft = null;
+
+  /* The receipts stay, stripped of who paid.
+     Deleting an account is an app-store requirement and the user's right,
+     so the answer is not to refuse it — it is to separate the person from
+     the transaction. Wiping the financial record means that somebody who
+     subscribed and then deleted their account leaves NO TRACE THAT MONEY
+     WAS TAKEN: not for the accountant, not for the bank if they dispute
+     the charge, not for any audit. Every company that takes money does
+     this, and the privacy page says so. */
+  state.receipts = (state.receipts || []).map(r => Object.assign({}, r, {
+    buyer: { name: '', email: '' }, anonymized: true,
+  }));
+
   state.user = null;
   save();
 }

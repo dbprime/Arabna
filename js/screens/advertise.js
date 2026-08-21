@@ -307,6 +307,10 @@ export function AdvertiseScreen(root, params) {
                        cat: product.perCat ? adCat : '',
                        bizName: content.bizName, tagline: content.tagline,
                        ctaText: content.ctaText, image: content.image });
+        // an ad used to leave no invoice at all
+        S.addReceipt({ kind: 'ad', amount: price(), method: 'card',
+                       description: `${t(product.key)} — ${t(duration.key)}`,
+                       covers: t(duration.key) });
         step = 5; render();
       });
 

@@ -1920,6 +1920,7 @@ export function SubscribeConsentScreen(root, params) {
   renderHeader({ simple: true, title: t('consentTitle') });
   const bizId = params[0] || S.state.myBusinessId;
   if (bizId && !ownerOnly(bizId)) return;   // see SubscribeScreen
+  const b = S.businessById(bizId);
   const plan = (query().plan === 'yearly') ? 'yearly' : 'monthly';
   const price = S.planPrice(plan);
   const firstCharge = S.now() + S.TRIAL_DAYS * 86400000;
@@ -1968,9 +1969,19 @@ export function SubscribeConsentScreen(root, params) {
     if (!box.checked) return;
     btn.innerHTML = `<span class="spinner"></span> ${t('paying')}`;
     await S.chargeCard(0, 'ARABNA business plan — trial');
-    S.startSubscription({
+    const started = S.startSubscription({
       businessId: bizId, plan, consentText,
       device: navigator.userAgent.slice(0, 120),
+    });
+    if (!started) { toast(t('somethingWrong'), 'err'); return; }
+    /* The trial charges nothing, and the receipt still says so: a zero
+       receipt is the record of when the agreement was accepted, and the
+       first real charge gets its own. */
+    S.addReceipt({
+      kind: 'subscription', amount: 0, method: 'card', bizId,
+      description: `${t('subscription')} — ${L(b ? b.name : '')}`,
+      autoRenew: true,
+      covers: { from: S.now(), to: started.currentPeriodEnd },
     });
     toast(t('subActive'), 'ok');
     goAfterDone('#/my-subscription');

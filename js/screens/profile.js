@@ -155,6 +155,8 @@ export function EditProfileScreen(root) {
     if (S.VERIFY_BADGE_PRICE > 0) {
       bb.innerHTML = `<span class="spinner"></span>`;
       await S.chargeCard(S.VERIFY_BADGE_PRICE, 'ARABNA verification badge');
+      S.addReceipt({ kind: 'badge', amount: S.VERIFY_BADGE_PRICE, method: 'card',
+                     description: t('verifiedBadge') });
     }
     S.requestBadge();
     toast(t('badgeRequested'), 'ok');
@@ -598,6 +600,14 @@ export function SettingsScreen(root) {
         return `<div class="setting-row"><span class="s-txt"><b>${label}</b><span>${line}</span></span>
           <button class="mini-btn" data-route="${sub ? '#/my-subscription' : '#/subscribe'}">${icon(document.documentElement.dir === 'rtl' ? 'chevronL' : 'chevronR', 15)}</button></div>`;
       })()}
+
+      ${/* Receipts sit here rather than in the drawer: they belong to
+           anybody who has paid for anything, not only to a subscriber,
+           and the «حسابي» group is already over the drawer's height. */''}
+      <div class="setting-row">
+        <span class="s-txt"><b>${t('receipts')}</b><span>${S.receipts().length || t('receiptsEmpty')}</span></span>
+        <button class="mini-btn" data-route="#/receipts">${icon(document.documentElement.dir === 'rtl' ? 'chevronL' : 'chevronR', 15)}</button>
+      </div>
 
       <div class="dr-group-label">${t('blockedTitle')}</div>
       <div class="setting-row">
