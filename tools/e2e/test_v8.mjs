@@ -461,9 +461,9 @@ await page.fill('#sFirst', 'رامي');
 
 await page.fill('#sLast', 'البي');
 await page.fill('#sEmail', 'rami@arabna.app');
-await page.fill('#sPass', 'pass1234');
+await page.fill('#sPass', 'Rami2026$');
 
-await page.fill('#sPass2', 'pass1234');
+await page.fill('#sPass2', 'Rami2026$');
 await page.check('#agree1'); await page.check('#agree2');
 await page.click('#suBtn'); await page.waitForTimeout(900);
 await page.click('[data-fill="e"]'); await page.click('#vBtn'); await page.waitForTimeout(900);

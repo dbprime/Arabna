@@ -93,9 +93,9 @@ await page.fill('#sFirst', 'رامي');
 
 await page.fill('#sLast', 'البي');
 await page.fill('#sEmail', 'rami@arabna.app');
-await page.fill('#sPass', 'pass1234');
+await page.fill('#sPass', 'Rami2026$');
 
-await page.fill('#sPass2', 'pass1234');
+await page.fill('#sPass2', 'Rami2026$');
 await page.check('#agree1'); await page.check('#agree2');
 await page.click('#suBtn'); await page.waitForTimeout(900);
 await page.click('[data-fill="e"]'); await page.click('#vBtn'); await page.waitForTimeout(800);
@@ -272,7 +272,7 @@ ok('profile shows the email', pt.includes('rami@arabna.app'));
 ok('profile shows the join date label', pt.includes('عضو منذ'));
 ok('profile shows the account tier', pt.includes('حساب مؤكد'));
 ok('profile prompts phone verification', pt.includes('وثّق رقمك'));
-ok('profile keeps edit + change-password', pt.includes('تعديل الملف') && pt.includes('كلمة السر'));
+ok('profile keeps edit + change-password', pt.includes('تعديل الملف') && pt.includes('كلمة المرور'));
 
 const stats = await page.evaluate(() => Array.from(document.querySelectorAll('.stat-row .stat'))
   .map(s => ({ tag: s.tagName, route: s.dataset.route || null })));

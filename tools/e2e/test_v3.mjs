@@ -175,9 +175,9 @@ await page.fill('#sFirst', 'رامي');
 
 await page.fill('#sLast', 'البي');
 await page.fill('#sEmail', 'rami@arabna.app');
-await page.fill('#sPass', 'pass1234');
+await page.fill('#sPass', 'Rami2026$');
 
-await page.fill('#sPass2', 'pass1234');
+await page.fill('#sPass2', 'Rami2026$');
 await page.check('#agree1'); await page.check('#agree2');
 await page.click('#suBtn'); await page.waitForTimeout(900);
 
@@ -215,8 +215,10 @@ ok('profile shows active listing count', prof.includes('إعلانات نشطة'
 ok('profile shows favorites count', prof.includes('المفضلة'));
 ok('profile shows reviews count', prof.includes('تقييماتي'));
 // V.01.5 moved sign-out to the drawer so it is not offered in two places.
+/* V.03.4: one name for it everywhere — «كلمة السر» and «كلمة المرور»
+     used to stand in the same screen. */
 ok('profile has edit / password buttons',
-   prof.includes('تعديل الملف') && prof.includes('تغيير كلمة السر'));
+   prof.includes('تعديل الملف') && prof.includes('تغيير كلمة المرور'));
 await go('#/home');
 await page.evaluate(() => document.querySelector('#hMenu').click());
 await page.waitForTimeout(420);
@@ -247,18 +249,28 @@ const eyesEverywhere = await page.evaluate(async () => {
 ok('signup / signin / change-password all have the eye',
    eyesEverywhere.sPass && eyesEverywhere.iPass && eyesEverywhere.cpNew, JSON.stringify(eyesEverywhere));
 await go('#/profile/password');
-await page.fill('#cpCur', 'wrongpass'); await page.fill('#cpNew', 'newpass1'); await page.fill('#cpConf', 'newpass1');
-await page.click('#cpSave'); await page.waitForTimeout(300);
+/* V.03.4: this screen used to accept `length < 6` and nothing else, which
+   made the sign-up rule worthless. It asks the same function as the other
+   two now, so the fixtures have to satisfy it. */
+await page.fill('#cpCur', 'wrongpass'); await page.fill('#cpNew', 'Newpass1$'); await page.fill('#cpConf', 'Newpass1$');
+await page.click('#cpSave'); await page.waitForTimeout(400);
 ok('wrong current password is rejected', (await txt()).includes('غير صحيحة'));
-await page.fill('#cpCur', 'pass1234'); await page.fill('#cpNew', 'short'); await page.fill('#cpConf', 'short');
-await page.click('#cpSave'); await page.waitForTimeout(300);
-ok('too-short password is rejected', (await txt()).includes('6 أحرف'));
-await page.fill('#cpNew', 'newpass1'); await page.fill('#cpConf', 'different');
-await page.click('#cpSave'); await page.waitForTimeout(300);
+await page.fill('#cpCur', 'Rami2026$'); await page.fill('#cpNew', 'short'); await page.fill('#cpConf', 'short');
+await page.click('#cpSave'); await page.waitForTimeout(400);
+ok('a weak password is rejected, and the message names what is missing',
+   (await page.textContent('#e_cpNew')).includes('ينقص'));
+await page.fill('#cpNew', 'Newpass1$'); await page.fill('#cpConf', 'different');
+await page.locator('#cpNew').blur(); await page.waitForTimeout(300);
+await page.click('#cpSave'); await page.waitForTimeout(400);
 ok('mismatched passwords are rejected', (await txt()).includes('غير متطابقتين'));
-await page.fill('#cpConf', 'newpass1');
-await page.click('#cpSave'); await page.waitForTimeout(500);
-ok('password actually changes', (await ls()).user.password === 'newpass1');
+await page.fill('#cpConf', 'Newpass1$');
+await page.click('#cpSave'); await page.waitForTimeout(700);
+/* and the word itself is never written down — only a salted hash */
+ok('the new password is stored as a hash, never in the clear', await page.evaluate(() => {
+  const u = (JSON.parse(localStorage.getItem('arabna.v1')) || {}).user || {};
+  return !('password' in u) && (u.pwHash || '').length === 64
+      && !localStorage.getItem('arabna.v1').includes('Newpass1$');
+}));
 
 /* ============ 10. phone verified once ============ */
 await go('#/auth/phone');

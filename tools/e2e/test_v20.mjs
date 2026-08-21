@@ -378,11 +378,17 @@ await page.click('#suBtn'); await page.waitForTimeout(400);
 const fe = await page.evaluate(() => Object.fromEntries([...document.querySelectorAll('.field-err')].map(e => [e.id, e.textContent])));
 ok('11.2 a digit in the name is refused', /أحرف فقط/.test(fe.e_sFirst || ''), fe.e_sFirst);
 ok('11.3 a bad email is named as such', /غير صحيحة/.test(fe.e_sEmail || ''), fe.e_sEmail);
-ok('11.4 the password rule is quoted back', /8 أحرف/.test(fe.e_sPass || ''), fe.e_sPass);
+/* V.03.4: the message names the MISSING condition rather than quoting the
+   whole rule — «كلمة المرور غير صالحة» names nothing to fix. */
+ok('11.4 the password error names what is missing', /ينقص/.test(fe.e_sPass || ''), fe.e_sPass);
 ok('11.5 a mismatch is caught', /متطابقتين/.test(fe.e_sPass2 || ''), fe.e_sPass2);
-await page.fill('#sPass', 'abcd1234'); await page.waitForTimeout(250);
-ok('11.6 the strength meter moves before the failure, not after',
-   await page.evaluate(() => document.querySelector('#pwMeter').className.includes('s2')));
+await page.fill('#sPass', 'Rami2026$'); await page.waitForTimeout(250);
+/* V.03.4: the meter is gone. «ضعيفة / متوسّطة / قوية» measures nothing
+   once the rule is absolute; the list says WHICH condition is missing and
+   turns each one green as it is met. */
+ok('11.6 the conditions turn green as they are met, before any failure',
+   await page.evaluate(() =>
+     [...document.querySelectorAll('.pw-reqs li')].every(li => li.classList.contains('ok'))));
 await page.click('[data-legal="terms"]'); await page.waitForTimeout(600);
 ok('11.7 the terms open over the form', await page.evaluate(() =>
   !!document.querySelector('.sheet-root.open') && /الحسابات/.test(document.querySelector('.sheet-panel').textContent)));
@@ -390,10 +396,10 @@ ok('11.8 …and the header still says «إنشاء حساب»',
    (await page.textContent('.h-title')).trim() === 'إنشاء حساب');
 await page.click('.sheet-panel [data-close]'); await page.waitForTimeout(600);
 ok('11.9 …and closing keeps everything typed', await page.evaluate(() =>
-  document.querySelector('#sFirst').value === 'رامي1' && document.querySelector('#sPass').value === 'abcd1234'));
+  document.querySelector('#sFirst').value === 'رامي1' && document.querySelector('#sPass').value === 'Rami2026$'));
 await page.fill('#sFirst', 'رامي'); await page.fill('#sLast', 'البي');
 await page.fill('#sEmail', 'rami@example.com'); await page.fill('#sPhone', '(713) 466-9182');
-await page.fill('#sPass2', 'abcd1234');
+await page.fill('#sPass2', 'Rami2026$');
 await page.click('#agree1'); await page.click('#agree2');
 await page.click('#suBtn'); await page.waitForTimeout(1600);
 ok('11.10 it lands on the code screen', await page.evaluate(() => location.hash) === '#/auth/email');

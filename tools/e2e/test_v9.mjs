@@ -99,9 +99,9 @@ await page.fill('#sFirst', 'رامي');
 
 await page.fill('#sLast', 'البي');
 await page.fill('#sEmail', 'rami@arabna.app');
-await page.fill('#sPass', 'pass1234');
+await page.fill('#sPass', 'Rami2026$');
 
-await page.fill('#sPass2', 'pass1234');
+await page.fill('#sPass2', 'Rami2026$');
 await page.check('#agree1'); await page.check('#agree2');
 await page.click('#suBtn'); await page.waitForTimeout(900);
 await page.click('[data-fill="e"]'); await page.click('#vBtn'); await page.waitForTimeout(1000);
@@ -117,7 +117,9 @@ ok('the count and average show in the directory results',
    await page.evaluate(() => {
      const row = Array.from(document.querySelectorAll('#dirList .list-row'))
        .find(r => (r.querySelector('.row-title') || {}).textContent.includes('بيروت'));
-     return !!row && !!row.querySelector('.stars') && /مراجعة/.test(row.textContent);
+     // V.03.4: a customer's opinion is «تقييم»; «مراجعة» now means an
+     // admin's vetting and nothing else
+     return !!row && !!row.querySelector('.stars') && /تقييم/.test(row.textContent);
    }));
 
 /* top-rated sorting is offered */
@@ -166,7 +168,8 @@ ok('the claim was recorded as pending',
    JSON.stringify((st.claims || [])[0] || {}).slice(0, 90));
 ok('ownership is NOT granted on the spot', !st.myBusinessId, String(st.myBusinessId));
 await go('#/directory/b2');
-ok('the page says the claim is under review', (await txt()).includes('قيد المراجعة'));
+// V.03.4: «بانتظار الموافقة» says what you are waiting FOR
+ok('the page says the claim is waiting on approval', (await txt()).includes('بانتظار الموافقة'));
 ok('…and no owner controls are shown yet', await page.locator('.owner-box').count() === 0);
 
 /* the admin decides */
@@ -251,7 +254,7 @@ await go('#/directory/b2');            // free
 ok('a free page shows similar businesses at the foot',
    await page.locator('.similar').count() === 1);
 ok('…and they are labelled as unpaid suggestions',
-   (await page.textContent('.similar')).includes('غير مموّلة'));
+   (await page.textContent('.similar')).includes('ليست إعلانات مدفوعة'));
 ok('…placed after the reviews, at the very bottom', await page.evaluate(() => {
   const sim = document.querySelector('.similar');
   const rev = document.querySelector('#revList');

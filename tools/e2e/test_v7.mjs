@@ -293,9 +293,9 @@ await page.fill('#sFirst', 'رامي');
 
 await page.fill('#sLast', 'البي');
 await page.fill('#sEmail', 'rami@arabna.app');
-await page.fill('#sPass', 'pass1234');
+await page.fill('#sPass', 'Rami2026$');
 
-await page.fill('#sPass2', 'pass1234');
+await page.fill('#sPass2', 'Rami2026$');
 await page.check('#agree1'); await page.check('#agree2');
 await page.click('#suBtn'); await page.waitForTimeout(900);
 await page.click('[data-fill="e"]'); await page.click('#vBtn'); await page.waitForTimeout(900);
@@ -420,7 +420,8 @@ const gate = await page.evaluate(() => {
 ok('visitor: exactly one gate button, inside the open package',
    gateShown === 1 && gate.inCard, gateShown + ' shown');
 ok('visitor: it targets that package', gate.route === '#/advertise/mini', gate.route);
-ok('visitor: the one-step note is under it', (gate.note || '').includes('خطوة وحدة'), gate.note);
+// V.03.4: «خطوة وحدة» was dialect; plain MSA is «خطوة واحدة»
+ok('visitor: the one-step note is under it', (gate.note || '').includes('خطوة واحدة'), gate.note);
 ok('visitor: button text is «اعرض الأسعار»', (await txt()).includes('اعرض الأسعار'));
 ok('visitor: a package is always open', await page.evaluate(() =>
   document.querySelectorAll('#prods .ad-card.selected').length) === 1);
@@ -436,9 +437,9 @@ await page.fill('#sFirst', 'رامي');
 
 await page.fill('#sLast', 'البي');
 await page.fill('#sEmail', 'rami@arabna.app');
-await page.fill('#sPass', 'pass1234');
+await page.fill('#sPass', 'Rami2026$');
 
-await page.fill('#sPass2', 'pass1234');
+await page.fill('#sPass2', 'Rami2026$');
 await page.check('#agree1'); await page.check('#agree2');
 await page.click('#suBtn'); await page.waitForTimeout(900);
 await page.click('[data-fill="e"]'); await page.click('#vBtn'); await page.waitForTimeout(1000);

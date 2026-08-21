@@ -322,7 +322,8 @@ const dr = await page.evaluate(() => {
     hasMarketSections: body.includes('حيوانات أليفة') || body.includes('خدمات وصيانة'),
     hasHome: /(^|\s)الرئيسية(\s|$)/.test(body),
     hasDirectory: /(^|\s)الدليل(\s|$)/.test(body),
-    personal: ['بزنسي', 'إعلاناتي', 'تقييماتي', 'رسائلي', 'المفضلة', 'الاشتراك'].filter(x => body.includes(x)),
+    // V.03.4: «بزنسي» is «نشاطي التجاري» — the glossary word for a shop
+    personal: ['نشاطي التجاري', 'إعلاناتي', 'تقييماتي', 'رسائلي', 'المفضلة', 'الاشتراك'].filter(x => body.includes(x)),
     lang: !!panel.querySelector('#drLang'),
   };
 });

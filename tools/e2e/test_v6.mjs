@@ -151,7 +151,8 @@ console.log('--- visitor: the rest of the app ---');
 await go('#/directory');
 money = await dollars();
 ok('directory: no subscription price in the upsell row', money.length === 0, money.join(' '));
-ok('directory: the upsell still offers the upgrade', (await txt()).includes('رقّي صفحة بزنسك'));
+// V.03.4: «بزنسك» → «نشاطك», the glossary word
+ok('directory: the upsell still offers the upgrade', (await txt()).includes('رقّي صفحة نشاطك'));
 ok('directory: the row says prices come after signup', (await txt()).includes('الأسعار تظهر بعد'));
 
 await go('#/subscribe');
@@ -210,9 +211,9 @@ await page.fill('#sFirst', 'رامي');
 
 await page.fill('#sLast', 'البي');
 await page.fill('#sEmail', 'rami@arabna.app');
-await page.fill('#sPass', 'pass1234');
+await page.fill('#sPass', 'Rami2026$');
 
-await page.fill('#sPass2', 'pass1234');
+await page.fill('#sPass2', 'Rami2026$');
 await page.check('#agree1'); await page.check('#agree2');
 await page.click('#suBtn'); await page.waitForTimeout(900);
 await page.click('[data-fill="e"]'); await page.click('#vBtn'); await page.waitForTimeout(1000);

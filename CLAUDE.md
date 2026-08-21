@@ -7,7 +7,7 @@ ARABNA · عربنا — a mobile-first web app for the Arab community in the U.
 **business directory + marketplace + events + magazine**, Arabic-first with a full English toggle.
 ("Classifieds / الإعلانات الشخصية" is now "Marketplace / السوق" — the old `#/classifieds`
 routes still resolve so shared links keep working.)
-Current version: **V.03.3 (prototype)**. Owner: Rai Elby (@dbprime). Deploys to Vercel (team DB Prime).
+Current version: **V.03.4 (prototype)**. Owner: Rai Elby (@dbprime). Deploys to Vercel (team DB Prime).
 
 ## Hard rules (from the product brief)
 1. **One repository, one Vercel project.** No duplicates, no stray preview projects.
@@ -37,7 +37,7 @@ js/store.js           state, entitlements, and ALL backend seams
 js/prayer.js          the prayer-time arithmetic — no API, no library
 js/synonyms.js        the search dictionary — expands the QUERY, never the data
 tools/synonyms.test.mjs  runs all 984 words against the real listings
-tools/e2e/               the Playwright suites, v3–v26, plus run.sh and the i18n check
+tools/e2e/               the Playwright suites, v3–v27, plus run.sh and the i18n check
 tools/build_single.py    generates index-single-file.html from the sources
 js/ui.js              toast / sheet / drawer / header / nav primitives
 js/icons.js           inline SVG icons
@@ -493,10 +493,10 @@ and `outingFeature` (15).
 ```
 python3 -m http.server 8099        # from the repo root
 node tools/e2e/chk_i18n.mjs        # both packs, every derived key, seconds
-tools/e2e/run.sh                   # 24 suites × 2 builds, ~25 minutes
+tools/e2e/run.sh                   # 25 suites × 2 builds, ~25 minutes
 python3 tools/build_single.py > index-single-file.html
 ```
-1. `tools/e2e/` holds every suite, v3 to v26, one per batch, and `run.sh`
+1. `tools/e2e/` holds every suite, v3 to v27, one per batch, and `run.sh`
    runs all of them against **both** `index.html` and the generated
    `index-single-file.html`. A change is not finished until both are green.
 2. Check **both** languages (the AR/EN button in the header) and **both**
@@ -1867,6 +1867,157 @@ And the edit screen, opened from the panel, says **«تعدّل بصفتك ال�
 lingers, so the risk was never that it stays on — it is not noticing you
 are in it.
 
+## V.03.4 — batch eight (3 + 4): the words, the password, and the money
+
+### One word per meaning
+**«مراجعة» was doing two opposite jobs** across 41 texts — a customer's
+opinion and an admin's vetting — so «صورتك قيد المراجعة» read as somebody
+writing a review of your photo. The split:
+
+| meaning | the only word | never |
+|---|---|---|
+| a customer's opinion | **تقييم** | مراجعة |
+| an admin's vetting | **بانتظار الموافقة** | قيد المراجعة |
+
+«تقييم» is what Google Maps uses in Arabic, so it is familiar; «بانتظار
+الموافقة» says **what you are waiting for** rather than what a member of
+staff is doing. The verb survives only where the actor is named
+(`claimFormNote` «الطلب يُراجع يدوياً», `verifyStep3`, and `reviewOrder`,
+which is the buyer reviewing their own order before paying).
+
+And it was being **sold twice**: `reviewsTitle` «التقييمات والمراجعات» beside
+`subFeatures` «المراجعات والتقييمات» made one feature look like two on the
+subscription page.
+
+### Nine keys were defined twice, and the first was dead
+`catRestaurants` · `catDoctors` · `catLawyers` · `catBeauty` · `catAuto` ·
+`catGrocery` · `catEducation` · `catTravel` · `confirmPassword`. In
+JavaScript the later definition wins, so the early ones looked like the
+reference and changed nothing — a maintenance trap, not a tidiness
+problem: fix «أطباء» on the dead line and hunt for an hour.
+
+**They share lines** (`catAll: 'الكل', catRestaurants: 'مطاعم', …`), which
+is why a line-based grep finds none of them. Found by parsing the packs,
+deleted from **both** at once, and v27 re-parses on every run so no tenth
+can appear quietly.
+
+### One name for the password, and one rule behind it
+«كلمة السر» (10 keys) and «كلمة المرور» (6) stood in the same screen — the
+field said one and its own error message said the other. It is **كلمة
+المرور** everywhere now, as Google, Apple and Microsoft write it.
+
+The rule had the same disease. Sign-up demanded 8 + a letter + a digit;
+**the change screen demanded `length < 6` and nothing else**, and so did
+the panel — so a strong password could become `123456` a minute later,
+which makes a rule on the sign-up screen worth nothing. All three call
+`passwordChecks()` in `store.js`.
+
+- **English only, and not as a preference.** Arabic has no capitals, so
+  «حرف كبير» is a condition nobody can meet. ا · أ · إ · آ look identical
+  and are four characters; keyboards disagree about which they emit, so
+  the same word typed on another phone is a different string and its owner
+  is locked out **reading their correct password off the screen**, with
+  nothing visible to explain it. And Arabic-Indic digits are not digits to
+  `/\d/`, so `Rami٢٠٢٦$` would be refused for «missing a number» with four
+  of them on screen. The message says the reason, not the verdict, and it
+  comes **alone** — telling somebody who typed Arabic that they also need
+  a capital adds confusion to confusion.
+- **The banned list is what makes the rule work.** Without it the rule
+  produces `Password1$`: eight characters, upper, lower, digit, symbol,
+  and one of the most-used passwords on earth. Leet forms are normalised
+  **before** the comparison — strip the symbols first and `P@ssw0rd!`
+  becomes `pssw0rd`, which does not match `password` and sails through.
+  The app's own name and the cities are matched **whole**, so
+  `Houston2026$` is refused and `Elby#Katy77` is not.
+- **The strength meter is gone.** Once the rule is absolute a password is
+  accepted or it is not, and «متوسّطة» tells nobody what to fix. The live
+  checklist does: five conditions, green as each is met, **red only after
+  leaving the field or pressing the button**, and never on the first
+  keystroke — somebody who types `R` and is told it is invalid feels they
+  got it wrong before they started.
+- **The word itself is no longer stored.** It sat in localStorage as
+  typed. The danger was never really this app, where the account lives on
+  its owner's device — it is that most people reuse one password, so what
+  we kept in the clear was probably the key to their email. A salted
+  SHA-256 is kept instead, which answers the one question this build asks.
+  `ADMIN_PASS` in `store.js` is still the server batch's job, and it is
+  the same lesson: it satisfies every condition and everyone who opens the
+  file knows it.
+
+### Arabic counts to four
+The countdown under the header read **«باقي 2 ساعات»** — on the first
+screen anybody opens, repainting every minute. The code knew singular and
+"everything else is plural"; Arabic has four cases: 1 singular · 2 **dual**
+· 3–10 plural · 11+ **singular again**. `arCount()` in `i18n.js` carries
+all four and English fills its two forms into the same four slots, so
+there is one function and no `if (lang)` anywhere. Eight counters use it —
+days left on an ad, the resend countdown (which ticks every second in
+front of somebody's first minute in the app), the results count, the views
+line, the season count, the test clock, the comparison — and `prHour` /
+`prHours` are gone.
+
+### No message confirms what the eye already saw
+The theme button raised «صار الوضع غامق» over the logo. The screen had
+just changed colour and the icon had flipped sun ↔ moon: two
+confirmations, without a word, and the bar hid `ARABNA` every time.
+Deleted, with both strings. **The rule it leaves behind:** a toast is for
+what leaves no mark — «تم حفظ ملفك», «تم نسخ الرابط» — never for a change
+the reader is watching happen.
+
+### A receipt for every amount taken
+`inv1` · `inv2` · `inv3` **published the size of the business**: an
+advertiser reading `inv3` knows they are the third customer since it
+opened. `ARB-26-K4M8P` instead, from an alphabet with no `0/O` and no
+`1/I/L` because the number is read down a phone, unique before it is
+issued. Ads, boosts and the badge produced no invoice at all before.
+
+- **Never edited after issue** — that is the definition of cooking the
+  books. A refund is a **second** receipt with a negative amount pointing
+  at the first, and both stay in the list.
+- **Three lines that do not come off**: the period the money bought,
+  «renews automatically on …» with the literal path to cancel, and the
+  issuer — left as `[TODO]` until Rai gives the registered name.
+- **The tax line is present at `$0.00`**, not absent. Adding it later to
+  receipts issued without one is far harder than filling a line that is
+  already there, and whether Texas taxes a digital subscription is a
+  question for his accountant.
+- **`deleteAccount()` was wiping the financial record.** Somebody who
+  subscribed and then deleted their account left no trace that money had
+  been taken — not for the accountant, not for the bank on a chargeback.
+  Deleting is a right and an app-store requirement, so the person is
+  stripped out of the receipt and the transaction stays.
+- The screen is the original, not a stopgap: email is lost and binned, and
+  the button for it says plainly that it waits for the server.
+
+### Directions ask once
+`openMaps` decided for the owner of the phone — anything Apple opened
+Apple Maps, for somebody who may have used Google Maps every day of their
+life. **No web app can see what is installed** (the platforms forbid it,
+or any site could read your app list), so there is nothing to detect:
+offer the three and let them choose, Google first and preselected, with
+«افتح فيه دائماً» stored in `state.mapsApp` and changeable from Settings.
+All three are **web links, never app schemes** — a web link opens the app
+when it is there and the site when it is not, while `waze://` on a phone
+without Waze is a white screen. Apple Maps is not offered on Android. The
+address goes as text, never coordinates: a street address opens the right
+business card, a point opens a spot in space.
+
+### Cash is taken on the books
+There is **no «skip payment» button on any screen a user can reach** and no
+«paid in cash» box anybody can tick — a button like that gets found. The
+money is handed over and the order is issued from the panel, which refuses
+without the name of **who took it**.
+
+**A cash order does not renew**, and that is the part that would have cost
+money quietly: created like an ordinary subscription it leaves a
+subscriber whose month ran out weeks ago, whose page still says
+«subscribed», and from whom nothing was collected. So it is a closed
+period (`autoRenew: false`, `cancelAtPeriodEnd: true`), the panel warns
+`CASH_WARN_DAYS` (7) ahead, it expires by itself, and its receipt says
+**«ينتهي في»** — never «يتجدّد تلقائياً», which would be a promise nobody
+keeps. Card and cash are two figures in the statistics: mixed together the
+revenue never matches the bank statement.
+
 ## Known open items
 - Legal pages are first drafts — a lawyer must review before public launch.
 - Push notifications: triggers are defined in Settings but not wired to a real service.
@@ -1889,6 +2040,25 @@ are in it.
 - **The admin users section is deferred to the server batch**, and so is any
   count that spans devices. One account exists on one device, so the screen
   would show Rai looking at himself.
+- **The receipt has no issuer.** «عربنا — [الاسم القانوني والعنوان]» is a
+  literal `[TODO]` on every receipt until Rai gives the registered name
+  and address. A receipt with no issuing party is not a receipt, and this
+  is not something to invent.
+- **Sales tax is unanswered.** The line is on every receipt at `$0.00` and
+  the rate belongs in Settings, not in the code — but whether Texas
+  charges sales tax on a digital subscription is a question for an
+  accountant, and the answer is needed **before the first sale**, not
+  after.
+- **Email receipts wait for the server.** The button exists and says so.
+  Sending mail needs a host and a domain with SPF and DKIM.
+- **The password hash is not a substitute for a server.** SHA-256 with a
+  salt is enough to stop the word sitting in the clear on a reader's own
+  disk; it is not password storage. bcrypt or argon2 on the server, or —
+  better — Supabase Auth, which never hands us the password at all.
+- **`ADMIN_PASS = 'Arabna@2026!'` is still in `store.js`**, in a file every
+  visitor downloads. It satisfies every condition the new rule imposes and
+  is known to anybody who opens the file, which is the whole argument that
+  a password's strength lives in **where it is kept**.
 - **The descriptions repeat the city the address already gives.** «مطعم
   لبناني في Houston» sits two lines above `…, Houston, TX 77081`, and the
   directory card says it as well. Rai asked for the city kept and written

@@ -306,7 +306,8 @@ await go('#/directory/b2');
 await go('#/my-business');
 const bizTxt = (await txt()).replace(/\s+/g, ' ');
 ok('the subscriber sees their page views', bizTxt.includes('مشاهدات الصفحة'));
-ok('…said in the sentence that renews a subscription', /شاهد صفحتك \d+ شخصاً/.test(bizTxt),
+// V.03.4: the counted noun is right now — «شخصان» · «5 أشخاص» · «11 شخصاً»
+ok('…said in the sentence that renews a subscription', /شاهد صفحتك .*(شخص|أشخاص)/.test(bizTxt),
    (bizTxt.match(/صفحتك شافها[^·]{0,24}/) || [''])[0]);
 
 /* ======================================================================
@@ -360,7 +361,7 @@ ok('…and unblocking gives them back', await page.evaluate((r) => !!document.qu
 
 await go('#/settings');
 await page.click('#delAcc'); await page.waitForTimeout(500);
-ok('deletion says what it will take', (await page.textContent('.sheet-panel')).includes('يُمحى معك'));
+ok('deletion says what it will take', (await page.textContent('.sheet-panel')).includes('سيُحذف مع حسابك'));
 await page.click('#delGo'); await page.waitForTimeout(800);
 const gone = await ls();
 ok('…and really deletes rather than signing out',

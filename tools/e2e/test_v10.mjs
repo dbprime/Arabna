@@ -128,7 +128,9 @@ let body = await txt();
 for (const [id, label] of [['cafe','مقاهي وأرجيلة'], ['shopping','تسوّق وأزياء'],
                            ['community','مجتمع وخدمات'], ['sweets','حلويات ومخابز'],
                            ['finance','خدمات مالية'], ['occasions','مناسبات وأفراح'],
-                           ['homegoods','مفروشات وأدوات منزلية'], ['electronics','إلكترونيات وجوالات'],
+                           // V.03.4: «جوالات» is Gulf; «هواتف» is read everywhere, and the search
+                           // dictionary already links جوال · موبايل · تلفون · هاتف
+                           ['homegoods','مفروشات وأدوات منزلية'], ['electronics','إلكترونيات وهواتف'],
                            ['homeservices','صيانة وخدمات المنزل']]) {
   ok('new category named: ' + label, body.includes(label));
 }
