@@ -7,7 +7,7 @@ ARABNA · عربنا — a mobile-first web app for the Arab community in the U.
 **business directory + marketplace + events + magazine**, Arabic-first with a full English toggle.
 ("Classifieds / الإعلانات الشخصية" is now "Marketplace / السوق" — the old `#/classifieds`
 routes still resolve so shared links keep working.)
-Current version: **V.03.2 (prototype)**. Owner: Rai Elby (@dbprime). Deploys to Vercel (team DB Prime).
+Current version: **V.03.3 (prototype)**. Owner: Rai Elby (@dbprime). Deploys to Vercel (team DB Prime).
 
 ## Hard rules (from the product brief)
 1. **One repository, one Vercel project.** No duplicates, no stray preview projects.
@@ -37,7 +37,7 @@ js/store.js           state, entitlements, and ALL backend seams
 js/prayer.js          the prayer-time arithmetic — no API, no library
 js/synonyms.js        the search dictionary — expands the QUERY, never the data
 tools/synonyms.test.mjs  runs all 984 words against the real listings
-tools/e2e/               the Playwright suites, v3–v25, plus run.sh and the i18n check
+tools/e2e/               the Playwright suites, v3–v26, plus run.sh and the i18n check
 tools/build_single.py    generates index-single-file.html from the sources
 js/ui.js              toast / sheet / drawer / header / nav primitives
 js/icons.js           inline SVG icons
@@ -493,10 +493,10 @@ and `outingFeature` (15).
 ```
 python3 -m http.server 8099        # from the repo root
 node tools/e2e/chk_i18n.mjs        # both packs, every derived key, seconds
-tools/e2e/run.sh                   # 23 suites × 2 builds, ~25 minutes
+tools/e2e/run.sh                   # 24 suites × 2 builds, ~25 minutes
 python3 tools/build_single.py > index-single-file.html
 ```
-1. `tools/e2e/` holds every suite, v3 to v25, one per batch, and `run.sh`
+1. `tools/e2e/` holds every suite, v3 to v26, one per batch, and `run.sh`
    runs all of them against **both** `index.html` and the generated
    `index-single-file.html`. A change is not finished until both are green.
 2. Check **both** languages (the AR/EN button in the header) and **both**
@@ -1779,6 +1779,94 @@ standing rule forbids. One row anywhere would fix it. Separately, the
 one is not new and not from this batch. Nothing was removed to make room:
 which row goes is a product decision, not a code one.
 
+## V.03.3 — batch eight (1 + 2): the descriptions, and who may pay
+
+### The city is written in English, always
+Rai's rule: **the city name is English even when the interface is Arabic,
+and somebody who searches in Arabic finds the listing and is shown its
+English name.** It follows the rule the names already obey — the name as
+it is on the shopfront, the transliteration in the search words — and the
+address underneath is English anyway, so an Arabic city above it makes the
+screen say the same thing twice in two scripts.
+
+**The code already obeyed it.** `cityOf()` reads the English address,
+`cityChipLabel()` does not translate, `CITY_POINTS` and
+`directoryCities()` are English throughout, and no city name exists in
+i18n as a label. Every violation was in the data, and there were six:
+
+- **b137 and b281** carried «كاتي» and «هيوستن» in their displayed names.
+  b137 carried it on its **English side too**, which the supplied file did
+  not list.
+- **`regionName`** read «هيوستن والمنطقة» → «Houston والمنطقة».
+- **`prOutside`, `ncSub`, `ncCardTitle`** — three of our own strings from
+  V.03.1 and V.03.2 said «هيوستن» inside a sentence. The audit had looked
+  for a city used *as a label*; a city inside a sentence sits on the same
+  screen as the same city in English. («وصلت هيوستن جديد؟» was dialect as
+  well, and is «وصلت إلى Houston حديثاً؟».)
+
+**The tags stay Arabic and must never be converted.** They are invisible,
+and they are the whole reason «هيوستن» typed in Arabic returns 378 shops
+whose names and addresses are English. That is the rule working, not an
+exception to it.
+
+### 485 descriptions that had been written and never installed
+Every real listing carried `desc: {ar:"", en:""}`. The text existed — it
+went to review with the name proposals — but only the names came back and
+were applied, so 485 pages printed a name, a rating, tags, hours and an
+address with **no line saying what the place is**. The same thing that had
+happened to the Arabic names, and invisible for the same reason: the page
+looks finished and is missing its meaning.
+
+- One short sentence each, no claim words (the FTC rule), measured: **zero
+  «الأفضل» / «الأشهر» / «الأرخص» / "best" / "cheapest"**.
+- **Fourteen still ended «بتكساس».** The supplied file's own sweep looked
+  for the city at the *end* of the line and the state name sits after it.
+  All read «بـTexas» now.
+- The search numbers held: حلاق 13 · كوافير 15 · صالون 24 · ملحمة 19 ·
+  مطعم 176 — V.03.0's figures unmoved. **«بقاله» went 41 → 42**, and the
+  newcomer is a bakery whose description says supermarket, which is a find
+  and not a leak.
+
+### The payment path had no guard at all
+The V.02.9 audit was right about the three screens it checked and missed
+the one that had **never been guarded**: a reader who owns nothing could
+open `#/subscribe-consent/b1` and reach «$29 · متابعة إلى الدفع», with the
+business id coming straight off the URL. Today that is a mess rather than
+a theft — the state is in the reader's own localStorage — but the day it
+lives on a server it is somebody buying a stranger's shop a subscription,
+and the record is not a row in a table: `isPaid()` feeds «إعلانات مميّزة»
+and the ranking inside a category.
+
+- Both screens call `ownerOnly(bizId)`, **deliberately without
+  `allowAdmin`**: an admin edits data and never buys in somebody's name. A
+  subscription given by hand goes through the panel, where it leaves a
+  receipt and a record of who took the money.
+- **`startSubscription()` itself returns `null` for a business the caller
+  does not own.** A guard on a screen is bypassed by anything that is not
+  that screen — the console today, an API call tomorrow — so the rule is
+  written once in `store.js` where every caller passes it. That is the
+  line that still holds the day there is a server, and it is the one the
+  test exercises from the console.
+
+### «آخر ما عُدِّل» — the panel leaves a trace
+An admin edits from the owner's own screen. That is the right design and it
+makes the two writes indistinguishable afterwards, so «who changed my phone
+number?» had no answer at all.
+
+`state.adminLog` records `{at, bizId, field, from, to}`, **one line per
+field and only when the writer is the admin and not the owner** —
+`adminEditing()` in `store.js` is the single definition, so no screen has
+to remember to pass a flag. Capped at `ADMIN_LOG_MAX` (500). The directory
+tab prints it. **A field the form merely filled in is not a change**: the
+edit form submits everything it holds, so a record that simply had no
+`nonCommercial` came back `undefined → false`, and a log full of that
+teaches nobody anything.
+
+And the edit screen, opened from the panel, says **«تعدّل بصفتك الإدارة —
+لا بصفتك صاحب هذا النشاط»**. `adminUnlocked()` is a login, not a mode that
+lingers, so the risk was never that it stays on — it is not noticing you
+are in it.
+
 ## Known open items
 - Legal pages are first drafts — a lawyer must review before public launch.
 - Push notifications: triggers are defined in Settings but not wired to a real service.
@@ -1801,6 +1889,11 @@ which row goes is a product decision, not a code one.
 - **The admin users section is deferred to the server batch**, and so is any
   count that spans devices. One account exists on one device, so the screen
   would show Rai looking at himself.
+- **The descriptions repeat the city the address already gives.** «مطعم
+  لبناني في Houston» sits two lines above `…, Houston, TX 77081`, and the
+  directory card says it as well. Rai asked for the city kept and written
+  in English, which is what shipped; dropping it from the descriptions
+  entirely is a one-line change to the source file if he prefers it.
 - **«فانوس» returns two, and the wrong one leads.** V.03.0 tagged b226
   «استفانوس» (St Stephen), and «فانوس» sits inside it — a real Arabic
   substring collision, not a bad tag: a word the reader typed matches
