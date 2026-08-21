@@ -512,11 +512,14 @@ ok('admin can delete an event', await page.evaluate((id) => {
 
 /* admin password change */
 await page.locator('#aTabs .tab[data-t="set"]').click(); await page.waitForTimeout(350);
-await page.fill('#apNew', 'NewAdmin#2026'); await page.fill('#apConf', 'NewAdmin#2026');
+/* V.03.4: `NewAdmin#2026` is refused, and correctly — PW_ALWAYS contains
+   «admin» and matches it as a substring, which is exactly the word not to
+   build the admin panel's own password out of. */
+await page.fill('#apNew', 'Sh@mi-Katy!9'); await page.fill('#apConf', 'Sh@mi-Katy!9');
 await page.click('#apSave'); await page.waitForTimeout(500);
 ok('admin password can be changed and is stored', await page.evaluate(() => {
   const a = (JSON.parse(localStorage.getItem('arabna.v1')) || {}).adminAuth;
-  return !!a && a.pass === 'NewAdmin#2026' && a.user === 'arabna.admin';
+  return !!a && a.pass === 'Sh@mi-Katy!9' && a.user === 'arabna.admin';
 }));
 // restore the default so a later run starts clean
 await page.evaluate(() => {

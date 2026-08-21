@@ -170,7 +170,10 @@ await page.click('#dirFilter'); await page.waitForTimeout(600);
 ok('3.8 the filter sheet offers it, with its count', await page.locator('#fHasOffer').count() === 1);
 ok('3.9 …and the count is real', (await page.locator('#fHasOffer .chip-n').textContent()).trim() === '2');
 await page.click('#fHasOffer'); await page.waitForTimeout(300);
-ok('3.10 the footer counts live', /2/.test(await page.textContent('#fApply')));
+/* V.03.4: two of anything is the DUAL in Arabic and prints no digit at
+   all — «عرض نتيجتان», not «عرض 2 نتيجة». */
+ok('3.10 the footer counts live', /نتيجتان|results?/i.test(await page.textContent('#fApply')),
+   (await page.textContent('#fApply')).trim());
 await page.click('#fApply'); await page.waitForTimeout(700);
 ok('3.11 the list narrows to those two', await rows() === 2, String(await rows()));
 ok('3.12 the state is in the URL, so the link can be sent',
