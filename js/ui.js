@@ -3,7 +3,7 @@
    ============================================================ */
 
 import { icon, iconFilled } from './icons.js';
-import { t, L, getLang, setLang } from './i18n.js';
+import { t, L, arCount, getLang, setLang } from './i18n.js';
 import { FREE_PRICE } from './data.js';
 import * as S from './store.js';
 
@@ -571,9 +571,14 @@ export function renderHeader(opts = {}) {
       <button class="icon-btn" id="hTheme" data-theme-icon
         aria-label="${t(dark ? 'themeLight' : 'themeDark')}">${icon(dark ? 'sun' : 'moon', 22)}</button>`;
     $('#hMenu').addEventListener('click', openDrawer);
+    /* No toast here, and the rule behind that: NOTHING confirms in words
+       what the reader is watching happen. The whole screen just changed
+       colour and the icon flipped sun ↔ moon — two confirmations already,
+       without a word. The bar also stood over the logo, hiding ARABNA
+       every single time somebody switched. What still earns a toast is
+       what leaves no mark: «تم حفظ ملفك», «تم نسخ الرابط». */
     $('#hTheme').addEventListener('click', () => {
       setTheme(resolvedTheme() === 'dark' ? 'light' : 'dark');
-      toast(t(resolvedTheme() === 'dark' ? 'themeDarkOn' : 'themeLightOn'), 'ok');
     });
   }
 }
@@ -1011,7 +1016,8 @@ export function openFilterSheet({ cat, cats, value, withPrice, withAttrs, withAr
       if (!countFor) { apply.textContent = t('applyFilters'); return; }
       const n = countFor(v);
       apply.disabled = n === 0;
-      apply.textContent = n === 0 ? t('noResultsTryLess') : t('showNResults').replace('{n}', n);
+      apply.textContent = n === 0 ? t('noResultsTryLess')
+        : t('showNResults').replace('{c}', arCount(n, t('plResult')));
     };
 
     if (withArea) {
@@ -1388,4 +1394,4 @@ export function shareItem(title, url) {
   else { try { navigator.clipboard.writeText(url); } catch (e) {} toast(getLang() === 'ar' ? 'تم نسخ الرابط' : 'Link copied', 'ok'); }
 }
 
-export { L, t, icon };
+export { L, t, arCount, icon };

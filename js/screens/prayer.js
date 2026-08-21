@@ -13,7 +13,7 @@
    is and is not covered. Hidden, never empty.
    ============================================================ */
 
-import { t, icon, $, $$, go, renderHeader, openSheet, closeSheet, toast, onMinute, fmtTime,
+import { t, arCount, icon, $, $$, go, renderHeader, openSheet, closeSheet, toast, onMinute, fmtTime,
          wireRoutes } from '../ui.js';
 import * as S from '../store.js';
 import { askForLocation } from './home.js';
@@ -34,15 +34,25 @@ export function todaysTimes(date = new Date()) {
   });
 }
 
-/** «ساعة و12 دقيقة» / «1h 12m» — never a bare count of minutes */
+/**
+ * «ساعتان ودقيقتان» / «2 hours 2 minutes» — never a bare count of minutes.
+ *
+ * This is the line that made the counted-noun rule worth fixing: it is
+ * redrawn every minute on the first screen anybody opens, and it knew only
+ * singular-or-plural, so two hours read «2 ساعات» and twelve read
+ * «12 ساعات». arCount() carries all four Arabic cases and both English
+ * ones, so there is no `if (lang)` left here either.
+ *
+ * A zero part is still never printed: «باقي 5 ساعات», not «5 ساعات و0 دقيقة».
+ */
 export function fmtLeft(mins) {
   const m = Math.max(0, Math.round(mins));
   const h = Math.floor(m / 60), r = m % 60;
   const ar = S.state.lang !== 'en';
-  const hh = h === 1 ? t('prHour') : `${h} ${t('prHours')}`;
-  if (!h) return ar ? `${r} ${t('minute')}` : `${r}m`;
-  if (!r) return ar ? hh : `${h}h`;
-  return ar ? `${hh} ${t('and')}${r} ${t('minute')}` : `${h}h ${r}m`;
+  const sep = ar ? ' ' + t('and') : ' ';
+  if (!h) return arCount(r, t('plMinute'));
+  if (!r) return arCount(h, t('plHour'));
+  return arCount(h, t('plHour')) + sep + arCount(r, t('plMinute'));
 }
 
 /**

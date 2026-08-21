@@ -1,5 +1,5 @@
 /* ======================= AUTH & VERIFICATION ======================= */
-import { t, icon, $, $$, go, back, renderHeader, toast, wireRoutes, logoSrc,
+import { t, arCount, icon, $, $$, go, back, renderHeader, toast, wireRoutes, logoSrc,
          openSheet, closeSheet } from '../ui.js';
 import * as S from '../store.js';
 import { passwordField, wirePasswordToggles, TermsScreen, PrivacyScreen } from './profile.js';
@@ -227,7 +227,7 @@ export function EmailVerifyScreen(root) {
     const left = Math.max(0, 45 - Math.floor((Date.now() - sent) / 1000));
     if (left > 0) {
       rs.disabled = true;
-      rs.textContent = t('resendIn').replace('{s}', left);
+      rs.textContent = t('resendIn').replace('{c}', arCount(left, t('plSecond')));
     } else {
       rs.disabled = false;
       rs.textContent = t('resendNow');

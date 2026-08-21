@@ -2,7 +2,7 @@
    Reachable only by typing #/admin — it is intentionally absent from the drawer
    and the profile screen. Credentials live in store.js (V.02: a real staff
    account behind Supabase row-level security). */
-import { t, L, icon, $, $$, go, renderHeader, toast, wireRoutes, emptyState, fmtMoney, priceLabel,
+import { t, arCount, L, icon, $, $$, go, renderHeader, toast, wireRoutes, emptyState, fmtMoney, priceLabel,
          confirmSheet, openSheet, closeSheet } from '../ui.js';
 import { MAG_CATS, ARTICLES, CATEGORIES, AD_PRODUCTS, MARKET_CATS } from '../data.js';
 import * as S from '../store.js';
@@ -680,7 +680,7 @@ function setHtml() {
     ${/* The switch is not broken — the data is empty. Saying the real
           number turns "nothing happened" into a job somebody can do. */''}
     <div class="hint">${t('seasonCountLine')
-      .replace('{n}', S.seasonCount('ramadan')).replace('{min}', S.CHIP_MIN)}</div>
+      .replace('{c}', arCount(S.seasonCount('ramadan'), t('plBiz'))).replace('{min}', S.CHIP_MIN)}</div>
 
     <div class="section-title mt-20">${t('demoTitle')}</div>
     <div class="hint" style="margin-bottom:10px">${t('demoWhy')}</div>
@@ -704,7 +704,7 @@ function setHtml() {
     <div class="section-title mt-20">${t('subTestTitle')}</div>
     <div class="hint" style="margin-bottom:10px">${t('subTestWhy')}</div>
     ${S.clockDaysAhead() ? `<div class="list-note" style="margin-inline:0">${icon('clock', 18)}
-      <span>${t('subTestAhead').replace('{x}', S.clockDaysAhead())}</span></div>` : ''}
+      <span>${t('subTestAhead').replace('{c}', arCount(S.clockDaysAhead(), t('plDay')))}</span></div>` : ''}
     ${S.subscription() ? `<div class="hint" style="margin-bottom:8px">
         ${t(({ trialing: 'subStatusTrialing', active: 'subStatusActive',
                canceled: 'subStatusCanceled', past_due: 'subStatusPastDue' })[S.subscription().status])}
@@ -1040,7 +1040,7 @@ function statsHtml() {
   const winner = statLabelOf(aN > bN ? statA : statB);
   const diff = aN === bN ? t('statDiffSame')
     : ratio >= 10 || loN === 0
-      ? t('statDiffTimes').replace('{a}', winner).replace('{n}', loN ? Math.round(ratio) : hiN)
+      ? t('statDiffTimes').replace('{a}', winner).replace('{c}', arCount(loN ? Math.round(ratio) : hiN, t('plTimes')))
       : t('statDiff').replace('{a}', winner).replace('{n}', Math.round((ratio - 1) * 100));
 
   const pickOptions = () => STAT_SECTIONS.map(id => ({ id, label: t(statSecKey[id]) }))
@@ -1204,7 +1204,7 @@ function dirHtml() {
     <div class="stat-row" style="padding:0">
       <div class="stat"><b>${all.length}</b><span>${t('directoryTitle')}</span></div>
       <div class="stat"><b>${paid}</b><span>${t('verified')}</span></div>
-      <div class="stat"><b>${all.filter(b => !b.claimed).length}</b><span>${t('claimIt')}</span></div>
+      <div class="stat"><b>${all.filter(b => !b.claimed).length}</b><span>${t('unclaimedCount')}</span></div>
     </div>
     <div class="section-title mt-16">${t('addBusiness')}</div>
     <div class="hint" style="margin-bottom:10px">${t('adminAddNote')}</div>

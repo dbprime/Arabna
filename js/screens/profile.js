@@ -1,5 +1,5 @@
 /* ======================= PROFILE & ACCOUNT SCREENS ======================= */
-import { t, L, icon, $, $$, go, renderHeader, toast, wireRoutes, emptyState, confirmSheet,
+import { t, arCount, L, icon, $, $$, go, renderHeader, toast, wireRoutes, emptyState, confirmSheet,
          openSheet, closeSheet,
          fmtMoney, priceLabel, statusBadge, stars, logoSrc, shareItem } from '../ui.js';
 import { SUBSCRIPTION_PRICE, CATEGORIES } from '../data.js';
@@ -275,7 +275,7 @@ function adOrderCard(o) {
         o.status === 'live' ? t('statusLive') : o.status === 'rejected' ? t('statusRejected') : t('statusPending')}</span>
     </div>
     <div class="row-sub">${p ? t(p.nameKey) : o.product}${o.cat ? ' · ' + t(catKeyFor(o.cat)) : ''} · <span class="ltr">${fmtMoney(o.price)}</span></div>
-    ${left !== null ? `<div class="row-sub ${ending ? 'gold' : ''}">${t('adEndsOn')}: ${fmtDate(o.endsAt)} · ${t('adDaysLeft').replace('{n}', left)}</div>` : ''}
+    ${left !== null ? `<div class="row-sub ${ending ? 'gold' : ''}">${t('adEndsOn')}: ${fmtDate(o.endsAt)} · ${t('adDaysLeft').replace('{c}', arCount(left, t('plDay')))}</div>` : ''}
     ${o.reason ? `<div class="err-msg">${icon('alert', 15)} ${o.reason}</div>` : ''}
 
     <div class="stat-row" style="padding:10px 0 0">
@@ -419,7 +419,7 @@ function bizStatsBlock(b) {
     </div>
     ${st.cur.views
       ? `<div class="list-note" style="margin-inline:0">${icon('trendingUp', 18)}
-          <span>${t('bizStatsLine').replace('{n}', st.cur.views)}</span></div>`
+          <span>${t('bizStatsLine').replace('{c}', arCount(st.cur.views, t('plPerson')))}</span></div>`
       : `<div class="hint" style="margin-top:10px">${t('bizStatsEmpty')}</div>`}`;
 }
 
@@ -633,7 +633,7 @@ export function NotificationsScreen(root) {
  */
 export function HelpScreen(root) {
   renderHeader({ simple: true, title: t('help') });
-  const N = 10;
+  const N = 12;
   root.innerHTML = `
     <div class="pad mt-16">
       <div class="section-title">${t('faqTitle')}</div>
@@ -646,7 +646,6 @@ export function HelpScreen(root) {
             <div class="faq-body"><div class="faq-body-inner"><p>${t('faqA' + n)}</p></div></div>
           </div>`).join('')}
       </div>
-      <div class="hint" style="margin-top:10px">${t('faqNote')}</div>
     </div>
 
     <div class="legal-body">
@@ -707,7 +706,7 @@ export function AboutScreen(root) {
       <p class="fs-13 muted mt-16" style="max-width:300px;text-align:center">
         ${S.state.lang === 'en'
           ? 'ARABNA brings the Arab community in America together in one app: a business directory, a marketplace, and a community magazine.'
-          : 'عربنا يجمع الجالية العربية في أمريكا بتطبيق واحد: دليل أعمال، ماركت بليس، ومجلة للمجتمع.'}
+          : 'عربنا يجمع الجالية العربية في أمريكا بتطبيق واحد: دليل أعمال، وسوق، ومجلة للمجتمع.'}
       </p>
       <div class="contact-box mt-20">
         <div class="cb-title">${t('contactUsTitle')}</div>
@@ -733,13 +732,13 @@ export function PrivacyScreen(root) {
   root.innerHTML = `<div class="legal-body">
     <h2>${en ? '1. What we collect' : '1. البيانات التي نجمعها'}</h2>
     <p>${en ? 'Name, email address, mobile number (for verification), your listings and content, your location when you ask for distance-based results, and payment records processed by our payment provider.'
-            : 'الاسم، البريد الإلكتروني، رقم الجوال (للتحقق)، إعلاناتك ومحتواك، موقعك عند طلب نتائج مرتبة بالمسافة، وسجلات الدفع التي تُعالَج عبر مزوّد الدفع.'}</p>
+            : 'الاسم، البريد الإلكتروني، رقم الهاتف (للتحقق)، إعلاناتك ومحتواك، موقعك عند طلب نتائج مرتبة بالمسافة، وسجلات الدفع التي تُعالَج عبر مزوّد الدفع.'}</p>
     <h2>${en ? '2. Your location' : '2. موقعك'}</h2>
     <p>${en ? 'Your location is only requested at the moment you ask for something that needs it — sorting by what is nearest, filtering by distance, or setting your city. It is never requested when the app opens. The coordinates stay on your device, are used only to work out how far away a listing is, and are never sent to us or to anyone else. You can clear them at any time from the location sheet, and picking a city by hand needs no permission at all.'
-            : 'لا نطلب موقعك إلا في اللحظة التي تطلب فيها شيئاً يحتاجه — الترتيب بالأقرب، أو الفلترة بالمسافة، أو تحديد مدينتك. ولا يُطلب أبداً عند فتح التطبيق. الإحداثيات تبقى على جهازك، وتُستعمل فقط لحساب بُعد النشاط عنك، ولا تُرسل إلينا ولا إلى أي جهة أخرى. تقدر تمسحها في أي وقت من نافذة الموقع، واختيار المدينة يدوياً لا يحتاج أي إذن.'}</p>
+            : 'لا نطلب موقعك إلا في اللحظة التي تطلب فيها شيئاً يحتاجه — الترتيب بالأقرب، أو الفلترة بالمسافة، أو تحديد مدينتك. ولا يُطلب أبداً عند فتح التطبيق. الإحداثيات تبقى على جهازك، وتُستعمل فقط لحساب بُعد النشاط عنك، ولا تُرسل إلينا ولا إلى أي جهة أخرى. يمكنك مسحها في أي وقت من نافذة الموقع، واختيار المدينة يدوياً لا يحتاج أي إذن.'}</p>
     <h2>${en ? '3. Why we collect it' : '3. سبب الجمع'}</h2>
     <p>${en ? 'To operate the directory and the marketplace, to verify real users, to prevent fraud and abuse, and to process paid placements and subscriptions.'
-            : 'لتشغيل الدليل والماركت بليس، والتحقق من أن المستخدمين حقيقيون، ومنع الاحتيال وسوء الاستخدام، ومعالجة الاشتراكات والإعلانات المدفوعة.'}</p>
+            : 'لتشغيل الدليل والسوق، والتحقق من أن المستخدمين حقيقيون، ومنع الاحتيال وسوء الاستخدام، ومعالجة الاشتراكات والإعلانات المدفوعة.'}</p>
     <h2>${en ? '4. Card data' : '4. بيانات البطاقة'}</h2>
     <p>${en ? 'We never store full card numbers. Payments are handled by a PCI-compliant provider.'
             : 'لا نخزّن أرقام البطاقات كاملة إطلاقاً. الدفع يتم عبر مزوّد متوافق مع معايير PCI.'}</p>
@@ -765,15 +764,15 @@ export function TermsScreen(root) {
   root.innerHTML = `<div class="legal-body">
     <h2>${en ? '1. Accounts' : '1. الحسابات'}</h2>
     <p>${en ? 'You must be 18+ to create an account. Posting, messaging and advertising require a verified real mobile number; VOIP and landline numbers are not accepted.'
-            : 'يجب أن يكون عمرك 18 سنة أو أكثر. النشر والتواصل والإعلان تتطلب رقم جوال حقيقي مُتحقق منه؛ أرقام الإنترنت (VOIP) والأرقام الأرضية غير مقبولة.'}</p>
-    <h2>${en ? '2. The Marketplace is for individuals' : '2. الماركت بليس للأفراد'}</h2>
+            : 'يجب أن يكون عمرك 18 سنة أو أكثر. النشر والتواصل والإعلان تتطلب رقم هاتف حقيقي مُتحقق منه؛ أرقام الإنترنت (VOIP) والأرقام الأرضية غير مقبولة.'}</p>
+    <h2>${en ? '2. The Marketplace is for individuals' : '2. السوق للأفراد'}</h2>
     <p>${en ? 'The Marketplace is for person-to-person sales only, limited to 4 active listings per account, each expiring after 14 days. The Handyman & Services section allows one active listing for 14 days. The Free section is for items given away at no cost — listings that carry a price are removed or sent for review. Business advertising belongs in the Directory.'
-            : 'الماركت بليس مخصص للبيع بين الأفراد فقط، بحد أقصى 4 إعلانات نشطة لكل حساب، وكل إعلان ينتهي بعد 14 يوماً. قسم الهاندي مان والخدمات يسمح بإعلان واحد نشط لمدة 14 يوماً. قسم المجاني للأغراض التي تُعطى بلا مقابل، وأي إعلان يحمل سعراً يُحذف أو يُحال للمراجعة. الإعلانات التجارية مكانها الدليل.'}</p>
+            : 'السوق مخصص للبيع بين الأفراد فقط، بحد أقصى 4 إعلانات نشطة لكل حساب، وكل إعلان ينتهي بعد 14 يوماً. قسم خدمات وصيانة يسمح بإعلان واحد نشط لمدة 14 يوماً. قسم المجاني للأغراض التي تُعطى بلا مقابل، وأي إعلان يحمل سعراً يُحذف أو يُحال إلى الموافقة. الإعلانات التجارية مكانها الدليل.'}</p>
     <h2>${en ? '3. Contact stays in the app' : '3. التواصل داخل التطبيق'}</h2>
     <p>${t('legalScanBody')}</p>
     <h2>${en ? '4. Paid placements' : '4. الإعلانات المدفوعة'}</h2>
     <p>${en ? 'Paid ads and sponsored stories are reviewed before going live. ARABNA may decline content that is misleading, illegal or offensive; declined orders are refunded.'
-            : 'الإعلانات المدفوعة والمقالات المدعومة تُراجَع قبل النشر. يحق لعربنا رفض أي محتوى مضلل أو مخالف أو مسيء، ويُرد المبلغ في هذه الحالة.'}</p>
+            : 'الإعلانات المدفوعة والمقالات المدعومة تنتظر الموافقة قبل النشر. يحق لعربنا رفض أي محتوى مضلل أو مخالف أو مسيء، ويُرد المبلغ في هذه الحالة.'}</p>
     <h2>${en ? '5. Subscriptions' : '5. الاشتراكات'}</h2>
     <p>${en ? 'Business subscriptions renew monthly until cancelled. Cancelling stops future renewals; the current period is not prorated.'
             : 'اشتراك الأعمال يتجدد شهرياً حتى الإلغاء. الإلغاء يوقف التجديد القادم، ولا تُحتسب فترة جزئية للشهر الحالي.'}</p>
