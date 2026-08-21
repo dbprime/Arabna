@@ -6,7 +6,8 @@ import { t, arCount, L, icon, $, $$, go, renderHeader, toast, wireRoutes, emptyS
          confirmSheet, openSheet, closeSheet } from '../ui.js';
 import { MAG_CATS, ARTICLES, CATEGORIES, AD_PRODUCTS, MARKET_CATS } from '../data.js';
 import * as S from '../store.js';
-import { passwordField, wirePasswordToggles } from './profile.js';
+import { passwordField, passwordChecklist, wirePasswordField,
+         wirePasswordToggles } from './profile.js';
 import { fmtEventDate } from './events.js';
 import { fmtDate } from './directory.js';
 
@@ -444,9 +445,10 @@ function panelView(root) {
     });
 
     const apw = $('#apSave');
+    const checkAdminPw = $('#apNew') ? wirePasswordField('apNew', 'e_apNew') : () => '';
     if (apw) apw.addEventListener('click', () => {
       const a = $('#apNew').value, b2 = $('#apConf').value;
-      if (a.length < 6) { toast(t('passwordTooShort'), 'err'); return; }
+      if (checkAdminPw()) return;                 // named under the field
       if (a !== b2) { toast(t('passwordsDontMatch'), 'err'); return; }
       S.setAdminPass(a);
       toast(t('adminPassChanged'), 'ok');
@@ -722,6 +724,10 @@ function setHtml() {
     <div class="section-title mt-20">${t('changePassword')}</div>
     <div class="hint" style="margin-bottom:10px">${t('adminUser')}: <b class="gold ltr">${S.adminCreds().user}</b></div>
     ${passwordField('apNew', t('newPassword'))}
+    ${/* The panel is the FIRST place this rule belongs, not the last:
+         whoever gets in sees everything and can change everything. */''}
+    ${passwordChecklist('apNew')}
+    <div class="field-err" id="e_apNew"></div>
     ${passwordField('apConf', t('confirmPassword'))}
     <button class="btn btn-gold btn-block" id="apSave">${icon('lock', 19)} ${t('changePassword')}</button>
   </div>`;

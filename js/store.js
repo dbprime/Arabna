@@ -2069,19 +2069,75 @@ export function validName(v) {
 export function validEmail(v) {
   return /^[^\s@]+@[^\s@]+\.[A-Za-z]{2,}$/.test(String(v || '').trim());
 }
-/** 0 none · 1 weak · 2 fair · 3 strong — shown before the failure, not after */
-export function passwordScore(v) {
+/* ------------------------------------------------------------
+   THE PASSWORD RULE — one function, and the three screens ask it
+
+   There were three different rules. Sign-up demanded 8 + a letter
+   + a digit; the CHANGE screen demanded `length < 6` and nothing
+   else, and the admin panel the same. So anybody could register
+   with a strong password and change it to `123456` a minute
+   later — which makes a rule on the sign-up screen worth exactly
+   nothing. Every check now comes back here.
+
+   ENGLISH ONLY, and not as a preference:
+   · Arabic has no capital letters, so «an uppercase letter» is a
+     condition nobody could ever satisfy — a wall with no door.
+   · ا · أ · إ · آ look identical and are four different
+     characters; ه and ة; ي and ى; and the harakat are invisible
+     entirely. Keyboards disagree about which they emit, so the
+     same word typed on another phone is a different string. The
+     owner is locked out while reading their correct password off
+     the screen, and nobody — not them, not us — can see why.
+   · Arabic-Indic digits are not digits to /\d/, so `Rami٢٠٢٦$`
+     would be refused for «missing a number» with four of them
+     on screen.
+   ------------------------------------------------------------ */
+
+/* Classic weak words. The leet substitutions are normalised FIRST and
+   then searched as a substring — otherwise stripping symbols turns
+   `P@ssw0rd!` into `pssw0rd`, which does not match `password` and sails
+   straight through. */
+const PW_LEET = { '@': 'a', '0': 'o', '1': 'i', '3': 'e', '4': 'a', '5': 's', '7': 't' };
+const pwLeet = (v) => String(v || '').toLowerCase()
+  .split('').map(c => PW_LEET[c] || c).join('').replace(/[^a-z]/g, '');
+const pwPlain = (v) => String(v || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+
+const PW_ALWAYS = ['password', 'qwerty', 'letmein', 'iloveyou', 'welcome',
+                   'abcdef', 'monkey', 'dragon', 'football', 'sunshine',
+                   'admin', 'master'];
+/* The first things anybody signing up for an app called ARABNA in Houston
+   will reach for. Matched WHOLE, not as a substring: `Houston2026$` is
+   refused (the city and some digits), `Elby#Katy77` is fine (a real name
+   as well). Using `includes` here would refuse every password that
+   happens to contain a city, which is too much. */
+const PW_BRAND = ['arabna', 'houston', 'texas', 'katy', 'sugarland'];
+
+export function isCommonPassword(v) {
+  if (PW_ALWAYS.some(w => pwLeet(v).includes(w))) return true;
+  const p = pwPlain(v), letters = p.replace(/[0-9]/g, '');
+  if (PW_BRAND.includes(letters)) return true;
+  if (/^(.)\1+$/.test(p)) return true;                    // aaaaaaaa
+  if (/(012|123|234|345|456|567|678|789|987|876|765|654|543|432|321|210)/.test(p)) return true;
+  return false;
+}
+
+/** every condition on its own, because the screen shows them one by one */
+export function passwordChecks(v) {
   const p = String(v || '');
-  if (!p) return 0;
-  let n = 0;
-  if (p.length >= PW_MIN) n++;
-  if (/[A-Za-z\p{L}]/u.test(p) && /\d/.test(p)) n++;
-  if (p.length >= 12 || /[^\w\s]/.test(p)) n++;
-  return Math.min(n, 3);
+  return {
+    latin:  p.length > 0 && /^[\x20-\x7E]+$/.test(p),
+    len:    p.length >= PW_MIN,
+    upper:  /[A-Z]/.test(p),
+    lower:  /[a-z]/.test(p),
+    digit:  /\d/.test(p),
+    // any character that is not a letter, a digit or a space. Never a
+    // fixed list: somebody typing «؟» deserves to pass.
+    symbol: /[^A-Za-z0-9\s]/.test(p),
+    common: p.length > 0 && !isCommonPassword(p),
+  };
 }
 export function passwordOk(v) {
-  const p = String(v || '');
-  return p.length >= PW_MIN && /[A-Za-z\p{L}]/u.test(p) && /\d/.test(p);
+  return Object.values(passwordChecks(v)).every(Boolean);
 }
 
 /* ---- the verification step is remembered, so closing the app returns to
@@ -2112,9 +2168,64 @@ export function samePhone(a, b) {
   return !!n(a) && n(a) === n(b);
 }
 
-export function signUp({ name, email, password, phone }) {
+/* ------------------------------------------------------------
+   THE PASSWORD IS NEVER WRITTEN DOWN
+
+   It used to go into localStorage as typed, readable by anyone
+   who opened the console. The danger was never really this app —
+   there is no server and the account lives on its owner's own
+   device, so whoever reaches the storage has reached the account
+   already. The danger is that most people reuse one password
+   everywhere, so what we were keeping in the clear was very
+   likely the key to their email.
+
+   A rule about the SHAPE of a password does nothing about this:
+   thirty characters stored in the clear are as exposed as `1234`.
+   So the word itself is not kept at all — only a SHA-256 of it
+   with a random salt, which is enough for the one thing this
+   build needs (does the old one match?) and useless to a reader.
+
+   crypto.subtle needs a secure context. On localhost and on
+   Vercel it is there; opened from a file:// URL it is not, and
+   then nothing is stored rather than the word in the clear.
+   ------------------------------------------------------------ */
+const PW_SUBTLE = () => (typeof crypto !== 'undefined' && crypto.subtle) || null;
+
+function randomSalt() {
+  const b = new Uint8Array(16);
+  (typeof crypto !== 'undefined' && crypto.getRandomValues)
+    ? crypto.getRandomValues(b)
+    : b.forEach((_, i) => { b[i] = Math.floor(Math.random() * 256); });
+  return Array.from(b).map(x => x.toString(16).padStart(2, '0')).join('');
+}
+
+export async function hashPassword(pw, salt) {
+  const sub = PW_SUBTLE();
+  if (!sub || !pw) return '';
+  const bytes = new TextEncoder().encode(salt + '\u0000' + pw);
+  const digest = await sub.digest('SHA-256', bytes);
+  return Array.from(new Uint8Array(digest)).map(x => x.toString(16).padStart(2, '0')).join('');
+}
+
+export async function setUserPassword(pw) {
+  if (!state.user) return;
+  const salt = randomSalt();
+  const hash = await hashPassword(pw, salt);
+  if (hash) { state.user.pwSalt = salt; state.user.pwHash = hash; }
+  delete state.user.password;          // nothing readable is left behind
+  save();
+}
+
+/** true when there is nothing to check against, as before */
+export async function checkUserPassword(pw) {
+  const u = state.user;
+  if (!u || !u.pwHash) return true;
+  return (await hashPassword(pw, u.pwSalt || '')) === u.pwHash;
+}
+
+export async function signUp({ name, email, password, phone }) {
   state.user = {
-    name, email, password: password || '',
+    name, email,
     // collected at sign-up and stored unverified; the code is asked for at
     // the first action that actually needs it
     emailVerified: false, phone: phone || null, phoneVerified: false,
@@ -2123,6 +2234,7 @@ export function signUp({ name, email, password, phone }) {
     badge: null,           // { status: 'pending' | 'live', since }
   };
   save();
+  await setUserPassword(password || '');
 }
 export function confirmEmail() {
   if (state.user) { state.user.emailVerified = true; save(); }
@@ -2147,14 +2259,18 @@ export function updateProfile({ name, email, phone }) {
   return u;
 }
 
-export function changePassword(current, next) {
+export async function changePassword(current, next) {
   const u = state.user;
   if (!u) return { ok: false, reason: 'no-user' };
-  // A password set before this field existed is accepted once, so nobody
-  // gets locked out of their own prototype account.
-  if (u.password && current !== u.password) return { ok: false, reason: 'wrong' };
-  u.password = next;
-  save();
+  /* An account made before the hash existed carries the old plain field.
+     Accept it once and replace it — nobody is locked out of their own
+     account by a change in how we store it, and the plain copy goes. */
+  if (u.password) {
+    if (current !== u.password) return { ok: false, reason: 'wrong' };
+  } else if (!(await checkUserPassword(current))) {
+    return { ok: false, reason: 'wrong' };
+  }
+  await setUserPassword(next);
   return { ok: true };
 }
 

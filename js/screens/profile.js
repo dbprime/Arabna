@@ -172,24 +172,31 @@ export function ChangePasswordScreen(root) {
     <div class="pad mt-16">
       ${passwordField('cpCur', t('currentPassword'))}
       ${passwordField('cpNew', t('newPassword'))}
+      ${/* This screen used to accept `length < 6` and nothing else, which
+           made the sign-up rule worth nothing: register strong, change to
+           123456 a minute later. It asks the same function now. */''}
+      ${passwordChecklist('cpNew')}
+      <div class="field-err" id="e_cpNew"></div>
       ${passwordField('cpConf', t('confirmPassword'))}
       <div id="cpErr"></div>
       <button class="btn btn-gold btn-block mt-8" id="cpSave">${icon('lock', 19)} ${t('changePassword')}</button>
     </div>`;
 
   wirePasswordToggles(root);
+  const checkNew = wirePasswordField('cpNew', 'e_cpNew');
 
-  $('#cpSave').addEventListener('click', () => {
+  $('#cpSave').addEventListener('click', async () => {
     const cur = $('#cpCur').value;
     const next = $('#cpNew').value;
     const conf = $('#cpConf').value;
     const err = $('#cpErr');
     err.innerHTML = '';
 
-    if (next.length < 6) { err.innerHTML = errMsg(t('passwordTooShort')); return; }
+    if (checkNew()) return;                       // named under the field
+    if (next === cur) { err.innerHTML = errMsg(t('pwSameAsOld')); return; }
     if (next !== conf) { err.innerHTML = errMsg(t('passwordsDontMatch')); return; }
 
-    const res = S.changePassword(cur, next);
+    const res = await S.changePassword(cur, next);
     if (!res.ok) { err.innerHTML = errMsg(t('wrongPassword')); return; }
     toast(t('passwordChanged'), 'ok');
     go('#/profile');
@@ -202,10 +209,102 @@ function errMsg(m) { return `<div class="err-msg">${icon('alert', 15)} ${m}</div
 export function passwordField(id, label) {
   return `<div class="field"><label class="label">${label}</label>
     <div class="pass-wrap">
-      <input class="input" id="${id}" type="password" autocomplete="off" />
+      ${/* A hint to the system, never a command — no web app can force a
+           phone's keyboard language (same limit as the maps sheet). What
+           these DO stop is autocorrect and the capitalised first letter,
+           both of which break a password silently. */''}
+      <input class="input" id="${id}" type="password" autocomplete="off"
+             lang="en" inputmode="text" autocapitalize="off"
+             autocorrect="off" spellcheck="false" />
       <button type="button" class="pass-eye" data-eye="${id}" aria-label="${t('showPassword')}">${icon('eye', 19)}</button>
     </div></div>`;
 }
+/* ------------------------------------------------------------
+   THE LIVE CHECKLIST
+
+   «Like the big apps» means three behaviours together, not a red
+   message on its own:
+
+   1. Every condition is listed from the first moment and turns
+      green AS IT IS MET, so nobody reaches the button without
+      having satisfied them all — and therefore never sees red.
+   2. Red does NOT appear on the first keystroke. Somebody who
+      types `R` and is told the password is invalid feels they
+      got it wrong before they started. Red waits until they
+      leave the field or press the button, and clears the moment
+      they type again.
+   3. Nothing is hidden once satisfied — a list that shrinks
+      under your fingers is a list that dances.
+
+   «English only» is a grey hint ABOVE the list, not a condition
+   in it: it is a door you are either through or not, and as a
+   sixth green tick it would be permanently green for everybody
+   typing Latin and would confuse whoever is not.
+   ------------------------------------------------------------ */
+const PW_ROWS = [
+  ['len', 'pwReqLen'], ['upper', 'pwReqUpper'], ['lower', 'pwReqLower'],
+  ['digit', 'pwReqDigit'], ['symbol', 'pwReqSymbol'],
+];
+
+export function passwordChecklist(id) {
+  return `<div class="pw-hint" id="${id}_latin">${t('pwLatinOnly')}</div>
+    <ul class="pw-reqs" id="${id}_reqs" aria-live="polite">
+      ${PW_ROWS.map(([k, key]) => `<li data-req="${k}">
+        <span class="pw-dot">${icon('check', 13)}</span>${t(key)}</li>`).join('')}
+    </ul>`;
+}
+
+/**
+ * Paints the list and returns the reason a password is refused, or ''.
+ * The caller decides WHEN to show that reason — the list is always live,
+ * the red line is not.
+ */
+export function paintPasswordChecklist(id, value) {
+  const c = S.passwordChecks(value);
+  const host = $('#' + id + '_reqs');
+  if (host) PW_ROWS.forEach(([k]) => {
+    const li = host.querySelector(`[data-req="${k}"]`);
+    if (li) li.classList.toggle('ok', !!c[k]);
+  });
+  const latin = $('#' + id + '_latin');
+  if (latin) latin.classList.toggle('bad', value.length > 0 && !c.latin);
+
+  if (!value) return '';
+  // one thing at a time: telling somebody who typed Arabic that they also
+  // need a capital letter adds confusion to confusion
+  if (!c.latin) return t('pwLatinOnly');
+  if (!c.common) return t('pwCommon');
+  const missing = PW_ROWS.filter(([k]) => !c[k]).map(([, key]) => t(key));
+  if (!missing.length) return '';
+  const list = missing.length === 1 ? missing[0]
+    : missing.slice(0, -1).join('، ') + (S.state.lang === 'en' ? ' and ' : '، و') + missing[missing.length - 1];
+  return t('pwMissing').replace('{list}', list);
+}
+
+/** the three screens wire it the same way: live list, late red */
+export function wirePasswordField(id, errId, onChange) {
+  const input = $('#' + id);
+  const err = () => $('#' + errId);
+  if (!input) return () => '';
+  let touched = false;
+  const show = (msg) => {
+    const box = err();
+    if (box) box.textContent = msg || '';
+    input.classList.toggle('input-err', !!msg);
+  };
+  const repaint = () => {
+    const reason = paintPasswordChecklist(id, input.value);
+    if (touched) show(reason); else show('');
+    if (onChange) onChange(reason);
+    return reason;
+  };
+  input.addEventListener('input', () => { touched = false; repaint(); });
+  input.addEventListener('blur', () => { touched = true; repaint(); });
+  repaint();
+  /** called by the submit button: marks it touched and returns the reason */
+  return () => { touched = true; return repaint(); };
+}
+
 export function wirePasswordToggles(root) {
   $$('[data-eye]', root).forEach(btn => btn.addEventListener('click', () => {
     const input = $('#' + btn.dataset.eye, root);

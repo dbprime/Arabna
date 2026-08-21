@@ -1277,6 +1277,25 @@ input[inputmode="tel"], input[type="email"], input[inputmode="decimal"], #zipIn 
   font-size: 11px; font-weight: 700;
 }
 
+/* ---- the live password checklist (V.03.4) ---- */
+.pw-hint { font-size: 12px; color: var(--muted); margin-top: 6px; }
+.pw-hint.bad { color: var(--danger-ink); }
+.pw-reqs { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 5px; }
+.pw-reqs li {
+  display: flex; gap: 8px; align-items: center;
+  font-size: 12.5px; color: var(--muted);
+}
+.pw-dot {
+  flex: 0 0 16px; height: 16px; border-radius: 50%;
+  border: 1.5px solid var(--line); display: flex;
+  align-items: center; justify-content: center;
+  color: transparent;
+}
+/* met: a tick and the green, never a hidden row — a list that shrinks
+   under your fingers is a list that dances */
+.pw-reqs li.ok { color: var(--green); }
+.pw-reqs li.ok .pw-dot { border-color: var(--green); background: var(--green); color: var(--on-gold); }
+
 /* ---- «آخر ما عُدِّل» (V.03.3) ---- */
 .log-row {
   padding: 11px 13px; margin-top: 8px;

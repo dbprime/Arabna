@@ -2,7 +2,8 @@
 import { t, arCount, icon, $, $$, go, back, renderHeader, toast, wireRoutes, logoSrc,
          openSheet, closeSheet } from '../ui.js';
 import * as S from '../store.js';
-import { passwordField, wirePasswordToggles, TermsScreen, PrivacyScreen } from './profile.js';
+import { passwordField, passwordChecklist, wirePasswordField,
+         wirePasswordToggles, TermsScreen, PrivacyScreen } from './profile.js';
 
 function afterAuth() {
   const p = S.takePendingIntent();
@@ -45,9 +46,11 @@ export function SignUpScreen(root) {
         <div class="hint">${t('phoneLater')}</div></div>
 
       ${passwordField('sPass', t('password') + ' *')}
-      <!-- the rule is stated before the typing, not after the failure -->
-      <div class="hint" id="pwRule">${t('passwordRule')}</div>
-      <div class="pw-meter" id="pwMeter" aria-hidden="true"><span></span></div>
+      ${/* The list replaces the strength meter. «ضعيفة / متوسّطة / قوية»
+           measures nothing once the rule is absolute — a password is
+           accepted or it is not — while the list says WHICH condition is
+           still missing, live, as it is typed. */''}
+      ${passwordChecklist('sPass')}
       <div class="field-err" id="e_sPass"></div>
 
       ${passwordField('sPass2', t('confirmPassword') + ' *')}
@@ -79,14 +82,8 @@ export function SignUpScreen(root) {
     return !msg;
   };
 
-  const meter = () => {
-    const n = S.passwordScore($('#sPass').value);
-    const m = $('#pwMeter');
-    m.className = 'pw-meter s' + n;
-    m.setAttribute('data-label', n >= 3 ? t('pwStrong') : n === 2 ? t('pwFair') : n ? t('pwWeak') : '');
-  };
-  $('#sPass').addEventListener('input', meter);
-  meter();
+  // live list, and red only once they have left the field or pressed go
+  const checkPass = wirePasswordField('sPass', 'e_sPass');
 
   /* The terms open over the screen and close back onto the same line with
      everything still typed. The old link navigated away and lost the lot. */
@@ -111,13 +108,15 @@ export function SignUpScreen(root) {
     ok = setErr('sFirst', !first ? t('required') : !S.validName(first) ? t('lettersOnly') : '') && ok;
     ok = setErr('sLast', !last ? t('required') : !S.validName(last) ? t('lettersOnly') : '') && ok;
     ok = setErr('sEmail', !email ? t('required') : !S.validEmail(email) ? t('badEmail') : '') && ok;
-    ok = setErr('sPass', !pass ? t('required') : !S.passwordOk(pass) ? t('passwordRule') : '') && ok;
+    // the checklist names the missing condition; «غير صالحة» names none
+    // setErr returns true only when there is no message
+    ok = (pass ? !checkPass() : setErr('sPass', t('required'))) && ok;
     ok = setErr('sPass2', !pass2 ? t('required') : pass2 !== pass ? t('passwordsDontMatch') : '') && ok;
     if (!ok) { $('.input-err') && $('.input-err').focus(); return; }
     if (!$('#agree1').checked || !$('#agree2').checked) { toast(t('required'), 'err'); return; }
 
     e.target.innerHTML = `<span class="spinner"></span>`;
-    S.signUp({ name: first + ' ' + last, email, password: pass, phone });
+    await S.signUp({ name: first + ' ' + last, email, password: pass, phone });
     await S.sendEmailCode(email);
     S.setPendingVerify('email', email);
     go('#/auth/email');
@@ -154,11 +153,11 @@ export function SignInScreen(root) {
     </div>`;
 
   wirePasswordToggles(root);
-  $('#siBtn').addEventListener('click', () => {
+  $('#siBtn').addEventListener('click', async () => {
     const email = $('#iEmail').value.trim();
     const pass = $('#iPass').value;
     if (!email) { toast(t('required'), 'err'); return; }
-    S.signUp({ name: email.split('@')[0], email, password: pass });
+    await S.signUp({ name: email.split('@')[0], email, password: pass });
     S.confirmEmail();
     toast(t('done'), 'ok');
     afterAuth();
