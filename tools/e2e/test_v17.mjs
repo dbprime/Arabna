@@ -160,7 +160,8 @@ ok('4.1 settings offers all three', opts.map(o => o.v).join(',') === 'auto,light
 ok('4.2 each one previews itself', opts.every(o => o.hasPreview));
 ok('4.3 the current one is marked, for eye and screen reader',
    opts.filter(o => o.on).length === 1 && opts.find(o => o.v === 'dark').checked === 'true');
-ok('4.4 the automatic one says what it follows', (await page.textContent('#app')).includes('بيتبع إعدادات جهازك'));
+// V.03.4: «بيتبع» was dialect; plain MSA is «يتبع»
+ok('4.4 the automatic one says what it follows', (await page.textContent('#app')).includes('يتبع إعدادات جهازك'));
 await page.click('[data-theme-opt="light"]'); await page.waitForTimeout(450);
 ok('4.5 picking one switches the app there and then',
    (await page.evaluate(() => document.documentElement.getAttribute('data-theme'))) === 'light');
@@ -191,7 +192,13 @@ ok('4.9b the header carries it instead, and says where it is going',
    hdrBtn && hdrBtn.w === 44 && hdrBtn.label === 'غامق', JSON.stringify(hdrBtn));
 await page.click('#hTheme'); await page.waitForTimeout(600);
 ok('4.10 one tap and the app is dark', (await page.evaluate(() => document.documentElement.getAttribute('data-theme'))) === 'dark');
-ok('4.11 …and it says so', (await page.textContent('body')).includes('صار الوضع غامق'));
+/* V.03.4 deleted the toast, deliberately. The whole screen had just
+   changed colour and the icon had flipped sun ↔ moon — two confirmations
+   without a word — and the bar stood over the logo saying so. Nothing
+   confirms in words what the reader is watching happen. */
+ok('4.11 …and no bar appears over the logo to announce it',
+   !(await page.textContent('body')).includes('صار الوضع')
+   && await page.locator('.toast').count() === 0);
 
 /* ============ 5 — the same app, both ways ============ */
 console.log('--- both ways ---');

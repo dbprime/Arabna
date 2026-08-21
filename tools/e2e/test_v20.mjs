@@ -224,7 +224,10 @@ await page.context().close();
 console.log('--- help, subscribe, forgot ---');
 page = await openPage();
 await go(page, '#/help');
-ok('7.1 ten folded questions', await page.evaluate(() => document.querySelectorAll('.faq-item').length) === 10);
+/* V.03.4 added two the app could not answer before: whether the prayer
+   times are right for your city, and how to add an event. */
+ok('7.1 twelve folded questions', await page.evaluate(() => document.querySelectorAll('.faq-item').length) === 12,
+   String(await page.evaluate(() => document.querySelectorAll('.faq-item').length)));
 ok('7.2 all shut to begin with', await page.evaluate(() => document.querySelectorAll('.faq-item.open').length) === 0);
 await page.click('.faq-item[data-q="3"] .faq-head'); await page.waitForTimeout(350);
 await page.click('.faq-item[data-q="7"] .faq-head'); await page.waitForTimeout(350);
@@ -244,7 +247,8 @@ const badge = await page.evaluate(() => {
 });
 ok('7.7 the line reads «اطلب شارة»', badge && /اطلب شارة/.test(badge.line), badge && badge.line);
 ok('7.8 …with the gold mark beside it', badge && badge.gold);
-ok('7.9 …and «بعد المراجعة» under it', badge && badge.sub.includes('بعد المراجعة'), badge && badge.sub);
+// V.03.4: «مراجعة» now means only an admin's vetting, said as «الموافقة»
+ok('7.9 …and «بعد الموافقة» under it', badge && badge.sub.includes('بعد الموافقة'), badge && badge.sub);
 ok('7.10 «أهلية» is gone and nothing promises the badge',
    !/أهلية|احصل على شارة/.test(await page.evaluate(() => document.body.innerText)));
 
