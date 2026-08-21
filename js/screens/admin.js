@@ -643,6 +643,31 @@ function eventsHtml() {
   </div>`;
 }
 
+/**
+ * «آخر ما عُدِّل» — what the panel changed, and only the panel.
+ *
+ * It protects Rai before it protects anybody else: without it, an owner
+ * ringing to ask who changed their phone number gets no answer at all.
+ */
+function adminLogHtml() {
+  const rows = S.adminLog(30);
+  if (!rows.length) {
+    return `<div class="section-title mt-20">${t('adminLogTitle')}</div>
+      <div class="hint">${t('adminLogNone')}</div>`;
+  }
+  const val = (v) => v === '' ? `<i class="muted">${t('adminLogEmptyVal')}</i>` : att(v);
+  return `<div class="section-title mt-20">${t('adminLogTitle')}<small>${t('adminLogSub')}</small></div>
+    ${rows.map(r => {
+      const b = S.businessById(r.bizId);
+      return `<div class="log-row">
+        <div class="log-head"><b>${b ? L(b.name) : r.bizId}</b><span class="ltr">${fmtDate(r.at)}</span></div>
+        <div class="log-field">${att(r.field)}</div>
+        <div class="log-diff"><span class="log-from">${t('adminLogFrom')}: ${val(r.from)}</span>
+          <span class="log-to">${t('adminLogTo')}: ${val(r.to)}</span></div>
+      </div>`;
+    }).join('')}`;
+}
+
 /* ----------------------------- SETTINGS ----------------------------- */
 function setHtml() {
   const dc = S.demoCounts();
@@ -960,6 +985,7 @@ function dirBrowseHtml() {
       : `<div class="hint">${t('adminDirNone')}</div>`}
     ${list.length > rows.length
       ? `<button class="btn btn-ghost btn-sm btn-block mt-8" id="dirMore">${t('adminShowMore')} (${list.length - rows.length})</button>` : ''}
+    ${adminLogHtml()}
   `;
 }
 

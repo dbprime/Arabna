@@ -330,6 +330,14 @@ export const STRINGS = {
     offerQueue: 'العروض',
     offerAll: 'كل العروض',
     somethingWrong: 'حدث خطأ — حاول مرّة أخرى',
+    // --- the admin's own trace (V.03.3)
+    adminLogTitle: 'آخر ما عُدِّل',
+    adminLogSub: 'تعديلات أُجريت من اللوحة — لا من شاشة المالك',
+    adminLogNone: 'لا تعديلات من اللوحة بعد',
+    adminLogFrom: 'قبل',
+    adminLogTo: 'بعد',
+    adminLogEmptyVal: '(فارغ)',
+    adminAsAdmin: 'تعدّل بصفتك الإدارة — لا بصفتك صاحب هذا النشاط',
     // --- the newcomer's guide (V.03.2)
     ncTitle: 'دليل الواصل الجديد',
     ncSub: 'أول الخطوات في هيوستن، خطوة خطوة',
@@ -1700,6 +1708,14 @@ export const STRINGS = {
     offerQueue: 'Offers',
     offerAll: 'All offers',
     somethingWrong: 'Something went wrong — try again',
+    // --- the admin's own trace (V.03.3)
+    adminLogTitle: 'Last edits',
+    adminLogSub: 'Changes made from the panel — not from an owner\u2019s screen',
+    adminLogNone: 'No panel edits yet',
+    adminLogFrom: 'Before',
+    adminLogTo: 'After',
+    adminLogEmptyVal: '(empty)',
+    adminAsAdmin: 'You are editing as the admin — not as this business\u2019s owner',
     // --- the newcomer's guide (V.03.2)
     ncTitle: 'Newcomer\u2019s guide',
     ncSub: 'Your first steps in Houston, one at a time',

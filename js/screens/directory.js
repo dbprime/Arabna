@@ -1613,6 +1613,12 @@ export function BusinessEditScreen(root, params) {
 
   root.innerHTML = `
     <div class="pad mt-16">
+      ${/* adminUnlocked() is a login, not a mode that stays switched on and
+           gets forgotten — so the danger was never that it lingers, it is
+           not noticing you are in it. One line, and its presence is what
+           stops somebody editing a shop believing it is their own. */''}
+      ${S.adminEditing(b.id)
+        ? `<div class="admin-as">${icon('shield', 17)}<span>${t('adminAsAdmin')}</span></div>` : ''}
       <div class="field"><label class="label">${t('nameEn')}</label>
         <input class="input ltr" id="eName" dir="ltr" value="${attr((b.name && b.name.en) || '')}" /></div>
       <div class="field"><label class="label">${t('nameAr')} <span class="muted">(${t('optional')})</span></label>
@@ -1819,6 +1825,16 @@ export function fmtDate(ms) {
 export function SubscribeScreen(root, params) {
   renderHeader({ simple: true, title: t('subscription') });
   const bizId = params[0] || S.state.myBusinessId;
+  /* The photos and the badge were guarded and the payment path was not —
+     not because the admin bypass leaked into it, but because nobody had
+     ever put a guard here at all. `#/subscribe/b1` opened in full for a
+     reader who owns nothing, and the id comes off the URL, so the
+     subscription would be written against a shop belonging to somebody
+     else. NO allowAdmin, deliberately: an admin edits data and never buys
+     in another person's name — a paid subscription given by hand goes
+     through the panel, where it leaves a receipt and a record of who
+     took the money. */
+  if (bizId && !ownerOnly(bizId)) return;
   const sub = S.subscription();
   const active = sub && S.subscriptionActive() && (!bizId || sub.businessId === bizId);
   let plan = 'monthly';
@@ -1903,6 +1919,7 @@ export function SubscribeScreen(root, params) {
 export function SubscribeConsentScreen(root, params) {
   renderHeader({ simple: true, title: t('consentTitle') });
   const bizId = params[0] || S.state.myBusinessId;
+  if (bizId && !ownerOnly(bizId)) return;   // see SubscribeScreen
   const plan = (query().plan === 'yearly') ? 'yearly' : 'monthly';
   const price = S.planPrice(plan);
   const firstCharge = S.now() + S.TRIAL_DAYS * 86400000;

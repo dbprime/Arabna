@@ -91,6 +91,7 @@ const DEFAULTS = {
   prayer: { method: 'isna', asr: 1 },
   worshipFixes: [],          // «الوقت غير صحيح؟» — one line from a regular, for the admin
   offers: {},                // { bizId: [{ id, text, price, endsAt, status, when, reason }] }
+  adminLog: [],              // { at, bizId, field, from, to } — the panel's hand, never the owner's
 };
 
 export const state = Object.assign({}, DEFAULTS, load() || {});
@@ -1868,7 +1869,59 @@ export function rejectClaim(id, reason) {
 export function pendingClaims() { return (state.claims || []).filter(c => c.status === 'pending'); }
 
 /** layer an edit on top of a record, seed or user-created alike */
+/* ------------------------------------------------------------
+   WHO CHANGED THIS
+
+   An admin edits a shop from the same screen its owner uses —
+   that is the right design, and it means the two writes are
+   indistinguishable afterwards. So the day an owner rings up and
+   asks who changed their phone number, there is no answer: not
+   whether it was them, the panel, or an import.
+
+   One line per field, and only when the person writing is the
+   admin and NOT the owner. The owner editing their own page
+   records nothing — this is a trace of our hand, not theirs.
+   ------------------------------------------------------------ */
+export const ADMIN_LOG_MAX = 500;
+
+/** the panel is open and this is somebody else's shop */
+export function adminEditing(bizId) {
+  return adminUnlocked() && !ownsBusiness(bizId);
+}
+
+/** a value short enough to read in a list, whatever its shape */
+function logValue(v) {
+  if (v == null) return '';
+  if (typeof v === 'string') return v.slice(0, 60);
+  if (typeof v === 'number' || typeof v === 'boolean') return String(v);
+  try { return JSON.stringify(v).slice(0, 60); } catch (e) { return ''; }
+}
+
+/* The edit form submits every field it holds, so a record that simply had
+   no `nonCommercial` before comes back as undefined → false. That is the
+   form filling a gap, not the admin changing anything, and a log full of
+   it teaches nobody anything. */
+const emptyish = (v) => v == null || v === '' || v === false;
+
+function recordAdminEdit(bizId, patch) {
+  const before = businessById(bizId) || {};
+  const rows = Object.keys(patch)
+    .filter(f => !(before[f] === undefined && emptyish(patch[f])))
+    .map(field => ({ at: now(), bizId, field,
+                     from: logValue(before[field]), to: logValue(patch[field]) }))
+    .filter(r => r.from !== r.to);
+  if (!rows.length) return;
+  state.adminLog = (state.adminLog || []).concat(rows).slice(-ADMIN_LOG_MAX);
+}
+
+/** newest first, for the panel */
+export function adminLog(limit = 50) {
+  return (state.adminLog || []).slice().reverse().slice(0, limit);
+}
+
 export function applyBusinessEdit(bizId, patch) {
+  // the caller's own keys, before the address rule adds any of its own
+  if (patch && adminEditing(bizId)) recordAdminEdit(bizId, patch);
   /* A shop that moved and kept the coordinates of where it used to be is
      worse than one with none: it looks right and is wrong. */
   if (patch && Object.prototype.hasOwnProperty.call(patch, 'address')) {
@@ -2704,6 +2757,13 @@ export function clockDaysAhead() { return Math.round((state.clockOffset || 0) / 
  * the wording can change later and what matters is what this person read.
  */
 export function startSubscription({ businessId, plan = 'monthly', consentText = '', device = '' }) {
+  /* The screen guard is a courtesy to the reader; THIS is the rule.
+     A guard that lives on a screen is bypassed by anything that is not
+     that screen — the console today, an API call the day there is a
+     server — and this record is not a row in a table: it is what lifts
+     one shop above another in the directory. So the check is written
+     once, here, where every caller has to pass it. */
+  if (businessId && !ownsBusiness(businessId)) return null;
   const t0 = now();
   const price = planPrice(plan);
   state.subscription = {
