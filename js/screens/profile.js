@@ -602,6 +602,15 @@ export function SettingsScreen(root) {
           <button class="mini-btn" data-route="${sub ? '#/my-subscription' : '#/subscribe'}">${icon(document.documentElement.dir === 'rtl' ? 'chevronL' : 'chevronR', 15)}</button></div>`;
       })()}
 
+      ${/* «افتح فيه دائماً» is stored, so it has to be changeable — a
+           preference you cannot undo is a trap, not a convenience. */''}
+      <div class="setting-row">
+        <span class="s-txt"><b>${t('mapsApp')}</b><span>${
+          S.mapsApp() ? t('maps' + S.mapsApp()[0].toUpperCase() + S.mapsApp().slice(1)) : t('mapsAsk')
+        }</span></span>
+        <button class="mini-btn" id="mapsPref">${icon('navigation', 15)}</button>
+      </div>
+
       ${/* Receipts sit here rather than in the drawer: they belong to
            anybody who has paid for anything, not only to a subscriber,
            and the «حسابي» group is already over the drawer's height. */''}

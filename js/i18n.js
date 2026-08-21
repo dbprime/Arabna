@@ -1024,7 +1024,7 @@ export const STRINGS = {
     settings: 'الإعدادات', help: 'المساعدة والدعم', about: 'عن التطبيق',
     subscription: 'الاشتراك', notifications: 'الإشعارات', language: 'اللغة',
     guest: 'زائر', tier1: 'حساب مؤكد بالبريد', tier2: 'حساب مؤكد بالهاتف',
-    deleteAccount: 'حذف الحساب', deleteAccountSub: 'يحذف بياناتك نهائياً بعد مراجعة الطلب',
+    deleteAccount: 'حذف الحساب', deleteAccountSub: 'يحذف بياناتك نهائياً بعد الموافقة على الطلب',
     deleteConfirm: 'أرسلنا طلب حذف حسابك — سنحذف بياناتك خلال 30 يوماً',
     notifPrefs: 'تفضيلات الإشعارات',
     notifMessages: 'رسائل جديدة', notifExpiry: 'تنبيه انتهاء إعلاني', notifAdLive: 'إعلاني أصبح منشوراً', notifReviews: 'تقييم جديد لنشاطي',
