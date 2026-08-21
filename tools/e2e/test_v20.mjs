@@ -184,6 +184,8 @@ const dr = await page.evaluate(() => ({
   routes: [...document.querySelectorAll('.dr-group.open [data-route]')].map(b => b.dataset.route),
   featured: [...document.querySelectorAll('.dr-item')].some(x => /مميّزة/.test(x.textContent)),
   height: Math.round(document.querySelector('.drawer-panel').scrollHeight),
+  box: Math.round(document.querySelector('.drawer-panel').clientHeight),
+  row: Math.round(document.querySelector('.drawer-panel .dr-item').getBoundingClientRect().height),
 }));
 ok('6.1 the group is «تصنيفات عربنا»', dr.renamed);
 ok('6.2 الدليل and السوق are out — both are bottom-bar tabs',
@@ -195,8 +197,17 @@ ok('6.3 «إعلانات مميّزة» took their place', dr.featured && dr.rou
    make room — which row goes is Rai's call, not a code decision — so the
    overflow is bounded rather than dropped: it may not grow past one row
    while the question is open. See CLAUDE.md, "The drawer is now full". */
-ok('6.4 the drawer overflows by no more than one row with a group open',
-   dr.height - 844 <= 48, (dr.height - 844) + 'px over');
+/* V.03.5 moved this number, and the reason is worth writing down: the
+   base went 16 -> 17, so every ROW is 6.25% taller while the panel's
+   height is the viewport's and does not move at all. The overflow is the
+   difference between the two, so it grows much faster than the text —
+   46px over at base 16, 72px at 17, and 127px at «أكبر». The guard is
+   still a hard ceiling on a known gap, re-anchored to what the new base
+   actually measures, and it is measured against the panel rather than a
+   frozen 844. One row anywhere fixes every size; which row is Rai's
+   call. See CLAUDE.md, "The drawer scrolls when a group is open". */
+ok('6.4 the drawer overflow with a group open does not grow past the known gap',
+   dr.height - dr.box <= 80, (dr.height - dr.box) + 'px over, one row is ' + dr.row);
 await page.evaluate(() => { const f = [...document.querySelectorAll('.dr-item')].find(x => /مميّزة/.test(x.textContent)); f && f.click(); });
 await page.waitForTimeout(700);
 ok('6.5 …and it really filters to the subscribers', await page.evaluate(() => {

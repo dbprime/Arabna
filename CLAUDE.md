@@ -2117,6 +2117,16 @@ screen is never moved.
 — no horizontal scroll, nothing off the edge, nothing clipped, zero console
 errors.
 
+**Three assertions moved, and only because the base did.** Each carries a
+comment naming the reversal. v7's «sub-item font is 13.8px» is asserted as
+the RATIO (`.8625rem`) it always meant, so it survives the reader picking
+«كبير» too. v7's and v20's drawer-overflow guards were frozen pixels
+against a frozen 844; they measure a real row and the panel's own height
+now. And the drawer gap itself is worth reading twice: **the rows grow
+6.25% while the panel's height is the viewport's and does not move at
+all**, so the overflow — the difference between the two — grows far
+faster than the text. 46px over at 16, **72 at 17**, 127 at «أكبر».
+
 ## Known open items
 - Legal pages are first drafts — a lawyer must review before public launch.
 - Push notifications: triggers are defined in Settings but not wired to a real service.
