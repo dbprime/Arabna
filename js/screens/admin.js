@@ -100,6 +100,31 @@ function panelView(root) {
       toast(t('itemRejected'), 'ok');
       paint();
     }));
+    // --- a cash order, issued from here and nowhere else ---
+    const csh = $('#cshGo');
+    if (csh) csh.addEventListener('click', () => {
+      const err = $('#cshErr');
+      const kind = $('#cshKind').value;
+      const bizId = $('#cshBiz').value;
+      const who = $('#cshWho').value.trim();
+      err.textContent = '';
+      if (!bizId) { err.textContent = t('cashNeedBiz'); return; }
+      // no cash without a record of WHO TOOK IT — that is the whole point
+      if (!who) { err.textContent = t('cashNeedWho'); return; }
+      const b = S.businessById(bizId);
+      const r = S.addCashOrder({
+        kind, bizId, days: Number($('#cshDays').value) || 30,
+        amount: Number($('#cshAmt').value) || 0,
+        method: $('#cshMethod').value,
+        receivedBy: who, reference: $('#cshRef').value.trim(),
+        note: $('#cshNote').value.trim(),
+        bizName: b ? L(b.name) : '',
+      });
+      if (!r) { toast(t('somethingWrong'), 'err'); return; }
+      toast(t('cashDone').replace('{id}', r.receipt.id), 'ok');
+      paint();
+    });
+
     // --- offers awaiting approval ---
     $$('#aBody [data-ofok]').forEach(b => b.addEventListener('click', () => {
       S.approveOffer(b.dataset.biz, b.dataset.ofok);
@@ -768,6 +793,59 @@ function magHtml() {
   </div>`;
 }
 
+/**
+ * Cash orders about to run out. A card subscription renews itself and a
+ * cash one does not, so without this the panel keeps a subscriber whose
+ * month ended weeks ago and whose page still says «subscribed».
+ */
+function cashDueHtml() {
+  const due = S.cashDue();
+  if (!due.length) return '';
+  return `<div class="section-title">${t('cashDueTitle')}</div>
+    ${due.map(d => `<div class="setting-row">
+      <span class="s-txt"><b>${att(d.name)}</b><span class="${d.expired ? 'ink-danger' : ''}">${
+        (d.expired ? t('cashDueExpired') : t('cashDueEnds')).replace('{d}', fmtDate(d.endsAt))
+      }</span></span>
+    </div>`).join('')}`;
+}
+
+/** Issued HERE and nowhere else — see addCashOrder() in store.js. */
+function cashFormHtml() {
+  const opts = S.allBusinesses().slice(0, 600)
+    .map(b => `<option value="${b.id}">${att(L(b.name))}</option>`).join('');
+  return `<div class="section-title mt-20">${t('cashOrder')}<small>${t('cashOrderSub')}</small></div>
+    <div class="field"><label class="label">${t('cashKind')}</label>
+      <select class="select" id="cshKind">
+        <option value="subscription">${t('cashKindSub')}</option>
+        <option value="ad">${t('cashKindAd')}</option>
+      </select></div>
+    <div class="field"><label class="label">${t('cashBiz')}</label>
+      <select class="select" id="cshBiz"><option value="">—</option>${opts}</select></div>
+    <div class="action-grid">
+      <div class="field"><label class="label">${t('cashAmount')}</label>
+        <input class="input ltr" id="cshAmt" inputmode="decimal" value="29" /></div>
+      <div class="field"><label class="label">${t('cashDays')}</label>
+        <input class="input ltr" id="cshDays" inputmode="numeric" value="30" /></div>
+    </div>
+    <div class="action-grid">
+      <div class="field"><label class="label">${t('cashMethod')}</label>
+        <select class="select" id="cshMethod">
+          <option value="cash">${t('receiptCash')}</option>
+          <option value="check">${t('receiptCheck')}</option>
+          <option value="transfer">${t('receiptTransfer')}</option>
+        </select></div>
+      <div class="field"><label class="label">${t('cashReceivedBy')}</label>
+        <input class="input" id="cshWho" /></div>
+    </div>
+    <div class="field"><label class="label">${t('cashReference')}</label>
+      <input class="input ltr" id="cshRef" /></div>
+    <div class="field"><label class="label">${t('cashNote')}</label>
+      <input class="input" id="cshNote" /></div>
+    <div class="hint">${t('cashNoRenew')}</div>
+    <div class="field-err" id="cshErr"></div>
+    <button class="btn btn-gold btn-block mt-8" id="cshGo">${icon('banknote', 19)} ${t('cashIssue')}</button>`;
+}
+
 function adsHtml() {
   const orders = S.state.myAds;
   const waiting = S.adWaitlist();
@@ -776,7 +854,9 @@ function adsHtml() {
     return p ? t(p.nameKey) : id;
   };
   return `<div class="pad mt-16">
-    <div class="section-title">${t('adInventory')}</div>
+    ${cashDueHtml()}
+    ${cashFormHtml()}
+    <div class="section-title mt-20">${t('adInventory')}</div>
     <div class="mt-8">
       ${AD_PRODUCTS.filter(p => !p.perCat).map(p => `
         <div class="setting-row" style="padding-inline:0">
@@ -1052,7 +1132,17 @@ function statsHtml() {
   const pickOptions = () => STAT_SECTIONS.map(id => ({ id, label: t(statSecKey[id]) }))
     .concat(CATEGORIES.filter(x => !x.route).map(x => ({ id: x.id, label: t(x.key) })));
 
+  const money = S.receiptTotals();
   return `<div class="pad mt-16">
+    ${/* The two kept apart on purpose: mixed together, the revenue figure
+         never matches the bank statement, and the day the accountant asks
+         where the difference came from there is no answer. */''}
+    <div class="section-title">${t('receipts')}</div>
+    <div class="stat-row" style="padding:0 0 12px">
+      <div class="stat"><b class="ltr">${fmtMoney(money.card)}</b><span>${t('statPaidCard')}</span></div>
+      <div class="stat"><b class="ltr">${fmtMoney(money.cash)}</b><span>${t('statPaidCash')}</span></div>
+      <div class="stat"><b>${money.count}</b><span>${t('receipts')}</span></div>
+    </div>
     ${cardRow('statDirectory', [
       [c.directory.total, 'statTotal'], [c.directory.verified, 'statVerified'],
       [c.directory.paid, 'statPaid'], [c.directory.noPhone, 'statNoPhone'],

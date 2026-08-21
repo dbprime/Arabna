@@ -93,6 +93,7 @@ const DEFAULTS = {
   offers: {},                // { bizId: [{ id, text, price, endsAt, status, when, reason }] }
   adminLog: [],              // { at, bizId, field, from, to } — the panel's hand, never the owner's
   receipts: [],              // every amount taken, card or cash; survives deleteAccount
+  mapsApp: null,             // 'google' · 'apple' · 'waze' · null = ask each time
 };
 
 export const state = Object.assign({}, DEFAULTS, load() || {});
@@ -3157,6 +3158,97 @@ export function adNextFreeAt(productId, cat) {
   return running.length ? running[0] : null;
 }
 
+/* ============================================================
+   THE CASH ORDER — issued from the panel, and never renewed
+   ------------------------------------------------------------
+   «Somebody I know wants an ad and wants to pay cash — how do we
+   skip the card?» We do not skip anything: there is NO «skip
+   payment» button on any screen a user can reach, and no «paid
+   in cash» box anybody can tick for themselves. A button like
+   that gets found, one day, by somebody.
+
+   The money is handed over, then the order is issued from the
+   panel in that person's name. Which gives the second rule:
+
+   A CASH ORDER DOES NOT RENEW. A card subscription renews
+   itself; cash does not. Create it like an ordinary one and you
+   end up with a subscriber whose month ran out long ago and
+   whose page still says «subscribed» — while nothing was
+   collected. So it is a closed period that ends by itself, with
+   a warning to the panel a week before, and its receipt says
+   «ends on», never «renews automatically».
+   ============================================================ */
+export const CASH_WARN_DAYS = 7;
+export const CASH_METHODS = ['cash', 'check', 'transfer'];
+
+/**
+ * Take money by hand and put it on the books. Issues the receipt, so the
+ * buyer walks away with a transaction number like any card payer.
+ */
+export function addCashOrder({ kind, bizId = null, product = '', cat = '',
+                               days = 30, amount = 0, method = 'cash',
+                               receivedBy = '', reference = '', note = '',
+                               bizName = '', tagline = '', ctaText = '' }) {
+  if (!CASH_METHODS.includes(method)) return null;
+  const t0 = now();
+  const endsAt = t0 + (Number(days) || 30) * DAY_MS;
+  const receipt = addReceipt({
+    kind: kind === 'subscription' ? 'subscription' : 'ad',
+    description: note || product || strOf(kind === 'subscription' ? 'subscription' : 'kindAd'),
+    amount: Number(amount) || 0,
+    method, bizId, receivedBy, reference,
+    autoRenew: false,                      // cash never renews
+    covers: { from: t0, to: endsAt },
+  });
+
+  if (kind === 'subscription') {
+    /* Written straight in rather than through startSubscription(): that
+       one guards on ownership, which is right for somebody buying their
+       own and wrong for the panel entering a payment it just took. */
+    state.subscription = {
+      businessId: bizId, plan: 'monthly', price: Number(amount) || 0,
+      status: 'active', startedAt: t0,
+      trialEndsAt: t0, currentPeriodEnd: endsAt,
+      cancelAtPeriodEnd: true,             // it ends, it does not roll on
+      autoRenew: false, method,
+      cash: { receivedBy, reference, note, receiptId: receipt.id },
+      consent: { text: strOf('cashConsentNote'), acceptedAt: t0, device: 'panel',
+                 amount: Number(amount) || 0, cycle: 'cash' },
+      invoices: [{ id: receipt.id, date: t0, amount: Number(amount) || 0, status: 'paid' }],
+      notified: {},
+    };
+  } else {
+    state.myAds.unshift({
+      id: 'ad' + t0 + '-' + (state.myAds || []).length,
+      product, cat, duration: 'cash', price: Number(amount) || 0,
+      status: 'live', created: t0, startsAt: t0, endsAt,
+      method, cash: { receivedBy, reference, note, receiptId: receipt.id },
+      bizName, tagline, ctaText,
+    });
+  }
+  save();
+  return { receipt, endsAt };
+}
+
+/** what the panel must chase: a cash order about to run out, or run out */
+export function cashDue() {
+  const t0 = now(), soon = t0 + CASH_WARN_DAYS * DAY_MS;
+  const out = [];
+  const sub = state.subscription;
+  if (sub && sub.autoRenew === false && sub.currentPeriodEnd <= soon) {
+    const b = sub.businessId ? businessById(sub.businessId) : null;
+    out.push({ kind: 'subscription', name: b ? L(b.name) : (sub.businessId || ''),
+               endsAt: sub.currentPeriodEnd, expired: sub.currentPeriodEnd <= t0 });
+  }
+  (state.myAds || []).forEach(a => {
+    if (a.method && a.method !== 'card' && a.endsAt <= soon) {
+      out.push({ kind: 'ad', name: a.bizName || a.product || a.id,
+                 endsAt: a.endsAt, expired: a.endsAt <= t0 });
+    }
+  });
+  return out.sort((x, y) => x.endsAt - y.endsAt);
+}
+
 export function addAdOrder(order) {
   const p = adProduct(order.product);
   const t = now();
@@ -3288,6 +3380,10 @@ export function deleteAccount() {
 /* Published contact details. The stores want a real address for
    complaints and takedown requests, visible in the app rather than
    behind a form. One constant, used by About and both legal pages. */
+/** which maps app to open directions in — null means ask */
+export function mapsApp() { return state.mapsApp || null; }
+export function setMapsApp(app) { state.mapsApp = app || null; save(); }
+
 export const SUPPORT_EMAIL = 'support@arabna.app';
 export const SUPPORT_PHONE = '(713) 555-0199';
 

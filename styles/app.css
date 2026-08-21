@@ -1277,6 +1277,24 @@ input[inputmode="tel"], input[type="email"], input[inputmode="decimal"], #zipIn 
   font-size: 11px; font-weight: 700;
 }
 
+/* ---- the directions sheet (V.03.4) ---- */
+.pick-row {
+  display: flex; gap: 11px; align-items: center; width: 100%;
+  padding: 13px 14px; margin-bottom: 8px; text-align: start;
+  background: var(--surface); border: 1px solid var(--line-soft);
+  border-radius: var(--r-md); font-size: 14px; color: var(--text);
+}
+.pick-row.active { border-color: var(--gold-wash-3); background: var(--gold-wash-1); }
+.pick-dot {
+  flex: 0 0 18px; height: 18px; border-radius: 50%;
+  border: 2px solid var(--line); position: relative;
+}
+.pick-row.active .pick-dot { border-color: var(--gold-bright); }
+.pick-row.active .pick-dot::after {
+  content: ''; position: absolute; inset: 3px;
+  border-radius: 50%; background: var(--gold-bright);
+}
+
 /* ---- the receipt (V.03.4) ----
    Printable in one page: @media print drops everything but the paper. */
 .rc {

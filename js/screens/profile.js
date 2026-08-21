@@ -1,7 +1,8 @@
 /* ======================= PROFILE & ACCOUNT SCREENS ======================= */
 import { t, arCount, L, icon, $, $$, go, renderHeader, toast, wireRoutes, emptyState, confirmSheet,
          openSheet, closeSheet,
-         fmtMoney, priceLabel, statusBadge, stars, logoSrc, shareItem } from '../ui.js';
+         fmtMoney, priceLabel, statusBadge, stars, logoSrc, shareItem,
+         mapChoices } from '../ui.js';
 import { SUBSCRIPTION_PRICE, CATEGORIES } from '../data.js';
 import * as S from '../store.js';
 import { catIcon } from './home.js';
@@ -648,6 +649,22 @@ export function SettingsScreen(root) {
   /* Deletion says what it takes with it and then actually takes it —
      signing out and calling it deleted would be a lie the stores ask
      about directly. */
+  const mp = $('#mapsPref');
+  if (mp) mp.addEventListener('click', () => openSheet(`
+    <div class="sheet-title">${t('mapsApp')}</div>
+    <div id="mapsPrefPick">
+      <button class="pick-row ${!S.mapsApp() ? 'active' : ''}" data-app=""><span class="pick-dot"></span><span>${t('mapsAsk')}</span></button>
+      ${mapChoices().map(a => `<button class="pick-row ${S.mapsApp() === a ? 'active' : ''}" data-app="${a}">
+        <span class="pick-dot"></span><span>${t('maps' + a[0].toUpperCase() + a.slice(1))}</span></button>`).join('')}
+    </div>
+  `, (panel) => {
+    panel.querySelectorAll('#mapsPrefPick .pick-row').forEach(b => b.addEventListener('click', () => {
+      S.setMapsApp(b.dataset.app || null);
+      closeSheet();
+      go('#/settings');
+    }));
+  }));
+
   $('#delAcc').addEventListener('click', () => {
     const d = S.deletionSummary();
     const lines = [

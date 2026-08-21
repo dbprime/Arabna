@@ -1383,10 +1383,76 @@ export function query() {
 }
 
 /** open native maps app for an address */
-export function openMaps(address) {
+/* ============================================================
+   DIRECTIONS — ask once, then never again
+   ------------------------------------------------------------
+   It used to decide for the owner of the phone: anything Apple
+   opened Apple Maps, even for somebody who has used Google Maps
+   every day of their life.
+
+   And the thing to know before designing this: NO WEB APP CAN
+   SEE WHAT IS INSTALLED on a phone. The platforms forbid it —
+   otherwise any website could read your app list. So there is
+   nothing to detect. Offer the choice and let the owner decide.
+
+   All three are WEB links, never app schemes: a web link opens
+   the app when it is there and the site when it is not, while
+   `waze://` on a phone without Waze gives a white screen.
+
+   The address goes as text, never coordinates: a street address
+   opens the right business card, a point opens a spot in space.
+   ============================================================ */
+export const MAP_APPS = ['google', 'apple', 'waze'];
+
+export function mapUrl(app, address) {
   const q = encodeURIComponent(address);
+  if (app === 'apple') return `https://maps.apple.com/?q=${q}`;
+  if (app === 'waze') return `https://waze.com/ul?q=${q}&navigate=yes`;
+  return `https://www.google.com/maps/search/?api=1&query=${q}`;
+}
+
+/** Apple Maps is not offered on Android: an option that cannot work is
+    worse than one option fewer. Waze is offered everywhere — its presence
+    cannot be known, and the link degrades to the website. */
+export function mapChoices() {
   const isApple = /iPhone|iPad|Macintosh/.test(navigator.userAgent);
-  window.open(isApple ? `https://maps.apple.com/?q=${q}` : `https://www.google.com/maps/search/?api=1&query=${q}`, '_blank');
+  return MAP_APPS.filter(a => a !== 'apple' || isApple);
+}
+
+export function openMaps(address) {
+  const saved = S.mapsApp();
+  if (saved) { window.open(mapUrl(saved, address), '_blank'); return; }
+  openMapSheet(address);
+}
+
+export function openMapSheet(address) {
+  const apps = mapChoices();
+  let pick = apps[0];                       // Google first, and preselected
+  openSheet(`
+    <div class="sheet-title">${t('mapsOpenIn')}</div>
+    <div id="mapPick">
+      ${apps.map(a => `<button class="pick-row ${a === pick ? 'active' : ''}" data-app="${a}">
+        <span class="pick-dot"></span><span>${t('maps' + a[0].toUpperCase() + a.slice(1))}</span>
+      </button>`).join('')}
+    </div>
+    <label class="consent-row" style="margin-top:10px">
+      <input type="checkbox" id="mapAlways" />
+      <span>${t('mapsAlways')}</span>
+    </label>
+    <div class="sheet-foot">
+      <button class="btn btn-gold btn-block" id="mapGo">${t('directions')}</button>
+    </div>
+  `, (panel) => {
+    panel.querySelectorAll('#mapPick .pick-row').forEach(b => b.addEventListener('click', () => {
+      pick = b.dataset.app;
+      panel.querySelectorAll('#mapPick .pick-row').forEach(x => x.classList.toggle('active', x === b));
+    }));
+    panel.querySelector('#mapGo').addEventListener('click', () => {
+      if (panel.querySelector('#mapAlways').checked) S.setMapsApp(pick);
+      closeSheet();
+      window.open(mapUrl(pick, address), '_blank');
+    });
+  });
 }
 
 export function shareItem(title, url) {
