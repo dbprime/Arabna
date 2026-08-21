@@ -61,7 +61,7 @@ export const STRINGS = {
     areaTitle: 'المنطقة',
     areaAll: 'كل المنطقة',
     areaCity: 'مدينتي',
-    regionName: 'هيوستن والمنطقة',
+    regionName: 'Houston والمنطقة',
     locSetTo: 'موقعك الآن',
     locCleared: 'تم مسح موقعك',
     clearLocation: 'امسح موقعي',

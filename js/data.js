@@ -1190,7 +1190,7 @@ const REAL_BUSINESSES = [
     tags: ["لبناني", "مطعم لبناني", "حلويات"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "مطعم لبناني مع حلويات في Houston.", en: "Lebanese restaurant with sweets in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -1200,7 +1200,7 @@ const REAL_BUSINESSES = [
     tags: ["لبناني", "مطعم لبناني", "عربي", "أرابيسكا"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "مطعم لبناني عربي في Cypress.", en: "Lebanese Arabic restaurant in Cypress." },
     photos: 0, videos: 0,
   },
   {
@@ -1210,7 +1210,7 @@ const REAL_BUSINESSES = [
     tags: ["أرجيلة", "لبناني", "مطعم لبناني", "لا باشا", "باشا"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "مطعم لبناني مع أرجيلة في Houston.", en: "Lebanese restaurant with hookah in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -1220,7 +1220,7 @@ const REAL_BUSINESSES = [
     tags: ["مشاوي", "شرق أوسطي", "مطعم شرق أوسطي", "ذا بوتشرز جريل"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "مطعم مشاوي شرق أوسطي في Houston.", en: "Middle Eastern grill restaurant in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -1230,7 +1230,7 @@ const REAL_BUSINESSES = [
     tags: ["أرجيلة", "مطعم", "لاونج"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "مطعم ولاونج أرجيلة في Houston.", en: "Restaurant and hookah lounge in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -1240,7 +1240,7 @@ const REAL_BUSINESSES = [
     tags: ["أرجيلة", "لبناني", "مطعم لبناني", "ماريز", "ماري"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "مطعم لبناني متوسطي مع أرجيلة في Houston.", en: "Lebanese Mediterranean restaurant with hookah in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -1250,7 +1250,7 @@ const REAL_BUSINESSES = [
     tags: ["لبناني", "مطعم", "مخبز لبناني"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "مطعم ومخبز لبناني في Houston.", en: "Lebanese kitchen and bakery in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -1260,7 +1260,7 @@ const REAL_BUSINESSES = [
     tags: ["لبناني", "مناقيش", "مخبوزات لبنانية"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "مخبوزات ومناقيش لبنانية في Houston.", en: "Lebanese baked goods and manakish in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -1270,7 +1270,7 @@ const REAL_BUSINESSES = [
     tags: ["لبناني", "مطعم لبناني", "يوناني", "كافيه بترا (بيرلاند)"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "مطعم لبناني ويوناني في Pearland.", en: "Lebanese and Greek restaurant in Pearland." },
     photos: 0, videos: 0,
   },
   {
@@ -1280,7 +1280,7 @@ const REAL_BUSINESSES = [
     tags: ["لبناني", "مطعم لبناني", "يوناني", "كافيه بترا (كاتي – ساوث فراي)"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "مطعم لبناني ويوناني في Katy.", en: "Lebanese and Greek restaurant in Katy." },
     photos: 0, videos: 0,
   },
   {
@@ -1290,7 +1290,7 @@ const REAL_BUSINESSES = [
     tags: ["لبناني", "مطعم لبناني", "يوناني", "كافيه بترا (كاتي – FM 1463)"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "مطعم لبناني ويوناني في Katy.", en: "Lebanese and Greek restaurant in Katy." },
     photos: 0, videos: 0,
   },
   {
@@ -1300,7 +1300,7 @@ const REAL_BUSINESSES = [
     tags: ["لبناني", "مطعم لبناني", "يوناني", "كافيه بترا (بلت واي 8 الجنوبي)"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "مطعم لبناني ويوناني في Houston.", en: "Lebanese and Greek restaurant in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -1310,7 +1310,7 @@ const REAL_BUSINESSES = [
     tags: ["شاورما", "مأكولات عربية"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "مطعم شاورما ومأكولات عربية في Houston.", en: "Shawarma and Arabic food restaurant in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -1320,7 +1320,7 @@ const REAL_BUSINESSES = [
     tags: ["مشاوي", "شاورما"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "مطعم شاورما ومشاوي في Houston.", en: "Shawarma and grill restaurant in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -1330,7 +1330,7 @@ const REAL_BUSINESSES = [
     tags: ["شاورما", "مطعم حلال", "شاورما جريل وكافيه"],
     attributes: ["halalMeat", "arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "مطعم شاورما ومشاوي حلال في Houston.", en: "Halal shawarma and grill restaurant in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -1340,7 +1340,7 @@ const REAL_BUSINESSES = [
     tags: ["مشاوي", "شاورما", "مشاوي حلال"],
     attributes: ["halalMeat", "arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "مطعم شاورما ومشاوي حلال في Houston.", en: "Halal shawarma and grill restaurant in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -1350,7 +1350,7 @@ const REAL_BUSINESSES = [
     tags: ["شاورما", "شاورما حلال", "حلال شاورما (هالا)"],
     attributes: ["halalMeat", "arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "مطعم شاورما حلال في Houston.", en: "Halal shawarma restaurant in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -1360,7 +1360,7 @@ const REAL_BUSINESSES = [
     tags: ["عربة طعام", "شاورما", "سوري", "شاورما سورية (عربة طعام)", "الدمشقي"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "شاورما سورية من عربة طعام في Houston.", en: "Syrian shawarma food truck in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -1370,7 +1370,7 @@ const REAL_BUSINESSES = [
     tags: ["شاورما", "شرق أوسطي", "مأكولات شرق أوسطية"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "مطعم شاورما ومأكولات شرق أوسطية في Houston.", en: "Shawarma and Middle Eastern restaurant in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -1380,7 +1380,7 @@ const REAL_BUSINESSES = [
     tags: ["شاورما", "شرق أوسطي", "مأكولات شرق أوسطية"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "مطعم شاورما ومأكولات شرق أوسطية في Houston.", en: "Shawarma and Middle Eastern restaurant in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -1390,7 +1390,7 @@ const REAL_BUSINESSES = [
     tags: ["مشاوي", "شرق أوسطي", "مطعم شرق أوسطي", "الأصيل"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "مطعم مشاوي شرق أوسطي في Houston.", en: "Middle Eastern grill restaurant in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -1400,7 +1400,7 @@ const REAL_BUSINESSES = [
     tags: ["أرجيلة", "مطعم", "كافيه عربي", "أنغام"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "مطعم وكافيه عربي مع أرجيلة في Houston.", en: "Arabic restaurant and cafe with hookah in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -1410,7 +1410,7 @@ const REAL_BUSINESSES = [
     tags: ["مشاوي", "عربة طعام", "مشاوي على الفحم"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "عربة طعام مشاوي على الفحم في Sugar Land.", en: "Charcoal grill food truck in Sugar Land." },
     photos: 0, videos: 0,
   },
   {
@@ -1420,7 +1420,7 @@ const REAL_BUSINESSES = [
     tags: ["مشاوي", "عربة طعام", "مشاوي على الفحم"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "عربة طعام مشاوي على الفحم في Houston.", en: "Charcoal grill food truck in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -1430,7 +1430,7 @@ const REAL_BUSINESSES = [
     tags: ["مصري", "متوسطي", "مطعم مصري"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "مطعم مصري متوسطي في Houston.", en: "Egyptian Mediterranean restaurant in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -1440,7 +1440,7 @@ const REAL_BUSINESSES = [
     tags: ["تموين", "مصري", "مطعم مصري", "خدمات تموين", "الحلمية"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "مطعم مصري مع خدمات تموين في Houston.", en: "Egyptian restaurant with catering in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -1450,7 +1450,7 @@ const REAL_BUSINESSES = [
     tags: ["عربة طعام", "مصري", "مطعم مصري (عربة طعام)"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "عربة طعام مصرية في Katy.", en: "Egyptian food truck in Katy." },
     photos: 0, videos: 0,
   },
   {
@@ -1460,7 +1460,7 @@ const REAL_BUSINESSES = [
     tags: ["مصري", "مطعم مصري حلال", "أبو الهول"],
     attributes: ["halalMeat", "arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "مطعم مصري حلال ومشاوي في Houston.", en: "Halal Egyptian restaurant and grill in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -1470,7 +1470,7 @@ const REAL_BUSINESSES = [
     tags: ["بوفيه", "شرق أوسطي", "مطعم شرق أوسطي", "طحينة"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "مطعم شرق أوسطي مع بوفيه في Houston.", en: "Middle Eastern restaurant with buffet in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -1480,7 +1480,7 @@ const REAL_BUSINESSES = [
     tags: ["شرق أوسطي", "مطعم شرق أوسطي حلال", "سرايا"],
     attributes: ["halalMeat", "arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "مطعم شرق أوسطي حلال في Houston.", en: "Halal Middle Eastern restaurant in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -1490,7 +1490,7 @@ const REAL_BUSINESSES = [
     tags: ["مطعم عائلي", "ساندويتشات", "سرايا"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "مطعم عائلي وساندويتشات في Houston.", en: "Family restaurant and sandwiches in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -1500,7 +1500,7 @@ const REAL_BUSINESSES = [
     tags: ["متوسطي", "مطعم متوسطي", "سنابرة"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "مطعم متوسطي في Houston.", en: "Mediterranean restaurant in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -1510,7 +1510,7 @@ const REAL_BUSINESSES = [
     tags: ["أرجيلة", "متوسطي", "مطعم متوسطي", "فيروز"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "مطعم مشاوي متوسطي مع أرجيلة في Houston.", en: "Mediterranean grill restaurant with hookah in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -1520,7 +1520,7 @@ const REAL_BUSINESSES = [
     tags: ["عربة طعام", "شاورما", "سوري", "شاورما سورية (عربة طعام)", "الشامي"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "شاورما سورية من عربة طعام في Houston.", en: "Syrian shawarma food truck in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -1530,7 +1530,7 @@ const REAL_BUSINESSES = [
     tags: ["شاورما", "سوري", "شاورما سورية", "الشامي"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "شاورما سورية في Katy.", en: "Syrian shawarma in Katy." },
     photos: 0, videos: 0,
   },
   {
@@ -1540,7 +1540,7 @@ const REAL_BUSINESSES = [
     tags: ["عراقي", "مطعم عراقي"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "مطعم عراقي ومشاوي في Katy.", en: "Iraqi restaurant and grill in Katy." },
     photos: 0, videos: 0,
   },
   {
@@ -1550,7 +1550,7 @@ const REAL_BUSINESSES = [
     tags: ["يمني", "مطعم يمني", "كبسة", "مندي"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "مطعم يمني يقدم الكبسة والمندي في Houston.", en: "Yemeni restaurant serving kabsah and mandi in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -1560,7 +1560,7 @@ const REAL_BUSINESSES = [
     tags: ["مشاوي", "عراقي", "مطعم عراقي", "كباب"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "مطعم عراقي للكباب والمشاوي في Houston.", en: "Iraqi kebab and grill restaurant in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -1570,7 +1570,7 @@ const REAL_BUSINESSES = [
     tags: ["أرجيلة", "متوسطي", "مطعم متوسطي", "لافا لاونج"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "مطعم متوسطي ولاونج أرجيلة في Houston.", en: "Mediterranean restaurant and hookah lounge in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -1580,7 +1580,7 @@ const REAL_BUSINESSES = [
     tags: ["أرجيلة", "متوسطي", "مطعم متوسطي", "لاونج", "لا باشا لاونج آند جريل"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "مطعم متوسطي ولاونج أرجيلة ومشاوي في Houston.", en: "Mediterranean grill and hookah lounge in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -1590,7 +1590,7 @@ const REAL_BUSINESSES = [
     tags: ["أرجيلة", "مطعم", "لاونج"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "مطعم ولاونج أرجيلة في Richmond.", en: "Restaurant and hookah lounge in Richmond." },
     photos: 0, videos: 0,
   },
   {
@@ -1600,7 +1600,7 @@ const REAL_BUSINESSES = [
     tags: ["مغربي", "مطعم مغربي حلال", "مطبخ زوا المغربي (هايتس)"],
     attributes: ["halalMeat", "arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "مطعم مغربي حلال في Houston.", en: "Halal Moroccan restaurant in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -1610,7 +1610,7 @@ const REAL_BUSINESSES = [
     tags: ["مغربي", "مطعم مغربي حلال", "مطبخ زوا المغربي (ريتشموند)"],
     attributes: ["halalMeat", "arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "مطعم مغربي حلال في Houston.", en: "Halal Moroccan restaurant in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -1620,7 +1620,7 @@ const REAL_BUSINESSES = [
     tags: ["مغربي", "مطعم مغربي حلال", "زوا"],
     attributes: ["halalMeat", "arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "مطعم مغربي حلال في Houston.", en: "Halal Moroccan restaurant in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -1630,7 +1630,7 @@ const REAL_BUSINESSES = [
     tags: ["بوفيه", "متوسطي", "مطعم متوسطي", "فادي للمشاوي المتوسطية (ويستهايمر)"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "مطعم متوسطي مع بوفيه في Houston.", en: "Mediterranean restaurant with buffet in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -1640,7 +1640,7 @@ const REAL_BUSINESSES = [
     tags: ["بوفيه", "متوسطي", "مطعم متوسطي", "فادي (جاليريا)"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "مطعم متوسطي مع بوفيه في Houston.", en: "Mediterranean restaurant with buffet in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -1650,7 +1650,7 @@ const REAL_BUSINESSES = [
     tags: ["متوسطي", "مطعم متوسطي", "مزة جريل"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "مطعم متوسطي في Houston.", en: "Mediterranean restaurant in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -1660,7 +1660,7 @@ const REAL_BUSINESSES = [
     tags: ["أرجيلة", "متوسطي", "مطعم متوسطي", "مسايا"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "مطعم مشاوي متوسطي مع أرجيلة في Houston.", en: "Mediterranean grill restaurant with hookah in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -1670,7 +1670,7 @@ const REAL_BUSINESSES = [
     tags: ["متوسطي", "مطعم متوسطي حلال", "علاء الدين"],
     attributes: ["halalMeat", "arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "مطعم متوسطي حلال في Houston.", en: "Halal Mediterranean restaurant in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -1680,7 +1680,7 @@ const REAL_BUSINESSES = [
     tags: ["أرجيلة", "متوسطي", "مطعم متوسطي", "زعفران لاونج"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "مطعم ولاونج متوسطي مع أرجيلة في Houston.", en: "Mediterranean restaurant and hookah lounge in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -1690,7 +1690,7 @@ const REAL_BUSINESSES = [
     tags: ["تموين", "متوسطي", "مطعم متوسطي", "داليا"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "مطعم متوسطي مع خدمات تموين في Katy.", en: "Mediterranean restaurant with catering in Katy." },
     photos: 0, videos: 0,
   },
   {
@@ -1700,7 +1700,7 @@ const REAL_BUSINESSES = [
     tags: ["أرجيلة", "مطعم", "لاونج", "فارس"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "مطعم متوسطي ولاونج أرجيلة في Katy.", en: "Mediterranean grill and hookah lounge in Katy." },
     photos: 0, videos: 0,
   },
   {
@@ -1710,7 +1710,7 @@ const REAL_BUSINESSES = [
     tags: ["مناقيش", "بيتزا"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "مناقيش وبيتزا في Katy.", en: "Manakish and pizza in Katy." },
     photos: 0, videos: 0,
   },
   {
@@ -1720,7 +1720,7 @@ const REAL_BUSINESSES = [
     tags: ["متوسطي", "مطعم متوسطي", "أسماك", "صياد"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "مطعم متوسطي يقدم الأسماك في Houston.", en: "Mediterranean restaurant serving fish in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -1730,7 +1730,7 @@ const REAL_BUSINESSES = [
     tags: ["أرجيلة", "شرق أوسطي", "مطعم شرق أوسطي", "سما كافيه"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "مطعم وكافيه شرق أوسطي مع أرجيلة في Houston.", en: "Middle Eastern restaurant and cafe with hookah in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -1740,7 +1740,7 @@ const REAL_BUSINESSES = [
     tags: ["أرجيلة", "لبناني", "مطعم لبناني"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "مطعم لبناني مع أرجيلة في Houston.", en: "Lebanese restaurant with hookah in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -1750,7 +1750,7 @@ const REAL_BUSINESSES = [
     tags: ["سوبرماركت", "مطعم"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "سوبرماركت ومشاوي حلال في Houston.", en: "Middle Eastern halal supermarket and grill in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -1760,7 +1760,7 @@ const REAL_BUSINESSES = [
     tags: ["عربة طعام", "فلافل (عربة طعام)"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "عربة طعام فلافل في Houston.", en: "Falafel food truck in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -1770,7 +1770,7 @@ const REAL_BUSINESSES = [
     tags: ["شاورما", "فلافل"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "فلافل وشاورما في Houston.", en: "Falafel and shawarma in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -1780,7 +1780,7 @@ const REAL_BUSINESSES = [
     tags: ["عربة طعام", "فلافل (عربة طعام)"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "عربة طعام فلافل في Houston.", en: "Falafel food truck in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -1790,7 +1790,7 @@ const REAL_BUSINESSES = [
     tags: ["مطعم حلال", "جبات سريعة"],
     attributes: ["halalMeat", "arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "مطعم وجبات سريعة حلال في Houston.", en: "Halal fast food restaurant in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -1800,7 +1800,7 @@ const REAL_BUSINESSES = [
     tags: ["تركي", "مطعم تركي حلال"],
     attributes: ["halalMeat", "arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "مطعم تركي متوسطي حلال في Houston.", en: "Halal Turkish Mediterranean restaurant in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -1810,7 +1810,7 @@ const REAL_BUSINESSES = [
     tags: ["سوبرماركت", "لحوم حلال", "المدينة"],
     attributes: ["halalMeat", "arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "سوبرماركت بلحوم حلال في Houston.", en: "Supermarket with halal meat in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -1820,7 +1820,7 @@ const REAL_BUSINESSES = [
     tags: ["ملحمة", "سوبرماركت", "القدس"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "ملحمة وسوبرماركت حلال في Houston.", en: "Halal butcher and market in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -1830,7 +1830,7 @@ const REAL_BUSINESSES = [
     tags: ["سوبرماركت متوسطي", "فينيسيا", "فينيقيا"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "سوبرماركت متوسطي في Houston.", en: "Mediterranean specialty foods market in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -1840,7 +1840,7 @@ const REAL_BUSINESSES = [
     tags: ["سوبرماركت متوسطي", "فينيسيا", "فينيقيا"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "سوبرماركت متوسطي في وسط مدينة Houston.", en: "Mediterranean specialty foods market in downtown Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -1850,7 +1850,7 @@ const REAL_BUSINESSES = [
     tags: ["مخبز", "سوبرماركت لبناني", "دروبيز", "دروبي"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "مخبز وسوبرماركت لبناني في Houston.", en: "Lebanese bakery and market in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -1860,7 +1860,7 @@ const REAL_BUSINESSES = [
     tags: ["سوبرماركت", "مخبز عراقي", "زينة", "زينا"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "سوبرماركت ومخبز عراقي في Houston.", en: "Supermarket and Iraqi bakery in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -1870,7 +1870,7 @@ const REAL_BUSINESSES = [
     tags: ["بقالة", "لحوم حلال", "الأقصى"],
     attributes: ["halalMeat", "arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "بقالة بلحوم حلال في Houston.", en: "Grocery store with halal meat in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -1880,7 +1880,7 @@ const REAL_BUSINESSES = [
     tags: ["ملحمة حلال", "بقالة", "الأقصى"],
     attributes: ["halalMeat", "arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "ملحمة حلال وبقالة في Houston.", en: "Halal meat market and grocery in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -1890,7 +1890,7 @@ const REAL_BUSINESSES = [
     tags: ["ملحمة", "سوبرماركت", "حلويات", "رمضان"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "ملحمة حلال وسوبرماركت في Houston.", en: "Halal meat market and grocery in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -1900,7 +1900,7 @@ const REAL_BUSINESSES = [
     tags: ["ملحمة حلال", "بقالة"],
     attributes: ["halalMeat", "arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "ملحمة حلال وبقالة في Houston.", en: "Halal butcher and grocery in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -1910,7 +1910,7 @@ const REAL_BUSINESSES = [
     tags: ["ملحمة", "مطعم", "سوبرماركت", "البركة"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "ملحمة حلال ومشاوي وسوبرماركت في Houston.", en: "Halal meat market and grill in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -1920,7 +1920,7 @@ const REAL_BUSINESSES = [
     tags: ["سوبرماركت", "ملحمة", "مخبز"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "سوبرماركت حلال مع ملحمة ومخبز في Houston.", en: "Halal supermarket with butcher and bakery in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -1930,7 +1930,7 @@ const REAL_BUSINESSES = [
     tags: ["ملحمة", "أسماك حلال"],
     attributes: ["halalMeat", "arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "ملحمة وأسماك حلال وسوبرماركت في Houston.", en: "Halal meat and fish supermarket in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -1940,7 +1940,7 @@ const REAL_BUSINESSES = [
     tags: ["سوبرماركت حلال"],
     attributes: ["halalMeat", "arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "سوبرماركت حلال في Houston.", en: "Halal supermarket in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -1950,7 +1950,7 @@ const REAL_BUSINESSES = [
     tags: ["بقالة عربية", "متوسطية"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "بقالة عربية ومتوسطية في Katy.", en: "Arab and Mediterranean grocery in Katy." },
     photos: 0, videos: 0,
   },
   {
@@ -1960,7 +1960,7 @@ const REAL_BUSINESSES = [
     tags: ["ملحمة حلال", "بقالة"],
     attributes: ["halalMeat", "arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "ملحمة حلال وبقالة في Richmond.", en: "Halal butcher and grocery market in Richmond." },
     photos: 0, videos: 0,
   },
   {
@@ -1970,7 +1970,7 @@ const REAL_BUSINESSES = [
     tags: ["بقالة", "لحوم حلال", "أروى"],
     attributes: ["halalMeat", "arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "بقالة ولحوم حلال في Spring.", en: "Grocery and halal meat in Spring." },
     photos: 0, videos: 0,
   },
   {
@@ -1980,7 +1980,7 @@ const REAL_BUSINESSES = [
     tags: ["ملحمة حلال", "بقالة", "الإيمان"],
     attributes: ["halalMeat", "arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "ملحمة حلال وبقالة في Spring.", en: "Halal meat and grocery in Spring." },
     photos: 0, videos: 0,
   },
   {
@@ -1990,7 +1990,7 @@ const REAL_BUSINESSES = [
     tags: ["ملحمة حلال", "بقالة"],
     attributes: ["halalMeat", "arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "بقالة وملحمة حلال في Houston.", en: "Grocery and halal meat market in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -2000,7 +2000,7 @@ const REAL_BUSINESSES = [
     tags: ["سوبرماركت عالمي حلال", "اقرأ"],
     attributes: ["halalMeat", "arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "سوبرماركت عالمي حلال في Humble.", en: "International halal food market in Humble." },
     photos: 0, videos: 0,
   },
   {
@@ -2010,7 +2010,7 @@ const REAL_BUSINESSES = [
     tags: ["بقالة", "لحوم حلال"],
     attributes: ["halalMeat", "arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "بقالة أفغانية بلحوم حلال في Houston.", en: "Afghan halal market in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -2020,7 +2020,7 @@ const REAL_BUSINESSES = [
     tags: ["سوبرماركت عالمي", "زماني"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "سوبرماركت عالمي في Spring.", en: "International grocery market in Spring." },
     photos: 0, videos: 0,
   },
   {
@@ -2030,7 +2030,7 @@ const REAL_BUSINESSES = [
     tags: ["سوبرماركت تركي", "اسطنبول"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "سوبرماركت تركي في Spring.", en: "Turkish supermarket in Spring." },
     photos: 0, videos: 0,
   },
   {
@@ -2040,7 +2040,7 @@ const REAL_BUSINESSES = [
     tags: ["ملحمة حلال", "بقالة"],
     attributes: ["halalMeat", "arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "ملحمة حلال وبقالة في Sugar Land.", en: "Halal meat and grocery bazaar in Sugar Land." },
     photos: 0, videos: 0,
   },
   {
@@ -2050,7 +2050,7 @@ const REAL_BUSINESSES = [
     tags: ["مخبز لبناني", "مناقيش"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "مخبز لبناني ومناقيش في Houston.", en: "Lebanese bakery with manakish in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -2060,7 +2060,7 @@ const REAL_BUSINESSES = [
     tags: ["كنافة", "حلويات", "أبو طير"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "محل كنافة وحلويات في Houston.", en: "Kunafa and sweets shop in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -2070,7 +2070,7 @@ const REAL_BUSINESSES = [
     tags: ["كنافة", "قهوة مختصة"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "محل كنافة وقهوة مختصة في Houston.", en: "Kunafa shop and specialty coffee in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -2080,7 +2080,7 @@ const REAL_BUSINESSES = [
     tags: ["حلويات عربية", "كافيه", "تاج سويت كافيه"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "حلويات عربية وكافيه في Houston.", en: "Arabic sweets shop and cafe in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -2090,7 +2090,7 @@ const REAL_BUSINESSES = [
     tags: ["حلويات", "معجنات", "سوزيز للمعجنات"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "محل حلويات ومعجنات في Houston.", en: "Pastry and sweets shop in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -2100,7 +2100,7 @@ const REAL_BUSINESSES = [
     tags: ["محمصة", "حلويات", "شوكولاتة"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "محمصة مكسرات وحلويات وشوكولاتة في Houston.", en: "Nut roastery with sweets and chocolate in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -2110,7 +2110,7 @@ const REAL_BUSINESSES = [
     tags: ["محمصة", "حلويات", "آيس كريم"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "محمصة مكسرات وحلويات وآيس كريم في Houston.", en: "Nut roastery with sweets and ice cream in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -2120,7 +2120,7 @@ const REAL_BUSINESSES = [
     tags: ["قهوة يمنية", "كافيه", "قمرية"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "كافيه قهوة يمنية في Houston.", en: "Yemeni coffee cafe in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -2130,7 +2130,7 @@ const REAL_BUSINESSES = [
     tags: ["قهوة يمنية", "كافيه", "قمرية"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "كافيه قهوة يمنية في Richmond.", en: "Yemeni coffee cafe in Richmond." },
     photos: 0, videos: 0,
   },
   {
@@ -2140,7 +2140,7 @@ const REAL_BUSINESSES = [
     tags: ["قهوة يمنية", "كافيه", "قهوة هاوس (شوغر لاند)"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "كافيه قهوة في Sugar Land.", en: "Coffee house cafe in Sugar Land." },
     photos: 0, videos: 0,
   },
   {
@@ -2150,7 +2150,7 @@ const REAL_BUSINESSES = [
     tags: ["قهوة يمنية", "كافيه"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "كافيه قهوة يمنية في Richmond.", en: "Yemeni coffee cafe in Richmond." },
     photos: 0, videos: 0,
   },
   {
@@ -2160,7 +2160,7 @@ const REAL_BUSINESSES = [
     tags: ["قهوة يمنية", "حلويات", "مزاج"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "كافيه قهوة عضوية وحلويات في Katy.", en: "Organic coffee cafe in Katy." },
     photos: 0, videos: 0,
   },
   {
@@ -2170,7 +2170,7 @@ const REAL_BUSINESSES = [
     tags: ["قهوة يمنية", "حلويات", "مزاج"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "كافيه قهوة عضوية وحلويات في Houston.", en: "Organic coffee cafe in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -2180,7 +2180,7 @@ const REAL_BUSINESSES = [
     tags: ["قهوة يمنية", "كافيه"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "كافيه قهوة يمنية في Spring.", en: "Yemeni coffee cafe in Spring." },
     photos: 0, videos: 0,
   },
   {
@@ -2190,7 +2190,7 @@ const REAL_BUSINESSES = [
     tags: ["قهوة يمنية", "مخبوزات"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "كافيه قهوة مختصة ومخبوزات في Houston.", en: "Bakehouse and specialty coffee in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -2200,7 +2200,7 @@ const REAL_BUSINESSES = [
     tags: ["كافيه", "مخبز", "بيكوس كافيه"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "كافيه ومخبز في Houston.", en: "Cafe and bakery in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -2210,7 +2210,7 @@ const REAL_BUSINESSES = [
     tags: ["حلاق رجالي"],
     attributes: ["men", "arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "حلاق رجالي عربي في Houston.", en: "Arabic men's barbershop in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -2220,7 +2220,7 @@ const REAL_BUSINESSES = [
     tags: ["حلاق رجالي"],
     attributes: ["men", "arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "صالون حلاقة رجالي عربي في Houston.", en: "Arabic men's hair salon in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -2230,7 +2230,7 @@ const REAL_BUSINESSES = [
     tags: ["حلاق رجالي"],
     attributes: ["men", "arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "صالون حلاقة رجالي عربي على ويستهايمر في Houston.", en: "Arabic men's hair salon on Westheimer in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -2240,7 +2240,7 @@ const REAL_BUSINESSES = [
     tags: ["حلاقة", "تجميل"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "صالون حلاقة عربي على ويستهايمر في Houston.", en: "Arabic hair salon on Westheimer in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -2250,17 +2250,17 @@ const REAL_BUSINESSES = [
     tags: ["حلاق رجالي"],
     attributes: ["men", "arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "حلاق رجالي عربي على Richmond في Houston.", en: "Arabic men's barbershop on Richmond in Houston." },
     photos: 0, videos: 0,
   },
   {
-    id: "b137", name: { ar: "Glamorize Barbershop (حلاق عربي – كاتي)", en: "Glamorize Barbershop (حلاق عربي – كاتي)" }, cat: "beauty",
+    id: "b137", name: { ar: "Glamorize Barbershop (حلاق عربي – Katy)", en: "Glamorize Barbershop (حلاق عربي – Katy)" }, cat: "beauty",
     phone: "(346) 365-2157", address: "1922 Greenhouse Rd #750, Houston, TX 77084",
     hours: [[["11:00", "17:00"]], [["09:00", "19:00"]], [["09:00", "19:00"]], [["09:00", "19:00"]], [["09:00", "19:00"]], [["09:00", "19:00"]], [["09:00", "19:00"]]],
     tags: ["حلاق رجالي"],
     attributes: ["men", "arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "حلاق رجالي عربي في Katy، Houston.", en: "Arabic men's barbershop in Katy, Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -2270,7 +2270,7 @@ const REAL_BUSINESSES = [
     tags: ["عبايات", "ملابس محتشمة", "أصلي"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "متجر ملابس محتشمة وعبايات في Houston.", en: "Modest wear and abaya shop in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -2280,7 +2280,7 @@ const REAL_BUSINESSES = [
     tags: ["عبايات", "ملابس محتشمة"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "متجر عبايات وملابس محتشمة في Houston.", en: "Abaya and modest clothing shop in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -2290,7 +2290,7 @@ const REAL_BUSINESSES = [
     tags: ["عبايات", "حجابات"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "بوتيك عبايات وحجابات في Houston.", en: "Abaya and hijab boutique in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -2300,7 +2300,7 @@ const REAL_BUSINESSES = [
     tags: ["ملابس", "مجوهرات", "أمل"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "متجر ملابس ومجوهرات على هيلكروفت في Houston.", en: "Clothing and jewellery shop on Hillcroft in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -2310,7 +2310,7 @@ const REAL_BUSINESSES = [
     tags: ["حجابات", "ملابس"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "متجر ملابس وحجابات في Houston.", en: "Clothing and hijab shop in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -2320,7 +2320,7 @@ const REAL_BUSINESSES = [
     tags: ["ملابس", "سجاد", "عطور", "فردوس"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "متجر ملابس وسجاد وعطور على هيلكروفت في Houston.", en: "Clothing, rugs and perfume shop on Hillcroft in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -2330,7 +2330,7 @@ const REAL_BUSINESSES = [
     tags: ["أرجيلة", "جملة", "تجزئة"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "محل أرجيلة بالجملة والتجزئة في Houston.", en: "Hookah shop, wholesale and retail, in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -2340,7 +2340,7 @@ const REAL_BUSINESSES = [
     tags: ["محل أرجيلة", "دخان", "إيه تو زد سموك شوب 3"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "محل دخان وأرجيلة في Houston.", en: "Smoke shop in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -2350,7 +2350,7 @@ const REAL_BUSINESSES = [
     tags: ["محل أرجيلة", "دخان"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "محل دخان وأرجيلة في Houston.", en: "Smoke and hookah shop in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -2360,7 +2360,7 @@ const REAL_BUSINESSES = [
     tags: ["محل أرجيلة", "دخان", "فيب زون سموك شوب"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "محل دخان وأرجيلة في Houston.", en: "Vape and smoke shop in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -2370,7 +2370,7 @@ const REAL_BUSINESSES = [
     tags: ["محل أرجيلة", "دخان", "سموك دريمز"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "محل دخان وأرجيلة في Houston.", en: "Smoke shop in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -2380,7 +2380,7 @@ const REAL_BUSINESSES = [
     tags: ["محل أرجيلة", "دخان", "سموك ستوب آند هوكا"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "محل دخان وأرجيلة في Houston.", en: "Smoke and hookah shop in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -2390,7 +2390,7 @@ const REAL_BUSINESSES = [
     tags: ["عمرة", "سفر"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "وكالة سفر للحج والعمرة في Houston.", en: "Hajj and Umrah travel agency in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -2400,7 +2400,7 @@ const REAL_BUSINESSES = [
     tags: ["عمرة", "سفر", "الريان"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "وكالة سفر في Houston.", en: "Travel agency in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -2410,7 +2410,7 @@ const REAL_BUSINESSES = [
     tags: ["عمرة", "سفر", "مروة"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "وكالة سفر في Sugar Land بـTexas.", en: "Travel agency in Sugar Land, Texas." },
     photos: 0, videos: 0,
   },
   {
@@ -2420,7 +2420,7 @@ const REAL_BUSINESSES = [
     tags: ["سفر", "سياحة"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "وكالة سفر وسياحة في Houston.", en: "Travel and vacation agency in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -2430,7 +2430,7 @@ const REAL_BUSINESSES = [
     tags: ["سفر", "عمرة", "آدم"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "وكالة سفر في Houston.", en: "Travel agency in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -2440,7 +2440,7 @@ const REAL_BUSINESSES = [
     tags: ["هجرة", "محاماة", "أيوب وشركاه للمحاماة"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "مكتب محاماة في Houston.", en: "Law office in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -2450,7 +2450,7 @@ const REAL_BUSINESSES = [
     tags: ["هجرة", "محاماة", "مكتب نسرين س. موسى للمحاماة"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "مكتب محاماة في Houston.", en: "Law office in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -2460,7 +2460,7 @@ const REAL_BUSINESSES = [
     tags: ["هجرة", "محاماة", "نعيمة سالم وشركاؤها للمحاماة"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "مكتب محاماة في Houston.", en: "Law office in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -2470,7 +2470,7 @@ const REAL_BUSINESSES = [
     tags: ["مسجد", "مركز إسلامي", "المركز الإسلامي ريفر أوكس (ISGH)"],
     attributes: ["wkIslamicCenter", "parking", "arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "مركز إسلامي ومسجد في منطقة ريفر أوكس بHouston.", en: "Islamic center and mosque in the River Oaks area of Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -2480,7 +2480,7 @@ const REAL_BUSINESSES = [
     tags: ["مسجد"],
     attributes: ["wkIslamicCenter", "parking", "arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "مسجد في منطقة المركز الطبي بHouston.", en: "Mosque in the Medical Center area of Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -2490,7 +2490,7 @@ const REAL_BUSINESSES = [
     tags: ["مسجد", "مركز دعوة"],
     attributes: ["wkIslamicCenter", "parking", "arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "مركز إسلامي ومسجد في وسط مدينة Houston.", en: "Islamic center and mosque in downtown Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -2500,7 +2500,7 @@ const REAL_BUSINESSES = [
     tags: ["مسجد", "أبو بكر"],
     attributes: ["wkMosque", "parking", "arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "مسجد في Houston.", en: "Mosque in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -2510,7 +2510,7 @@ const REAL_BUSINESSES = [
     tags: ["مسجد", "مركز إسلامي", "مركز MAS كاتي (مسجد الرحمن)"],
     attributes: ["wkMosque", "parking", "arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "مسجد ومركز إسلامي في منطقة Katy بHouston.", en: "Mosque and Islamic center in the Katy area of Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -2520,7 +2520,7 @@ const REAL_BUSINESSES = [
     tags: ["مسجد", "مركز إسلامي"],
     attributes: ["wkIslamicCenter", "parking", "arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "مركز إسلامي ومسجد في منطقة Clear Lake بHouston.", en: "Islamic center and mosque in the Clear Lake area of Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -2530,7 +2530,7 @@ const REAL_BUSINESSES = [
     tags: ["مسجد", "مركز مجتمعي", "إبراهيم"],
     attributes: ["wkMosque", "parking", "arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "مسجد ومركز إسلامي في Houston.", en: "Mosque and Islamic center in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -2540,7 +2540,7 @@ const REAL_BUSINESSES = [
     tags: ["مسجد", "مركز ثقافي"],
     attributes: ["wkMosque", "parking", "arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "مسجد ومعهد إسلامي في Houston.", en: "Mosque and Islamic institute in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -2550,7 +2550,7 @@ const REAL_BUSINESSES = [
     tags: ["مسجد", "مدرسة"],
     attributes: ["wkIslamicCenter", "parking", "arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "مركز إسلامي ومسجد في Houston.", en: "Islamic center and mosque in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -2560,7 +2560,7 @@ const REAL_BUSINESSES = [
     tags: ["مدرسة إسلامية", "أكاديمية الإيمان – الجنوب الغربي"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "مدرسة إسلامية في جنوب غرب Houston.", en: "Islamic school in southwest Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -2570,7 +2570,7 @@ const REAL_BUSINESSES = [
     tags: ["مدرسة إسلامية", "دار الأرقم", "الأرقم"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "مدرسة إسلامية في Houston.", en: "Islamic school in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -2580,7 +2580,7 @@ const REAL_BUSINESSES = [
     tags: ["مدرسة إسلامية", "الهادي"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "مدرسة إسلامية في Houston.", en: "Islamic school in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -2590,7 +2590,7 @@ const REAL_BUSINESSES = [
     tags: ["تحفيظ قرآن", "تعليم", "حمد"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "معهد تعليمي لتحفيظ القرآن في Houston.", en: "Educational institute for Quran memorization in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -2600,7 +2600,7 @@ const REAL_BUSINESSES = [
     tags: ["تعليم اللغة العربية"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "معهد لتعليم اللغة العربية والدراسات الإسلامية في Houston.", en: "Institute for Arabic language and Islamic studies in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -2610,7 +2610,7 @@ const REAL_BUSINESSES = [
     tags: ["مدرسة إسلامية", "أكاديمية التربية الإسلامية HQA سبرينغ"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "مدرسة إسلامية في Spring.", en: "Islamic school in Spring, Texas." },
     photos: 0, videos: 0,
   },
   {
@@ -2620,7 +2620,7 @@ const REAL_BUSINESSES = [
     tags: ["أسنان", "عيادة أسنان"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "عيادة أسنان في Houston للدكتور حسين العبيدي.", en: "Dental clinic in Houston with Dr. Hussein Al-Obaidi." },
     photos: 0, videos: 0,
   },
   {
@@ -2630,7 +2630,7 @@ const REAL_BUSINESSES = [
     tags: ["أسنان", "عيادة أسنان"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "عيادة أسنان في Houston.", en: "Dental clinic in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -2640,7 +2640,7 @@ const REAL_BUSINESSES = [
     tags: ["أسنان", "عيادة أسنان"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "عيادة أسنان في Houston.", en: "Dental clinic in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -2650,7 +2650,7 @@ const REAL_BUSINESSES = [
     tags: ["أسنان", "عيادة أسنان"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "عيادة أسنان في Houston للدكتور إيهاب.", en: "Dental clinic in Houston with Dr. Ihab." },
     photos: 0, videos: 0,
   },
   {
@@ -2660,7 +2660,7 @@ const REAL_BUSINESSES = [
     tags: ["أسنان", "عيادة أسنان"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "عيادة أسنان في منطقة مونتروز بHouston.", en: "Dental clinic in the Montrose area of Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -2670,7 +2670,7 @@ const REAL_BUSINESSES = [
     tags: ["طب عام", "عيادة طب عام"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "عيادة طب عام في Houston.", en: "General medical clinic in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -2680,7 +2680,7 @@ const REAL_BUSINESSES = [
     tags: ["طب عام", "عيادة مجتمعية عامة", "ابن سينا"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "عيادة مجتمعية للطب العام في Houston.", en: "Community general medical clinic in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -2690,7 +2690,7 @@ const REAL_BUSINESSES = [
     tags: ["أسنان", "طب عام", "عيادة عامة", "ابن سينا"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "عيادة طب عام وأسنان في Houston.", en: "Medical and dental clinic in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -2700,7 +2700,7 @@ const REAL_BUSINESSES = [
     tags: ["هجرة", "محاماة", "مكاتب فاضل أ. إبراهيم للمحاماة"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "مكتب محاماة في Houston.", en: "Law office in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -2710,7 +2710,7 @@ const REAL_BUSINESSES = [
     tags: ["أسرة وطلاق", "مدني", "محاماة", "أسرة", "الشرقاوي وشركاه للمحاماة"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "مكتب محاماة في Houston.", en: "Law office in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -2720,7 +2720,7 @@ const REAL_BUSINESSES = [
     tags: ["جنائي", "محاماة", "الزامل وديبلانك وشركاهم للمحاماة"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "مكتب محاماة في Houston.", en: "Law office in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -2730,7 +2730,7 @@ const REAL_BUSINESSES = [
     tags: ["أسرة وطلاق", "محاماة", "أسرة", "طلاق", "كمال"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "مكتب محاماة في Houston.", en: "Law firm in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -2740,7 +2740,7 @@ const REAL_BUSINESSES = [
     tags: ["هجرة", "أسرة وطلاق", "محاماة", "أسرة", "زارا علي وشركاؤها للمحاماة"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "مكتب محاماة في مدينة Katy بـTexas.", en: "Law office in Katy, Texas." },
     photos: 0, videos: 0,
   },
   {
@@ -2750,7 +2750,7 @@ const REAL_BUSINESSES = [
     tags: ["أسرة وطلاق", "محاماة", "أسرة", "رحمن"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "مكتب محاماة في Sugar Land بـTexas.", en: "Law office in Sugar Land, Texas." },
     photos: 0, videos: 0,
   },
   {
@@ -2760,7 +2760,7 @@ const REAL_BUSINESSES = [
     tags: ["صالون نسائي", "سبا"],
     attributes: ["women", "arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "صالون نسائي وسبا على هيلكروفت في Houston.", en: "Women's salon and spa on Hillcroft in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -2770,7 +2770,7 @@ const REAL_BUSINESSES = [
     tags: ["صالون نسائي", "سبا"],
     attributes: ["women", "arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "صالون نسائي وسبا على هيلكروفت في Houston.", en: "Women's salon and spa on Hillcroft in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -2780,7 +2780,7 @@ const REAL_BUSINESSES = [
     tags: ["صالون نسائي", "حواجب"],
     attributes: ["women", "arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "صالون نسائي وسبا على هيلكروفت في Houston.", en: "Women's salon and spa on Hillcroft in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -2790,7 +2790,7 @@ const REAL_BUSINESSES = [
     tags: ["صالون نسائي", "سبا"],
     attributes: ["women", "arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "صالون نسائي وسبا على هيلكروفت في Houston.", en: "Women's salon and spa on Hillcroft in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -2800,7 +2800,7 @@ const REAL_BUSINESSES = [
     tags: ["صالون نسائي", "حنة", "أنيسة"],
     attributes: ["women", "arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "صالون تجميل نسائي على هيلكروفت في Houston.", en: "Women's beauty salon on Hillcroft in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -2810,7 +2810,7 @@ const REAL_BUSINESSES = [
     tags: ["صالون نسائي", "فلوريدا"],
     attributes: ["women", "arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "صالون تجميل نسائي على هيلكروفت في Houston.", en: "Women's beauty salon on Hillcroft in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -2820,7 +2820,7 @@ const REAL_BUSINESSES = [
     tags: ["صالون نسائي", "خيط الحواجب"],
     attributes: ["women", "arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "صالون وسبا للنساء فقط لخيط الحواجب في Katy.", en: "Women-only threading salon and spa in Katy." },
     photos: 0, videos: 0,
   },
   {
@@ -2830,7 +2830,7 @@ const REAL_BUSINESSES = [
     tags: ["حواجب", "سبا نسائي"],
     attributes: ["women", "arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "استوديو حواجب وسبا نسائي في Katy.", en: "Brows studio and women's spa in Katy." },
     photos: 0, videos: 0,
   },
   {
@@ -2840,7 +2840,7 @@ const REAL_BUSINESSES = [
     tags: ["حواجب", "إزالة شعر", "زن ثريدنج سبا"],
     attributes: ["women", "arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "سبا لخيط الحواجب وإزالة الشعر في Katy.", en: "Threading and hair removal spa in Katy." },
     photos: 0, videos: 0,
   },
   {
@@ -2850,7 +2850,7 @@ const REAL_BUSINESSES = [
     tags: ["عناية بالبشرة", "الحواجب", "جلو آند براو ستوديو"],
     attributes: ["women", "arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "استوديو حواجب وعناية بالبشرة في Katy.", en: "Brow and skincare studio in Katy." },
     photos: 0, videos: 0,
   },
   {
@@ -2860,7 +2860,7 @@ const REAL_BUSINESSES = [
     tags: ["حنة", "مكياج مناسبات"],
     attributes: ["women", "arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "خدمات حنة ومكياج مناسبات بالموعد في Katy.", en: "Henna and occasion makeup by appointment in Katy." },
     photos: 0, videos: 0,
   },
   {
@@ -2870,7 +2870,7 @@ const REAL_BUSINESSES = [
     tags: ["مشاوي", "عربة طعام", "شاورما", "مشاوي حلال"],
     attributes: ["halalMeat", "arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "عربة طعام مشاوي وشاورما حلال في Houston.", en: "Halal grill and shawarma food truck in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -2880,7 +2880,7 @@ const REAL_BUSINESSES = [
     tags: ["عربة طعام", "شاورما", "تاكو حلال"],
     attributes: ["halalMeat", "arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "عربة طعام شاورما وتاكو حلال في Houston.", en: "Halal shawarma and taco food truck in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -2890,7 +2890,7 @@ const REAL_BUSINESSES = [
     tags: ["مشاوي", "عربة طعام", "مشاوي حلال"],
     attributes: ["halalMeat", "arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "عربة طعام مشاوي حلال في Houston.", en: "Halal grill food truck in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -2900,7 +2900,7 @@ const REAL_BUSINESSES = [
     tags: ["مشاوي", "عربة طعام", "شاورما", "مشاوي حلال"],
     attributes: ["halalMeat", "arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "عربة طعام مشاوي وشاورما حلال في Houston.", en: "Halal grill and shawarma food truck in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -2910,7 +2910,7 @@ const REAL_BUSINESSES = [
     tags: ["مشاوي", "عربة طعام", "تركي", "دونر", "كباب تركي حلال"],
     attributes: ["halalMeat", "arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "عربة طعام دونر وكباب تركي حلال في Houston.", en: "Halal Turkish doner and kebab food truck in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -2920,7 +2920,7 @@ const REAL_BUSINESSES = [
     tags: ["عربة طعام", "برجر حلال"],
     attributes: ["halalMeat", "arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "عربة طعام برجر حلال في Houston.", en: "Halal burger food truck in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -2930,7 +2930,7 @@ const REAL_BUSINESSES = [
     tags: ["عربة طعام", "برجر حلال"],
     attributes: ["halalMeat", "arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "عربة طعام في Houston تقدّم البرجر الحلال.", en: "Halal burger food truck in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -2940,7 +2940,7 @@ const REAL_BUSINESSES = [
     tags: ["مسجد", "مركز إسلامي", "مريم"],
     attributes: ["wkIslamicCenter", "parking", "arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "مركز إسلامي ومسجد في Sugar Land.", en: "Islamic center and mosque in Sugar Land." },
     photos: 0, videos: 0,
   },
   {
@@ -2950,7 +2950,7 @@ const REAL_BUSINESSES = [
     tags: ["مسجد", "مدرسة", "الصابرين"],
     attributes: ["wkMosque", "parking", "arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "مسجد ومركز إسلامي في Stafford.", en: "Mosque and Islamic center in Stafford." },
     photos: 0, videos: 0,
   },
   {
@@ -2960,7 +2960,7 @@ const REAL_BUSINESSES = [
     tags: ["مسجد", "مركز رياضي", "السلام"],
     attributes: ["wkMosque", "parking", "arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "مسجد في Spring.", en: "Mosque in Spring, Texas." },
     photos: 0, videos: 0,
   },
   {
@@ -2970,7 +2970,7 @@ const REAL_BUSINESSES = [
     tags: ["مسجد", "الأقصى"],
     attributes: ["wkMosque", "parking", "arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "مسجد في مدينة Katy بـTexas.", en: "Mosque in Katy, Texas." },
     photos: 0, videos: 0,
   },
   {
@@ -2980,7 +2980,7 @@ const REAL_BUSINESSES = [
     tags: ["مسجد", "مركز جنائز", "مسجد حمزة – ميشن بند (ISGH)"],
     attributes: ["wkMosque", "parking", "arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "مسجد في منطقة ميشن بند بHouston.", en: "Mosque in the Mission Bend area of Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -2990,7 +2990,7 @@ const REAL_BUSINESSES = [
     tags: ["مسجد", "مركز إسلامي", "المركز الإسلامي بير كريك (مسجد المصطفى) – ISGH"],
     attributes: ["wkMosque", "parking", "arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "مسجد ومركز إسلامي في منطقة بير كريك بHouston.", en: "Mosque and Islamic center in the Bear Creek area of Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -3000,7 +3000,7 @@ const REAL_BUSINESSES = [
     tags: ["مسجد", "مسجد سافوي ويلكرست (ISGH)"],
     attributes: ["wkMosque", "parking", "arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "مسجد في منطقة ويلكرست بHouston.", en: "Mosque on Wilcrest Drive in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -3010,7 +3010,7 @@ const REAL_BUSINESSES = [
     tags: ["مسجد", "مسجد عيسى ابن مريم (ISGH)"],
     attributes: ["wkMosque", "parking", "arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "مسجد في Houston.", en: "Mosque in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -3020,7 +3020,7 @@ const REAL_BUSINESSES = [
     tags: ["مسجد", "النور"],
     attributes: ["wkMosque", "parking", "arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "مسجد في Houston.", en: "Mosque in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -3030,7 +3030,7 @@ const REAL_BUSINESSES = [
     tags: ["مسجد"],
     attributes: ["wkIslamicCenter", "parking", "arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "مركز إسلامي ومسجد في Richmond بـTexas.", en: "Islamic community center and mosque in Richmond, Texas." },
     photos: 0, videos: 0,
   },
   {
@@ -3040,7 +3040,7 @@ const REAL_BUSINESSES = [
     tags: ["مسجد", "مركز إسلامي", "المركز الإسلامي بيرلاند (ISGH)"],
     attributes: ["wkIslamicCenter", "parking", "arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "مركز إسلامي ومسجد في Pearland بـTexas.", en: "Islamic center and mosque in Pearland, Texas." },
     photos: 0, videos: 0,
   },
   {
@@ -3050,7 +3050,7 @@ const REAL_BUSINESSES = [
     tags: ["مسجد", "مركز تعليمي", "علي المرتضى", "منهاج القرآن"],
     attributes: ["wkMosque", "parking", "arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "مسجد ومركز تعليمي في مدينة Katy.", en: "Mosque and educational center in Katy." },
     photos: 0, videos: 0,
   },
   {
@@ -3060,7 +3060,7 @@ const REAL_BUSINESSES = [
     tags: ["مركز إسلامي", "ثقافي"],
     attributes: ["wkIslamicCenter", "parking", "arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "مركز إسلامي وثقافي في Houston.", en: "Islamic and cultural center in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -3070,7 +3070,7 @@ const REAL_BUSINESSES = [
     tags: ["كنيسة عربية (إنجيلية)"],
     attributes: ["wkChurch", "parking", "arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "كنيسة عربية في Missouri City بـTexas.", en: "Arabic church in Missouri City, Texas." },
     photos: 0, videos: 0,
   },
   {
@@ -3080,7 +3080,7 @@ const REAL_BUSINESSES = [
     tags: ["كنيسة عربية"],
     attributes: ["wkChurch", "parking", "arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "كنيسة عربية في Houston.", en: "Arabic Christian church in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -3090,7 +3090,7 @@ const REAL_BUSINESSES = [
     tags: ["كنيسة عربية معمدانية"],
     attributes: ["wkBaptist", "parking", "arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "كنيسة معمدانية عربية في Houston.", en: "Arabic Baptist church in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -3100,7 +3100,7 @@ const REAL_BUSINESSES = [
     tags: ["كنيسة عربية"],
     attributes: ["wkChurch", "parking", "arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "كنيسة عربية في Houston.", en: "Arab Christian fellowship church in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -3110,7 +3110,7 @@ const REAL_BUSINESSES = [
     tags: ["كنيسة قبطية أرثوذكسية", "مار مرقس", "القديس مرقس"],
     attributes: ["wkCoptic", "parking", "arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "كنيسة قبطية أرثوذكسية في Bellaire بـTexas.", en: "Coptic Orthodox church in Bellaire, Texas." },
     photos: 0, videos: 0,
   },
   {
@@ -3120,7 +3120,7 @@ const REAL_BUSINESSES = [
     tags: ["كنيسة قبطية أرثوذكسية", "العذراء مريم", "مريم العذراء", "السيدة العذراء"],
     attributes: ["wkCoptic", "parking", "arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "كنيسة قبطية أرثوذكسية في Houston.", en: "Coptic Orthodox church in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -3130,7 +3130,7 @@ const REAL_BUSINESSES = [
     tags: ["كنيسة قبطية أرثوذكسية", "رافائيل", "روفائيل"],
     attributes: ["wkCoptic", "parking", "arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "كنيسة قبطية أرثوذكسية في Houston.", en: "Coptic Orthodox church in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -3140,7 +3140,7 @@ const REAL_BUSINESSES = [
     tags: ["كنيسة قبطية أرثوذكسية", "مار جرجس", "القديس جرجس"],
     attributes: ["wkCoptic", "parking", "arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "كنيسة قبطية أرثوذكسية في مدينة Katy.", en: "Coptic Orthodox church in Katy, Texas." },
     photos: 0, videos: 0,
   },
   {
@@ -3150,7 +3150,7 @@ const REAL_BUSINESSES = [
     tags: ["كنيسة قبطية أرثوذكسية", "استفانوس", "اسطفانوس"],
     attributes: ["wkCoptic", "parking", "arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "كنيسة قبطية أرثوذكسية في Cypress بـTexas.", en: "Coptic Orthodox church in Cypress, Texas." },
     photos: 0, videos: 0,
   },
   {
@@ -3160,7 +3160,7 @@ const REAL_BUSINESSES = [
     tags: ["كنيسة أنطاكية أرثوذكسية", "مار جرجس", "القديس جرجس"],
     attributes: ["wkAntiochian", "parking", "arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "كنيسة أنطاكية أرثوذكسية في Houston.", en: "Antiochian Orthodox church in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -3170,7 +3170,7 @@ const REAL_BUSINESSES = [
     tags: ["كنيسة ملكية كاثوليكية", "بربارة", "القديسة بربارة"],
     attributes: ["wkMelkite", "parking", "arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "كنيسة ملكية كاثوليكية في Houston.", en: "Melkite Catholic church in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -3180,7 +3180,7 @@ const REAL_BUSINESSES = [
     tags: ["جمعية ثقافية", "قاعة مناسبات"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "جمعية ثقافية عربية وقاعة مناسبات في Houston.", en: "Arab cultural community association and event hall in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -3190,7 +3190,7 @@ const REAL_BUSINESSES = [
     tags: ["نادٍ سوري", "دروس عربية"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "نادٍ ثقافي سوري أمريكي في Houston.", en: "Syrian American cultural club in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -3200,7 +3200,7 @@ const REAL_BUSINESSES = [
     tags: ["مؤسسة تعليمية"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "مؤسسة تعليمية عربية أمريكية في Houston.", en: "Arab-American educational foundation in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -3210,7 +3210,7 @@ const REAL_BUSINESSES = [
     tags: ["جمعية أطباء عرب"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "جمعية مهنية للأطباء العرب في Houston.", en: "Professional association of Arab American physicians in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -3220,7 +3220,7 @@ const REAL_BUSINESSES = [
     tags: ["جمعية خيرية لدعم النساء", "الأسر"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "مركز مجتمعي لدعم النساء والأسر في Houston.", en: "Community center supporting women and families in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -3230,7 +3230,7 @@ const REAL_BUSINESSES = [
     tags: ["جمعية إسلامية خيرية"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "جمعية إسلامية مجتمعية في Houston.", en: "Islamic community organization in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -3240,7 +3240,7 @@ const REAL_BUSINESSES = [
     tags: ["دعم اللاجئين", "الشباب"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "منظمة مجتمعية لدعم اللاجئين والشباب في Houston.", en: "Community organization supporting refugees and youth in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -3250,7 +3250,7 @@ const REAL_BUSINESSES = [
     tags: ["ورشة ميكانيك سيارات"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "ورشة ميكانيك وتصليح سيارات في Houston.", en: "Auto repair and mechanic shop in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -3260,7 +3260,7 @@ const REAL_BUSINESSES = [
     tags: ["ورشة ميكانيك سيارات", "إيه دي في لتصليح السيارات"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "ورشة ميكانيك وتصليح سيارات في Houston.", en: "Auto repair and mechanic shop in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -3270,7 +3270,7 @@ const REAL_BUSINESSES = [
     tags: ["ورشة ميكانيك", "قطع غيار"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "ورشة تصليح سيارات وقطع غيار على هيلكروفت في Houston.", en: "Auto repair and parts shop on Hillcroft in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -3280,7 +3280,7 @@ const REAL_BUSINESSES = [
     tags: ["ورشة ميكانيك سيارات", "إيه دبليو لخدمات السيارات"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "ورشة خدمات وميكانيك سيارات في Houston.", en: "Auto services and mechanic shop in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -3290,7 +3290,7 @@ const REAL_BUSINESSES = [
     tags: ["ميكانيكي متنقل"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "ميكانيكي سيارات متنقل في Houston.", en: "Mobile car mechanic in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -3300,7 +3300,7 @@ const REAL_BUSINESSES = [
     tags: ["مجوهرات", "ذهب"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "محل مجوهرات وذهب على هيلكروفت في Houston.", en: "Jewellery and gold shop on Hillcroft in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -3310,7 +3310,7 @@ const REAL_BUSINESSES = [
     tags: ["مجوهرات", "ذهب"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "محل مجوهرات وذهب على طريق Katy في Houston.", en: "Jewellery and gold shop on Katy Freeway in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -3320,7 +3320,7 @@ const REAL_BUSINESSES = [
     tags: ["مجوهرات", "ذهب"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "محل مجوهرات وذهب على ويستهايمر في Houston.", en: "Jewellery and gold shop on Westheimer in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -3330,7 +3330,7 @@ const REAL_BUSINESSES = [
     tags: ["مجوهرات", "ذهب"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "محل مجوهرات وذهب على هيلكروفت في Houston.", en: "Jewellery and gold shop on Hillcroft in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -3340,7 +3340,7 @@ const REAL_BUSINESSES = [
     tags: ["مجوهرات", "ذهب"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "محل مجوهرات وذهب على هيلكروفت في Houston.", en: "Jewellery and gold shop on Hillcroft in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -3350,7 +3350,7 @@ const REAL_BUSINESSES = [
     tags: ["مجوهرات", "ذهب"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "محل مجوهرات وذهب على هيلكروفت في Houston.", en: "Jewellery and gold shop on Hillcroft in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -3360,7 +3360,7 @@ const REAL_BUSINESSES = [
     tags: ["عطور", "عود", "بخور"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "محل عود وعطور وبخور على هيلكروفت في Houston.", en: "Arabian oud, perfume and incense shop on Hillcroft." },
     photos: 0, videos: 0,
   },
   {
@@ -3370,7 +3370,7 @@ const REAL_BUSINESSES = [
     tags: ["عطور عربية"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "محل عطور عربية وعود على ويستهايمر في Houston.", en: "Arabian oud and perfume shop on Westheimer in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -3380,7 +3380,7 @@ const REAL_BUSINESSES = [
     tags: ["عطور مخصصة", "زيوت", "دبي"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "محل عطور وزيوت عطرية على هاروين في Houston.", en: "Perfume and fragrance oils shop on Harwin in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -3390,7 +3390,7 @@ const REAL_BUSINESSES = [
     tags: ["عطور", "زيوت", "دبي"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "محل عطور وزيوت عطرية على ويستهايمر في Houston.", en: "Perfume and fragrance oils shop on Westheimer in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -3400,7 +3400,7 @@ const REAL_BUSINESSES = [
     tags: ["عطور", "بخور", "دشاديش", "ألماس"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "محل عطور وبخور ودشاديش على هيلكروفت في Houston.", en: "Perfume, incense and thobe shop on Hillcroft in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -3410,7 +3410,7 @@ const REAL_BUSINESSES = [
     tags: ["عطور زيتية", "بي بولد للعطور"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "محل عطور زيتية داخل HEB في Houston.", en: "Oil perfume shop inside HEB in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -3420,7 +3420,7 @@ const REAL_BUSINESSES = [
     tags: ["قاعة أفراح", "تموين", "قاعة فادي المتوسطية للمناسبات"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "قاعة أفراح ومناسبات مع تموين في Houston.", en: "Banquet hall with catering in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -3430,7 +3430,7 @@ const REAL_BUSINESSES = [
     tags: ["قاعة أفراح", "مناسبات"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "قاعة أفراح ومناسبات في Houston.", en: "Banquet and event hall in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -3440,7 +3440,7 @@ const REAL_BUSINESSES = [
     tags: ["قاعة أفراح", "مناسبات"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "قاعة أفراح ومناسبات في Houston.", en: "Wedding and reception venue in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -3450,7 +3450,7 @@ const REAL_BUSINESSES = [
     tags: ["قاعة أفراح", "مناسبات"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "قاعة أفراح ومناسبات في Houston.", en: "Wedding and event venue in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -3460,7 +3460,7 @@ const REAL_BUSINESSES = [
     tags: ["قاعة أفراح", "مناسبات"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "قاعة أفراح ومناسبات في Houston.", en: "Wedding and event venue in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -3470,7 +3470,7 @@ const REAL_BUSINESSES = [
     tags: ["قاعة مناسبات"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "قاعة مناسبات في Houston.", en: "Events venue in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -3480,7 +3480,7 @@ const REAL_BUSINESSES = [
     tags: ["وسيط عقاري", "سحر خطيب", "سحر الخطيب"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "وسيطة عقارية في Sugar Land بـTexas.", en: "Realtor in Sugar Land, Texas." },
     photos: 0, videos: 0,
   },
   {
@@ -3490,7 +3490,7 @@ const REAL_BUSINESSES = [
     tags: ["وسيط عقاري", "حنان إبراهيم – إن بي إيليت ريالتي"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "وسيطة عقارية في Cypress بـTexas.", en: "Realtor in Cypress, Texas." },
     photos: 0, videos: 0,
   },
   {
@@ -3500,7 +3500,7 @@ const REAL_BUSINESSES = [
     tags: ["وسيط عقاري", "مصطفى فايز", "مصطفى فائز"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "وسيط عقاري في Houston.", en: "Realtor in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -3510,7 +3510,7 @@ const REAL_BUSINESSES = [
     tags: ["وسيط عقاري", "إقبال حسناني"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "وسيط عقاري في Houston.", en: "Realtor in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -3520,7 +3520,7 @@ const REAL_BUSINESSES = [
     tags: ["وسيط عقاري", "ناصر قريشي"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "وسيط عقاري في Houston.", en: "Realtor in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -3530,7 +3530,7 @@ const REAL_BUSINESSES = [
     tags: ["خياطة", "تعديل ملابس"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "محل خياطة وتعديل ملابس على هيلكروفت في Houston.", en: "Clothing alterations shop on Hillcroft in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -3540,7 +3540,7 @@ const REAL_BUSINESSES = [
     tags: ["خياطة", "تفصيل", "خياط إيريك"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "خياط وتفصيل ملابس على هيلكروفت في Houston.", en: "Tailoring shop on Hillcroft in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -3550,7 +3550,7 @@ const REAL_BUSINESSES = [
     tags: ["خياطة", "تعديل ملابس"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "خياطة وتعديل ملابس على Richmond في Houston.", en: "Tailoring and alterations on Richmond in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -3560,7 +3560,7 @@ const REAL_BUSINESSES = [
     tags: ["خياطة", "تفصيل فساتين"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "خياط وتفصيل فساتين على هيلكروفت في Houston.", en: "Tailor and dressmaking on Hillcroft in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -3570,7 +3570,7 @@ const REAL_BUSINESSES = [
     tags: ["تأمين", "ضرائب"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "وكالة تأمين في Houston.", en: "Insurance agency in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -3580,7 +3580,7 @@ const REAL_BUSINESSES = [
     tags: ["تأمين", "خان"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "مكتب تأمين في Houston.", en: "Insurance office in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -3590,7 +3590,7 @@ const REAL_BUSINESSES = [
     tags: ["تأمين سيارات", "إيه آي يونايتد للتأمين"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "مكتب تأمين سيارات في Houston.", en: "Auto insurance office in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -3600,7 +3600,7 @@ const REAL_BUSINESSES = [
     tags: ["تأمين", "وكالة إيه-زد يونيون للتأمين"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "وكالة تأمين في Houston.", en: "Insurance agency in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -3610,7 +3610,7 @@ const REAL_BUSINESSES = [
     tags: ["تأمين", "ضرائب", "آنا للتأمين"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "مكتب تأمين في Houston.", en: "Insurance office in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -3620,7 +3620,7 @@ const REAL_BUSINESSES = [
     tags: ["تأمين", "خدمات متعددة"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "مكتب خدمات متعددة وتأمين في Houston.", en: "Multi-service and insurance office in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -3630,7 +3630,7 @@ const REAL_BUSINESSES = [
     tags: ["محاسبة", "ضرائب"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "مكتب محاسبة وضرائب في Houston.", en: "Accounting and tax office in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -3640,7 +3640,7 @@ const REAL_BUSINESSES = [
     tags: ["محاسبة", "ضرائب"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "محاسب قانوني للمحاسبة والضرائب في Houston.", en: "Certified public accountant in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -3650,7 +3650,7 @@ const REAL_BUSINESSES = [
     tags: ["محاسبة", "ضرائب"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "مكتب محاسبة وضرائب في Houston.", en: "Accounting and tax firm in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -3660,7 +3660,7 @@ const REAL_BUSINESSES = [
     tags: ["محاسبة", "ضرائب", "عمر كساني"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "محاسب قانوني للمحاسبة والضرائب في Houston.", en: "Certified public accountant in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -3670,7 +3670,7 @@ const REAL_BUSINESSES = [
     tags: ["محاسبة", "ضرائب", "عاكف"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "مكتب محاسبة وضرائب في Houston.", en: "Accounting and tax office in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -3680,7 +3680,7 @@ const REAL_BUSINESSES = [
     tags: ["محاسبة", "ضرائب", "شهزاد أختر – محاسب قانوني"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "محاسب قانوني للمحاسبة والضرائب في Houston.", en: "Certified public accountant in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -3690,17 +3690,17 @@ const REAL_BUSINESSES = [
     tags: ["خدمات جنائز إسلامية"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "خدمات جنائز إسلامية في Houston.", en: "Islamic funeral home in Houston." },
     photos: 0, videos: 0,
   },
   {
-    id: "b281", name: { ar: "خدمات الجنائز الإسلامية بهيوستن الكبرى (ISGH)", en: "ISGH Funeral Services / Islamic Funeral of Greater Houston" }, cat: "community",
+    id: "b281", name: { ar: "خدمات الجنائز الإسلامية بـHouston الكبرى (ISGH)", en: "ISGH Funeral Services / Islamic Funeral of Greater Houston" }, cat: "community",
     phone: "(713) 822-1091", address: "3505 S Dairy Ashford Rd Unit 159, Houston, TX 77082",
     hours: [[["00:00", "23:59"]], [["00:00", "23:59"]], [["00:00", "23:59"]], [["00:00", "23:59"]], [["00:00", "23:59"]], [["00:00", "23:59"]], [["00:00", "23:59"]]],
     tags: ["خدمات جنائز إسلامية"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "خدمات جنائز إسلامية في Houston.", en: "Islamic funeral services in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -3710,7 +3710,7 @@ const REAL_BUSINESSES = [
     tags: ["خدمات جنائز", "مقابر"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "جمعية لخدمات الجنائز والمقابر في Houston.", en: "Islamic funeral and cemetery services association in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -3720,7 +3720,7 @@ const REAL_BUSINESSES = [
     tags: ["مكتبة إسلامية", "ملابس", "دار السلام"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "مكتبة إسلامية وملابس في Houston.", en: "Islamic bookstore and clothing in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -3730,7 +3730,7 @@ const REAL_BUSINESSES = [
     tags: ["مكتبة إسلامية", "فنون", "القدس"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "مكتبة إسلامية وفنون في Houston.", en: "Islamic bookshop and arts store in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -3740,7 +3740,7 @@ const REAL_BUSINESSES = [
     tags: ["مكتبة", "هدايا إسلامية"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "متجر كتب وهدايا إسلامية في Houston.", en: "Islamic books and gifts shop in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -3750,7 +3750,7 @@ const REAL_BUSINESSES = [
     tags: ["مكتبة", "هدايا إسلامية"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "متجر كتب وهدايا إسلامية في Houston.", en: "Islamic bookstore and gift shop in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -3760,7 +3760,7 @@ const REAL_BUSINESSES = [
     tags: ["مكتبة إسلامية"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "مكتبة إسلامية في Houston.", en: "Islamic bookshop in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -3770,7 +3770,7 @@ const REAL_BUSINESSES = [
     tags: ["حضانة إسلامية", "طعام حلال"],
     attributes: ["halalMeat", "arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "أكاديمية تعليمية وحضانة في Houston.", en: "Learning academy and daycare in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -3780,7 +3780,7 @@ const REAL_BUSINESSES = [
     tags: ["حضانة إسلامية", "تحفيظ"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "حضانة ومركز تعلم مبكر في Richmond بـTexas.", en: "Daycare and early learning center in Richmond, Texas." },
     photos: 0, videos: 0,
   },
   {
@@ -3790,7 +3790,7 @@ const REAL_BUSINESSES = [
     tags: ["مدرسة", "حضانة إسلامية", "الحجاز"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "مدرسة وحضانة في Houston.", en: "School and daycare in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -3800,7 +3800,7 @@ const REAL_BUSINESSES = [
     tags: ["حضانة مونتيسوري إسلامية", "مؤمن", "مومن"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "حضانة مونتيسوري في Houston.", en: "Montessori preschool in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -3810,7 +3810,7 @@ const REAL_BUSINESSES = [
     tags: ["مدرسة تعليم قيادة", "خان"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "مدرسة تعليم قيادة في شارع هيلكروفت بHouston.", en: "Driving school on Hillcroft Avenue in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -3820,7 +3820,7 @@ const REAL_BUSINESSES = [
     tags: ["مدرسة تعليم قيادة", "خان"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "مدرسة تعليم قيادة في مدينة Katy.", en: "Driving school in Katy, Texas." },
     photos: 0, videos: 0,
   },
   {
@@ -3830,7 +3830,7 @@ const REAL_BUSINESSES = [
     tags: ["مدرسة تعليم قيادة"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "مدرسة تعليم قيادة في مدينة Katy.", en: "Driving school in Katy, Texas." },
     photos: 0, videos: 0,
   },
   {
@@ -3840,7 +3840,7 @@ const REAL_BUSINESSES = [
     tags: ["مدرسة تعليم قيادة"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "مدرسة تعليم قيادة في مدينة Katy.", en: "Driving school in Katy, Texas." },
     photos: 0, videos: 0,
   },
   {
@@ -3850,7 +3850,7 @@ const REAL_BUSINESSES = [
     tags: ["مدرسة تعليم قيادة"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "مدرسة تعليم قيادة في Houston.", en: "International driving school in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -3860,7 +3860,7 @@ const REAL_BUSINESSES = [
     tags: ["تصوير", "فيديو أعراس", "كاشف سيد", "كاشف"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "تصوير وفيديو أعراس في Richmond بـTexas.", en: "Wedding photography and video in Richmond, Texas." },
     photos: 0, videos: 0,
   },
   {
@@ -3870,7 +3870,7 @@ const REAL_BUSINESSES = [
     tags: ["تصوير", "فيديو أعراس"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "تصوير وفيديو أعراس في Cypress بـTexas.", en: "Wedding photography and video in Cypress, Texas." },
     photos: 0, videos: 0,
   },
   {
@@ -3880,7 +3880,7 @@ const REAL_BUSINESSES = [
     tags: ["يمني", "مطعم يمني", "مندي", "حضرموت"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "مطعم يمني في Houston يقدّم المندي.", en: "Yemeni restaurant in Houston serving mandi." },
     photos: 0, videos: 0,
   },
   {
@@ -3890,7 +3890,7 @@ const REAL_BUSINESSES = [
     tags: ["أرجيلة", "يمني", "مطعم يمني", "مندي كافيه اند جريل"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "مطعم مندي ومشاوي يمنية في Richmond.", en: "Yemeni mandi and grill spot in Richmond." },
     photos: 0, videos: 0,
   },
   {
@@ -3900,7 +3900,7 @@ const REAL_BUSINESSES = [
     tags: ["لاونج", "أرجيلة", "مطعم", "ريد سكاي لاونج أرجيلة ومشاوي"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "لاونج أرجيلة ومشاوي في Houston.", en: "Hookah lounge, bar and grill in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -3910,7 +3910,7 @@ const REAL_BUSINESSES = [
     tags: ["أرجيلة", "مطعم", "لاونج"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "مطعم ولاونج مع أرجيلة في Houston.", en: "Restaurant and hookah lounge in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -3920,7 +3920,7 @@ const REAL_BUSINESSES = [
     tags: ["مخبز", "مقهى تركي", "مودا كافيه ومخبز"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "مخبز ومقهى تركي في Richmond.", en: "Cafe and bakery in Richmond." },
     photos: 0, videos: 0,
   },
   {
@@ -3930,7 +3930,7 @@ const REAL_BUSINESSES = [
     tags: ["مخبز", "مقهى تركي حلال", "بيكرلاند كافيه"],
     attributes: ["halalMeat", "arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "مخبز ومقهى تركي حلال في Sugar Land.", en: "Bakery cafe in Sugar Land." },
     photos: 0, videos: 0,
   },
   {
@@ -3940,7 +3940,7 @@ const REAL_BUSINESSES = [
     tags: ["حلويات", "قهوة", "دبي"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "محل حلويات وقهوة في Houston.", en: "Sweets and coffee shop in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -3950,7 +3950,7 @@ const REAL_BUSINESSES = [
     tags: ["صيدلية"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "صيدلية في Houston.", en: "Pharmacy in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -3960,7 +3960,7 @@ const REAL_BUSINESSES = [
     tags: ["صيدلية"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "صيدلية في Houston.", en: "Pharmacy in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -3970,7 +3970,7 @@ const REAL_BUSINESSES = [
     tags: ["تنسيق", "ديكور مناسبات"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "تنسيق وديكور مناسبات وتأجير مستلزمات في Stafford.", en: "Event styling, decor and party rentals in Stafford." },
     photos: 0, videos: 0,
   },
   {
@@ -3980,7 +3980,7 @@ const REAL_BUSINESSES = [
     tags: ["تأجير طاولات", "كراسي", "معدات"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "تأجير طاولات وكراسي ومعدات حفلات في Houston.", en: "Tables, chairs and party equipment rentals in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -3990,7 +3990,7 @@ const REAL_BUSINESSES = [
     tags: ["مشاوي", "مطعم حلال", "يايا حلال جريل"],
     attributes: ["halalMeat", "arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "مطعم مشاوي حلال في Sugar Land.", en: "Halal grill restaurant in Sugar Land." },
     photos: 0, videos: 0,
   },
   {
@@ -4000,7 +4000,7 @@ const REAL_BUSINESSES = [
     tags: ["برجر حلال"],
     attributes: ["halalMeat", "arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "مطعم برجر حلال في Sugar Land.", en: "Halal burger restaurant in Sugar Land." },
     photos: 0, videos: 0,
   },
   {
@@ -4010,7 +4010,7 @@ const REAL_BUSINESSES = [
     tags: ["باكستاني", "مطعم باكستاني حلال", "مطبخ إيه أند إن الحلال"],
     attributes: ["halalMeat", "arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "مطبخ باكستاني حلال في Sugar Land.", en: "Halal Pakistani kitchen in Sugar Land." },
     photos: 0, videos: 0,
   },
   {
@@ -4020,7 +4020,7 @@ const REAL_BUSINESSES = [
     tags: ["مشاوي", "باكستاني", "مطعم باكستاني حلال"],
     attributes: ["halalMeat", "arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "مطعم باكستاني حلال ومشاوي في Sugar Land.", en: "Halal Pakistani grill restaurant in Sugar Land." },
     photos: 0, videos: 0,
   },
   {
@@ -4030,7 +4030,7 @@ const REAL_BUSINESSES = [
     tags: ["تموين", "باكستاني", "مطعم باكستاني"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "مطعم باكستاني مع خدمة تموين في Sugar Land.", en: "Pakistani restaurant with catering in Sugar Land." },
     photos: 0, videos: 0,
   },
   {
@@ -4040,7 +4040,7 @@ const REAL_BUSINESSES = [
     tags: ["برجر", "برياني حلال", "فانوس برجر وبرياني"],
     attributes: ["halalMeat", "arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "مطعم برجر وبرياني حلال في Sugar Land.", en: "Halal burger and biryani spot in Sugar Land." },
     photos: 0, videos: 0,
   },
   {
@@ -4050,7 +4050,7 @@ const REAL_BUSINESSES = [
     tags: ["شاورما", "مطعم حلال", "أجنحة", "حلال كيتشن آند وينجز"],
     attributes: ["halalMeat", "arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "مطعم حلال في Sugar Land يقدّم الشاورما والأجنحة.", en: "Halal restaurant in Sugar Land serving shawarma and wings." },
     photos: 0, videos: 0,
   },
   {
@@ -4060,7 +4060,7 @@ const REAL_BUSINESSES = [
     tags: ["هندي", "مطعم هندي حلال", "حيدر آباد", "حيدرآبادي"],
     attributes: ["halalMeat", "arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "مطبخ هندي حلال في Sugar Land.", en: "Halal Indian kitchen in Sugar Land." },
     photos: 0, videos: 0,
   },
   {
@@ -4070,7 +4070,7 @@ const REAL_BUSINESSES = [
     tags: ["مشاوي", "باكستاني", "مشاوي باكستانية", "ميروت باربكيو هاوس"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "مشاوي باكستانية في Sugar Land.", en: "Pakistani barbecue house in Sugar Land." },
     photos: 0, videos: 0,
   },
   {
@@ -4080,7 +4080,7 @@ const REAL_BUSINESSES = [
     tags: ["ساندويتشات حلال"],
     attributes: ["halalMeat", "arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "ساندويتشات حلال في Sugar Land.", en: "Halal sandwich spot in Sugar Land." },
     photos: 0, videos: 0,
   },
   {
@@ -4090,7 +4090,7 @@ const REAL_BUSINESSES = [
     tags: ["شاورما", "شاورما حلال", "أبو عمر"],
     attributes: ["halalMeat", "arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "مطعم شاورما حلال في Houston، منطقة Clear Lake.", en: "Halal shawarma restaurant in Clear Lake, Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -4100,7 +4100,7 @@ const REAL_BUSINESSES = [
     tags: ["مطعم حلال"],
     attributes: ["halalMeat", "arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "مطعم حلال في Pearland.", en: "Halal restaurant in Pearland." },
     photos: 0, videos: 0,
   },
   {
@@ -4110,7 +4110,7 @@ const REAL_BUSINESSES = [
     tags: ["شاورما", "دجاج مقلي", "شاورما حلال", "حلال فرايد تشيكن"],
     attributes: ["halalMeat", "arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "دجاج مقلي وشاورما حلال في Webster.", en: "Halal fried chicken and shawarma in Webster." },
     photos: 0, videos: 0,
   },
   {
@@ -4120,7 +4120,7 @@ const REAL_BUSINESSES = [
     tags: ["باكستاني", "مطعم باكستاني حلال"],
     attributes: ["halalMeat", "arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "مطعم هندي باكستاني حلال في Webster.", en: "Halal Indo-Pak restaurant in Webster." },
     photos: 0, videos: 0,
   },
   {
@@ -4130,7 +4130,7 @@ const REAL_BUSINESSES = [
     tags: ["بوفيه", "متوسطي", "مطعم متوسطي", "طبلية"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "مطعم متوسطي وبوفيه في Spring.", en: "Mediterranean restaurant and buffet in Spring." },
     photos: 0, videos: 0,
   },
   {
@@ -4140,7 +4140,7 @@ const REAL_BUSINESSES = [
     tags: ["أرجيلة", "متوسطي", "مطعم متوسطي", "لمى", "لاما"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "مطعم متوسطي مع أرجيلة في Shenandoah.", en: "Mediterranean restaurant with hookah in Shenandoah." },
     photos: 0, videos: 0,
   },
   {
@@ -4150,7 +4150,7 @@ const REAL_BUSINESSES = [
     tags: ["بوفيه", "متوسطي", "بوفيه متوسطي", "ديماسي", "دماسي"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "بوفيه متوسطي في The Woodlands.", en: "Mediterranean buffet in The Woodlands." },
     photos: 0, videos: 0,
   },
   {
@@ -4160,7 +4160,7 @@ const REAL_BUSINESSES = [
     tags: ["مشاوي", "عربة طعام", "شاورما", "مشاوي حلال"],
     attributes: ["halalMeat", "arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "عربة طعام للمشاوي والشاورما الحلال في Spring.", en: "Halal grill and shawarma food truck in Spring." },
     photos: 0, videos: 0,
   },
   {
@@ -4170,7 +4170,7 @@ const REAL_BUSINESSES = [
     tags: ["مشاوي", "عربة طعام", "مشاوي حلال"],
     attributes: ["halalMeat", "arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "عربة مشاوي حلال في Spring.", en: "Halal barbecue food truck in Spring." },
     photos: 0, videos: 0,
   },
   {
@@ -4180,7 +4180,7 @@ const REAL_BUSINESSES = [
     tags: ["برجر", "بيتزا حلال", "ستاك آند سلايس"],
     attributes: ["halalMeat", "arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "مطعم برجر وبيتزا حلال في Spring.", en: "Halal burger and pizza spot in Spring." },
     photos: 0, videos: 0,
   },
   {
@@ -4190,7 +4190,7 @@ const REAL_BUSINESSES = [
     tags: ["باكستاني", "صيني", "مطعم صيني", "باكستاني حلال", "ووك آند كراهي"],
     attributes: ["halalMeat", "arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "مطعم صيني باكستاني حلال في Spring.", en: "Halal Chinese-Pakistani restaurant in Spring." },
     photos: 0, videos: 0,
   },
   {
@@ -4200,7 +4200,7 @@ const REAL_BUSINESSES = [
     tags: ["باكستاني", "مطعم باكستاني حلال", "تارا جريل آند كافيه"],
     attributes: ["halalMeat", "arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "مطعم مشاوي وكافيه باكستاني حلال في Spring.", en: "Halal Pakistani grill and cafe in Spring." },
     photos: 0, videos: 0,
   },
   {
@@ -4210,7 +4210,7 @@ const REAL_BUSINESSES = [
     tags: ["عربة طعام", "برجر", "مأكولات حلال"],
     attributes: ["halalMeat", "arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "عربة طعام حلال في Conroe.", en: "Halal food truck in Conroe." },
     photos: 0, videos: 0,
   },
   {
@@ -4220,7 +4220,7 @@ const REAL_BUSINESSES = [
     tags: ["مشاوي", "مشاوي حلال", "بابيز حلال وودفاير جريل"],
     attributes: ["halalMeat", "arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "مشاوي حلال على الحطب في Magnolia.", en: "Halal woodfire grill in Magnolia." },
     photos: 0, videos: 0,
   },
   {
@@ -4230,7 +4230,7 @@ const REAL_BUSINESSES = [
     tags: ["عراقي", "مطعم عراقي", "سوبرماركت", "طازة فود ستايل"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "مطعم عراقي وسوبرماركت في Cypress.", en: "Iraqi restaurant and grocery in Cypress." },
     photos: 0, videos: 0,
   },
   {
@@ -4240,7 +4240,7 @@ const REAL_BUSINESSES = [
     tags: ["متوسطي", "مطعم متوسطي حلال"],
     attributes: ["halalMeat", "arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "مطعم مشاوي وكباب متوسطي حلال في Tomball.", en: "Halal Mediterranean kebab grill in Tomball." },
     photos: 0, videos: 0,
   },
   {
@@ -4250,7 +4250,7 @@ const REAL_BUSINESSES = [
     tags: ["أرجيلة", "متوسطي", "مطعم متوسطي"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "مشاوي متوسطية مع أرجيلة في Houston.", en: "Mediterranean grill with hookah in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -4260,7 +4260,7 @@ const REAL_BUSINESSES = [
     tags: ["سوبرماركت متوسطي", "لحوم حلال", "الصفا"],
     attributes: ["halalMeat", "arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "سوبرماركت متوسطي بلحوم حلال في Katy.", en: "Mediterranean market with halal meat in Katy." },
     photos: 0, videos: 0,
   },
   {
@@ -4270,7 +4270,7 @@ const REAL_BUSINESSES = [
     tags: ["بقالة", "لحوم حلال"],
     attributes: ["halalMeat", "arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "بقالة ولحوم حلال في Katy.", en: "Grocery and halal meat in Katy." },
     photos: 0, videos: 0,
   },
   {
@@ -4280,7 +4280,7 @@ const REAL_BUSINESSES = [
     tags: ["سوبرماركت تركي", "عربي", "اسطنبول", "إسطنبول"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "سوبرماركت تركي وعربي في Katy.", en: "Turkish supermarket in Katy." },
     photos: 0, videos: 0,
   },
   {
@@ -4290,7 +4290,7 @@ const REAL_BUSINESSES = [
     tags: ["ملحمة", "بقالة حلال", "مريم"],
     attributes: ["halalMeat", "arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "ملحمة وبقالة حلال في Katy.", en: "Halal meat and grocery in Katy." },
     photos: 0, videos: 0,
   },
   {
@@ -4300,7 +4300,7 @@ const REAL_BUSINESSES = [
     tags: ["ملحمة حلال", "الرحمن للحوم الحلال"],
     attributes: ["halalMeat", "arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "ملحمة حلال في Katy.", en: "Halal meat butcher in Katy." },
     photos: 0, videos: 0,
   },
   {
@@ -4310,7 +4310,7 @@ const REAL_BUSINESSES = [
     tags: ["بقالة", "لحوم حلال"],
     attributes: ["halalMeat", "arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "بقالة ولحوم حلال في Katy.", en: "Grocery bazaar and halal meat in Katy." },
     photos: 0, videos: 0,
   },
   {
@@ -4320,7 +4320,7 @@ const REAL_BUSINESSES = [
     tags: ["بقالة", "لحوم حلال", "طيبة"],
     attributes: ["halalMeat", "arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "بقالة ولحوم حلال في Katy.", en: "Grocery and halal meat in Katy." },
     photos: 0, videos: 0,
   },
   {
@@ -4330,7 +4330,7 @@ const REAL_BUSINESSES = [
     tags: ["ملحمة", "بقالة حلال", "مهراجا"],
     attributes: ["halalMeat", "arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "ملحمة وبقالة حلال في Katy.", en: "Halal meat bazaar and grocery in Katy." },
     photos: 0, videos: 0,
   },
   {
@@ -4340,7 +4340,7 @@ const REAL_BUSINESSES = [
     tags: ["ملحمة", "مطعم"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "ملحمة حلال ومطعم في Houston.", en: "Halal meat market and restaurant in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -4350,7 +4350,7 @@ const REAL_BUSINESSES = [
     tags: ["تركي", "مطعم تركي حلال", "باشا"],
     attributes: ["halalMeat", "arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "مطعم تركي حلال في Houston.", en: "Halal Turkish restaurant in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -4360,7 +4360,7 @@ const REAL_BUSINESSES = [
     tags: ["تركي", "مطعم تركي", "إمباير جريل التركي"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "مطعم مشاوي تركية في Houston.", en: "Turkish grill restaurant in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -4370,7 +4370,7 @@ const REAL_BUSINESSES = [
     tags: ["تركي", "مطعم تركي", "عينتاب"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "مطعم تركي في Houston.", en: "Turkish restaurant in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -4380,7 +4380,7 @@ const REAL_BUSINESSES = [
     tags: ["فطور", "تركي", "مطعم تركي", "جريل دي سي"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "مطعم تركي وفطور تركي في Richmond.", en: "Turkish restaurant and breakfast in Richmond." },
     photos: 0, videos: 0,
   },
   {
@@ -4390,7 +4390,7 @@ const REAL_BUSINESSES = [
     tags: ["عربة طعام", "تركي", "دونر تركي"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "عربة طعام تركية للدونر في Houston.", en: "Turkish doner food truck in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -4400,7 +4400,7 @@ const REAL_BUSINESSES = [
     tags: ["فطور", "تركي", "فطور تركي", "مزرعة", "مطعم"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "مطعم ومزرعة يقدّم فطوراً تركياً في Rosharon.", en: "Ranch restaurant serving Turkish breakfast in Rosharon." },
     photos: 0, videos: 0,
   },
   {
@@ -4410,7 +4410,7 @@ const REAL_BUSINESSES = [
     tags: ["باكستاني", "مطعم باكستاني حلال"],
     attributes: ["halalMeat", "arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "مطعم باكستاني حلال للكباب في Houston.", en: "Halal Pakistani kabab restaurant in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -4420,7 +4420,7 @@ const REAL_BUSINESSES = [
     tags: ["باكستاني", "مطعم باكستاني", "كافيه", "بسم الله"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "مطعم وكافيه باكستاني في Houston.", en: "Pakistani restaurant and cafe in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -4430,7 +4430,7 @@ const REAL_BUSINESSES = [
     tags: ["أفغاني", "مطعم أفغاني حلال", "قندهار", "قندهاري"],
     attributes: ["halalMeat", "arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "مطعم أفغاني حلال في Houston.", en: "Halal Afghan restaurant in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -4440,7 +4440,7 @@ const REAL_BUSINESSES = [
     tags: ["كافيه", "شاي", "مقبلات"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "كافيه شاي ومقبلات في Houston.", en: "Tea cafe with snacks in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -4450,7 +4450,7 @@ const REAL_BUSINESSES = [
     tags: ["بوفيه", "باكستاني", "مطعم باكستاني", "مطبخ أشار"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "مطعم باكستاني وبوفيه في Houston.", en: "Pakistani restaurant and buffet in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -4460,7 +4460,7 @@ const REAL_BUSINESSES = [
     tags: ["باكستاني", "مطعم باكستاني", "قاعة مناسبات"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "مطعم باكستاني وقاعة مناسبات في Houston.", en: "Pakistani restaurant and event hall in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -4470,7 +4470,7 @@ const REAL_BUSINESSES = [
     tags: ["بوفيه", "مطعم", "بوفيه حلال", "تمبورا جريل"],
     attributes: ["halalMeat", "arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "مطعم مشاوي وبوفيه حلال في Houston.", en: "Halal grill and buffet restaurant in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -4480,7 +4480,7 @@ const REAL_BUSINESSES = [
     tags: ["مطعم برياني حلال"],
     attributes: ["halalMeat", "arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "مطعم برياني حلال في Houston.", en: "Halal biryani restaurant in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -4490,7 +4490,7 @@ const REAL_BUSINESSES = [
     tags: ["بيع", "صيانة جوالات"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "بيع وصيانة جوالات على هيلكروفت في Houston.", en: "Phone sales and repair on Hillcroft in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -4500,7 +4500,7 @@ const REAL_BUSINESSES = [
     tags: ["بيع", "صيانة جوالات"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "بيع وصيانة جوالات على هاروين في Houston.", en: "Smartphone sales and repair on Harwin in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -4510,7 +4510,7 @@ const REAL_BUSINESSES = [
     tags: ["صيانة", "فك شفرة جوالات", "إي كي وايرلس"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "صيانة وفك شفرة جوالات على هيلكروفت في Houston.", en: "Phone repair and unlocking on Hillcroft in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -4520,7 +4520,7 @@ const REAL_BUSINESSES = [
     tags: ["بيع جوالات", "متجر إيه إيه إيه للجوالات"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "متجر بيع جوالات على هيلكروفت في Houston.", en: "Phone store on Hillcroft in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -4530,7 +4530,7 @@ const REAL_BUSINESSES = [
     tags: ["بيع", "صيانة جوالات", "تي آي سي وايرلس"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "بيع وصيانة جوالات على هيلكروفت في Houston.", en: "Phone sales and repair on Hillcroft in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -4540,7 +4540,7 @@ const REAL_BUSINESSES = [
     tags: ["بيع", "صيانة جوالات"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "بيع وصيانة جوالات على هيلكروفت في Houston.", en: "Phone sales and repair on Hillcroft in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -4550,7 +4550,7 @@ const REAL_BUSINESSES = [
     tags: ["إلكترونيات", "خطوط جوال"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "إلكترونيات وخطوط جوال على هيلكروفت في Houston.", en: "Electronics and mobile plans on Hillcroft in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -4560,7 +4560,7 @@ const REAL_BUSINESSES = [
     tags: ["سجاد شرقي", "فارسي", "تكساس"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "متجر سجاد شرقي وفارسي على فوندرن في Houston.", en: "Oriental and Persian rug store on Fondren in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -4570,7 +4570,7 @@ const REAL_BUSINESSES = [
     tags: ["سجاد", "تنظيف", "ترميم"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "سجاد شرقي مع تنظيف وترميم على فوندرن في Houston.", en: "Oriental rugs with cleaning and repair on Fondren in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -4580,7 +4580,7 @@ const REAL_BUSINESSES = [
     tags: ["سجاد شرقي"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "متجر سجاد شرقي على فوندرن في Houston.", en: "Oriental rug store on Fondren in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -4590,7 +4590,7 @@ const REAL_BUSINESSES = [
     tags: ["سجاد", "أدوات منزلية", "أطقم شاي عربية"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "أدوات منزلية وسجاد وأطقم شاي عربية في Houston.", en: "Housewares, rugs and Arabic tea sets in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -4600,7 +4600,7 @@ const REAL_BUSINESSES = [
     tags: ["سجاد", "تنظيف", "ترميم", "أبراهام", "إبراهيم"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "سجاد شرقي مع تنظيف وترميم على ويستهايمر في Houston.", en: "Oriental rugs with cleaning and repair on Westheimer in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -4610,7 +4610,7 @@ const REAL_BUSINESSES = [
     tags: ["سجاد شرقي"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "متجر سجاد شرقي على ويستهايمر في Houston.", en: "Oriental rug store on Westheimer in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -4620,7 +4620,7 @@ const REAL_BUSINESSES = [
     tags: ["سجاد شرقي"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "معرض سجاد شرقي على ويستهايمر في Houston.", en: "Oriental rug gallery on Westheimer in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -4630,7 +4630,7 @@ const REAL_BUSINESSES = [
     tags: ["مشاوي", "شاورما", "مشاوي حلال", "شاورما وكباب فريش"],
     attributes: ["halalMeat", "arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "مطعم شاورما ومشاوي حلال في Houston.", en: "Halal shawarma and kebab grill in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -4640,7 +4640,7 @@ const REAL_BUSINESSES = [
     tags: ["مشاوي", "عربة طعام", "عراقي", "كباب عراقي"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "عربة طعام عراقية للكباب في Houston.", en: "Iraqi kabab food truck in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -4650,7 +4650,7 @@ const REAL_BUSINESSES = [
     tags: ["عربة طعام", "شاورما", "شاورما مقلية", "رولات"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "عربة طعام للرولات والشاورما في Houston.", en: "Rolls and shawarma food truck in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -4660,7 +4660,7 @@ const REAL_BUSINESSES = [
     tags: ["مشاوي", "عربة طعام", "شاورما"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "عربة طعام للمشاوي والشاورما في Sugar Land.", en: "Grill and shawarma food truck in Sugar Land." },
     photos: 0, videos: 0,
   },
   {
@@ -4670,7 +4670,7 @@ const REAL_BUSINESSES = [
     tags: ["مشاوي", "باربكيو حلال", "تشين سموكر أوربان حلال باربكيو"],
     attributes: ["halalMeat", "arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "مشاوي وباربكيو حلال في Houston.", en: "Halal urban barbecue grill in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -4680,7 +4680,7 @@ const REAL_BUSINESSES = [
     tags: ["مطعم إيغوري حلال", "مطبخ توران الإيغوري"],
     attributes: ["halalMeat", "arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "مطعم إيغوري حلال في Houston.", en: "Halal Uyghur restaurant in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -4690,7 +4690,7 @@ const REAL_BUSINESSES = [
     tags: ["صيني", "مطعم صيني حلال", "بيت ما الصيني الحلال"],
     attributes: ["halalMeat", "arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "مطعم صيني حلال في Houston.", en: "Chinese halal restaurant in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -4700,7 +4700,7 @@ const REAL_BUSINESSES = [
     tags: ["أفغاني", "مطعم أفغاني حلال", "بيت كباب تولو"],
     attributes: ["halalMeat", "arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "مطعم أفغاني حلال للكباب في Houston.", en: "Halal Afghan kabab house in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -4710,7 +4710,7 @@ const REAL_BUSINESSES = [
     tags: ["أفغاني", "مطعم أفغاني حلال"],
     attributes: ["halalMeat", "arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "مطعم أفغاني حلال في Houston.", en: "Halal Afghan restaurant in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -4720,7 +4720,7 @@ const REAL_BUSINESSES = [
     tags: ["مشاوي", "عربة طعام", "باكستاني", "رولات", "مشاوي باكستانية"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "عربة طعام باكستانية للمشاوي والرولات في Houston.", en: "Pakistani grill and rolls food truck in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -4730,7 +4730,7 @@ const REAL_BUSINESSES = [
     tags: ["برجر", "مقبلات حلال", "حلال برجر بايت"],
     attributes: ["halalMeat", "arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "مطعم برجر حلال في Houston.", en: "Halal burger spot in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -4740,7 +4740,7 @@ const REAL_BUSINESSES = [
     tags: ["شاورما", "جيروز", "شاورما حلال"],
     attributes: ["halalMeat", "arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "مطعم جيروز وشاورما حلال في Pearland.", en: "Halal gyro and shawarma spot in Pearland." },
     photos: 0, videos: 0,
   },
   {
@@ -4750,7 +4750,7 @@ const REAL_BUSINESSES = [
     tags: ["لبناني", "متوسطي", "مطعم لبناني", "أرابيلا"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "مطبخ ومشاوي متوسطية ولبنانية في Pearland.", en: "Mediterranean and Lebanese kitchen and grill in Pearland." },
     photos: 0, videos: 0,
   },
   {
@@ -4760,7 +4760,7 @@ const REAL_BUSINESSES = [
     tags: ["متوسطي", "مطعم متوسطي", "بورتارا فريش مديترينيان"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "مطعم متوسطي في Pearland.", en: "Mediterranean restaurant in Pearland." },
     photos: 0, videos: 0,
   },
   {
@@ -4770,7 +4770,7 @@ const REAL_BUSINESSES = [
     tags: ["شاورما", "فلافل"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "مطعم شاورما وفلافل في Houston.", en: "Shawarma and falafel spot in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -4780,7 +4780,7 @@ const REAL_BUSINESSES = [
     tags: ["متوسطي", "مطعم متوسطي"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "مطعم متوسطي في Rosharon.", en: "Mediterranean restaurant in Rosharon." },
     photos: 0, videos: 0,
   },
   {
@@ -4790,7 +4790,7 @@ const REAL_BUSINESSES = [
     tags: ["لاونج", "أرجيلة", "مطعم", "شيشة لاونج ومشاوي"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "لاونج أرجيلة ومشاوي في Sugar Land.", en: "Hookah lounge and grill in Sugar Land." },
     photos: 0, videos: 0,
   },
   {
@@ -4800,7 +4800,7 @@ const REAL_BUSINESSES = [
     tags: ["أرجيلة", "مطعم", "لاونج"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "مطعم ولاونج أرجيلة في Sugar Land.", en: "Restaurant and hookah lounge in Sugar Land." },
     photos: 0, videos: 0,
   },
   {
@@ -4810,7 +4810,7 @@ const REAL_BUSINESSES = [
     tags: ["كافيه", "أرجيلة", "ميوز كافيه"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "كافيه وأرجيلة في Sugar Land.", en: "Cafe with hookah in Sugar Land." },
     photos: 0, videos: 0,
   },
   {
@@ -4820,7 +4820,7 @@ const REAL_BUSINESSES = [
     tags: ["أرجيلة", "مطعم", "ميستيك بيسترو أند هوكا"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "مطعم بيسترو وأرجيلة في Richmond.", en: "Bistro restaurant with hookah in Richmond." },
     photos: 0, videos: 0,
   },
   {
@@ -4830,7 +4830,7 @@ const REAL_BUSINESSES = [
     tags: ["لاونج", "أرجيلة", "كويلا"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "لاونج أرجيلة ومشاوي في Richmond.", en: "Hookah bar and grill in Richmond." },
     photos: 0, videos: 0,
   },
   {
@@ -4840,7 +4840,7 @@ const REAL_BUSINESSES = [
     tags: ["لاونج", "أرجيلة"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "لاونج أرجيلة ومشاوي في Richmond.", en: "Hookah bar and grill in Richmond." },
     photos: 0, videos: 0,
   },
   {
@@ -4850,7 +4850,7 @@ const REAL_BUSINESSES = [
     tags: ["أرجيلة", "مأكولات حلال", "أو تو كافيه أرجيلة"],
     attributes: ["halalMeat", "arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "كافيه أرجيلة بمأكولات حلال في Houston.", en: "Hookah cafe with halal food in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -4860,7 +4860,7 @@ const REAL_BUSINESSES = [
     tags: ["لاونج", "أرجيلة", "مشاوي", "إنفيوز لاونج أرجيلة وكافيه"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "لاونج أرجيلة وكافيه ومشاوي في Spring.", en: "Hookah lounge and cafe in Spring." },
     photos: 0, videos: 0,
   },
   {
@@ -4870,7 +4870,7 @@ const REAL_BUSINESSES = [
     tags: ["لاونج", "أرجيلة", "بلو سكاي لاونج أرجيلة"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "لاونج أرجيلة في Spring.", en: "Hookah lounge in Spring." },
     photos: 0, videos: 0,
   },
   {
@@ -4880,7 +4880,7 @@ const REAL_BUSINESSES = [
     tags: ["قهوة يمنية", "كافيه", "حراز كوفي هاوس (سايبرس)"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "كافيه قهوة يمنية في Cypress.", en: "Yemeni coffee house in Cypress." },
     photos: 0, videos: 0,
   },
   {
@@ -4890,7 +4890,7 @@ const REAL_BUSINESSES = [
     tags: ["قهوة", "عسل", "بهارات يمنية"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "قهوة وعسل وبهارات يمنية في Houston.", en: "Yemeni coffee, honey and spices in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -4900,7 +4900,7 @@ const REAL_BUSINESSES = [
     tags: ["قهوة يمنية", "كافيه", "أروى"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "كافيه قهوة يمنية في Houston.", en: "Coffee cafe in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -4910,7 +4910,7 @@ const REAL_BUSINESSES = [
     tags: ["بن يمني", "محمصة", "جملة", "العقيق"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "محمصة بن يمني وبيع بالجملة في Houston.", en: "Yemeni coffee roastery and wholesale in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -4920,7 +4920,7 @@ const REAL_BUSINESSES = [
     tags: ["كنافة (فلسطينية)"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "محل كنافة فلسطينية في Houston.", en: "Kunafa shop in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -4930,7 +4930,7 @@ const REAL_BUSINESSES = [
     tags: ["ملحمة", "سوبرماركت عربي", "مكة"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "ملحمة حلال وسوبرماركت عربي في Houston.", en: "Halal meat market and supermarket in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -4940,7 +4940,7 @@ const REAL_BUSINESSES = [
     tags: ["ملحمة", "بقالة حلال", "هولي لاند"],
     attributes: ["halalMeat", "arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "ملحمة حلال وبقالة في Houston.", en: "Halal meat and grocery store in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -4950,7 +4950,7 @@ const REAL_BUSINESSES = [
     tags: ["سوبرماركت عالمي حلال"],
     attributes: ["halalMeat", "arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "سوبرماركت عالمي حلال في Houston.", en: "International halal food market in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -4960,7 +4960,7 @@ const REAL_BUSINESSES = [
     tags: ["بقالة", "لحوم حلال"],
     attributes: ["halalMeat", "arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "بقالة ولحوم حلال في Cypress.", en: "Grocery and halal meat in Cypress." },
     photos: 0, videos: 0,
   },
   {
@@ -4970,7 +4970,7 @@ const REAL_BUSINESSES = [
     tags: ["مزرعة ذبح", "أضاحي حلال"],
     attributes: ["halalMeat", "arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "مزرعة ذبح وأضاحي حلال في Tomball.", en: "Halal slaughter and qurbani farm in Tomball." },
     photos: 0, videos: 0,
   },
   {
@@ -4980,7 +4980,7 @@ const REAL_BUSINESSES = [
     tags: ["حلاق رجالي", "علي بابا", "عليبابا"],
     attributes: ["men", "arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "حلاق رجالي في Sugar Land.", en: "Men's barber in Sugar Land." },
     photos: 0, videos: 0,
   },
   {
@@ -4990,7 +4990,7 @@ const REAL_BUSINESSES = [
     tags: ["حلاق رجالي"],
     attributes: ["men", "arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "حلاق رجالي في Sugar Land.", en: "Men's barber in Sugar Land." },
     photos: 0, videos: 0,
   },
   {
@@ -5000,7 +5000,7 @@ const REAL_BUSINESSES = [
     tags: ["حلاق رجالي"],
     attributes: ["men", "arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "حلاق رجالي في Sugar Land.", en: "Men's barber shop in Sugar Land." },
     photos: 0, videos: 0,
   },
   {
@@ -5010,7 +5010,7 @@ const REAL_BUSINESSES = [
     tags: ["حلاق رجالي"],
     attributes: ["men", "arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "حلاق رجالي في Sugar Land.", en: "Men's barber lounge in Sugar Land." },
     photos: 0, videos: 0,
   },
   {
@@ -5020,7 +5020,7 @@ const REAL_BUSINESSES = [
     tags: ["حلاق رجالي (عربي)"],
     attributes: ["men", "arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "حلاق رجالي عربي في Katy.", en: "Arabic men's barbershop in Katy." },
     photos: 0, videos: 0,
   },
   {
@@ -5030,7 +5030,7 @@ const REAL_BUSINESSES = [
     tags: ["حلاق رجالي", "فيديد أنجلز باربر شوب"],
     attributes: ["men", "arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "حلاق رجالي في Katy.", en: "Men's barbershop in Katy." },
     photos: 0, videos: 0,
   },
   {
@@ -5040,7 +5040,7 @@ const REAL_BUSINESSES = [
     tags: ["سوبرماركت", "مخبز عراقي", "دجلة"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "بقالة ومخبز عراقي في Houston.", en: "Grocery and Iraqi bakery in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -5050,7 +5050,7 @@ const REAL_BUSINESSES = [
     tags: ["لبناني", "مطعم", "دلي لبناني", "أربيز فينيسيا ديلي"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "دلي ومطعم لبناني في Houston.", en: "Lebanese deli and restaurant in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -5060,7 +5060,7 @@ const REAL_BUSINESSES = [
     tags: ["يمني", "مطعم يمني", "رتاج"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "مطعم يمني في Houston.", en: "Yemeni restaurant in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -5070,7 +5070,7 @@ const REAL_BUSINESSES = [
     tags: ["أفغاني", "مطعم أفغاني حلال"],
     attributes: ["halalMeat", "arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "مطعم أفغاني حلال في Houston.", en: "Halal Afghan restaurant in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -5080,7 +5080,7 @@ const REAL_BUSINESSES = [
     tags: ["بوفيه", "متوسطي", "مطعم متوسطي", "فادي للمشاوي المتوسطية"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "مشاوي متوسطية وبوفيه في ميرلاند، Houston.", en: "Mediterranean grill and buffet in Meyerland, Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -5090,7 +5090,7 @@ const REAL_BUSINESSES = [
     tags: ["سوبرماركت", "مخبز تركي"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "بقالة ومخبز تركي ولحوم حلال في Houston.", en: "Grocery, bakery and halal meat in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -5100,7 +5100,7 @@ const REAL_BUSINESSES = [
     tags: ["سوبرماركت تركي", "تورك ماركتي"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "سوبرماركت تركي في Houston.", en: "Turkish market in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -5110,7 +5110,7 @@ const REAL_BUSINESSES = [
     tags: ["مخبز أفغاني", "نان طازج"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "مخبز أفغاني ونان طازج في Houston.", en: "Afghan bakery with fresh naan in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -5120,7 +5120,7 @@ const REAL_BUSINESSES = [
     tags: ["فساتين", "مجوهرات مناسبات", "فريحة"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "فساتين ومجوهرات مناسبات في Houston.", en: "Occasion dresses and jewelry studio in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -5130,7 +5130,7 @@ const REAL_BUSINESSES = [
     tags: ["أرجيلة", "جملة", "تجزئة"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "أرجيلة بالجملة والتجزئة في Houston.", en: "Hookah wholesale shop in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -5140,7 +5140,7 @@ const REAL_BUSINESSES = [
     tags: ["محل أرجيلة", "دخان", "سموك آلي"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "محل دخان وأرجيلة في Houston.", en: "Smoke shop in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -5150,7 +5150,7 @@ const REAL_BUSINESSES = [
     tags: ["محل أرجيلة", "سيجار", "سموكيز"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "محل دخان وسيجار وأرجيلة في Houston.", en: "Smoke and cigar shop in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -5160,7 +5160,7 @@ const REAL_BUSINESSES = [
     tags: ["محل أرجيلة", "دخان", "هَب سموك آند فيب"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "محل دخان وفيب وأرجيلة في Houston.", en: "Smoke and vape shop in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -5170,7 +5170,7 @@ const REAL_BUSINESSES = [
     tags: ["تظليل زجاج سيارات"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "تظليل زجاج سيارات على هيلكروفت في Houston.", en: "Car window tinting on Hillcroft in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -5180,7 +5180,7 @@ const REAL_BUSINESSES = [
     tags: ["زجاج سيارات"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "تركيب وتبديل زجاج سيارات على هيلكروفت في Houston.", en: "Auto glass shop on Hillcroft in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -5190,7 +5190,7 @@ const REAL_BUSINESSES = [
     tags: ["صوتيات", "كاميرات سيارات"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "صوتيات وكاميرات سيارات على هيلكروفت في Houston.", en: "Car audio and cameras on Hillcroft in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -5200,7 +5200,7 @@ const REAL_BUSINESSES = [
     tags: ["معرض سيارات مستعملة", "جاينت أوتو مارت"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "معرض سيارات مستعملة على هيلكروفت في Houston.", en: "Used car dealership on Hillcroft in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -5210,7 +5210,7 @@ const REAL_BUSINESSES = [
     tags: ["معرض سيارات", "تي إكس أوتو غروب هيوستن"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "معرض سيارات على Richmond في Houston.", en: "Car dealership on Richmond in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -5220,7 +5220,7 @@ const REAL_BUSINESSES = [
     tags: ["طباعة", "لافتات", "إتش للافتات والطباعة"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "خدمات طباعة ولافتات في شارع هاروين بHouston.", en: "Printing and signage shop on Harwin Drive, Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -5230,7 +5230,7 @@ const REAL_BUSINESSES = [
     tags: ["طباعة", "لافتات"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "خدمات طباعة ولافتات في شارع هاروين بHouston.", en: "Printing and signage shop on Harwin Drive, Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -5240,7 +5240,7 @@ const REAL_BUSINESSES = [
     tags: ["طباعة", "لافتات"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "محل لافتات وطباعة في شارع هاروين بHouston.", en: "Signage and printing shop on Harwin Drive, Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -5250,7 +5250,7 @@ const REAL_BUSINESSES = [
     tags: ["طباعة", "لافتات", "تيشيرتات"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "لافتات وطباعة وتيشيرتات في شارع هاروين بHouston.", en: "Signs, printing and T-shirts on Harwin Drive, Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -5260,7 +5260,7 @@ const REAL_BUSINESSES = [
     tags: ["طباعة", "تيشيرتات"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "خدمات طباعة وتيشيرتات في شارع هاروين بHouston.", en: "Printing and T-shirt shop on Harwin Drive, Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -5270,7 +5270,7 @@ const REAL_BUSINESSES = [
     tags: ["طباعة بانرات سريعة", "آي برنت بانر للطباعة"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "طباعة بانرات ولافتات في شارع هاروين بHouston.", en: "Banner and sign printing on Harwin Drive, Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -5280,7 +5280,7 @@ const REAL_BUSINESSES = [
     tags: ["أرضيات", "رخام", "مقاولات"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "أرضيات ورخام ومقاولات تجديد في League City.", en: "Flooring, granite and remodeling in League City." },
     photos: 0, videos: 0,
   },
   {
@@ -5290,7 +5290,7 @@ const REAL_BUSINESSES = [
     tags: ["رخام", "جرانيت"],
     attributes: ["arabicSpoken"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "جرانيت ورخام في Houston.", en: "Granite and marble in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -5301,7 +5301,7 @@ const REAL_BUSINESSES = [
     attributes: ["outFreeEntry", "outOwnFood", "outOutdoor", "outLake", "outBoats", "outFreeParking", "outBigPark", "outPark"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
     nonCommercial: true,
-    desc: { ar: "", en: "" },
+    desc: { ar: "حديقة عامة كبرى مع بحيرة في Houston.", en: "Large public park with a lake in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -5312,7 +5312,7 @@ const REAL_BUSINESSES = [
     attributes: ["outFreeEntry", "outOwnFood", "outOutdoor", "outFreeParking", "outTrails", "outPark"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
     nonCommercial: true,
-    desc: { ar: "", en: "" },
+    desc: { ar: "حديقة عامة واسعة مع مسارات مشي وركض في Houston.", en: "Large public park with walking and running trails in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -5323,7 +5323,7 @@ const REAL_BUSINESSES = [
     attributes: ["outFreeEntry", "outOwnFood", "outOutdoor", "outBoats", "outFreeParking", "outTrails", "outPark"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
     nonCommercial: true,
-    desc: { ar: "", en: "" },
+    desc: { ar: "حديقة عامة ومسارات مشي قرب وسط Houston.", en: "Public park with walking trails near downtown Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -5334,7 +5334,7 @@ const REAL_BUSINESSES = [
     attributes: ["outFreeEntry", "outOwnFood", "outOutdoor", "outFreeParking", "outPark"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
     nonCommercial: true,
-    desc: { ar: "", en: "" },
+    desc: { ar: "حديقة عامة في وسط مدينة Houston.", en: "Public park in downtown Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -5345,7 +5345,7 @@ const REAL_BUSINESSES = [
     attributes: ["outFreeEntry", "outOwnFood", "outOutdoor", "outFreeParking", "outPark"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
     nonCommercial: true,
-    desc: { ar: "", en: "" },
+    desc: { ar: "حديقة عامة مع مساحات للنزهات في Houston.", en: "Public park with picnic areas in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -5356,7 +5356,7 @@ const REAL_BUSINESSES = [
     attributes: ["outFreeEntry", "outOwnFood", "outOutdoor", "outKidsPlay", "outFreeParking", "outPlayground", "outPark"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
     nonCommercial: true,
-    desc: { ar: "", en: "" },
+    desc: { ar: "حديقة عائلية مع ملاعب أطفال في Houston.", en: "Family park with a playground in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -5367,7 +5367,7 @@ const REAL_BUSINESSES = [
     attributes: ["outFreeEntry", "outOwnFood", "outOutdoor", "outFreeParking", "outPark"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
     nonCommercial: true,
-    desc: { ar: "", en: "" },
+    desc: { ar: "حديقة عامة بأعمال فسيفساء فنية في Houston.", en: "Public park with mosaic artwork in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -5378,7 +5378,7 @@ const REAL_BUSINESSES = [
     attributes: ["outFreeEntry", "outOwnFood", "outOutdoor", "outFreeParking", "outTrails"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
     nonCommercial: true,
-    desc: { ar: "", en: "" },
+    desc: { ar: "مسارات مشي ودراجات على امتداد المجرى المائي في Houston.", en: "Walking and biking trails along the bayou in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -5389,7 +5389,7 @@ const REAL_BUSINESSES = [
     attributes: ["outFreeEntry", "outKidsPlay", "outFreeParking", "outSplashPad", "outPlayground"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
     nonCommercial: true,
-    desc: { ar: "", en: "" },
+    desc: { ar: "ملاعب أطفال ومنطقة ألعاب مائية داخل حديقة هيرمان.", en: "Playground and splash pad area inside Hermann Park." },
     photos: 0, videos: 0,
   },
   {
@@ -5400,7 +5400,7 @@ const REAL_BUSINESSES = [
     attributes: ["outFreeEntry", "outKidsPlay", "outFreeParking", "outSplashPad", "outPlayground"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
     nonCommercial: true,
-    desc: { ar: "", en: "" },
+    desc: { ar: "ملعب أطفال ومنطقة ألعاب مائية في Houston.", en: "Playground and splash pad in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -5411,7 +5411,7 @@ const REAL_BUSINESSES = [
     attributes: ["outFreeEntry", "outOwnFood", "outOutdoor", "outLake", "outFreeParking", "outNature"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
     nonCommercial: true,
-    desc: { ar: "", en: "" },
+    desc: { ar: "محمية طبيعية مع بحيرة في Sugar Land.", en: "Nature park with a lake in Sugar Land." },
     photos: 0, videos: 0,
   },
   {
@@ -5422,7 +5422,7 @@ const REAL_BUSINESSES = [
     attributes: ["outFreeEntry", "outOwnFood", "outOutdoor", "outFreeParking", "outTrails", "outPark"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
     nonCommercial: true,
-    desc: { ar: "", en: "" },
+    desc: { ar: "حديقة عامة مع مسارات مشي في Sugar Land.", en: "Public park with walking trails in Sugar Land." },
     photos: 0, videos: 0,
   },
   {
@@ -5433,7 +5433,7 @@ const REAL_BUSINESSES = [
     attributes: ["outFreeEntry", "outOwnFood", "outOutdoor", "outBoats", "outFreeParking", "outTrails", "outPark"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
     nonCommercial: true,
-    desc: { ar: "", en: "" },
+    desc: { ar: "حديقة عامة مع مسارات مشي في Sugar Land.", en: "Public park with walking trails in Sugar Land." },
     photos: 0, videos: 0,
   },
   {
@@ -5444,7 +5444,7 @@ const REAL_BUSINESSES = [
     attributes: ["outFreeEntry", "outKidsPlay", "outFreeParking", "outSplashPad", "outPlayground"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
     nonCommercial: true,
-    desc: { ar: "", en: "" },
+    desc: { ar: "منطقة ألعاب مائية وملعب أطفال في Sugar Land.", en: "Splash pad and playground in Sugar Land." },
     photos: 0, videos: 0,
   },
   {
@@ -5455,7 +5455,7 @@ const REAL_BUSINESSES = [
     attributes: ["outFreeEntry", "outKidsPlay", "outFreeParking", "outPlayground"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
     nonCommercial: true,
-    desc: { ar: "", en: "" },
+    desc: { ar: "ملعب أطفال كبير في Katy.", en: "Large children's playground in Katy." },
     photos: 0, videos: 0,
   },
   {
@@ -5466,7 +5466,7 @@ const REAL_BUSINESSES = [
     attributes: ["outFreeEntry", "outOwnFood", "outOutdoor", "outKidsPlay", "outFreeParking", "outPark"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
     nonCommercial: true,
-    desc: { ar: "", en: "" },
+    desc: { ar: "حديقة عامة مع ملاعب رياضية في Katy.", en: "Public park with sports fields in Katy." },
     photos: 0, videos: 0,
   },
   {
@@ -5477,7 +5477,7 @@ const REAL_BUSINESSES = [
     attributes: ["outFreeEntry", "outOwnFood", "outOutdoor", "outLake", "outFreeParking", "outTrails", "outPark"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
     nonCommercial: true,
-    desc: { ar: "", en: "" },
+    desc: { ar: "حديقة عامة مع بحيرة ومسارات في Katy.", en: "Public park with a lake and trails in Katy." },
     photos: 0, videos: 0,
   },
   {
@@ -5488,7 +5488,7 @@ const REAL_BUSINESSES = [
     attributes: ["outFreeEntry", "outOwnFood", "outOutdoor", "outKidsPlay", "outFreeParking", "outPlayground", "outPark"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
     nonCommercial: true,
-    desc: { ar: "", en: "" },
+    desc: { ar: "حديقة عامة مع ملعب أطفال ومنطقة رياضة في Katy.", en: "Public park with playground and sports area in Katy." },
     photos: 0, videos: 0,
   },
   {
@@ -5499,7 +5499,7 @@ const REAL_BUSINESSES = [
     attributes: ["outFreeEntry", "outKidsPlay", "outFreeParking", "outPark"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
     nonCommercial: true,
-    desc: { ar: "", en: "" },
+    desc: { ar: "مجمع ملاعب رياضية وحديقة عامة في Katy.", en: "Sports fields complex and public park in Katy." },
     photos: 0, videos: 0,
   },
   {
@@ -5510,7 +5510,7 @@ const REAL_BUSINESSES = [
     attributes: ["outFreeEntry", "outOwnFood", "outOutdoor", "outLake", "outBoats", "outFreeParking", "outBigPark", "outPark"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
     nonCommercial: true,
-    desc: { ar: "", en: "" },
+    desc: { ar: "حديقة عامة كبرى على بحيرة Houston.", en: "Large public park on Lake Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -5521,7 +5521,7 @@ const REAL_BUSINESSES = [
     attributes: ["outFreeEntry", "outOwnFood", "outOutdoor", "outLake", "outFreeParking", "outBeach"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
     nonCommercial: true,
-    desc: { ar: "", en: "" },
+    desc: { ar: "شاطئ عائلي وحديقة عامة في La Porte.", en: "Family beach and public park in La Porte." },
     photos: 0, videos: 0,
   },
   {
@@ -5532,7 +5532,7 @@ const REAL_BUSINESSES = [
     attributes: ["outTicketed", "outOwnFood", "outOutdoor", "outFreeParking", "outNature"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
     entryPrice: "رسوم رمزية للدخول",
-    desc: { ar: "", en: "" },
+    desc: { ar: "محمية طبيعية للتنزه والتخييم في New Caney.", en: "Nature park with camping in New Caney." },
     photos: 0, videos: 0,
   },
   {
@@ -5543,7 +5543,7 @@ const REAL_BUSINESSES = [
     attributes: ["outTicketed", "outOwnFood", "outOutdoor", "outLake", "outBoats", "outFreeParking", "outBeach"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
     entryPrice: "تذاكر (~15$ للشخص)",
-    desc: { ar: "", en: "" },
+    desc: { ar: "شاطئ نهري ومنطقة تخييم في Houston.", en: "Riverside beach and camping area in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -5553,7 +5553,7 @@ const REAL_BUSINESSES = [
     tags: ["حديقة عامة", "حدائق نباتية منسقة"],
     attributes: ["outFreeEntry", "outFreeParking", "outPark"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "حدائق نباتية منسقة في Houston.", en: "Landscaped gardens in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -5564,7 +5564,7 @@ const REAL_BUSINESSES = [
     attributes: ["outFreeEntry", "outOwnFood", "outOutdoor", "outLake", "outFreeParking", "outPark"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
     nonCommercial: true,
-    desc: { ar: "", en: "" },
+    desc: { ar: "حديقة يابانية داخل حديقة هيرمان في Houston.", en: "Japanese garden inside Hermann Park in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -5575,7 +5575,7 @@ const REAL_BUSINESSES = [
     attributes: ["outFreeEntry", "outOwnFood", "outOutdoor", "outFreeParking", "outNature", "outTrails"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
     nonCommercial: true,
-    desc: { ar: "", en: "" },
+    desc: { ar: "محمية طبيعية ومسارات مشي في Houston.", en: "Nature preserve with walking trails in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -5586,7 +5586,7 @@ const REAL_BUSINESSES = [
     attributes: ["outTicketed", "outOwnFood", "outOutdoor", "outKidsPlay", "outFreeParking", "outPark"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
     entryPrice: "تذاكر (~15$ للكبار)",
-    desc: { ar: "", en: "" },
+    desc: { ar: "حديقة نباتية في Houston.", en: "Botanic garden in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -5597,7 +5597,7 @@ const REAL_BUSINESSES = [
     attributes: ["outFreeEntry", "outOwnFood", "outOutdoor", "outFreeParking", "outTrails"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
     nonCommercial: true,
-    desc: { ar: "", en: "" },
+    desc: { ar: "حدائق نباتية ومسارات مشي في Humble.", en: "Botanic gardens with walking trails in Humble." },
     photos: 0, videos: 0,
   },
   {
@@ -5608,7 +5608,7 @@ const REAL_BUSINESSES = [
     attributes: ["outFreeEntry", "outOwnFood", "outOutdoor", "outFreeParking", "outPark"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
     nonCommercial: true,
-    desc: { ar: "", en: "" },
+    desc: { ar: "حديقة ولاية واسعة للطبيعة والتنزه في Needville.", en: "Large state park for nature and outings in Needville." },
     photos: 0, videos: 0,
   },
   {
@@ -5618,7 +5618,7 @@ const REAL_BUSINESSES = [
     tags: ["متحف", "مركز علوم", "متحف العلوم الطبيعية / ديناصورات"],
     attributes: ["outFreeEntry", "outFreeParking", "outMuseum", "outScience"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "متحف للعلوم الطبيعية في Houston.", en: "Natural science museum in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -5628,7 +5628,7 @@ const REAL_BUSINESSES = [
     tags: ["متحف", "متحف الفنون الجميلة"],
     attributes: ["outFreeEntry", "outFreeParking", "outMuseum"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "متحف فنون جميلة في Houston.", en: "Fine arts museum in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -5638,7 +5638,7 @@ const REAL_BUSINESSES = [
     tags: ["متحف", "متحف فنون"],
     attributes: ["outFreeEntry", "outFreeParking", "outMuseum"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "متحف فنون في Houston.", en: "Art museum in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -5648,7 +5648,7 @@ const REAL_BUSINESSES = [
     tags: ["متحف", "متحف فن معاصر"],
     attributes: ["outFreeEntry", "outFreeParking", "outMuseum"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "متحف للفن المعاصر في Houston.", en: "Contemporary art museum in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -5658,7 +5658,7 @@ const REAL_BUSINESSES = [
     tags: ["متحف", "متحف حرف يدوية"],
     attributes: ["outFreeEntry", "outFreeParking", "outMuseum"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "متحف ومركز للحرف اليدوية في Houston.", en: "Craft museum and center in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -5668,7 +5668,7 @@ const REAL_BUSINESSES = [
     tags: ["متحف", "متحف الأطفال التفاعلي", "متحف الأطفال في هيوستن"],
     attributes: ["outFreeEntry", "outKidsPlay", "outFreeParking", "outMuseum"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "متحف تفاعلي للأطفال في Houston.", en: "Interactive children's museum in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -5678,7 +5678,7 @@ const REAL_BUSINESSES = [
     tags: ["متحف", "متحف الصحة وجسم الإنسان"],
     attributes: ["outFreeEntry", "outFreeParking", "outMuseum"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "متحف عن الصحة وجسم الإنسان في Houston.", en: "Museum about health and the human body in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -5689,7 +5689,7 @@ const REAL_BUSINESSES = [
     attributes: ["outTicketed", "outFreeParking", "outScience"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
     entryPrice: "تذاكر (~35$ للبالغ)",
-    desc: { ar: "", en: "" },
+    desc: { ar: "مركز علوم الفضاء التابع لناسا في Houston.", en: "NASA space science center in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -5700,7 +5700,7 @@ const REAL_BUSINESSES = [
     attributes: ["outTicketed", "outFreeParking", "outMuseum"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
     entryPrice: "تذاكر",
-    desc: { ar: "", en: "" },
+    desc: { ar: "متحف للخدع البصرية في Houston.", en: "Illusions museum in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -5711,7 +5711,7 @@ const REAL_BUSINESSES = [
     attributes: ["outTicketed", "outFreeParking", "outPark"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
     entryPrice: "تذاكر",
-    desc: { ar: "", en: "" },
+    desc: { ar: "تجربة فنية غامرة في Houston.", en: "Immersive art experience in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -5722,7 +5722,7 @@ const REAL_BUSINESSES = [
     attributes: ["outTicketed", "outFreeParking", "outPark"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
     entryPrice: "تذاكر",
-    desc: { ar: "", en: "" },
+    desc: { ar: "معرض فن رقمي غامر في Houston.", en: "Immersive digital art venue in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -5733,7 +5733,7 @@ const REAL_BUSINESSES = [
     attributes: ["outTicketed", "outKidsPlay", "outFreeParking", "outPark"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
     entryPrice: "تذاكر",
-    desc: { ar: "", en: "" },
+    desc: { ar: "تجربة ألوان تفاعلية للعائلة في Houston.", en: "Interactive color experience for families in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -5744,7 +5744,7 @@ const REAL_BUSINESSES = [
     attributes: ["outTicketed", "outOwnFood", "outOutdoor", "outFreeParking", "outZoo", "outPark"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
     entryPrice: "تذاكر (~26$ للبالغ)",
-    desc: { ar: "", en: "" },
+    desc: { ar: "حديقة حيوان في Houston.", en: "Zoo in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -5755,7 +5755,7 @@ const REAL_BUSINESSES = [
     attributes: ["outTicketed", "outFreeParking", "outArcade", "outAquarium"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
     entryPrice: "تذاكر للأكواريوم والألعاب",
-    desc: { ar: "", en: "" },
+    desc: { ar: "أكواريوم ومنطقة ألعاب في وسط Houston.", en: "Aquarium with arcade games in downtown Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -5765,7 +5765,7 @@ const REAL_BUSINESSES = [
     tags: ["حديقة عامة", "مدينة ملاهي على البحر", "كيما", "كيماه"],
     attributes: ["outFreeEntry", "outFreeParking", "outPark"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
-    desc: { ar: "", en: "" },
+    desc: { ar: "منطقة ملاهي وترفيه على الواجهة البحرية في Kemahه.", en: "Waterfront amusement and entertainment area in Kemah." },
     photos: 0, videos: 0,
   },
   {
@@ -5776,7 +5776,7 @@ const REAL_BUSINESSES = [
     attributes: ["outTicketed", "outFreeParking", "outPark"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
     entryPrice: "تذاكر (~13$ دخول + سوار للألعاب)",
-    desc: { ar: "", en: "" },
+    desc: { ar: "مدينة ملاهي على رصيف بحري في Galveston.", en: "Amusement rides on a seaside pier in Galveston." },
     photos: 0, videos: 0,
   },
   {
@@ -5787,7 +5787,7 @@ const REAL_BUSINESSES = [
     attributes: ["outFreeEntry", "outOwnFood", "outOutdoor", "outLake", "outFreeParking", "outBeach"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
     nonCommercial: true,
-    desc: { ar: "", en: "" },
+    desc: { ar: "شاطئ عام على كورنيش Galveston.", en: "Public beach along the Galveston seawall." },
     photos: 0, videos: 0,
   },
   {
@@ -5798,7 +5798,7 @@ const REAL_BUSINESSES = [
     attributes: ["outTicketed", "outFreeParking", "outArcade"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
     entryPrice: "تذاكر",
-    desc: { ar: "", en: "" },
+    desc: { ar: "مدينة ألعاب مائية في Katy.", en: "Water park in Katy." },
     photos: 0, videos: 0,
   },
   {
@@ -5809,7 +5809,7 @@ const REAL_BUSINESSES = [
     attributes: ["outTicketed", "outOwnFood", "outOutdoor", "outLake", "outFreeParking", "outBeach"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
     entryPrice: "تذاكر",
-    desc: { ar: "", en: "" },
+    desc: { ar: "بحيرة صناعية وشاطئ عائلي في Humble.", en: "Man-made lagoon with a beach club in Humble." },
     photos: 0, videos: 0,
   },
   {
@@ -5820,7 +5820,7 @@ const REAL_BUSINESSES = [
     attributes: ["outTicketed", "outIndoor", "outBirthdays", "outFreeParking", "outTrampoline", "outArcade"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
     entryPrice: "تذاكر",
-    desc: { ar: "", en: "" },
+    desc: { ar: "ملاهي داخلية مع ترامبولين وألعاب في Houston.", en: "Indoor play center with trampolines and arcade in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -5831,7 +5831,7 @@ const REAL_BUSINESSES = [
     attributes: ["outTicketed", "outIndoor", "outBirthdays", "outKidsPlay", "outFreeParking", "outIndoorPlay", "outPlayground"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
     entryPrice: "تذاكر",
-    desc: { ar: "", en: "" },
+    desc: { ar: "ملعب داخلي للأطفال في Houston.", en: "Indoor children's playground in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -5842,7 +5842,7 @@ const REAL_BUSINESSES = [
     attributes: ["outTicketed", "outIndoor", "outBirthdays", "outKidsPlay", "outFreeParking", "outIndoorPlay", "outPlayground"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
     entryPrice: "تذاكر",
-    desc: { ar: "", en: "" },
+    desc: { ar: "ملعب داخلي للأطفال في Houston.", en: "Indoor children's playground in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -5853,7 +5853,7 @@ const REAL_BUSINESSES = [
     attributes: ["outTicketed", "outIndoor", "outBirthdays", "outKidsPlay", "outFreeParking", "outIndoorPlay", "outPlayground"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
     entryPrice: "تذاكر",
-    desc: { ar: "", en: "" },
+    desc: { ar: "ملعب داخلي للأطفال في Sugar Land.", en: "Indoor children's play space in Sugar Land." },
     photos: 0, videos: 0,
   },
   {
@@ -5864,7 +5864,7 @@ const REAL_BUSINESSES = [
     attributes: ["outTicketed", "outIndoor", "outBirthdays", "outKidsPlay", "outFreeParking", "outIndoorPlay", "outPlayground"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
     entryPrice: "تذاكر",
-    desc: { ar: "", en: "" },
+    desc: { ar: "ملعب داخلي للأطفال وحفلات في Houston.", en: "Indoor children's playground and party venue in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -5875,7 +5875,7 @@ const REAL_BUSINESSES = [
     attributes: ["outTicketed", "outIndoor", "outBirthdays", "outKidsPlay", "outFreeParking", "outIndoorPlay", "outPlayground"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
     entryPrice: "تذاكر",
-    desc: { ar: "", en: "" },
+    desc: { ar: "ملعب داخلي للأطفال في Houston.", en: "Indoor children's playground in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -5886,7 +5886,7 @@ const REAL_BUSINESSES = [
     attributes: ["outTicketed", "outIndoor", "outBirthdays", "outKidsPlay", "outFreeParking", "outIndoorPlay", "outPlayground"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
     entryPrice: "تذاكر",
-    desc: { ar: "", en: "" },
+    desc: { ar: "ملعب داخلي للأطفال الصغار في Houston.", en: "Indoor playground for young children in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -5897,7 +5897,7 @@ const REAL_BUSINESSES = [
     attributes: ["outTicketed", "outFreeParking", "outPark"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
     entryPrice: "تذاكر",
-    desc: { ar: "", en: "" },
+    desc: { ar: "مركز نطاطات عملاقة وحفلات في Houston.", en: "Giant bounce house and party center in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -5908,7 +5908,7 @@ const REAL_BUSINESSES = [
     attributes: ["outTicketed", "outIndoor", "outBirthdays", "outFreeParking", "outTrampoline", "outArcade"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
     entryPrice: "تذاكر",
-    desc: { ar: "", en: "" },
+    desc: { ar: "ترامبولين وألعاب أركيد داخلية في Houston.", en: "Indoor trampoline and arcade park in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -5919,7 +5919,7 @@ const REAL_BUSINESSES = [
     attributes: ["outTicketed", "outIndoor", "outBirthdays", "outFreeParking", "outTrampoline", "outArcade"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
     entryPrice: "تذاكر",
-    desc: { ar: "", en: "" },
+    desc: { ar: "ترامبولين وألعاب أركيد داخلية في Webster.", en: "Indoor trampoline and arcade park in Webster." },
     photos: 0, videos: 0,
   },
   {
@@ -5930,7 +5930,7 @@ const REAL_BUSINESSES = [
     attributes: ["outTicketed", "outIndoor", "outBirthdays", "outFreeParking", "outTrampoline", "outArcade"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
     entryPrice: "تذاكر",
-    desc: { ar: "", en: "" },
+    desc: { ar: "ترامبولين وألعاب أركيد داخلية في Humble.", en: "Indoor trampoline and arcade park in Humble." },
     photos: 0, videos: 0,
   },
   {
@@ -5941,7 +5941,7 @@ const REAL_BUSINESSES = [
     attributes: ["outTicketed", "outIndoor", "outBirthdays", "outFreeParking", "outTrampoline"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
     entryPrice: "تذاكر",
-    desc: { ar: "", en: "" },
+    desc: { ar: "حديقة ترامبولين داخلية مع ليزر تاغ في Houston.", en: "Indoor trampoline park with laser tag in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -5952,7 +5952,7 @@ const REAL_BUSINESSES = [
     attributes: ["outTicketed", "outIndoor", "outBirthdays", "outFreeParking", "outPark"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
     entryPrice: "تذاكر",
-    desc: { ar: "", en: "" },
+    desc: { ar: "زحاليق وألعاب حركية داخلية في Houston.", en: "Indoor slides and action play park in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -5963,7 +5963,7 @@ const REAL_BUSINESSES = [
     attributes: ["outTicketed", "outIndoor", "outBirthdays", "outFreeParking", "outTrampoline", "outBowling"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
     entryPrice: "تذاكر",
-    desc: { ar: "", en: "" },
+    desc: { ar: "ترامبولين وبولينغ وألعاب في Houston.", en: "Trampolines, bowling and arcade games in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -5974,7 +5974,7 @@ const REAL_BUSINESSES = [
     attributes: ["outTicketed", "outFreeParking", "outArcade"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
     entryPrice: "تذاكر",
-    desc: { ar: "", en: "" },
+    desc: { ar: "غرف ألعاب تفاعلية في وسط Houston.", en: "Interactive game rooms in downtown Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -5985,7 +5985,7 @@ const REAL_BUSINESSES = [
     attributes: ["outTicketed", "outKidsPlay", "outFreeParking", "outPark"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
     entryPrice: "تذاكر",
-    desc: { ar: "", en: "" },
+    desc: { ar: "مساحة لعب للأطفال ومقهى للأهل في Houston.", en: "Kids play space with a cafe for parents in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -5996,7 +5996,7 @@ const REAL_BUSINESSES = [
     attributes: ["outTicketed", "outIndoor", "outBirthdays", "outFreeParking", "outBowling", "outArcade"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
     entryPrice: "بالساعة / تذاكر",
-    desc: { ar: "", en: "" },
+    desc: { ar: "بولينغ وألعاب أركيد في Houston.", en: "Bowling and arcade games in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -6007,7 +6007,7 @@ const REAL_BUSINESSES = [
     attributes: ["outTicketed", "outIndoor", "outBirthdays", "outFreeParking", "outArcade"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
     entryPrice: "بطاقة ألعاب / تذاكر",
-    desc: { ar: "", en: "" },
+    desc: { ar: "صالة ألعاب أركيد ومطعم في Houston.", en: "Arcade games and restaurant in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -6018,7 +6018,7 @@ const REAL_BUSINESSES = [
     attributes: ["outTicketed", "outIndoor", "outBirthdays", "outFreeParking", "outKarting", "outArcade"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
     entryPrice: "تذاكر",
-    desc: { ar: "", en: "" },
+    desc: { ar: "كارتنغ وميني غولف وألعاب أركيد في Houston.", en: "Go-karts, mini golf and arcade games in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -6029,7 +6029,7 @@ const REAL_BUSINESSES = [
     attributes: ["outTicketed", "outIndoor", "outBirthdays", "outFreeParking", "outKarting", "outArcade"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
     entryPrice: "تذاكر",
-    desc: { ar: "", en: "" },
+    desc: { ar: "ميني غولف وكارتنغ وألعاب أركيد في Houston.", en: "Mini golf, go-karts and arcade games in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -6040,7 +6040,7 @@ const REAL_BUSINESSES = [
     attributes: ["outTicketed", "outIndoor", "outBirthdays", "outFreeParking", "outKarting", "outArcade"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
     entryPrice: "تذاكر",
-    desc: { ar: "", en: "" },
+    desc: { ar: "كارتنغ داخلي وألعاب في Katy.", en: "Indoor go-karting and games in Katy." },
     photos: 0, videos: 0,
   },
   {
@@ -6051,7 +6051,7 @@ const REAL_BUSINESSES = [
     attributes: ["outTicketed", "outFreeParking", "outPark"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
     entryPrice: "تذاكر",
-    desc: { ar: "", en: "" },
+    desc: { ar: "ميني غولف تقني ومطعم في وسط Houston.", en: "Tech mini golf and restaurant in downtown Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -6062,7 +6062,7 @@ const REAL_BUSINESSES = [
     attributes: ["outTicketed", "outIndoor", "outBirthdays", "outFreeParking", "outIceSkating"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
     entryPrice: "تذاكر + تأجير حذاء",
-    desc: { ar: "", en: "" },
+    desc: { ar: "حلبة تزلج على الجليد داخلية في Houston.", en: "Indoor ice skating rink in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -6073,7 +6073,7 @@ const REAL_BUSINESSES = [
     attributes: ["outTicketed", "outIndoor", "outBirthdays", "outFreeParking", "outIceSkating"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
     entryPrice: "~10$ لليوم كامل + 5$ تأجير",
-    desc: { ar: "", en: "" },
+    desc: { ar: "حلبة تزلج على الجليد داخلية في Houston.", en: "Indoor ice skating rink in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -6084,7 +6084,7 @@ const REAL_BUSINESSES = [
     attributes: ["outTicketed", "outIndoor", "outBirthdays", "outFreeParking", "outIceSkating"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
     entryPrice: "تذاكر + تأجير",
-    desc: { ar: "", en: "" },
+    desc: { ar: "مجمع تزلج على الجليد في Houston.", en: "Ice skating complex in Houston." },
     photos: 0, videos: 0,
   },
   {
@@ -6095,7 +6095,7 @@ const REAL_BUSINESSES = [
     attributes: ["outTicketed", "outIndoor", "outBirthdays", "outFreeParking", "outIceSkating"],
     plan: 'free', verified: false, rating: 0, reviewCount: 0, dist: 0, claimed: false,
     entryPrice: "تذاكر",
-    desc: { ar: "", en: "" },
+    desc: { ar: "مركز تزلج على الجليد ورياضة في Sugar Land.", en: "Ice skating and sports center in Sugar Land." },
     photos: 0, videos: 0,
   },
 ];
