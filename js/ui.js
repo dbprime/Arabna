@@ -701,6 +701,7 @@ export function openDrawer() {
     /* Prayer times sit inside the sections group, not in the bottom bar:
        the bar has five slots and every one of them is spoken for. */
     item('moon', t('prayerTitle'), '#/prayer'),
+    item('compass', t('ncTitle'), '#/newcomer'),
     item('calendar', t('eventsTitle'), '#/events'),
     item('newspaper', t('magazineTitle'), '#/magazine'),
     anyFeatured
@@ -889,13 +890,16 @@ export function wirePriceGates(root) {
  */
 export function openFilterSheet({ cat, cats, value, withPrice, withAttrs, withArea, countFor, onApply }) {
   const v = Object.assign({ cat: cat || 'all', area: 'all', sort: 'newest',
-                            priceMin: '', priceMax: '', openNow: false, attrs: [] }, value);
+                            priceMin: '', priceMax: '', openNow: false,
+                            hasOffer: false, attrs: [] }, value);
   v.attrs = (v.attrs || []).slice();
   const sorts = [['newest', t('sortNewest')], ['nearest', t('sortNearest')], ['rated', t('sortTopRated')]]
     .concat(withAttrs ? [['open', t('sortOpen')]] : []);
   const catFor = () => (v.cat === 'all' ? '*' : v.cat);
 
   const counts = () => S.attrCountsFor(catFor());
+  const offerCount = () => S.allBusinesses()
+    .filter(b => (v.cat === 'all' || b.cat === v.cat) && S.hasOffers(b)).length;
 
   /* ---- where, not how far ----
      The radius used to be a slider from 5 to 100 miles that filtered
@@ -988,6 +992,9 @@ export function openFilterSheet({ cat, cats, value, withPrice, withAttrs, withAr
       <div class="label mt-16">${t('hoursTitle')}</div>
       <div class="attr-pick">
         <button class="chip ${v.openNow ? 'active' : ''}" id="fOpenNow">${icon('clock', 14)} ${t('filterOpenNow')}</button>
+        ${/* offered only when somebody is actually running one — the standing
+             rule that a filter never returns nothing */''}
+        ${offerCount() ? `<button class="chip ${v.hasOffer ? 'active' : ''}" id="fHasOffer">${icon('tag', 14)} ${t('offerHas')} <span class="chip-n">${offerCount()}</span></button>` : ''}
       </div>
       <div id="fAttrs">${attrHtml()}</div>` : ''}
 
@@ -1047,6 +1054,12 @@ export function openFilterSheet({ cat, cats, value, withPrice, withAttrs, withAr
         on.classList.toggle('active', v.openNow);
         refresh();
       });
+      const off = panel.querySelector('#fHasOffer');
+      if (off) off.addEventListener('click', () => {
+        v.hasOffer = !v.hasOffer;
+        off.classList.toggle('active', v.hasOffer);
+        refresh();
+      });
 
       // attributes are multi-select and combine; picking two narrows the list
       panel.querySelectorAll('#fAttrs .chip').forEach(b => b.addEventListener('click', () => {
@@ -1074,7 +1087,7 @@ export function openFilterSheet({ cat, cats, value, withPrice, withAttrs, withAr
       closeSheet();
       if (withArea) S.setArea('all');
       onApply({ cat: v.cat, area: 'all', sort: 'newest', priceMin: '', priceMax: '',
-                openNow: false, attrs: [] });
+                openNow: false, hasOffer: false, attrs: [] });
       toast(t('filtersCleared'), 'ok');
     });
   });
@@ -1091,6 +1104,7 @@ export function activeFilterCount(v) {
   if (v.priceMin) n++;
   if (v.priceMax) n++;
   if (v.openNow) n++;
+  if (v.hasOffer) n++;
   if (v.area && v.area !== 'all') n++;
   n += (v.attrs || []).length;
   return n;

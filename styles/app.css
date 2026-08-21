@@ -1215,6 +1215,102 @@ input[inputmode="tel"], input[type="email"], input[inputmode="decimal"], #zipIn 
 .spon-block .list-row.spon .row-title { display: flex; align-items: center; gap: 7px; }
 .spon-block .badge-sponsored { flex: 0 0 auto; }
 
+/* ---- offers (V.03.2) ----
+   The gold wash marks it as the subscriber's own space without competing
+   with the badge: every colour here is a token, so both themes follow. */
+.offer-card {
+  display: flex; gap: 10px; align-items: flex-start;
+  padding: 13px 14px; margin-top: 8px;
+  background: var(--gold-wash-1);
+  border: 1px solid var(--gold-wash-3);
+  border-radius: var(--r-md);
+}
+.offer-card.pending, .offer-card.rejected {
+  background: var(--wash-1); border-color: var(--line-soft);
+}
+.offer-main { flex: 1 1 auto; min-width: 0; }
+.offer-text { font-size: 14.5px; font-weight: 600; color: var(--text); line-height: 1.45; }
+.offer-price { font-size: 15px; font-weight: 700; color: var(--gold-bright); margin-top: 4px; }
+.offer-meta {
+  display: flex; gap: 6px; align-items: center; flex-wrap: wrap;
+  font-size: 12px; color: var(--muted); margin-top: 6px;
+}
+.offer-meta svg { flex: 0 0 15px; }
+.offer-flag {
+  padding: 2px 8px; border-radius: 999px;
+  background: var(--wash-2); color: var(--text-2); font-weight: 600;
+}
+/* --danger is the fill colour; --danger-ink is the one measured to be read
+   on a surface. On the rejected card --danger came out at 3.55 in dark. */
+.offer-why { font-size: 12.5px; color: var(--danger-ink); margin-top: 6px; }
+
+/* the shop that has not subscribed sees the door, not a blank heading */
+.offer-lock {
+  display: flex; gap: 12px; align-items: center; width: 100%;
+  margin-top: 20px; padding: 14px;
+  background: var(--gold-wash-1); border: 1px solid var(--gold-wash-3);
+  border-radius: var(--r-md); text-align: start; cursor: pointer;
+}
+.offer-lock-ico { flex: 0 0 auto; color: var(--gold-bright); display: flex; }
+.offer-lock div { flex: 1 1 auto; min-width: 0; }
+.offer-lock b { display: block; font-size: 14px; color: var(--text); }
+.offer-lock span { display: block; font-size: 12.5px; color: var(--muted); margin-top: 3px; }
+
+/* the home strip — a card wide enough to read, never a full-width block */
+.offer-strip { display: flex; gap: 10px; overflow-x: auto; padding: 2px 14px 4px; }
+.offer-tile {
+  flex: 0 0 78%; max-width: 300px; text-align: start;
+  padding: 13px 14px; border-radius: var(--r-md);
+  background: var(--gold-wash-1); border: 1px solid var(--gold-wash-3);
+}
+.offer-tile .offer-shop {
+  display: flex; gap: 6px; align-items: center;
+  font-size: 12.5px; color: var(--muted); margin-bottom: 6px;
+}
+.offer-tile .offer-shop b { color: var(--gold-bright); font-weight: 600; }
+
+/* the «عنده عرض» mark on a directory row */
+.badge-offer {
+  display: inline-flex; gap: 4px; align-items: center; flex: 0 0 auto;
+  padding: 2px 7px; border-radius: 999px;
+  background: var(--gold-wash-2); color: var(--gold-bright);
+  font-size: 11px; font-weight: 700;
+}
+
+/* ---- ramadan (V.03.2) ----
+   One line and two buttons, under the prayer bar and above the search
+   row. Every colour is a token, so both themes follow it. */
+.rm-bar {
+  margin: 8px 14px 0; padding: 11px 13px;
+  background: var(--gold-wash-1); border: 1px solid var(--gold-wash-3);
+  border-radius: var(--r-md);
+}
+.rm-line { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; font-size: 13.5px; }
+.rm-line svg { flex: 0 0 auto; color: var(--gold-bright); }
+.rm-name { font-weight: 700; color: var(--text); }
+.rm-at { font-weight: 700; color: var(--gold-bright); }
+.rm-left { color: var(--muted); font-size: 12.5px; }
+.rm-btns { display: flex; gap: 8px; margin-top: 9px; flex-wrap: wrap; }
+.rm-btns .mini-btn { flex: 1 1 auto; justify-content: center; }
+
+/* ---- the newcomer's guide (V.03.2) ---- */
+.nc-card {
+  display: flex; gap: 12px; align-items: center; width: 100%;
+  padding: 14px; margin-top: 4px; text-align: start;
+  background: var(--surface); border: 1px solid var(--line-soft);
+  border-radius: var(--r-md); cursor: pointer;
+}
+.nc-card-ico {
+  flex: 0 0 44px; height: 44px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--gold-wash-2); color: var(--gold-bright);
+}
+.nc-card-txt { flex: 1 1 auto; min-width: 0; }
+.nc-card-txt b { display: block; font-size: 14.5px; color: var(--text); }
+.nc-card-txt span { display: block; font-size: 12.5px; color: var(--muted); margin-top: 3px; }
+.nc-head { display: flex; gap: 9px; align-items: center; }
+.nc-head svg { flex: 0 0 auto; color: var(--gold-bright); }
+
 /* the heart and the share side by side at the top of a detail page */
 .top-actions { display: flex; gap: 8px; flex: 0 0 auto; }
 /* a listing's own photo in the row icon, in place of the category glyph */

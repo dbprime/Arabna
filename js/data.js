@@ -94,6 +94,41 @@ export const MAG_CATS = [
 ];
 
 /* ============================================================
+   THE NEWCOMER'S GUIDE (V.03.2)
+   ------------------------------------------------------------
+   A family that landed in Houston a month ago is at the sharpest
+   moment of need in their lives, and they open the app every day
+   for weeks. Whoever helps them then keeps them for years.
+
+   Two rules built into the shape of this table:
+
+   1. Every part ENDS IN A DOORWAY. `route` opens the directory
+      already filtered, so nobody is left holding advice with no
+      address. That is what separates a guide from a post — and it
+      is why the directory serves the guide and the guide serves
+      the directory.
+   2. Every route has REAL LISTINGS BEHIND IT — measured, not
+      assumed. `eduDriving` was the obvious filter for the driving
+      licence and carries zero businesses, so that part opens the
+      whole education category instead. A button onto an empty
+      list is the blank screen this project bans.
+
+   The copy is a placeholder and says so. Rai writes the real
+   text; nothing here invents a government procedure, because one
+   wrong step or number costs a family a day.
+   ============================================================ */
+export const NEWCOMER_PARTS = [
+  { id: 'ssn',       icon: 'file',        route: '#/directory?cat=community' },
+  { id: 'license',   icon: 'car',         route: '#/directory?cat=education' },
+  { id: 'school',    icon: 'graduation',  route: '#/directory?cat=education' },
+  { id: 'bank',      icon: 'banknote',    route: '#/directory?cat=finance' },
+  { id: 'doctor',    icon: 'stethoscope', route: '#/directory?cat=doctors&attrs=arabicSpoken' },
+  { id: 'halal',     icon: 'bag',         route: '#/directory?cat=grocery&attrs=halalMeat' },
+  { id: 'utilities', icon: 'bolt',        route: '#/directory?cat=homeservices' },
+  { id: 'car',       icon: 'key',         route: '#/directory?cat=auto' },
+];
+
+/* ============================================================
    Opening hours — structured, not prose
    ------------------------------------------------------------
    Storage is one array of seven entries indexed the way

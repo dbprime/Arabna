@@ -13,7 +13,8 @@
    is and is not covered. Hidden, never empty.
    ============================================================ */
 
-import { t, icon, $, $$, go, renderHeader, openSheet, closeSheet, toast, onMinute, fmtTime } from '../ui.js';
+import { t, icon, $, $$, go, renderHeader, openSheet, closeSheet, toast, onMinute, fmtTime,
+         wireRoutes } from '../ui.js';
 import * as S from '../store.js';
 import { askForLocation } from './home.js';
 import { prayerTimes, nextPrayer, minutesNow, fmtPrayer,
@@ -76,6 +77,76 @@ export function mountPrayerBar() {
   onMinute(bar, () => {
     const times = todaysTimes();
     if (times) bar.innerHTML = prayerBarInner(times);
+  });
+}
+
+/* ------------------------------------------------------------
+   RAMADAN — the same maghrib, wearing the name people use for it
+
+   Iftar IS maghrib. The engine already computes it to the minute
+   with the reader's own method, so this costs no arithmetic, no
+   second timer and no new setting — it re-labels one number and
+   counts down to it. The two buttons are what somebody actually
+   wants at that moment: somewhere open for suhoor, and a mosque
+   holding a communal iftar.
+
+   It appears only while the owner has switched the season on
+   (admin → settings), and it goes away with it.
+   ------------------------------------------------------------ */
+export function ramadanOn() { return S.seasonOn('ramadan') && !!S.state.seasons.ramadan; }
+
+export function ramadanBarHtml() {
+  if (!ramadanOn()) return '';
+  const times = todaysTimes();
+  if (!times) return '';
+  return `<div class="rm-bar" id="rmBar">${ramadanBarInner(times)}</div>`;
+}
+
+function ramadanBarInner(times) {
+  const m = times.maghrib;
+  const now = minutesNow();
+  /* After sunset the countdown is over for today, and a bar reading
+     «باقي -20 دقيقة» is worse than one that simply says the time. */
+  const left = m == null ? null : Math.round(m - now);
+  return `<div class="rm-line">
+      ${icon('moon', 17)}
+      <span class="rm-name">${t('rmIftar')}</span>
+      <span class="rm-at ltr">${m == null ? '—' : fmtPrayer(m, S.state.lang)}</span>
+      ${left != null && left > 0
+        ? `<span class="rm-left">${t('rmLeft')} ${fmtLeft(left)}</span>`
+        : `<span class="rm-left">${t('rmDone')}</span>`}
+    </div>
+    ${rmButtons()}`;
+}
+
+/**
+ * The two doorways — and the attribute is the question, not the category.
+ * Pinning suhoor to «مطاعم» measured ZERO: the one listing that carries it
+ * is a bakery, which is exactly who is open at 3am, and the category
+ * filter was hiding the only right answer.
+ *
+ * A button whose filter returns nothing is not drawn at all. That is the
+ * standing rule — a filter is never offered with nothing behind it — and
+ * here it doubles as the honest state before Rai fills the season in.
+ */
+function rmButtons() {
+  const n = (a) => S.allBusinesses().filter(b => (b.attributes || []).includes(a)).length;
+  const btn = (a, ico, key) => n(a)
+    ? `<button class="mini-btn" data-route="#/directory?attrs=${a}">${icon(ico, 15)} ${t(key)}</button>` : '';
+  const both = btn('suhoor', 'sunrise', 'rmSuhoor') + btn('iftar', 'users', 'rmCommunal');
+  return both ? `<div class="rm-btns">${both}</div>` : '';
+}
+
+/** the same minute ticker as the prayer bar — still one timer in the app */
+export function mountRamadanBar(root) {
+  const bar = $('#rmBar');
+  if (!bar) return;
+  onMinute(bar, () => {
+    const times = todaysTimes();
+    if (times) {
+      bar.innerHTML = ramadanBarInner(times);
+      wireRoutes(bar);
+    }
   });
 }
 

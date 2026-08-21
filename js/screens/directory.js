@@ -39,6 +39,7 @@ export function DirectoryScreen(root) {
       attrs: (q.attrs || '').split(',').filter(Boolean),
       area: q.area || S.state.area || 'all',
       featured: q.featured === '1',
+      hasOffer: q.offer === '1',
     };
   };
   let st = readUrl();
@@ -57,6 +58,7 @@ export function DirectoryScreen(root) {
     if (st.attrs.length) p.push('attrs=' + st.attrs.join(','));
     if (st.area && st.area !== 'all') p.push('area=' + encodeURIComponent(st.area));
     if (st.featured) p.push('featured=1');
+    if (st.hasOffer) p.push('offer=1');
     replaceHash('#/directory' + (p.length ? '?' + p.join('&') : ''));
   };
 
@@ -157,6 +159,7 @@ export function DirectoryScreen(root) {
     if (st.area && st.area !== 'all') on.push({ k: '__area', label: areaLabel(st.area) });
     if (st.term) on.push({ k: '__term', label: '"' + st.term + '"' });
     if (st.featured) on.push({ k: '__featured', label: t('drFeatured') });
+    if (st.hasOffer) on.push({ k: '__offer', label: t('offerHas') });
 
     host.innerHTML = on.length ? `<div class="pill-row">
       ${on.map(p => `<button class="pill" data-off="${p.k}">${p.label} ${icon('x', 13)}</button>`).join('')}
@@ -166,6 +169,7 @@ export function DirectoryScreen(root) {
     $$('#pills [data-off]').forEach(b => b.addEventListener('click', () => {
       const k = b.dataset.off;
       if (k === '__open') st.openNow = false;
+      else if (k === '__offer') st.hasOffer = false;
       else if (k === '__featured') st.featured = false;
       else if (k === '__area') { st.area = 'all'; S.setArea('all'); }
       else if (k === '__sort') st.sort = 'newest';
@@ -176,7 +180,8 @@ export function DirectoryScreen(root) {
     }));
     const pc = $('#pillClear');
     if (pc) pc.addEventListener('click', () => {
-      st.openNow = false; st.attrs = []; st.sort = 'newest'; st.term = ''; st.area = 'all'; st.featured = false;
+      st.openNow = false; st.attrs = []; st.sort = 'newest'; st.term = ''; st.area = 'all';
+      st.featured = false; st.hasOffer = false;
       S.setArea('all');
       $('#dirSearch').value = '';
       setPickerValue('ctlSort', t(sortKey(st.sort)));
@@ -227,6 +232,7 @@ export function DirectoryScreen(root) {
       .filter(b => st.cat === 'all' || b.cat === st.cat)
       .filter(b => S.inArea(b, st.area))
       .filter(b => !st.openNow || S.isOpenNow(b, now))
+      .filter(b => !st.hasOffer || S.hasOffers(b))
       .filter(b => S.matchesAttrs(b, st.attrs));
   };
 
@@ -295,7 +301,8 @@ export function DirectoryScreen(root) {
     paintCatSlider();
 
     const el = $('#dirList');
-    const filtered = st.openNow || st.attrs.length || st.term || st.featured || (st.area && st.area !== 'all');
+    const filtered = st.openNow || st.hasOffer || st.attrs.length || st.term || st.featured
+      || (st.area && st.area !== 'all');
     if (!list.length && filtered) {
       // a dead end offers something to press, not just an apology
       el.innerHTML = emptyState('filter', t('noFilterResults'), t('noFilterResultsSub'));
@@ -311,7 +318,8 @@ export function DirectoryScreen(root) {
         else { st.term = b.dataset.sv; $('#dirSearch').value = st.term; writeUrl(); paint(); }
       }));
       el.querySelector('#clrF').addEventListener('click', () => {
-        st.openNow = false; st.attrs = []; st.term = ''; st.area = 'all'; st.featured = false; S.setArea('all');
+        st.openNow = false; st.attrs = []; st.term = ''; st.area = 'all';
+        st.featured = false; st.hasOffer = false; S.setArea('all');
         $('#dirSearch').value = '';
         writeUrl(); paint();
       });
@@ -339,7 +347,8 @@ export function DirectoryScreen(root) {
 
   const paintFilterCount = () => {
     const fc = $('#fCount');
-    const n = activeFilterCount({ cat: st.cat, openNow: st.openNow, attrs: st.attrs, sort: st.sort, area: st.area });
+    const n = activeFilterCount({ cat: st.cat, openNow: st.openNow, hasOffer: st.hasOffer,
+                                  attrs: st.attrs, sort: st.sort, area: st.area });
     fc.className = n ? 'f-count' : '';
     fc.textContent = n || '';
     $('#dirFilter').classList.toggle('on', n > 0);
@@ -394,7 +403,8 @@ export function DirectoryScreen(root) {
   $('[data-loc]').addEventListener('click', () => import('./home.js').then(m => m.openLocationSheet()));
   $('#dirFilter').addEventListener('click', () => openFilterSheet({
     cat: st.cat,
-    value: { cat: st.cat, area: st.area, sort: st.sort, openNow: st.openNow, attrs: st.attrs.slice() },
+    value: { cat: st.cat, area: st.area, sort: st.sort, openNow: st.openNow,
+             hasOffer: st.hasOffer, attrs: st.attrs.slice() },
     withPrice: false,
     withAttrs: true,
     withArea: true,
@@ -402,9 +412,11 @@ export function DirectoryScreen(root) {
       .filter(b => v.cat === 'all' || b.cat === v.cat)
       .filter(b => S.inArea(b, v.area))
       .filter(b => !v.openNow || S.isOpenNow(b, new Date()))
+      .filter(b => !v.hasOffer || S.hasOffers(b))
       .filter(b => S.matchesAttrs(b, v.attrs)), st.term).list.length,
     onApply: (v) => {
-      st.openNow = v.openNow; st.sort = v.sort; st.attrs = v.attrs.slice();
+      st.openNow = v.openNow; st.hasOffer = v.hasOffer; st.sort = v.sort;
+      st.attrs = v.attrs.slice();
       st.area = v.area || 'all';
       S.setArea(st.area);
       setPickerValue('ctlSort', t(sortKey(st.sort)));
@@ -445,7 +457,9 @@ function rowHtml(b, sponsored) {
   return `<div class="list-row ${paid ? 'premium' : ''}" data-route="#/directory/${b.id}">
     <span class="row-ico">${icon(catIcon(b.cat), 22)}</span>
     <div class="row-main">
-      <div class="row-title">${L(b.name)}${bizBadge(b)}${sponsored ? `<span class="badge badge-sponsored">${t('sponsored')}</span>` : ''}</div>
+      <div class="row-title">${L(b.name)}${bizBadge(b)}${
+        S.hasOffers(b) ? `<span class="badge-offer">${icon('tag', 11)}${t('offerHas')}</span>` : ''}${
+        sponsored ? `<span class="badge badge-sponsored">${t('sponsored')}</span>` : ''}</div>
       <div class="row-sub">${r.count ? stars(r.avg) + `<span>· ${r.count} ${t('reviews')}</span> · ` : ''}
         ${distLabel(b)}
         ${openBadgeSlot(b)}
@@ -686,6 +700,72 @@ function halalNearbyBlock(b) {
   </div>`;
 }
 
+/* ------------------------------------------------------------
+   OFFERS — «عروض هذا الأسبوع»
+
+   The block draws itself three different ways and the page never
+   decides which: a reader sees whatever is live, the owner sees
+   their own pending and rejected ones too, and a shop that has not
+   subscribed sees what it is missing rather than nothing at all.
+   That last one is the point — this is the first concrete thing
+   the $29 buys that a grocer can picture.
+   ------------------------------------------------------------ */
+
+/** «ينتهي اليوم» / «ينتهي غداً» / «ينتهي خلال 6 يوم» */
+function offerEndsLabel(o) {
+  const left = Math.ceil((o.endsAt - S.now()) / 864e5);
+  if (left <= 1) return t('offerEndsToday');
+  if (left === 2) return t('offerEndsTomorrow');
+  return `${t('offerEndsIn')} ${left - 1} ${t('offerDays')}`;
+}
+
+function offerCard(o, owner) {
+  const flag = o.status === 'pending' ? t('offerPending')
+             : o.status === 'rejected' ? t('offerRejected') : '';
+  return `<div class="offer-card ${o.status}">
+    <div class="offer-main">
+      <div class="offer-text">${attr(o.text)}</div>
+      ${o.price ? `<div class="offer-price ltr">${attr(o.price)}</div>` : ''}
+      <div class="offer-meta">${icon('clock', 15)}<span>${offerEndsLabel(o)}</span>${
+        flag ? `<span class="offer-flag">${flag}</span>` : ''}</div>
+      ${owner && o.status === 'rejected' && o.reason
+        ? `<div class="offer-why">${attr(o.reason)}</div>` : ''}
+    </div>
+    ${owner ? `<button class="icon-btn" data-deloffer="${o.id}" aria-label="${t('offerRemove')}">${icon('trash', 19)}</button>` : ''}
+  </div>`;
+}
+
+function offersBlock(b, mine) {
+  // a public park has no owner to sell to and no offers to run
+  if (S.isNonCommercial(b)) return '';
+  const subscribed = S.canPostOffers(b);
+  const list = mine ? S.myOffersFor(b.id) : S.offersFor(b.id);
+
+  /* The shop that has not subscribed: the owner is shown the door, and a
+     reader is shown nothing at all — an empty «offers» heading on a page
+     with no offers is the blank screen the project bans. */
+  if (!subscribed) {
+    return mine ? `<div class="offer-lock" data-route="#/subscribe">
+      <span class="offer-lock-ico">${icon('tag', 22)}</span>
+      <div><b>${t('offerLocked')}</b><span>${t('offerLockedSub')}</span></div>
+      <span class="chev">${icon(document.documentElement.dir === 'rtl' ? 'chevronL' : 'chevronR', 19)}</span>
+    </div>` : '';
+  }
+  if (!list.length && !mine) return '';
+
+  const left = S.MAX_OFFERS - S.activeOfferCount(b.id);
+  return `<div class="section-head" style="padding:0;margin-top:20px">
+      <div class="section-title">${t('offersTitle')}${
+        mine ? `<small>${t('offerLeft')} ${left} ${t('offerLeftOf')}</small>` : ''}</div>
+    </div>
+    <div id="offerList">${list.length
+      ? list.map(o => offerCard(o, mine)).join('')
+      : `<div class="rev-empty"><div class="rev-empty-ico">${icon('tag', 28)}</div>
+           <b>${t('offersNone')}</b><span>${t('offersNoneSub')}</span></div>`}</div>
+    ${mine ? `<button class="btn ${list.length ? 'btn-ghost' : 'btn-gold'} btn-block mt-12" id="offerBtn"
+        ${left <= 0 ? 'disabled' : ''}>${icon('plus', 19)} ${t('offerAdd')}</button>` : ''}`;
+}
+
 /** the subscription upsell, sized like a business row.
     A visitor gets the same offer with the number replaced by the gate. */
 function upsellHtml() {
@@ -780,6 +860,8 @@ export function ListingScreen(root, params) {
       ${mine ? `<button class="btn btn-ghost btn-block mt-12" data-route="#/business/photos/${b.id}">
         ${icon('camera', 19)} ${t('managePhotos')}</button>` : ''}
 
+      ${offersBlock(b, mine)}
+
       <div class="section-head" style="padding:0;margin-top:20px">
         <div class="section-title">${t('reviewsTitle')}<small>${rate.count ? `${rate.avg} · ${rate.count} ${t('reviews')}` : t('noReviewsYet')}</small></div>
       </div>
@@ -854,6 +936,13 @@ export function ListingScreen(root, params) {
   })));
 
   $$('[data-timefix]').forEach(btn => btn.addEventListener('click', () => openTimeFix(btn.dataset.timefix)));
+
+  const ofb = $('#offerBtn');
+  if (ofb) ofb.addEventListener('click', () => openOfferSheet(b.id, () => go('#/directory/' + b.id)));
+  $$('[data-deloffer]').forEach(btn => btn.addEventListener('click', () => confirmSheet({
+    title: t('offerRemove'), sub: t('offersTitle'), confirmText: t('offerRemove'), danger: true,
+    onConfirm: () => { S.removeOffer(b.id, btn.dataset.deloffer); toast(t('done'), 'ok'); go('#/directory/' + b.id); },
+  })));
 
   wireRoutes(root);
 }
@@ -998,6 +1087,60 @@ export function reviewHtml(r, isOwner = false) {
  * Write or edit a review. Saves through the store, so the business page,
  * the rating average and "My reviews" all update from the same record.
  */
+/**
+ * Posting an offer. Three fields and one date, no photo — a picture needs
+ * review and storage, and both are deferred. The end date is the only
+ * required one besides the text, because an offer that does not end is the
+ * failure this whole feature is built to avoid.
+ */
+export function openOfferSheet(bizId, onSaved) {
+  const day = 864e5;
+  const iso = (ms) => new Date(ms).toISOString().slice(0, 10);
+  const soon = iso(S.now() + 7 * day);
+
+  openSheet(`
+    <div class="sheet-title">${t('offerAddTitle')}</div>
+    <div class="field"><label class="label">${t('offerText')} *</label>
+      <textarea class="textarea" id="ofTxt" placeholder="${t('offerTextPh')}"></textarea>
+      <div class="field-err" id="ofTxtErr"></div></div>
+    <div class="field"><label class="label">${t('offerPrice')}</label>
+      <input class="input" id="ofPrice" placeholder="${t('offerPricePh')}" /></div>
+    <div class="field"><label class="label">${t('offerEndsAt')} *</label>
+      <input class="input" type="date" id="ofEnd" value="${soon}"
+             min="${iso(S.now() + day)}" max="${iso(S.now() + S.MAX_OFFER_DAYS * day)}" />
+      <div class="hint">${t('offerEndsHint')}</div>
+      <div class="field-err" id="ofEndErr"></div></div>
+    <button class="btn btn-gold btn-block" id="ofSend">${t('offerPost')}</button>
+  `, (panel) => {
+    const err = (id, msg) => { panel.querySelector(id).textContent = msg || ''; };
+    panel.querySelector('#ofSend').addEventListener('click', () => {
+      err('#ofTxtErr'); err('#ofEndErr');
+      const txt = panel.querySelector('#ofTxt').value.trim();
+      const price = panel.querySelector('#ofPrice').value.trim();
+      const raw = panel.querySelector('#ofEnd').value;
+      /* Read the date as the END of that day in local time. A bare
+         yyyy-mm-dd parses as UTC midnight, which in Houston is the evening
+         before — the offer would expire a day early, every time. */
+      const parts = raw.split('-').map(Number);
+      const end = parts.length === 3
+        ? new Date(parts[0], parts[1] - 1, parts[2], 23, 59, 59).getTime() : 0;
+
+      const r = S.addOffer(bizId, { text: txt, price, endsAt: end });
+      if (r.error === 'noText') { err('#ofTxtErr', t('offerErrNoText')); return; }
+      if (r.error === 'noEnd') { err('#ofEndErr', t('offerErrNoEnd')); return; }
+      if (r.error === 'tooLong') { err('#ofEndErr', t('offerErrTooLong')); return; }
+      if (r.error === 'tooMany') { toast(t('offerErrTooMany'), 'err'); return; }
+      if (r.error) { toast(t('somethingWrong'), 'err'); return; }
+
+      closeSheet();
+      // say it out loud rather than letting them find it themselves later
+      if (r.strippedPhone) toast(t('offerPhoneOut'), 'ok');
+      else toast(t('offerSent'), 'ok');
+      if (onSaved) onSaved();
+    });
+  });
+}
+
 export function openReviewSheet(bizId, onSaved) {
   const existing = S.myReviewFor(bizId);
   let rating = existing ? existing.rating : 5;

@@ -4,10 +4,66 @@ import { t, L, icon, $, $$, go, renderHeader, openSheet, closeSheet, toast, star
 import { CATEGORIES, HOME_CATS, MINI_ADS, ARTICLES, ZIPS, CITY_SUGGESTIONS, AD_SLOTS,
          CITY_POINTS } from '../data.js';
 import * as S from '../store.js';
-import { prayerBarHtml, mountPrayerBar } from './prayer.js';
+import { prayerBarHtml, mountPrayerBar, ramadanBarHtml, mountRamadanBar } from './prayer.js';
+import { newcomerCardHtml } from './magazine.js';
 
 let sliderStop = null;
 let miniStop = null;
+
+/** Home is a summary, not the list: six, and «عرض الكل» carries the rest. */
+const HOME_OFFERS = 6;
+
+/** the same one-liner three other screens keep locally */
+function attr(v) {
+  return String(v == null ? '' : v)
+    .replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]))
+    .replace(/"/g, '&quot;');
+}
+
+/**
+ * One offer, with the shop's name above it. The name is the half that
+ * makes it worth tapping — «خصم 20%» on its own says nothing about who.
+ */
+export function offerTile({ offer, biz }) {
+  const ends = endsLabel(offer);
+  return `<button class="card offer-tile" data-route="#/directory/${biz.id}">
+    <div class="offer-shop">${icon(catIcon(biz.cat), 15)}<b>${L(biz.name)}</b></div>
+    <div class="offer-text">${attr(offer.text)}</div>
+    ${offer.price ? `<div class="offer-price ltr">${attr(offer.price)}</div>` : ''}
+    <div class="offer-meta">${icon('clock', 15)}<span>${ends}</span></div>
+  </button>`;
+}
+
+/**
+ * «عرض الكل» behind the home strip. A plain list, soonest to run out at the
+ * top, because an offer with two days left is the one worth acting on.
+ */
+export function OffersScreen(root) {
+  renderHeader({ simple: true, title: t('offersTitle') });
+  const live = S.allLiveOffers();
+  root.innerHTML = !live.length
+    ? `<div class="rev-empty" style="margin:40px 14px">
+         <div class="rev-empty-ico">${icon('tag', 30)}</div>
+         <b>${t('offersNone')}</b><span>${t('offersNoneSub')}</span></div>`
+    : `<div class="pad mt-16">${live.map(x => `
+        <div class="offer-card" data-route="#/directory/${x.biz.id}" style="cursor:pointer">
+          <div class="offer-main">
+            <div class="offer-shop">${icon(catIcon(x.biz.cat), 15)}<b>${L(x.biz.name)}</b></div>
+            <div class="offer-text">${attr(x.offer.text)}</div>
+            ${x.offer.price ? `<div class="offer-price ltr">${attr(x.offer.price)}</div>` : ''}
+            <div class="offer-meta">${icon('clock', 15)}<span>${endsLabel(x.offer)}</span></div>
+          </div>
+        </div>`).join('')}</div>`;
+  wireRoutes(root);
+}
+
+/** «ينتهي اليوم» / «ينتهي غداً» / «ينتهي خلال N يوم» */
+function endsLabel(offer) {
+  const left = Math.ceil((offer.endsAt - S.now()) / 864e5);
+  if (left <= 1) return t('offerEndsToday');
+  if (left === 2) return t('offerEndsTomorrow');
+  return `${t('offerEndsIn')} ${left - 1} ${t('offerDays')}`;
+}
 
 export function HomeScreen(root) {
   renderHeader({});
@@ -15,6 +71,9 @@ export function HomeScreen(root) {
   const ads = S.sliderAds();
   const feat = S.allBusinesses().filter(b => S.businessPlan(b) === 'paid').slice(0, 6);
   const stories = S.withoutDemo(ARTICLES).slice(0, 3);
+  const live = S.allLiveOffers();
+  const offers = live.slice(0, HOME_OFFERS);
+  const more = live.length > HOME_OFFERS;
   const loc = S.state.location;
 
   root.innerHTML = `
@@ -24,6 +83,10 @@ export function HomeScreen(root) {
          in this app and this does not add a second — and it never grows
          beyond a single line above the fold. -->
     ${prayerBarHtml()}
+
+    <!-- Ramadan, and only during it: the same maghrib the engine already
+         computed, wearing the name people use for it that month. -->
+    ${ramadanBarHtml()}
 
     <!-- one row: what you want and where. They are the same question, and
          the second row was costing a whole band above the fold. The
@@ -81,10 +144,30 @@ export function HomeScreen(root) {
       </div>
     </div>`}
 
+    <!-- «عروض هذا الأسبوع» — content that changes every week is what
+         brings somebody back, and it is the first thing the $29 buys that
+         a shop owner can picture. Six at most; the rest are behind «عرض
+         الكل». Nothing at all when nobody is running one, rather than a
+         heading over a gap. -->
+    ${!offers.length ? '' : `<div class="section">
+      <div class="section-head">
+        <div class="section-title">${t('offersTitle')}<small>${t('offersHomeSub')}</small></div>
+        ${more ? `<button class="link-gold" data-route="#/offers">${t('seeAll')}</button>` : ''}
+      </div>
+      <div class="offer-strip">
+        ${offers.map(x => offerTile(x)).join('')}
+      </div>
+    </div>`}
+
     <!-- cheaper mini ad — not rendered at all when there is nothing to
          put in it, so no empty box stands where a banner would be -->
     ${S.withoutDemo(MINI_ADS).length ? `<button class="mini-ad" id="miniAd"></button>
     <div class="mini-dots" id="miniDots"></div>` : ''}
+
+    <!-- «وصلت هيوستن جديد؟» — a fixed card, never an article. A family
+         that landed a month ago opens the app every day for weeks, and an
+         article about them would be under three newer ones by then. -->
+    <div class="pad">${newcomerCardHtml()}</div>
 
     <!-- magazine teaser -->
     ${!stories.length ? '' : `<div class="section">
@@ -119,6 +202,7 @@ export function HomeScreen(root) {
   startSlider(ads);
   startMiniAd();
   mountPrayerBar();
+  mountRamadanBar(root);
 
   $('#homeSearch').addEventListener('keydown', e => {
     if (e.key === 'Enter') go('#/directory?q=' + encodeURIComponent(e.target.value));
@@ -428,9 +512,8 @@ export function requestGeo({ onStep, onOk, onFail }) {
          nearestCity is only consulted when it is not. `inRegion` still
          comes from nearestCity — coverage is one question, the name is
          another. */
-      const named = r.city && CITY_POINTS.some(c => c.city === r.city) ? r.city : null;
       const near = S.nearestCity({ lat: latitude, lng: longitude });
-      onOk({ zip: r.zip || '', city: named || (near && near.city) || r.city, state: r.state,
+      onOk({ zip: r.zip || '', city: cityNameFor(r, near), state: r.state,
              lat: latitude, lng: longitude, inRegion: !!near });
     },
     (err) => {
@@ -480,26 +563,55 @@ function repaintCityChips() {
  * Read the device again without asking anything. `force` is the location
  * sheet's «حدّث موقعي», which skips the staleness test but nothing else.
  */
+/**
+ * The three conditions, in one named place so they can be read and tested
+ * rather than inferred from the middle of a function: the permission was
+ * granted before and not refused, the stored point is older than
+ * GEO_STALE_MS, and a failed attempt is throttled the same way (a failure
+ * leaves `at` untouched, so without this it would retry on every switch).
+ */
+export function shouldRefreshGeo(force = false) {
+  if (document.visibilityState !== 'visible') return false;
+  const g = S.state.geo;
+  if (!g || S.state.geoDenied) return false;      // never granted, or refused
+  if (force) return true;
+  const t0 = S.now();
+  if (g.at && t0 - g.at < GEO_STALE_MS) return false;
+  if (t0 - lastQuietTry < GEO_STALE_MS) return false;
+  return true;
+}
+
+/**
+ * What to CALL the place the reader is standing in.
+ *
+ * If you asked Rai where he lives he would say Richmond. Nobody says "the
+ * nearest city centre to me is Katy" — and that is what 77407 was being
+ * told, because the reverse lookup's own answer was thrown away and
+ * replaced by the nearest of the 25 centres we cover. 77036 is the same
+ * shape: the ZIP says Houston and the nearest centre is Bellaire.
+ *
+ * So: the resolved city wins whenever the directory covers it, and
+ * nearestCity is consulted only when it does not. Coverage is a separate
+ * question and still comes from nearestCity — see `inRegion`.
+ */
+export function cityNameFor(r, near) {
+  const named = r && r.city && CITY_POINTS.some(c => c.city === r.city) ? r.city : null;
+  return named || (near && near.city) || (r && r.city) || '';
+}
+
 export function refreshLocationQuietly(force = false) {
   if (!navigator.geolocation) return;
-  if (document.visibilityState !== 'visible') return;
-  const g = S.state.geo;
-  if (!g || S.state.geoDenied) return;            // never granted, or refused
-  const t0 = S.now();
-  if (!force && g.at && t0 - g.at < GEO_STALE_MS) return;
-  // a failure leaves `at` untouched, so throttle the retry ourselves
-  if (!force && t0 - lastQuietTry < GEO_STALE_MS) return;
-  lastQuietTry = t0;
+  if (!shouldRefreshGeo(force)) return;
+  lastQuietTry = S.now();
   navigator.geolocation.getCurrentPosition(
     async (pos) => {
       const { latitude, longitude } = pos.coords;
       const r = await reverseGeocode(latitude, longitude);
       if (!r || r.error) return;                  // silence: the old point stands
-      const named = r.city && CITY_POINTS.some(c => c.city === r.city) ? r.city : null;
       const near = S.nearestCity({ lat: latitude, lng: longitude });
       const before = S.userCity();
       S.setUserLocation(
-        { zip: r.zip || '', city: named || (near && near.city) || r.city, state: r.state },
+        { zip: r.zip || '', city: cityNameFor(r, near), state: r.state },
         { lat: latitude, lng: longitude });
       if (S.userCity() !== before) repaintCityChips();
     },

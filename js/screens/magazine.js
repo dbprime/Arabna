@@ -1,11 +1,74 @@
 /* ======================= MAGAZINE ======================= */
 import { t, L, icon, $, $$, go, back, renderHeader, toast, wireRoutes, emptyState, shareItem,
          query, sectionNote, sectionSlider, sponsoredRows, historyKey } from '../ui.js';
-import { ARTICLES, MAG_CATS, MINI_ADS, AD_SLOTS } from '../data.js';
+import { ARTICLES, MAG_CATS, MINI_ADS, AD_SLOTS, NEWCOMER_PARTS } from '../data.js';
 import * as S from '../store.js';
 import { catKeyOf, startSlider } from './home.js';
 
 function allArticles() { return S.withoutDemo(S.state.extraArticles.concat(ARTICLES)); }
+
+/* ------------------------------------------------------------
+   THE NEWCOMER'S GUIDE
+
+   Pinned at the head of the magazine rather than filed as an
+   article: an article sinks under the next one, and the family
+   this is written for is arriving every week. It is the drawer's
+   own accordion idiom — one part open at a time, so eight
+   headings stay a list instead of becoming a wall.
+
+   Every part carries a working button even while its copy is a
+   placeholder. That is the half that is useful today, and it is
+   the half that makes the guide a doorway rather than a post.
+   ------------------------------------------------------------ */
+export function newcomerCardHtml() {
+  return `<button class="nc-card" data-route="#/newcomer">
+    <span class="nc-card-ico">${icon('compass', 24)}</span>
+    <span class="nc-card-txt">
+      <b>${t('ncCardTitle')}</b>
+      <span>${t('ncCardSub')}</span>
+    </span>
+    <span class="chev">${icon(document.documentElement.dir === 'rtl' ? 'chevronL' : 'chevronR', 19)}</span>
+  </button>`;
+}
+
+/** the i18n key from the id, the way the attribute registry does it */
+const ncKey = (id, suffix) => 'nc' + id[0].toUpperCase() + id.slice(1) + suffix;
+
+export function NewcomerScreen(root) {
+  renderHeader({ simple: true, title: t('ncTitle') });
+  root.innerHTML = `
+    <div class="pad mt-16">
+      <div class="section-title">${t('ncTitle')}<small>${t('ncSub')}</small></div>
+      <div class="faq mt-12" id="ncList">
+        ${NEWCOMER_PARTS.map(p => `
+          <div class="faq-item" data-q="${p.id}">
+            <button class="faq-head" aria-expanded="false" data-toggle="${p.id}">
+              <span class="nc-head">${icon(p.icon, 19)} ${t(ncKey(p.id, 'Title'))}</span>
+              ${icon('chevronD', 19, 'faq-arrow')}
+            </button>
+            <div class="faq-body"><div class="faq-body-inner">
+              <p>${t('ncSoon')}</p>
+              <button class="btn btn-gold btn-sm btn-block mt-8" data-route="${p.route}">
+                ${icon('search', 17)} ${t('ncFind')}: ${t(ncKey(p.id, 'Find'))}</button>
+            </div></div>
+          </div>`).join('')}
+      </div>
+    </div>
+    <div style="height:16px"></div>`;
+
+  /* one open at a time — the same rule as the drawer and the FAQ */
+  let open = '';
+  $$('#ncList [data-toggle]').forEach(btn => btn.addEventListener('click', () => {
+    const id = btn.dataset.toggle;
+    open = open === id ? '' : id;
+    $$('#ncList .faq-item').forEach(it => {
+      const on = it.dataset.q === open;
+      it.classList.toggle('open', on);
+      it.querySelector('.faq-head').setAttribute('aria-expanded', String(on));
+    });
+  }));
+  wireRoutes(root);
+}
 
 export function MagazineScreen(root) {
   renderHeader({});
@@ -22,6 +85,9 @@ export function MagazineScreen(root) {
     <div class="section-head" style="margin-top:14px">
       <div class="section-title">${t('magazineTitle')}<small>${t('magazineSub')}</small></div>
     </div>
+    ${/* Pinned above the chips, so it is never filtered away and never
+         sinks under the newest article. */''}
+    <div class="pad">${newcomerCardHtml()}</div>
     <!-- six short chips: they wrap onto a second line rather than run off
          the edge. Same rule as everywhere else — an option nobody can see
          is an option nobody has. -->

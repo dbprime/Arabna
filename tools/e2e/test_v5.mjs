@@ -1,0 +1,406 @@
+/* V.01.5 — drawer versions, guest/member split, branch destinations */
+import { chromium } from '/opt/node22/lib/node_modules/playwright/index.mjs';
+
+const BASE = process.env.BASE || 'http://localhost:8123/index.html';
+let pass = 0, fail = 0;
+const ok = (n, c, extra = '') => { if (c) { pass++; console.log('PASS ' + n + (extra ? ' -> ' + extra : '')); } else { fail++; console.log('FAIL ' + n + (extra ? ' -> ' + extra : '')); } };
+
+const browser = await chromium.launch();
+const page = await (await browser.newContext({ colorScheme: 'dark', viewport: { width: 390, height: 844 } })).newPage();
+const errors = [];
+page.on('console', m => { if (m.type() === 'error') errors.push(m.text()); });
+page.on('pageerror', e => errors.push('PAGEERROR ' + e.message));
+
+const go = async (h) => { await page.evaluate(x => { location.hash = x; }, h); await page.waitForTimeout(320); };
+const hash = () => page.evaluate(() => location.hash);
+const txt = () => page.textContent('#app');
+const openDrawer = async () => {
+  if (!(await page.locator('#hMenu').count())) { await go('#/home'); await page.waitForTimeout(340); }
+  await page.click('#hMenu'); await page.waitForTimeout(430);
+};
+const closeDrawer = async () => {
+  await page.evaluate(() => { const s = document.querySelector('.drawer-scrim'); if (s) s.click(); });
+  await page.waitForTimeout(430);
+};
+/** every route reachable from the drawer, group by group */
+const drawerMap = () => page.evaluate(() => ({
+  routes: Array.from(document.querySelectorAll('#drawer [data-route]')).map(b => b.dataset.route),
+  heads: Array.from(document.querySelectorAll('#drawer .dr-head')).map(b => b.textContent.trim()),
+  headsHaveRoute: Array.from(document.querySelectorAll('#drawer .dr-head')).some(b => b.dataset.route),
+  topLevel: Array.from(document.querySelectorAll('#drawer .drawer-panel > *'))
+    .filter(el => el.classList.contains('dr-item') || el.classList.contains('dr-group'))
+    .map(el => el.classList.contains('dr-group') ? 'group:' + el.dataset.group : 'row:' + (el.id || el.textContent.trim().split('\n')[0])),
+  invite: !!document.querySelector('.dr-invite'),
+  logout: !!document.querySelector('#drOut'),
+  badge: (() => { const b = document.querySelector('#drawer .dr-item > .dr-badge'); return b ? b.textContent : null; })(),
+  panelScroll: (() => { const p = document.querySelector('.drawer-panel'); return p ? p.scrollHeight : 0; })(),
+  panelBox: (() => { const p = document.querySelector('.drawer-panel'); return p ? Math.round(p.clientHeight) : 0; })(),
+}));
+
+await page.goto(BASE);
+await page.waitForTimeout(800);
+
+/* ======================================================================
+   PART 1 — as a guest
+   ====================================================================== */
+console.log('--- guest ---');
+
+await openDrawer();
+let d = await drawerMap();
+
+ok('guest: invite card is shown', d.invite);
+ok('guest: sign-up button in the invite card', d.routes.includes('#/auth/signup'));
+ok('guest: sign-in link in the invite card', d.routes.includes('#/auth/signin'));
+ok('guest: no notifications row', !d.routes.includes('#/notifications'));
+ok('guest: no settings row', !d.routes.includes('#/settings'));
+ok('guest: no sign-out row', !d.logout);
+ok('guest: no "my account" group', !d.topLevel.includes('group:account'));
+for (const r of ['#/my-ads', '#/my-reviews', '#/messages', '#/saved', '#/my-business', '#/subscribe']) {
+  ok('guest: ' + r + ' removed from the tree', !d.routes.includes(r));
+}
+ok('guest: app sections group present', d.topLevel.includes('group:sections'));
+ok('guest: advertise stays visible', d.routes.includes('#/advertise'));
+ok('guest: help group present', d.topLevel.includes('group:help'));
+ok('guest: language row present', await page.locator('#drLang').count() === 1);
+ok('guest: no disabled/greyed leftovers',
+   await page.evaluate(() => !document.querySelector('#drawer [disabled], #drawer .disabled')));
+
+await closeDrawer();
+
+/* guest profile screen carries no link rows */
+await go('#/profile');
+let profRows = await page.evaluate(() => document.querySelectorAll('#app .dr-item').length);
+ok('guest profile: zero link rows', profRows === 0, profRows + ' rows');
+ok('guest profile: offers sign up', (await txt()).includes('إنشاء حساب'));
+
+/* personal routes redirect a guest instead of painting empty data */
+for (const [route, expect] of [['#/saved', '#/auth/signup'], ['#/my-ads', '#/auth/signup'],
+                               ['#/my-reviews', '#/auth/signup'], ['#/my-business', '#/auth/signup'],
+                               ['#/settings', '#/auth/signup'], ['#/notifications', '#/auth/signup'],
+                               ['#/messages', '#/auth/signup']]) {
+  await go(route);
+  ok('guest: ' + route + ' redirects', (await hash()).startsWith(expect), await hash());
+}
+
+/* ======================================================================
+   PART 2 — sign up, become a member
+   ====================================================================== */
+console.log('--- becoming a member ---');
+await go('#/auth/signup');
+// V.02.7: one name field became two, and the password is confirmed
+
+await page.fill('#sFirst', 'رامي');
+
+await page.fill('#sLast', 'البي');
+await page.fill('#sEmail', 'rami@arabna.app');
+await page.fill('#sPass', 'pass1234');
+
+await page.fill('#sPass2', 'pass1234');
+await page.check('#agree1'); await page.check('#agree2');
+await page.click('#suBtn'); await page.waitForTimeout(900);
+await page.click('[data-fill="e"]'); await page.click('#vBtn'); await page.waitForTimeout(800);
+
+const isMember = await page.evaluate(() => {
+  const s = JSON.parse(localStorage.getItem('arabna.v1') || '{}');
+  return !!(s.user && s.user.emailVerified);
+});
+ok('signed up and email-verified', isMember);
+
+await openDrawer();
+d = await drawerMap();
+ok('member: drawer rebuilt with the account version', d.topLevel.includes('group:account'));
+ok('member: invite card gone', !d.invite);
+ok('member: sign-out row present', d.logout);
+ok('member: notifications is a standalone row',
+   d.topLevel.some(x => x.startsWith('row:')) && d.routes.includes('#/notifications')
+   && await page.evaluate(() => {
+        const rows = Array.from(document.querySelectorAll('.drawer-panel > .dr-item'));
+        return rows.some(r => r.dataset.route === '#/notifications');
+      }));
+
+/* seven visible top-level rows, no scrolling */
+const visibleRows = await page.evaluate(() => Array.from(document.querySelectorAll('.drawer-panel > *'))
+  .filter(el => el.classList.contains('dr-item') || el.classList.contains('dr-group')).length);
+ok('member: seven top-level rows', visibleRows === 7, visibleRows + ' rows');
+ok('member: drawer needs no scrolling', d.panelScroll <= d.panelBox + 2, d.panelScroll + ' / ' + d.panelBox);
+
+/* badge on the notifications row */
+ok('notifications row carries the unread badge', d.badge !== null, 'badge=' + d.badge);
+
+/* every group collapsed on open, heads never navigate */
+const collapsed = await page.evaluate(() => document.querySelectorAll('#drawer .dr-group.open').length);
+ok('all groups collapsed on open', collapsed === 0, collapsed + ' open');
+ok('no group head carries a route', !d.headsHaveRoute);
+
+const beforeHead = await hash();
+await page.click('#drawer [data-toggle="account"]'); await page.waitForTimeout(320);
+ok('head opens the group in place, does not navigate', (await hash()) === beforeHead);
+ok('the group actually opened', await page.evaluate(() => !!document.querySelector('.dr-group[data-group="account"].open')));
+ok('aria-expanded is true', await page.getAttribute('#drawer [data-toggle="account"]', 'aria-expanded') === 'true');
+
+await page.click('#drawer [data-toggle="sections"]'); await page.waitForTimeout(320);
+ok('only one group open at a time',
+   await page.evaluate(() => document.querySelectorAll('.dr-group.open').length) === 1);
+ok('previous head aria-expanded reset',
+   await page.getAttribute('#drawer [data-toggle="account"]', 'aria-expanded') === 'false');
+
+/* the full destination table */
+d = await drawerMap();
+/* V.02.7: الدليل and السوق left — they are permanent bottom-bar tabs, and
+   «إعلانات مميّزة» took their place. */
+const wanted = ['#/my-business', '#/my-ads', '#/my-reviews', '#/messages', '#/saved', '#/subscribe',
+  '#/settings', '#/events', '#/magazine', '#/categories', '#/directory?featured=1',
+  '#/advertise', '#/help', '#/about', '#/privacy', '#/terms', '#/notifications'];
+for (const r of wanted) ok('drawer has a leaf for ' + r, d.routes.includes(r));
+ok('Home is deliberately absent (V.01.7)', !d.routes.includes('#/home'));
+/* V.02.7 takes it out again: a permanent bottom-bar tab does not need a
+   drawer row, and «إعلانات مميّزة» took the space. */
+ok('Directory taken back out of app sections', !d.routes.includes('#/directory'));
+
+await closeDrawer();
+
+/* every leaf really lands where the table says */
+console.log('--- leaf destinations ---');
+for (const r of wanted) {
+  await go('#/home');
+  await openDrawer();
+  const grp = ['#/my-business', '#/my-ads', '#/my-reviews', '#/messages', '#/saved', '#/subscribe', '#/settings'].includes(r) ? 'account'
+            : ['#/directory', '#/marketplace', '#/events', '#/magazine', '#/categories'].includes(r) ? 'sections'
+            : ['#/help', '#/about', '#/privacy', '#/terms'].includes(r) ? 'help' : null;
+  if (grp) { await page.click(`#drawer [data-toggle="${grp}"]`); await page.waitForTimeout(300); }
+  await page.evaluate((route) => document.querySelector(`#drawer [data-route="${route}"]`).click(), r);
+  await page.waitForTimeout(450);
+  ok('leaf ' + r + ' lands on itself', (await hash()) === r, await hash());
+}
+
+/* ======================================================================
+   PART 3 — pre-filtered destinations
+   ====================================================================== */
+console.log('--- filtered destinations ---');
+
+const chipState = (chipSel, wrapSel) => page.evaluate(([c, w]) => {
+  const chip = document.querySelector(c);
+  if (!chip) return null;
+  const wrap = document.querySelector(w);
+  const cr = chip.getBoundingClientRect(), wr = wrap.getBoundingClientRect();
+  return { active: chip.classList.contains('active'),
+           inView: cr.left >= wr.left - 1 && cr.right <= wr.right + 1,
+           label: chip.textContent.trim() };
+}, [chipSel, wrapSel]);
+
+/* V.02.4: the choice is printed on the picker instead of being a chip
+   somewhere inside a row that scrolls sideways — so "is it in view" stops
+   being a question that can have a wrong answer. */
+const pickerValue = (sel) => page.evaluate(s => {
+  const el = document.querySelector(s);
+  return el ? el.textContent.trim() : null;
+}, sel);
+await go('#/directory?cat=restaurants');
+let cs = { label: await pickerValue('#ctlCat .ctl-v') };
+ok('directory: arriving filtered names the section on the picker', cs.label === 'مطاعم', cs.label);
+ok('directory: a note names the current section', await page.locator('#dirNote .sec-note').count() === 1,
+   (await page.textContent('#dirNote')).trim());
+const dirAll = await page.evaluate(() => document.querySelectorAll('#dirList .list-row').length);
+await go('#/directory');
+const dirNone = await page.evaluate(() => document.querySelectorAll('#dirList .list-row').length);
+ok('directory: the filter really filters', dirAll < dirNone, dirAll + ' vs ' + dirNone);
+ok('directory: unfiltered view shows no section note', await page.locator('#dirNote .sec-note').count() === 0);
+
+await go('#/marketplace?cat=cars');
+cs = { label: await pickerValue('#ctlSec .ctl-v') };
+ok('marketplace: the picker names the section on arrival', cs.label === 'سيارات', cs.label);
+ok('marketplace: section note present', await page.locator('#secNote .sec-note').count() === 1,
+   (await page.textContent('#secNote')).trim());
+
+await go('#/magazine?cat=business');
+cs = await chipState('#magChips .chip.active', '#magChips');
+ok('magazine: chip active on arrival (was broken)', cs && cs.active, cs && cs.label);
+ok('magazine: the FIRST chip is no longer force-active',
+   await page.evaluate(() => !document.querySelector('#magChips .chip[data-cat="all"]').classList.contains('active')));
+ok('magazine: chip scrolled into view', cs && cs.inView);
+ok('magazine: section note present', await page.locator('#magNote .sec-note').count() === 1,
+   (await page.textContent('#magNote')).trim());
+const magFiltered = await page.evaluate(() => document.querySelectorAll('#magList .mag-card').length);
+await go('#/magazine');
+const magAll = await page.evaluate(() => document.querySelectorAll('#magList .mag-card').length);
+ok('magazine: the filter really filters', magFiltered < magAll, magFiltered + ' vs ' + magAll);
+ok('magazine: unfiltered starts on "all"',
+   await page.evaluate(() => document.querySelector('#magChips .chip[data-cat="all"]').classList.contains('active')));
+
+/* home circles + all-categories grid pass the category through */
+await go('#/home');
+await page.evaluate(() => document.querySelector('.cat-item[data-cat="restaurants"]').click());
+await page.waitForTimeout(420);
+ok('home circle → filtered directory', (await hash()) === '#/directory?cat=restaurants', await hash());
+
+await go('#/categories');
+const catRoutes = await page.evaluate(() => Array.from(document.querySelectorAll('.cat-cell')).map(c => c.dataset.route));
+ok('all-categories: marketplace cells carry ?cat=', catRoutes.some(r => r.startsWith('#/marketplace?cat=')));
+ok('all-categories: directory cells carry ?cat=', catRoutes.some(r => r.startsWith('#/directory?cat=')));
+ok('all-categories: the Events cell opens Events, not an empty filter',
+   catRoutes.includes('#/events') && !catRoutes.includes('#/directory?cat=events'));
+
+await page.evaluate(() => document.querySelector('.cat-cell[data-route="#/marketplace?cat=pets"]').click());
+await page.waitForTimeout(430);
+ok('all-categories → marketplace section', (await hash()) === '#/marketplace?cat=pets', await hash());
+cs = { label: await pickerValue('#ctlSec .ctl-v') };
+ok('…and lands with the section named on the picker', cs.label === 'حيوانات أليفة', cs.label);
+
+/* back from a filtered destination returns where it came from */
+await go('#/home');
+await go('#/categories');
+await page.evaluate(() => document.querySelector('.cat-cell[data-route="#/marketplace?cat=pets"]').click());
+await page.waitForTimeout(430);
+await page.goBack(); await page.waitForTimeout(430);
+ok('back from a filtered destination returns to the source', (await hash()) === '#/categories', await hash());
+
+/* ======================================================================
+   PART 4 — profile is a profile, not a link list
+   ====================================================================== */
+console.log('--- profile ---');
+await go('#/profile');
+profRows = await page.evaluate(() => document.querySelectorAll('#app .dr-item').length);
+ok('member profile: zero drawer-style link rows', profRows === 0, profRows + ' rows');
+const pt = await txt();
+// "المفضلة" survives as a stat label, which the brief asks for — what must be
+// gone is the link ROW, asserted above by the zero .dr-item count.
+for (const gone of ['الإعدادات', 'المساعدة', 'عن التطبيق', 'الخصوصية', 'الشروط', 'تسجيل الخروج']) {
+  ok('profile no longer repeats "' + gone + '"', !pt.includes(gone));
+}
+ok('profile shows the name', pt.includes('رامي البي'));
+ok('profile shows the email', pt.includes('rami@arabna.app'));
+ok('profile shows the join date label', pt.includes('عضو منذ'));
+ok('profile shows the account tier', pt.includes('حساب مؤكد'));
+ok('profile prompts phone verification', pt.includes('وثّق رقمك'));
+ok('profile keeps edit + change-password', pt.includes('تعديل الملف') && pt.includes('كلمة السر'));
+
+const stats = await page.evaluate(() => Array.from(document.querySelectorAll('.stat-row .stat'))
+  .map(s => ({ tag: s.tagName, route: s.dataset.route || null })));
+ok('three stats, all tappable buttons', stats.length === 3 && stats.every(s => s.tag === 'BUTTON'));
+ok('stats point at their own lists',
+   JSON.stringify(stats.map(s => s.route)) === JSON.stringify(['#/my-ads', '#/saved', '#/my-reviews']),
+   JSON.stringify(stats.map(s => s.route)));
+
+for (const [i, route] of [[0, '#/my-ads'], [1, '#/saved'], [2, '#/my-reviews']]) {
+  await go('#/profile');
+  await page.evaluate((n) => document.querySelectorAll('.stat-row .stat')[n].click(), i);
+  await page.waitForTimeout(430);
+  ok('stat ' + i + ' opens ' + route, (await hash()) === route, await hash());
+}
+
+/* ======================================================================
+   PART 5 — the unread counter
+   ====================================================================== */
+console.log('--- counter ---');
+await openDrawer();
+const badgeBefore = await page.evaluate(() => {
+  const r = Array.from(document.querySelectorAll('.drawer-panel > .dr-item'))
+    .find(x => x.dataset.route === '#/notifications');
+  const b = r && r.querySelector('.dr-badge');
+  return b ? b.textContent.trim() : null;
+});
+ok('counter shows on the notifications row', badgeBefore && Number(badgeBefore) > 0, 'badge=' + badgeBefore);
+await closeDrawer();
+
+await go('#/notifications');
+await page.evaluate(() => document.querySelector('.notif-row.unread').click());
+await page.waitForTimeout(420);
+await go('#/home');
+await openDrawer();
+const badgeAfter = await page.evaluate(() => {
+  const r = Array.from(document.querySelectorAll('.drawer-panel > .dr-item'))
+    .find(x => x.dataset.route === '#/notifications');
+  const b = r && r.querySelector('.dr-badge');
+  return b ? b.textContent.trim() : null;
+});
+ok('counter drops after one is read', Number(badgeAfter) === Number(badgeBefore) - 1,
+   badgeBefore + ' -> ' + badgeAfter);
+await closeDrawer();
+
+/* mark everything read → the badge disappears entirely */
+await go('#/notifications');
+if (await page.locator('#markAll').count()) { await page.click('#markAll'); await page.waitForTimeout(420); }
+else {
+  const n = await page.evaluate(() => document.querySelectorAll('.notif-row.unread').length);
+  for (let i = 0; i < n; i++) {
+    await page.evaluate(() => { const r = document.querySelector('.notif-row.unread'); if (r) r.click(); });
+    await page.waitForTimeout(320);
+    await go('#/notifications');
+  }
+}
+await go('#/home');
+await openDrawer();
+ok('counter hidden at zero', await page.evaluate(() => {
+  const r = Array.from(document.querySelectorAll('.drawer-panel > .dr-item'))
+    .find(x => x.dataset.route === '#/notifications');
+  return r && !r.querySelector('.dr-badge');
+}));
+ok('header dot cleared too', await page.evaluate(() => !document.querySelector('#hMenu .dot')));
+await closeDrawer();
+
+/* ======================================================================
+   PART 6 — English
+   ====================================================================== */
+console.log('--- English ---');
+await openDrawer();
+await page.click('#drLang'); await page.waitForTimeout(650);
+ok('switched to English', await page.evaluate(() => document.documentElement.lang === 'en'));
+ok('LTR applied', await page.evaluate(() => document.documentElement.dir === 'ltr'));
+
+await openDrawer();
+const enTxt = await page.textContent('#drawer');
+ok('EN drawer: "My account" group', enTxt.includes('My account'));
+ok('EN drawer: "ARABNA categories" group (renamed in V.02.7)', enTxt.includes('ARABNA categories'));
+ok('EN drawer: no Arabic left in the drawer chrome', !enTxt.includes('حسابي'));
+d = await drawerMap();
+ok('EN member drawer still 7 rows',
+   (await page.evaluate(() => Array.from(document.querySelectorAll('.drawer-panel > *'))
+     .filter(el => el.classList.contains('dr-item') || el.classList.contains('dr-group')).length)) === 7);
+ok('EN drawer still needs no scrolling', d.panelScroll <= d.panelBox + 2, d.panelScroll + ' / ' + d.panelBox);
+await closeDrawer();
+
+await go('#/magazine?cat=business');
+ok('EN magazine: chip still active on arrival',
+   await page.evaluate(() => !!document.querySelector('#magChips .chip[data-cat="business"].active')));
+ok('EN magazine: section note is English',
+   /results/.test((await page.textContent('#magNote')) || ''), (await page.textContent('#magNote')).trim());
+
+await go('#/profile');
+const enProf = await txt();
+ok('EN profile: no link rows', await page.evaluate(() => document.querySelectorAll('#app .dr-item').length) === 0);
+ok('EN profile: stats labelled in English', enProf.includes('Active listings'));
+
+/* ======================================================================
+   PART 7 — sign out returns the guest drawer
+   ====================================================================== */
+console.log('--- sign out ---');
+await openDrawer();
+await page.click('#drOut'); await page.waitForTimeout(430);
+await page.evaluate(() => document.querySelector('#cfmYes').click());
+await page.waitForTimeout(700);
+ok('signed out lands on home', (await hash()) === '#/home', await hash());
+
+await openDrawer();
+d = await drawerMap();
+ok('sign out: guest drawer is back immediately', d.invite && !d.logout);
+ok('sign out: account tools gone again', !d.topLevel.includes('group:account'));
+ok('sign out: notifications gone again', !d.routes.includes('#/notifications'));
+await closeDrawer();
+
+/* a personal screen open at sign-out time redirects instead of showing blanks */
+await go('#/my-ads');
+ok('personal screen after sign-out redirects', (await hash()).startsWith('#/auth/'), await hash());
+
+/* switch back to Arabic for a clean end state */
+await go('#/home');
+await openDrawer();
+await page.click('#drLang'); await page.waitForTimeout(600);
+ok('language toggles back to Arabic', await page.evaluate(() => document.documentElement.dir === 'rtl'));
+
+// the Google-Fonts stylesheet cannot be reached from this sandbox
+const real = errors.filter(e => !/favicon|ERR_CONNECTION_RESET|Failed to load resource/i.test(e));
+ok('no console errors', real.length === 0, real.slice(0, 4).join(' | '));
+
+console.log(`\n${pass} passed, ${fail} failed`);
+await browser.close();
+process.exit(fail ? 1 : 0);

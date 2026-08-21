@@ -7,7 +7,7 @@ ARABNA · عربنا — a mobile-first web app for the Arab community in the U.
 **business directory + marketplace + events + magazine**, Arabic-first with a full English toggle.
 ("Classifieds / الإعلانات الشخصية" is now "Marketplace / السوق" — the old `#/classifieds`
 routes still resolve so shared links keep working.)
-Current version: **V.03.1 (prototype)**. Owner: Rai Elby (@dbprime). Deploys to Vercel (team DB Prime).
+Current version: **V.03.2 (prototype)**. Owner: Rai Elby (@dbprime). Deploys to Vercel (team DB Prime).
 
 ## Hard rules (from the product brief)
 1. **One repository, one Vercel project.** No duplicates, no stray preview projects.
@@ -37,6 +37,8 @@ js/store.js           state, entitlements, and ALL backend seams
 js/prayer.js          the prayer-time arithmetic — no API, no library
 js/synonyms.js        the search dictionary — expands the QUERY, never the data
 tools/synonyms.test.mjs  runs all 984 words against the real listings
+tools/e2e/               the Playwright suites, v3–v25, plus run.sh and the i18n check
+tools/build_single.py    generates index-single-file.html from the sources
 js/ui.js              toast / sheet / drawer / header / nav primitives
 js/icons.js           inline SVG icons
 js/screens/*.js       home · categories · directory · marketplace · events · magazine ·
@@ -62,7 +64,7 @@ Icons are sized inline via `icon('name', size)`.
 | Home main slider | highest-priced ad placement ($149+/week) |
 | Home mini banner | cheaper ad tier ($49+/month); fixed 62px box, capped at `AD_SLOTS.mini` |
 | Category slider | `catSlider` — the same strip at the top of one category page ($69+/week), 4 slots per category |
-| Directory | $29/month business subscription — unlimited photos + video, eligibility for the gold badge, category ranking, "featured this week", **"your page, only yours"**, stats, offers. **Reviews are NOT on it** (see below) |
+| Directory | $29/month business subscription — unlimited photos + video, eligibility for the gold badge, category ranking, "featured this week", **"your page, only yours"**, stats, **offers (built V.03.2)**. **Reviews are NOT on it** (see below) |
 | Marketplace | free + paid "Boost" ($2–8); the Handyman section caps at 1 listing / 14 days and upsells the directory subscription |
 | Magazine | native banners between articles + sponsored stories ($199+) |
 | Events | "Featured Event" pin at the top of the section ($99+/week, `AD_PRODUCTS.event`) |
@@ -488,11 +490,37 @@ and `outingFeature` (15).
   every year, so a human checks before it goes live.
 
 ## Testing before you ship a change
-1. Serve locally (`python3 -m http.server`) and click through: home → directory → listing →
-   classifieds → post → magazine → advertise → admin.
-2. Check **both** languages (the AR/EN button in the header) — layout must mirror correctly.
+```
+python3 -m http.server 8099        # from the repo root
+node tools/e2e/chk_i18n.mjs        # both packs, every derived key, seconds
+tools/e2e/run.sh                   # 23 suites × 2 builds, ~25 minutes
+python3 tools/build_single.py > index-single-file.html
+```
+1. `tools/e2e/` holds every suite, v3 to v25, one per batch, and `run.sh`
+   runs all of them against **both** `index.html` and the generated
+   `index-single-file.html`. A change is not finished until both are green.
+2. Check **both** languages (the AR/EN button in the header) and **both**
+   themes — layout must mirror and every colour must come from the token
+   layer.
 3. Confirm the logo renders and no console errors.
 4. Regenerate the single-file build if you changed any source file.
+
+**The suites live in the repository on purpose (V.03.2).** They spent five
+batches in a scratch directory, and a container reset destroyed three of
+them at once — taking the only regression cover batches six (b), seven and
+seven (a) had, and silently reverting fixes in four more. They were rebuilt
+from the invariants recorded in this file, which is the second reason to
+keep writing those down. The net is what enforces rule 2; it belongs with
+the thing it protects.
+
+Two things the harness has to know, both learned the hard way:
+- **On the single-file build the app's modules sit behind an importmap**, so
+  `import('./js/store.js')` from the page fetches the file again and hands
+  back a **second instance with its own state**. Reach the app's own with
+  `import('arabna/js/store.js')` and fall back to the relative path.
+- The proxy's `ERR_TUNNEL_CONNECTION_FAILED` on the Google Fonts stylesheet
+  is the sandbox, not the app. Every suite filters it alongside
+  `ERR_CONNECTION` and `ERR_CERT`.
 
 ## What is actually in `data.js` now (V.02.1)
 **514 businesses** (V.02.6): 29 invented development seeds (`b1`–`b29`) and
@@ -1654,6 +1682,103 @@ in the same move.
   school. A new attribute is one line in `data.js` and two in `i18n.js`,
   exactly as the registry promises.
 
+## V.03.2 — batch seven (b): the content that brings people back
+
+The measure here is not audience but **frequency**. An app opened once a
+year is worth nothing however many people installed it. Prayer times (V.03.1)
+return somebody five times a day; offers weekly; the newcomer's guide daily
+for a few weeks, once in a lifetime; Ramadan is one month a year.
+
+### Offers — a subscription feature before it is content
+«العروض» had been printed in the $29 column since V.01.8 and never built.
+It pays twice: content that changes every week is what reopens the app, and
+it is the **first concrete thing a grocer can picture buying** — one post to
+the whole community for less than a single boosted photo elsewhere. There
+are 41 markets in the directory and every one of them already posts its
+weekly deals to WhatsApp, where they vanish.
+
+Four rules, all in `store.js` so no second surface can disagree:
+
+- **It ends by itself.** `endsAt` is required and capped at
+  `MAX_OFFER_DAYS` (30). Nothing sweeps up: `offersFor()` filters on the
+  clock, so an expired offer is gone from the page, the home strip, the
+  «عنده عرض» badge and the filter in the same instant. A stale offer is
+  worse than none — somebody drives out and is turned away at the counter.
+- **Three at a time** (`MAX_OFFERS`), pending ones counted, or a fourth
+  would queue behind the cap. Without it the page becomes a circular.
+- **Every one is reviewed**, like any other user content. A price claim
+  published unread is our liability, not the shop's. A rejection carries
+  the admin's written reason to the owner as a notification.
+- **No phone number in the text.** `stripPhones` already existed for the
+  marketplace and this is the same job; `addOffer` returns
+  `strippedPhone` so the owner is **told** it happened rather than left to
+  notice — «الرقم موجود على صفحتك أصلاً».
+
+Four surfaces, and the block draws itself differently for each reader:
+a reader sees what is live; the owner sees their pending and rejected ones
+too, with the count left; **a shop that has not subscribed sees the door**
+(`.offer-lock` → `#/subscribe`) and a reader on that same page sees nothing
+at all, because an «offers» heading over an empty page is the blank screen
+this project bans. **A `nonCommercial` place is offered none of it** — a
+city park has nobody to sell to, the same rule as the claim button.
+
+- **Home**: «عروض هذا الأسبوع» between «مميّز هذا الأسبوع» and the magazine,
+  **six** at most with «عرض الكل» → `#/offers` behind it, soonest to run out
+  first. The shop's name is on the card: «خصم 20%» alone says nothing about
+  who.
+- **Directory**: a gold «عنده عرض» mark on the row, an option in the filter
+  sheet **with its live count** — offered only when somebody is actually
+  running one — and `offer=1` in the URL, so the filtered view is a link
+  somebody can send.
+- **Admin**: its own block in the moderation queue, counted in
+  `pendingCount()`. `pendingWorshipFixes()` was also missing from that
+  count and went in with it.
+
+### The newcomer's guide
+A family that landed a month ago is at the sharpest moment of need in their
+lives and opens the app every day for weeks; whoever helps them then keeps
+them for years and is named to every family that arrives after.
+
+- **Pinned at the head of the magazine, above the chips**, so no section
+  filter can hide it and no newer article can sink it — and a fixed card on
+  Home, and a drawer row.
+- **Eight parts**, the drawer's own accordion, one open at a time.
+- **Every part ends in a doorway** — that is what separates a guide from a
+  post. And **every route was measured**: `eduDriving` was the obvious
+  filter for the driving licence and carries **zero** businesses, so that
+  part opens the whole education category instead. `NEWCOMER_PARTS` in
+  `data.js` holds the structure; the strings derive their i18n key from the
+  id the way the attribute registry does, so they cannot drift.
+- **The copy is a placeholder and says so.** Nothing here invents a
+  government procedure — one wrong step or number costs a family a day.
+  The button under each part works today; Rai's text replaces `ncSoon`.
+
+### Ramadan
+**Iftar is maghrib.** The V.03.1 engine already computes it to the minute
+with the reader's own method, so the bar costs no arithmetic, no setting
+and **no second timer** — it rides the same `onMinute` ticker and re-labels
+one number. Verified: the bar and `#/prayer` agree to the minute.
+
+- It appears only while `state.seasons.ramadan` is on and goes with it,
+  filters included — `attrGroupsForCat` already gated on `seasonOn`, so
+  that half needed no code.
+- **The two buttons filter by the attribute, not the category.**
+  `cat=restaurants&attrs=suhoor` measured **zero**: the one listing that
+  carries `suhoor` is a bakery, which is exactly who is open at 3am, and
+  the category was hiding the only right answer. A button whose filter
+  returns nothing is not drawn at all.
+- The admin switch already printed «على 4 أنشطة اليوم — تحتاج 5 لتظهر
+  كشريحة» from batch six (b); that is what item 3(ج) asked for and it was
+  left alone.
+
+### The drawer is now full — and this is for the owner to settle
+The newcomer row is the sixth leaf in «تصنيفات عربنا», and with that group
+open the panel measures **882 against 844: it scrolls**, which the drawer's
+standing rule forbids. One row anywhere would fix it. Separately, the
+**«حسابي» group has measured 932 against 844 since before V.03.1** — that
+one is not new and not from this batch. Nothing was removed to make room:
+which row goes is a product decision, not a code one.
+
 ## Known open items
 - Legal pages are first drafts — a lawyer must review before public launch.
 - Push notifications: triggers are defined in Settings but not wired to a real service.
@@ -1676,6 +1801,17 @@ in the same move.
 - **The admin users section is deferred to the server batch**, and so is any
   count that spans devices. One account exists on one device, so the screen
   would show Rai looking at himself.
+- **The newcomer's guide is a shell with working doorways.** Eight parts,
+  eight buttons that all land on real listings, and placeholder copy that
+  says so. Rai writes the text; nothing may invent a government procedure.
+- **Ramadan has almost no data behind it.** Three seasonal attributes on
+  four businesses, all of them demo seeds — no imported record carries one.
+  The switch, the bar, the filters and the counts all work; filling
+  `iftar` / `suhoor` / `ramadanHours` on the real listings is a data job,
+  and its moment is a month before Ramadan, not the night of.
+- **The drawer scrolls when a group is open** — 882/844 with «تصنيفات
+  عربنا» open (the newcomer row), 932/844 with «حسابي» (pre-existing).
+  Which row to drop is the owner's call.
 - **None of the 514 listings has coordinates yet.** That is a data job done
   outside the app (admin → directory exports the addresses). Until they
   arrive the app shows each listing's area name, never a figure in miles,

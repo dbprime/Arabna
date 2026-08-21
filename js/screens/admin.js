@@ -75,7 +75,8 @@ function panelView(root) {
   const paint = () => {
     root.innerHTML = paintTabs() + '<div id="aBody"></div>';
     const body = $('#aBody');
-    if (tab === 'queue') body.innerHTML = claimsHtml() + verifyHtml() + bizPhotoHtml() + queueHtml();
+    if (tab === 'queue') body.innerHTML = claimsHtml() + verifyHtml() + bizPhotoHtml()
+      + offersHtml() + queueHtml();
     else if (tab === 'mag') body.innerHTML = magHtml();
     else if (tab === 'ads') body.innerHTML = adsHtml();
     else if (tab === 'events') body.innerHTML = repeatsHtml() + eventsHtml();
@@ -97,6 +98,16 @@ function panelView(root) {
       S.rejectClassified(b.dataset.reject, box ? box.value : '');
       toast(t('itemRejected'), 'ok');
       paint();
+    }));
+    // --- offers awaiting approval ---
+    $$('#aBody [data-ofok]').forEach(b => b.addEventListener('click', () => {
+      S.approveOffer(b.dataset.biz, b.dataset.ofok);
+      toast(t('itemApproved'), 'ok'); paint();
+    }));
+    $$('#aBody [data-ofno]').forEach(b => b.addEventListener('click', () => {
+      const box = $('#why-' + b.dataset.ofno);
+      S.rejectOffer(b.dataset.biz, b.dataset.ofno, box ? box.value : '');
+      toast(t('itemRejected'), 'ok'); paint();
     }));
     // --- events awaiting approval ---
     $$('#aBody [data-evok]').forEach(b => b.addEventListener('click', () => {
@@ -792,6 +803,35 @@ function claimsHtml() {
         </div>
       </div>`;
     }).join('')}`;
+}
+
+/** the same escaper three other screens keep locally */
+function att(v) {
+  return String(v == null ? '' : v)
+    .replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]))
+    .replace(/"/g, '&quot;');
+}
+
+/**
+ * Offers waiting on a decision. A price claim published unread is our
+ * liability, not the shop's — so this passes review like everything else
+ * a user writes, and a rejection carries the reason to its author.
+ */
+function offersHtml() {
+  const list = S.pendingOffers();
+  if (!list.length) return '';
+  return `<div class="dr-group-label">${t('offerQueue')} (${list.length})</div>
+    ${list.map(({ offer, biz }) => `<div class="card" style="padding:13px;margin:0 14px 10px">
+      <div class="row-title">${biz ? L(biz.name) : offer.bizId}</div>
+      <div class="offer-text mt-8">${att(offer.text)}</div>
+      ${offer.price ? `<div class="offer-price ltr">${att(offer.price)}</div>` : ''}
+      <div class="offer-meta">${icon('clock', 15)}<span>${t('offerEndsAt')} ${fmtDate(offer.endsAt)}</span></div>
+      <div class="reject-box"><input class="input" id="why-${offer.id}" placeholder="${t('rejectReasonPlaceholder')}" /></div>
+      <div class="row-actions mt-8">
+        <button class="mini-btn gold" data-ofok="${offer.id}" data-biz="${offer.bizId}">${icon('check', 15)} ${t('approve')}</button>
+        <button class="mini-btn" data-ofno="${offer.id}" data-biz="${offer.bizId}">${icon('x', 15)} ${t('reject')}</button>
+      </div>
+    </div>`).join('')}`;
 }
 
 function bizPhotoHtml() {

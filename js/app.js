@@ -8,14 +8,14 @@ import { $, renderHeader, renderNav, hideNav, closeSheet, closeDrawer, closeDrop
          mountScrollMemory, restoreScroll, historyKey, markShown, startClock,
          applyTheme, mountThemeWatch } from './ui.js';
 
-import { HomeScreen, mountGeoRefresh } from './screens/home.js';
+import { OffersScreen, HomeScreen, mountGeoRefresh } from './screens/home.js';
 import { CategoriesScreen } from './screens/categories.js';
 import { EventsScreen, EventScreen, EventFormScreen } from './screens/events.js';
 import { DirectoryScreen, ListingScreen, AddBusinessScreen, ClaimScreen, SubscribeScreen,
          SubscribeConsentScreen, MySubscriptionScreen,
          BusinessEditScreen, BusinessPhotosScreen, BusinessVerifyScreen } from './screens/directory.js';
 import { MarketplaceScreen, ListingDetailScreen, PostScreen, BoostScreen, MessagesScreen } from './screens/marketplace.js';
-import { MagazineScreen, ArticleScreen } from './screens/magazine.js';
+import { NewcomerScreen, MagazineScreen, ArticleScreen } from './screens/magazine.js';
 import { ProfileScreen, EditProfileScreen, ChangePasswordScreen, SavedScreen, MyAdsScreen,
          MyBusinessScreen, MyReviewsScreen, SettingsScreen, NotificationsScreen,
          HelpScreen, AboutScreen, PrivacyScreen, TermsScreen, BlockedScreen } from './screens/profile.js';
@@ -28,6 +28,7 @@ const ROUTES = [
   { re: /^#\/home$/,              screen: HomeScreen,        nav: 'home' },
   { re: /^#\/categories$/,        screen: CategoriesScreen,  nav: 'home' },
   { re: /^#\/prayer$/,            screen: PrayerScreen,      nav: 'home' },
+  { re: /^#\/offers$/,            screen: OffersScreen,      nav: 'home' },
   { re: /^#\/events$/,            screen: EventsScreen,      nav: 'home' },
   { re: /^#\/events\/propose$/,   screen: EventFormScreen,   nav: 'home' },
   { re: /^#\/events\/edit\/(.+)$/, screen: EventFormScreen, nav: null },
@@ -43,6 +44,7 @@ const ROUTES = [
   { re: /^#\/subscribe-consent\/([^?]+)/, screen: SubscribeConsentScreen, nav: null },
   { re: /^#\/my-subscription$/,   screen: MySubscriptionScreen, nav: 'profile' },
   { re: /^#\/subscribe(?:\/(.+))?$/, screen: SubscribeScreen, nav: 'directory' },
+  { re: /^#\/newcomer$/,          screen: NewcomerScreen,    nav: 'directory' },
   { re: /^#\/magazine$/,          screen: MagazineScreen,    nav: 'directory' },
   { re: /^#\/magazine\/(.+)$/,    screen: ArticleScreen,     nav: 'directory' },
   { re: /^#\/marketplace$/,       screen: MarketplaceScreen, nav: 'classifieds' },

@@ -90,6 +90,7 @@ const DEFAULTS = {
      and one fixed set of times tells them the app is not for them. */
   prayer: { method: 'isna', asr: 1 },
   worshipFixes: [],          // «الوقت غير صحيح؟» — one line from a regular, for the admin
+  offers: {},                // { bizId: [{ id, text, price, endsAt, status, when, reason }] }
 };
 
 export const state = Object.assign({}, DEFAULTS, load() || {});
@@ -1573,10 +1574,140 @@ export function businessPlan(b) {
   return b.plan;
 }
 export const PLAN_LIMITS = {
-  free: { photos: 3, videos: 0 },
-  paid: { photos: Infinity, videos: 3 },
+  free: { photos: 3, videos: 0, offers: false },
+  paid: { photos: Infinity, videos: 3, offers: true },
 };
 export function planLimits(b) { return PLAN_LIMITS[businessPlan(b)] || PLAN_LIMITS.free; }
+
+/* ------------------------------------------------------------
+   OFFERS — the thing the $29 was already promising
+
+   «العروض» has been in the subscription's column since V.01.8 and
+   was never built. It earns its place twice over: content that
+   changes every week is what brings somebody back, and it is the
+   first concrete reason a grocer has to pay — one post reaches the
+   whole community for less than a single boosted photo elsewhere.
+
+   Four rules, and every one of them is here rather than in a
+   screen, so a second surface cannot disagree with the first:
+
+   1. It ENDS BY ITSELF. `endsAt` is required and capped at
+      MAX_OFFER_DAYS. A stale offer is worse than none — somebody
+      drives out and is turned away at the counter.
+   2. THREE at a time. Without a cap the page becomes a circular.
+   3. It is REVIEWED like any other user content. A price claim
+      published unread is our liability, not the shop's.
+   4. NO PHONE NUMBER in the text — `stripPhones` already exists
+      and this is exactly what it is for.
+   ------------------------------------------------------------ */
+export const MAX_OFFERS = 3;
+export const MAX_OFFER_DAYS = 30;
+
+/** the subscription's own column — never read `plan` in a screen */
+export function canPostOffers(b) { return !!planLimits(b).offers; }
+
+/** every offer ever posted for this business, expired ones included */
+function allOffersFor(bizId) {
+  return ((state.offers || {})[bizId] || []).slice();
+}
+
+/** live to a reader: approved, and not yet run out */
+export function offersFor(bizId) {
+  const t = now();
+  return allOffersFor(bizId).filter(o => o.status === 'live' && o.endsAt > t);
+}
+
+/** what the owner sees: pending and rejected too, but never an expired one */
+export function myOffersFor(bizId) {
+  const t = now();
+  return allOffersFor(bizId).filter(o => o.status !== 'expired' && o.endsAt > t);
+}
+
+/** the cap counts what is standing — pending included, or four could queue */
+export function activeOfferCount(bizId) {
+  return myOffersFor(bizId).filter(o => o.status !== 'rejected').length;
+}
+
+export function hasOffers(b) { return !!b && offersFor(b.id).length > 0; }
+
+/** every live offer in the app, soonest to run out first */
+export function allLiveOffers() {
+  const out = [];
+  Object.keys(state.offers || {}).forEach(bizId => {
+    const b = businessById(bizId);
+    if (!b) return;
+    offersFor(bizId).forEach(o => out.push({ offer: o, biz: b }));
+  });
+  return out.sort((a, c) => a.offer.endsAt - c.offer.endsAt);
+}
+
+/**
+ * Post one. Returns `{ error }` rather than throwing, because every caller
+ * is a form that has to say why.
+ */
+export function addOffer(bizId, { text, price, endsAt }) {
+  const b = businessById(bizId);
+  if (!b) return { error: 'noBiz' };
+  if (!canPostOffers(b)) return { error: 'notSubscribed' };
+  if (activeOfferCount(bizId) >= MAX_OFFERS) return { error: 'tooMany' };
+
+  // stripPhones returns { text, removed } — the count is what tells the
+  // owner a number was taken out rather than leaving them to spot it
+  const scrubbed = stripPhones(String(text || '').trim());
+  const body = scrubbed.text;
+  if (!body) return { error: 'noText' };
+
+  const t = now();
+  const cap = t + MAX_OFFER_DAYS * 864e5;
+  const end = Number(endsAt) || 0;
+  if (!end || end <= t) return { error: 'noEnd' };
+  if (end > cap) return { error: 'tooLong' };
+
+  const item = { id: 'of' + t + Math.floor(Math.random() * 1e3), bizId,
+                 text: body, price: stripPhones(String(price || '').trim()).text,
+                 endsAt: end, status: 'pending', when: t };
+  state.offers = Object.assign({}, state.offers, { [bizId]: allOffersFor(bizId).concat(item) });
+  save();
+  return { offer: item, strippedPhone: scrubbed.removed > 0 };
+}
+
+function patchOffer(bizId, id, patch) {
+  state.offers = Object.assign({}, state.offers, {
+    [bizId]: allOffersFor(bizId).map(o => o.id === id ? Object.assign({}, o, patch) : o),
+  });
+  save();
+}
+
+export function removeOffer(bizId, id) {
+  state.offers = Object.assign({}, state.offers, {
+    [bizId]: allOffersFor(bizId).filter(o => o.id !== id),
+  });
+  save();
+}
+
+/** the admin queue */
+export function pendingOffers() {
+  const t = now();
+  const out = [];
+  Object.keys(state.offers || {}).forEach(bizId => {
+    const b = businessById(bizId);
+    allOffersFor(bizId).forEach(o => {
+      if (o.status === 'pending' && o.endsAt > t) out.push({ offer: o, biz: b });
+    });
+  });
+  return out.sort((a, c) => a.offer.when - c.offer.when);
+}
+
+export function approveOffer(bizId, id) {
+  patchOffer(bizId, id, { status: 'live' });
+  const b = businessById(bizId);
+  notifyKeys('offerOkTitle', 'offerOkBody', '#/directory/' + bizId, 'tag',
+             b ? L(b.name) : '');
+}
+export function rejectOffer(bizId, id, reason) {
+  patchOffer(bizId, id, { status: 'rejected', reason: String(reason || '') });
+  notifyKeys('offerNoTitle', 'offerNoBody', '#/directory/' + bizId, 'alert', reason);
+}
 
 /** Reviews are free for everyone, on every listing. */
 export function canSeeReviews() { return true; }
@@ -2412,7 +2543,8 @@ export function pendingBadge() {
 export function pendingCount() {
   return pendingListings().length + pendingEvents().length + state.flags.length
        + (pendingAvatar() ? 1 : 0) + (pendingBadge() ? 1 : 0)
-       + pendingClaims().length + pendingBizPhotos().length + pendingBizVerify().length;
+       + pendingClaims().length + pendingBizPhotos().length + pendingBizVerify().length
+       + pendingOffers().length + pendingWorshipFixes().length;
 }
 
 /* ====================== IN-APP MESSAGES ====================== */

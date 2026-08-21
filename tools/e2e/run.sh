@@ -1,0 +1,27 @@
+#!/bin/bash
+# Every suite against both builds, two at a time.
+#
+#   python3 -m http.server 8099        # from the repo root
+#   tools/e2e/run.sh                   # ~25 minutes
+#
+# These live in the repository ON PURPOSE. They spent five batches in a
+# scratch directory and a container reset destroyed three of them at once,
+# taking the only regression cover batches six (b), seven and seven (a)
+# had. The net is what enforces "never break a working feature", so it
+# belongs with the thing it protects.
+cd "$(dirname "$0")"
+HOST="${HOST:-http://localhost:8099}"
+SUITES="${SUITES:-3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25}"
+run() {
+  build=$1; tag=$2
+  for v in $SUITES; do
+    BASE="$HOST/$build" node test_v$v.mjs > /tmp/e2e-$tag-$v.txt 2>&1
+    echo "$tag v$v: $(grep -a 'passed,' /tmp/e2e-$tag-$v.txt|tail -1) | $(grep -ac '^FAIL' /tmp/e2e-$tag-$v.txt) FAIL"
+    grep -a '^FAIL' /tmp/e2e-$tag-$v.txt | head -5
+  done
+  echo "DONE-$tag"
+}
+run index.html m &
+run index-single-file.html s &
+wait
+echo ALLDONE
