@@ -83,6 +83,14 @@ def build(read):
         json.dumps({'imports': imports}, ensure_ascii=False) + '</script>'
     html = html.replace('<script type="module" src="js/app.js"></script>',
                         importmap + '\n  <script type="module">import "arabna/js/app.js";</script>')
+
+    # This build IS an inline importmap plus modules served as data: URLs, so
+    # the deployed policy's `script-src 'self'` would refuse to run any of it.
+    # It is the offline backup and the second half of the test net, opened from
+    # a file and never from the web, so it gets a policy that fits what it is —
+    # and index.html, the thing that is actually deployed, keeps the strict one.
+    html = re.sub(r"script-src 'self'",
+                  "script-src 'self' 'unsafe-inline' data: blob:", html)
     return html
 
 

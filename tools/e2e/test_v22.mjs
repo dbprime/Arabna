@@ -42,6 +42,18 @@ const txt = () => page.textContent('#app');
 
 const adminLogin = async () => {
   await go('#/admin');
+  /* V.03.6 — nothing ships a staff password any more, so a device is
+     CLAIMED before it can be logged into. This is the fixture doing what
+     the owner does once on the first run; the route is re-entered because
+     the setup screen is already on screen by the time we get here. */
+  await page.evaluate(async () => {
+    const S = (window.__m && window.__m.S)
+      || await import('arabna/js/store.js').catch(() => import('./js/store.js'));
+    if (!S.adminIsSet()) { await S.setAdminPass('Arabna@2026!', 'arabna.admin'); location.hash = '#/home'; }
+  });
+  await page.waitForTimeout(200);
+  await page.evaluate(() => { location.hash = '#/admin'; });
+  await page.waitForTimeout(600);
   if (await page.locator('#aUser').count()) {
     await page.fill('#aUser', 'arabna.admin');
     await page.fill('#aPass', 'Arabna@2026!');
@@ -61,6 +73,18 @@ await mods();
 /* ---- 1. the way in ---- */
 console.log('--- the way in ---');
 await go('#/admin');
+/* V.03.6: no password is shipped any more, so a device that has never been
+   used shows the SETUP screen — it is claimed, not guessed into. That is
+   the state a first-run panel is really in, and it is asserted here before
+   the fixture claims it. */
+ok('1.0 an unclaimed device is asked to set a password, not to guess one',
+   (await page.locator('#aSet').count()) === 1 && (await page.locator('#aGo').count()) === 0);
+await page.evaluate(async () => {
+  const S = (window.__m && window.__m.S)
+    || await import('arabna/js/store.js').catch(() => import('./js/store.js'));
+  if (!S.adminIsSet()) await S.setAdminPass('Arabna@2026!', 'arabna.admin');
+});
+await go('#/home'); await go('#/admin');
 ok('1.1 the panel asks before it opens', await page.locator('#aUser').count() === 1);
 await page.fill('#aUser', 'arabna.admin');
 await page.fill('#aPass', 'wrong');

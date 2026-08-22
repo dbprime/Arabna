@@ -13,7 +13,7 @@
    ============================================================ */
 
 import { t, icon, $, $$, go, renderHeader, toast, wireRoutes, emptyState,
-         fmtMoney, shareItem } from '../ui.js';
+         fmtMoney, shareItem, esc } from '../ui.js';
 import * as S from '../store.js';
 import { fmtDate } from './directory.js';
 
@@ -26,11 +26,6 @@ const METHOD_KEY = {
   check: 'receiptCheck', transfer: 'receiptTransfer',
 };
 
-function esc(v) {
-  return String(v == null ? '' : v)
-    .replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]))
-    .replace(/"/g, '&quot;');
-}
 
 const kindLabel = (r) => t(KIND_KEY[r.kind] || 'receiptTitle');
 

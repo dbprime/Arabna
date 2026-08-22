@@ -3,7 +3,7 @@
    and the profile screen. Credentials live in store.js (V.02: a real staff
    account behind Supabase row-level security). */
 import { t, arCount, L, icon, $, $$, go, renderHeader, toast, wireRoutes, emptyState, fmtMoney, priceLabel,
-         confirmSheet, openSheet, closeSheet } from '../ui.js';
+         confirmSheet, openSheet, closeSheet, esc } from '../ui.js';
 import { MAG_CATS, ARTICLES, CATEGORIES, AD_PRODUCTS, MARKET_CATS } from '../data.js';
 import * as S from '../store.js';
 import { passwordField, passwordChecklist, wirePasswordField,
@@ -19,7 +19,53 @@ export function AdminScreen(root) {
   panelView(root);
 }
 
+/**
+ * First run on this device: there is no staff password because none is
+ * shipped any more. The owner sets one here — and this screen, not a
+ * constant in a downloadable file, is where it comes from.
+ */
+function setupView(root) {
+  const canSet = S.adminCanSet();
+  root.innerHTML = `
+    <div class="pad mt-20 center-col">
+      <div class="empty-ico">${icon('lock', 33)}</div>
+      <b style="font-size:1.0625rem">${t('adminSetupTitle')}</b>
+      <span class="muted fs-13">${t('adminSetupSub')}</span>
+    </div>
+    <div class="pad mt-16">
+      ${canSet ? `
+      <div class="field"><label class="label">${t('adminUser')}</label>
+        <input class="input" id="aUser" autocomplete="off" autocapitalize="none"
+               autocorrect="off" spellcheck="false" inputmode="email" /></div>
+      ${passwordField('aNew', t('password'))}
+      ${passwordChecklist('aNew')}
+      <div id="e_aNew"></div>
+      <div id="aErr"></div>
+      <div class="hint mt-8">${t('adminSetupNote')}</div>
+      <button class="btn btn-gold btn-block mt-12" id="aSet">${t('adminSetupGo')}</button>`
+      : `<div class="err-msg">${icon('alert', 15)} ${t('adminNoCrypto')}</div>`}
+    </div>`;
+  if (!canSet) return;
+  wirePasswordToggles(root);
+  // the same rule as every other password in the app, stated before typing
+  const checkPw = wirePasswordField('aNew', 'e_aNew');
+  $('#aSet').addEventListener('click', async () => {
+    const user = $('#aUser').value.trim();
+    if (!user) { $('#aUser').classList.add('input-err'); return; }
+    if (checkPw()) return;                     // named under the field
+    if (!await S.setAdminPass($('#aNew').value, user)) {
+      $('#aErr').innerHTML = `<div class="err-msg">${icon('alert', 15)} ${t('adminNoCrypto')}</div>`;
+      return;
+    }
+    unlocked = true;
+    S.setAdminUnlocked(true);
+    toast(t('adminSetupDone'), 'ok');
+    go('#/admin');
+  });
+}
+
 function lockView(root) {
+  if (!S.adminIsSet()) return setupView(root);
   root.innerHTML = `
     <div class="pad mt-20 center-col">
       <div class="empty-ico">${icon('lock', 33)}</div>
@@ -35,8 +81,9 @@ function lockView(root) {
       <button class="btn btn-gold btn-block mt-8" id="aGo">${t('signIn')}</button>
     </div>`;
 
-  const submit = () => {
-    if (!S.checkAdmin($('#aUser').value.trim(), $('#aPass').value)) {
+  // async, because comparing a hash is
+  const submit = async () => {
+    if (!await S.checkAdmin($('#aUser').value.trim(), $('#aPass').value)) {
       $('#aErr').innerHTML = `<div class="err-msg">${icon('alert', 15)} ${t('adminLoginFail')}</div>`;
       $('#aPass').classList.add('input-err');
       return;
@@ -291,8 +338,7 @@ function panelView(root) {
       openSheet(`
         <div class="sheet-title">${t('consentRecord')}</div>
         <div class="sheet-sub">${t('consentRecordSub')}</div>
-        <div class="consent-box"><pre class="consent-text">${(c.text || '—')
-          .replace(/&/g, '&amp;').replace(/</g, '&lt;')}</pre></div>
+        <div class="consent-box"><pre class="consent-text">${esc(c.text || '—')}</pre></div>
         <div class="info-row"><span class="i-ico">${icon('clock', 21)}</span>
           <div class="i-txt"><b>${c.acceptedAt ? fmtDate(c.acceptedAt) : '—'}</b><span>${t('consentAcceptedAt')}</span></div></div>
         <div class="info-row"><span class="i-ico">${icon('creditCard', 21)}</span>
@@ -463,7 +509,7 @@ function panelView(root) {
       if (keep === drop) { toast(t('mergeNeedTwo'), 'err'); return; }
       confirmSheet({
         title: t('mergeDuplicates'),
-        sub: `${L(S.businessById(drop).name)} → ${L(S.businessById(keep).name)}`,
+        sub: `${esc(L(S.businessById(drop).name))} → ${esc(L(S.businessById(keep).name))}`,
         confirmText: t('mergeDrop'), danger: true,
         onConfirm: () => { S.mergeBusinesses(keep, drop); toast(t('mergeDone'), 'ok'); paint(); },
       });
@@ -471,11 +517,11 @@ function panelView(root) {
 
     const apw = $('#apSave');
     const checkAdminPw = $('#apNew') ? wirePasswordField('apNew', 'e_apNew') : () => '';
-    if (apw) apw.addEventListener('click', () => {
+    if (apw) apw.addEventListener('click', async () => {
       const a = $('#apNew').value, b2 = $('#apConf').value;
       if (checkAdminPw()) return;                 // named under the field
       if (a !== b2) { toast(t('passwordsDontMatch'), 'err'); return; }
-      S.setAdminPass(a);
+      await S.setAdminPass(a);
       toast(t('adminPassChanged'), 'ok');
       paint();
     });
@@ -561,11 +607,11 @@ function queueHtml() {
           ? `<img src="${c.photos[c.mainPhoto || 0] || c.photos[0]}" style="width:100%;height:100%;object-fit:cover" alt="" />`
           : icon(c.icon || 'image', 24)}</span>
         <div class="row-main">
-          <div class="row-title">${L(c.title)}
+          <div class="row-title">${esc(L(c.title))}
             <span class="badge badge-pending">${t('statusPending')}</span></div>
-          <div class="row-sub gold"><span class="ltr">${priceLabel(c.price)}</span> · ${t(catKeyOf(c.cat))}</div>
-          <div class="row-sub">${L(c.desc || '')}</div>
-          <div class="row-sub">${icon('user', 13)} ${(S.state.user && S.state.user.name) || t('guest')} · ${(c.photos || []).length} ${t('photosCount')}</div>
+          <div class="row-sub gold"><span class="ltr">${esc(priceLabel(c.price))}</span> · ${t(catKeyOf(c.cat))}</div>
+          <div class="row-sub">${esc(L(c.desc || ''))}</div>
+          <div class="row-sub">${icon('user', 13)} ${esc((S.state.user && S.state.user.name) || t('guest'))} · ${(c.photos || []).length} ${t('photosCount')}</div>
           ${rejectBox(c.id)}
           <div class="row-actions">
             <button class="mini-btn gold" data-approve="${c.id}">${icon('check', 15)} ${t('approve')}</button>
@@ -582,10 +628,10 @@ function queueHtml() {
           ? `<img src="${e.photo}" style="width:100%;height:100%;object-fit:cover" alt="" />`
           : icon('calendar', 24)}</span>
         <div class="row-main">
-          <div class="row-title">${L(e.title)}<span class="badge badge-pending">${t('statusPending')}</span></div>
+          <div class="row-title">${esc(L(e.title))}<span class="badge badge-pending">${t('statusPending')}</span></div>
           <div class="row-sub">${icon('clock', 13)} ${fmtEventDate(e.startsAt)}</div>
-          <div class="row-sub">${icon('mapPin', 13)} ${L(e.venue)} · <span class="ltr">${e.city}</span></div>
-          <div class="row-sub">${icon('users', 13)} ${L(e.organizer)}</div>
+          <div class="row-sub">${icon('mapPin', 13)} ${esc(L(e.venue))} · <span class="ltr">${esc(e.city)}</span></div>
+          <div class="row-sub">${icon('users', 13)} ${esc(L(e.organizer))}</div>
           ${rejectBox(e.id)}
           <div class="row-actions">
             <button class="mini-btn gold" data-evok="${e.id}">${icon('check', 15)} ${t('approve')}</button>
@@ -652,12 +698,12 @@ function eventsHtml() {
             ? `<img src="${e.photo}" style="width:100%;height:100%;object-fit:cover" alt="" />`
             : icon(e.icon || 'calendar', 24)}</span>
           <div class="row-main">
-            <div class="row-title">${L(e.title)}
+            <div class="row-title">${esc(L(e.title))}
               ${e.featured ? `<span class="badge badge-boost">${t('featuredEvent')}</span>` : ''}
               <span class="badge ${e.status === 'live' ? 'badge-verified' : 'badge-pending'}">${e.status === 'live' ? t('statusLive') : t('statusPending')}</span>
               ${S.eventIsPast(e) ? `<span class="badge badge-free">${t('eventPast')}</span>` : ''}</div>
             <div class="row-sub">${icon('clock', 13)} ${fmtEventDate(e.startsAt)}</div>
-            <div class="row-sub">${icon('mapPin', 13)} ${L(e.venue)} · <span class="ltr">${e.city}</span></div>
+            <div class="row-sub">${icon('mapPin', 13)} ${esc(L(e.venue))} · <span class="ltr">${esc(e.city)}</span></div>
             <div class="row-actions">
               <button class="mini-btn gold" data-route="#/events/edit/${e.id}?admin=1">${icon('edit', 15)} ${t('edit')}</button>
               <button class="mini-btn" data-evfeat="${e.id}">${icon('bolt', 15)} ${e.featured ? t('cancel') : t('featuredEvent')}</button>
@@ -682,13 +728,13 @@ function adminLogHtml() {
     return `<div class="section-title mt-20">${t('adminLogTitle')}</div>
       <div class="hint">${t('adminLogNone')}</div>`;
   }
-  const val = (v) => v === '' ? `<i class="muted">${t('adminLogEmptyVal')}</i>` : att(v);
+  const val = (v) => v === '' ? `<i class="muted">${t('adminLogEmptyVal')}</i>` : esc(v);
   return `<div class="section-title mt-20">${t('adminLogTitle')}<small>${t('adminLogSub')}</small></div>
     ${rows.map(r => {
       const b = S.businessById(r.bizId);
       return `<div class="log-row">
-        <div class="log-head"><b>${b ? L(b.name) : r.bizId}</b><span class="ltr">${fmtDate(r.at)}</span></div>
-        <div class="log-field">${att(r.field)}</div>
+        <div class="log-head"><b>${esc(b ? L(b.name) : r.bizId)}</b><span class="ltr">${fmtDate(r.at)}</span></div>
+        <div class="log-field">${esc(r.field)}</div>
         <div class="log-diff"><span class="log-from">${t('adminLogFrom')}: ${val(r.from)}</span>
           <span class="log-to">${t('adminLogTo')}: ${val(r.to)}</span></div>
       </div>`;
@@ -747,7 +793,7 @@ function setHtml() {
     </div>` : ''}
 
     <div class="section-title mt-20">${t('changePassword')}</div>
-    <div class="hint" style="margin-bottom:10px">${t('adminUser')}: <b class="gold ltr">${S.adminCreds().user}</b></div>
+    <div class="hint" style="margin-bottom:10px">${t('adminUser')}: <b class="gold ltr">${esc(S.adminUser())}</b></div>
     ${passwordField('apNew', t('newPassword'))}
     ${/* The panel is the FIRST place this rule belongs, not the last:
          whoever gets in sees everything and can change everything. */''}
@@ -803,7 +849,7 @@ function cashDueHtml() {
   if (!due.length) return '';
   return `<div class="section-title">${t('cashDueTitle')}</div>
     ${due.map(d => `<div class="setting-row">
-      <span class="s-txt"><b>${att(d.name)}</b><span class="${d.expired ? 'ink-danger' : ''}">${
+      <span class="s-txt"><b>${esc(d.name)}</b><span class="${d.expired ? 'ink-danger' : ''}">${
         (d.expired ? t('cashDueExpired') : t('cashDueEnds')).replace('{d}', fmtDate(d.endsAt))
       }</span></span>
     </div>`).join('')}`;
@@ -812,7 +858,7 @@ function cashDueHtml() {
 /** Issued HERE and nowhere else — see addCashOrder() in store.js. */
 function cashFormHtml() {
   const opts = S.allBusinesses().slice(0, 600)
-    .map(b => `<option value="${b.id}">${att(L(b.name))}</option>`).join('');
+    .map(b => `<option value="${b.id}">${esc(L(b.name))}</option>`).join('');
   return `<div class="section-title mt-20">${t('cashOrder')}<small>${t('cashOrderSub')}</small></div>
     <div class="field"><label class="label">${t('cashKind')}</label>
       <select class="select" id="cshKind">
@@ -873,7 +919,7 @@ function adsHtml() {
         <div class="row-main">
           <div class="row-title">${o.bizName}
             <span class="badge ${o.status === 'live' ? 'badge-verified' : 'badge-pending'}">${o.status === 'live' ? t('statusLive') : t('statusPending')}</span></div>
-          <div class="row-sub">${prodName(o.product)}${o.cat ? ' · ' + t(dirCatKey(o.cat)) : ''} · ${fmtMoney(o.price)} · ${o.tagline || ''}</div>
+          <div class="row-sub">${prodName(o.product)}${o.cat ? ' · ' + t(dirCatKey(o.cat)) : ''} · ${esc(fmtMoney(o.price))} · ${o.tagline || ''}</div>
           <div class="row-sub muted">${t('adImpressions')} ${S.adStats(o.id).impressions} · ${t('adClicks')} ${S.adStats(o.id).clicks}</div>
           ${o.status !== 'live' ? `<div class="row-actions">
             <button class="mini-btn gold" data-adok="${o.id}">${icon('check', 15)} ${S.state.lang === 'en' ? 'Approve & go live' : 'اعتماد ونشر'}</button>
@@ -885,8 +931,8 @@ function adsHtml() {
     <div class="section-title mt-20">${t('waitlistTitle')}${waiting.length ? ` (${waiting.length})` : ''}</div>
     ${waiting.length ? waiting.map(w => `
       <div class="q-card">
-        <div class="q-head"><b>${w.name}</b><span class="muted fs-12">${prodName(w.product)}</span></div>
-        <div class="row-sub"><span class="ltr">${w.phone}</span></div>
+        <div class="q-head"><b>${esc(w.name)}</b><span class="muted fs-12">${prodName(w.product)}</span></div>
+        <div class="row-sub"><span class="ltr">${esc(w.phone)}</span></div>
         ${w.preferred ? `<div class="row-sub">${t('waitlistWhen')}: ${w.preferred}</div>` : ''}
         <button class="btn btn-ghost btn-sm btn-block mt-8" data-wlrm="${w.id}">${icon('check', 16)} ${t('waitlistRemove')}</button>
       </div>`).join('') : `<div class="hint">${t('waitlistEmpty')}</div>`}
@@ -901,11 +947,11 @@ function claimsHtml() {
     ${list.map(c => {
       const b = S.businessById(c.bizId);
       return `<div class="card" style="padding:13px;margin:0 14px 10px">
-        <div class="row-title">${b ? L(b.name) : c.bizId}</div>
-        <div class="row-sub"><span class="ltr">${b ? b.address : ''}</span></div>
+        <div class="row-title">${esc(b ? L(b.name) : c.bizId)}</div>
+        <div class="row-sub"><span class="ltr">${esc(b ? b.address : '')}</span></div>
         <div class="info-row" style="border:none;padding:8px 0 0">
-          <div class="i-txt"><b>${c.name} — ${t('role' + c.role[0].toUpperCase() + c.role.slice(1))}</b>
-          <span class="ltr">${c.phone}</span></div></div>
+          <div class="i-txt"><b>${esc(c.name)} — ${t('role' + c.role[0].toUpperCase() + c.role.slice(1))}</b>
+          <span class="ltr">${esc(c.phone)}</span></div></div>
         ${c.proof ? `<p class="fs-13 muted" style="margin:6px 0 0">${c.proof}</p>` : ''}
         <div class="reject-box"><input class="input" id="why-${c.id}" placeholder="${t('rejectReasonPlaceholder')}" /></div>
         <div class="row-actions mt-8">
@@ -917,11 +963,6 @@ function claimsHtml() {
 }
 
 /** the same escaper three other screens keep locally */
-function att(v) {
-  return String(v == null ? '' : v)
-    .replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]))
-    .replace(/"/g, '&quot;');
-}
 
 /**
  * Offers waiting on a decision. A price claim published unread is our
@@ -933,9 +974,9 @@ function offersHtml() {
   if (!list.length) return '';
   return `<div class="dr-group-label">${t('offerQueue')} (${list.length})</div>
     ${list.map(({ offer, biz }) => `<div class="card" style="padding:13px;margin:0 14px 10px">
-      <div class="row-title">${biz ? L(biz.name) : offer.bizId}</div>
-      <div class="offer-text mt-8">${att(offer.text)}</div>
-      ${offer.price ? `<div class="offer-price ltr">${att(offer.price)}</div>` : ''}
+      <div class="row-title">${esc(biz ? L(biz.name) : offer.bizId)}</div>
+      <div class="offer-text mt-8">${esc(offer.text)}</div>
+      ${offer.price ? `<div class="offer-price ltr">${esc(offer.price)}</div>` : ''}
       <div class="offer-meta">${icon('clock', 15)}<span>${t('offerEndsAt')} ${fmtDate(offer.endsAt)}</span></div>
       <div class="reject-box"><input class="input" id="why-${offer.id}" placeholder="${t('rejectReasonPlaceholder')}" /></div>
       <div class="row-actions mt-8">
@@ -952,12 +993,12 @@ function bizPhotoHtml() {
     <div class="pad">${list.map(p => {
       const b = S.businessById(p.bizId);
       return `<div class="list-row">
-        <span class="row-ico" style="overflow:hidden;padding:0"><img src="${p.url}" style="width:100%;height:100%;object-fit:cover" alt="" /></span>
+        <span class="row-ico" style="overflow:hidden;padding:0"><img src="${esc(p.url)}" style="width:100%;height:100%;object-fit:cover" alt="" /></span>
         <div class="row-main">
-          <div class="row-title">${b ? L(b.name) : p.bizId}</div>
+          <div class="row-title">${esc(b ? L(b.name) : p.bizId)}</div>
           <div class="row-actions">
-            <button class="mini-btn gold" data-bpok="${p.bizId}|${p.url}">${icon('check', 15)} ${t('approve')}</button>
-            <button class="mini-btn" data-bpno="${p.bizId}|${p.url}">${icon('x', 15)} ${t('reject')}</button>
+            <button class="mini-btn gold" data-bpok="${p.bizId}|${esc(p.url)}">${icon('check', 15)} ${t('approve')}</button>
+            <button class="mini-btn" data-bpno="${p.bizId}|${esc(p.url)}">${icon('x', 15)} ${t('reject')}</button>
           </div>
         </div>
       </div>`;
@@ -977,7 +1018,7 @@ function verifyHtml() {
     ${list.map(v => {
       const b = S.businessById(v.bizId);
       return `<div class="card" style="padding:13px;margin:0 14px 10px">
-        <div class="row-title">${b ? L(b.name) : v.bizId}</div>
+        <div class="row-title">${esc(b ? L(b.name) : v.bizId)}</div>
         <div class="row-sub">${t('verifyRef')}: <span class="ltr">${v.ref || '—'}</span></div>
         <div class="list-note" style="margin:8px 0 0">${icon('shield', 18)}<span>${t('verifyNoImages')}</span></div>
         <div class="reject-box"><input class="input" id="why-${v.bizId}" placeholder="${t('rejectReasonPlaceholder')}" /></div>
@@ -1033,7 +1074,6 @@ function dupPartner(b) {
 let dirQ = '', dirCat = 'all', dirGeoOnly = false, dirShown = 20;
 
 /** a value safe to put inside an HTML attribute */
-const attr = (v) => String(v == null ? '' : v).replace(/"/g, '&quot;');
 
 function dirBrowseHtml() {
   const all = S.everyBusiness();
@@ -1046,7 +1086,7 @@ function dirBrowseHtml() {
   return `
     <div class="section-title mt-16">${t('adminDirBrowse')}</div>
     <div class="search-bar" style="margin-bottom:10px">${icon('search', 20)}
-      <input id="dirQ" placeholder="${t('adminDirSearch')}" value="${attr(dirQ)}" /></div>
+      <input id="dirQ" placeholder="${t('adminDirSearch')}" value="${esc(dirQ)}" /></div>
     <div class="field" style="margin-bottom:8px">
       <select class="select" id="dirCatSel">
         <option value="all">${t('catAll')} — ${all.length}</option>
@@ -1178,10 +1218,10 @@ function statsHtml() {
     <div class="section-title mt-20">${t('statCompare')}</div>
     <div class="field" style="margin-bottom:8px">
       <select class="select" id="statA">${pickOptions().map(o =>
-        `<option value="${o.id}" ${statA === o.id ? 'selected' : ''}>${o.label}</option>`).join('')}</select></div>
+        `<option value="${esc(o.id)}" ${statA === o.id ? 'selected' : ''}>${esc(o.label)}</option>`).join('')}</select></div>
     <div class="field" style="margin-bottom:10px">
       <select class="select" id="statB">${pickOptions().map(o =>
-        `<option value="${o.id}" ${statB === o.id ? 'selected' : ''}>${o.label}</option>`).join('')}</select></div>
+        `<option value="${esc(o.id)}" ${statB === o.id ? 'selected' : ''}>${esc(o.label)}</option>`).join('')}</select></div>
     <div class="cmp-bars">
       <div class="cmp-col"><span class="cmp-bar a" style="height:${Math.round((aN / hi) * 90) + 4}px"></span><b>${aN}</b><span>${statLabelOf(statA)}</span></div>
       <div class="cmp-col"><span class="cmp-bar b" style="height:${Math.round((bN / hi) * 90) + 4}px"></span><b>${bN}</b><span>${statLabelOf(statB)}</span></div>
@@ -1190,13 +1230,13 @@ function statsHtml() {
 
     <div class="section-title mt-20">${t('statTopViewed')}</div>
     ${viewed.length ? viewed.map(v => `<div class="setting-row">
-      <span class="s-txt"><b>${L(v.biz.name)}</b></span>
+      <span class="s-txt"><b>${esc(L(v.biz.name))}</b></span>
       <span class="muted fs-12">${v.views}</span></div>`).join('')
       : `<div class="hint">${t('statNoServer')}</div>`}
 
     <div class="section-title mt-20">${t('statTopSearches')}</div>
     ${searches.length ? searches.map(x => `<div class="setting-row">
-      <span class="s-txt"><b>${x.term}</b></span>
+      <span class="s-txt"><b>${esc(x.term)}</b></span>
       <span class="muted fs-12">${x.count}</span></div>`).join('')
       : `<div class="hint">${t('statEmpty')}</div>`}
 
@@ -1236,7 +1276,7 @@ function mktHtml() {
 
   return `<div class="pad mt-16">
     <div class="search-bar" style="margin-bottom:10px">${icon('search', 20)}
-      <input id="mktQ" placeholder="${t('adminMktSearch')}" value="${attr(mktQ)}" /></div>
+      <input id="mktQ" placeholder="${t('adminMktSearch')}" value="${esc(mktQ)}" /></div>
     <div class="field" style="margin-bottom:10px">
       <select class="select" id="mktSt">
         ${MKT_STATES.map(st => `<option value="${st}" ${mktStatus === st ? 'selected' : ''}>${t(mktStateKey[st])} — ${count(st)}</option>`).join('')}
@@ -1245,11 +1285,11 @@ function mktHtml() {
     ${list.length ? list.map(c => `
       <div class="q-card">
         <div class="q-head">
-          <b>${L(c.title)}</b>
+          <b>${esc(L(c.title))}</b>
           ${c.reports ? `<span class="badge badge-pending">${icon('flag', 12)}${c.reports} ${t('adminReports')}</span>`
                       : `<span class="muted fs-12">${t(mktStateKey[c.status] || 'adminStLive')}</span>`}
         </div>
-        <div class="row-sub"><span>${t(mktCatKey(c.cat))} · <span class="ltr">${priceLabel(c.price)}</span>${
+        <div class="row-sub"><span>${t(mktCatKey(c.cat))} · <span class="ltr">${esc(priceLabel(c.price))}</span>${
           c.created ? ' · ' + fmtDate(c.created) : ''}</span></div>
         <div class="action-grid" style="margin:10px 0 0">
           <button class="btn btn-ghost btn-sm" data-mktopen="${c.id}">${icon('eye', 17)} ${t('adminOpen')}</button>
@@ -1324,10 +1364,10 @@ function dirHtml() {
 
     <div class="section-title mt-20">${t('subscribers')}</div>
     ${sub ? `<div class="q-card">
-        <div class="q-head"><b>${subBiz ? L(subBiz.name) : sub.businessId}</b>
+        <div class="q-head"><b>${esc(subBiz ? L(subBiz.name) : sub.businessId)}</b>
           <span class="sub-status ${sub.status}">${t(({ trialing: 'subStatusTrialing', active: 'subStatusActive',
             canceled: 'subStatusCanceled', past_due: 'subStatusPastDue' })[sub.status])}</span></div>
-        <div class="row-sub"><span class="ltr">${fmtMoney(sub.price)} / ${t(sub.plan === 'yearly' ? 'planYearly' : 'planMonthly')}</span></div>
+        <div class="row-sub"><span class="ltr">${esc(fmtMoney(sub.price))} / ${t(sub.plan === 'yearly' ? 'planYearly' : 'planMonthly')}</span></div>
         <div class="row-sub"><span>${t('subNextCharge')}: ${fmtDate(sub.currentPeriodEnd)}</span></div>
         <button class="btn btn-ghost btn-sm btn-block mt-8" id="consentView">${icon('file', 17)} ${t('consentRecord')}</button>
       </div>` : `<div class="hint">${t('subTestNone')}</div>`}
@@ -1336,10 +1376,10 @@ function dirHtml() {
     <div class="hint" style="margin-bottom:10px">${t('similarReviewNote')}</div>
     ${held.length ? held.map(b => `
       <div class="q-card">
-        <div class="q-head"><b>${L(b.name)}</b><span class="muted fs-12">${t(dirCatKey(b.cat))}</span></div>
-        <div class="row-sub"><span class="ltr">${b.address || '—'}</span></div>
-        <div class="row-sub"><span class="ltr">${b.phone || '—'}</span></div>
-        ${dupPartner(b) ? `<div class="row-sub gold">${t('dupScanFound')}: ${L(dupPartner(b).name)}</div>` : ''}
+        <div class="q-head"><b>${esc(L(b.name))}</b><span class="muted fs-12">${t(dirCatKey(b.cat))}</span></div>
+        <div class="row-sub"><span class="ltr">${esc(b.address || '—')}</span></div>
+        <div class="row-sub"><span class="ltr">${esc(b.phone || '—')}</span></div>
+        ${dupPartner(b) ? `<div class="row-sub gold">${t('dupScanFound')}: ${esc(L(dupPartner(b).name))}</div>` : ''}
         <div class="action-grid" style="margin:10px 0 0">
           <button class="btn btn-gold btn-sm" data-bizok="${b.id}">${icon('check', 17)} ${t('dupApprove')}</button>
           <button class="btn btn-ghost btn-sm" data-bizno="${b.id}">${icon('x', 17)} ${t('dupReject')}</button>
@@ -1374,8 +1414,8 @@ function dirHtml() {
           const biz = S.businessById(f.bizId);
           return `<div class="list-row">
             <span class="row-main">
-              <span class="row-title">${biz ? L(biz.name) : f.bizId}</span>
-              <span class="row-sub">${f.text}</span>
+              <span class="row-title">${esc(biz ? L(biz.name) : f.bizId)}</span>
+              <span class="row-sub">${esc(f.text)}</span>
             </span>
             <button class="btn btn-ghost btn-sm" data-wfedit="${f.bizId}" data-wfid="${f.id}">${t('edit')}</button>
             <button class="btn btn-ghost btn-sm" data-wfdone="${f.id}">${icon('check', 16)}</button>
@@ -1385,7 +1425,7 @@ function dirHtml() {
     <div class="section-title mt-20">${t('nonCommercial')}</div>
     <div class="hint" style="margin-bottom:10px">${t('nonCommercialHint')}</div>
     <div class="field"><label class="label">${t('nonCommercialPick')}</label>
-      <select class="select" id="ncPick">${all.map(b => `<option value="${b.id}">${L(b.name)} — ${t(dirCatKey(b.cat))}</option>`).join('')}</select></div>
+      <select class="select" id="ncPick">${all.map(b => `<option value="${esc(b.id)}">${esc(L(b.name))} — ${t(dirCatKey(b.cat))}</option>`).join('')}</select></div>
     <div class="action-grid">
       <button class="btn btn-ghost btn-sm" id="ncOn">${icon('landmark', 18)} ${t('nonCommercialMark')}</button>
       <button class="btn btn-ghost btn-sm" id="ncOff">${icon('briefcase', 18)} ${t('nonCommercialUnmark')}</button>
@@ -1483,8 +1523,8 @@ function showImport(result, repaint) {
               <span class="imp-line">#${r.line}</span>
             </label>
             <div class="imp-body">
-              <b>${r.biz.name.en || r.biz.name.ar || '—'}</b>
-              <span class="ltr muted fs-12">${r.biz.phone || '—'}</span>
+              <b>${esc(r.biz.name.en || r.biz.name.ar || '—')}</b>
+              <span class="ltr muted fs-12">${esc(r.biz.phone || '—')}</span>
               ${r.biz.nonCommercial ? `<span class="imp-tag">${t('importNcTag')}</span>` : ''}
               ${r.biz.entryPrice ? `<span class="ltr muted fs-12">${r.biz.entryPrice}</span>` : ''}
               ${r.errors.length ? `<div class="imp-why err">${icon('alert', 12)} ${r.errors.map(problem).join(' · ')}</div>` : ''}

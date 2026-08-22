@@ -120,13 +120,28 @@ export function resetAll() {
 }
 
 /* ---------------- staff access ----------------
-   V.02: replace with a real staff account in Supabase (row-level security +
-   an `is_admin` claim). These constants exist only so the prototype panel is
-   reachable at #/admin without shipping an open back office. */
-export const ADMIN_USER = 'arabna.admin';
-export const ADMIN_PASS = 'Arabna@2026!';
+   THE PASSWORD IS NOT IN THIS FILE, and it never will be again.
 
-/** Current staff credentials — the shipped defaults until the owner changes them. */
+   It used to be: `ADMIN_USER` and `ADMIN_PASS` were two exported constants
+   in a module the browser downloads, which means they were published, not
+   stored. Any reader of the deployed app had them. They are gone, and
+   nothing replaced them in the file — instead the panel is CLAIMED on
+   first use: the first time `#/admin` is opened on a device that has no
+   staff password yet, the screen asks the owner to set one, and from then
+   on it asks for it.
+
+   What is kept is a salted SHA-256 of it and nothing else — the exact
+   `pwSalt` / `pwHash` path the app already uses for a user's own password
+   (`setUserPassword`). This was the one place that had been left out of it.
+
+   That first-run screen is also the honest shape of what this is while
+   there is no server: an admin password on a phone unlocks the panel over
+   THAT phone's own localStorage, which holds that phone's own data. With
+   Supabase, staff access becomes a claim on an account and this whole
+   block goes.
+
+   `state.adminAuth` = { user, salt, hash }. No plaintext, ever. */
+
 /* Whether the admin panel is unlocked in THIS session. Memory only and
    never saved: a reload must ask for the password again. The edit screen
    reads it so the panel's ✎ can open the very same form the owner uses —
@@ -135,22 +150,51 @@ let adminSession = false;
 export function adminUnlocked() { return adminSession; }
 export function setAdminUnlocked(on) { adminSession = !!on; }
 
-export function adminCreds() {
-  return state.adminAuth || { user: ADMIN_USER, pass: ADMIN_PASS };
+/** has a staff password been set on this device yet? */
+export function adminIsSet() {
+  const a = state.adminAuth;
+  return !!(a && a.user && a.hash);
 }
+/** the staff username, for the line that prints it. Never the password. */
+export function adminUser() { return (state.adminAuth && state.adminAuth.user) || ''; }
+
+/**
+ * Hashing needs `crypto.subtle`, which a browser only exposes in a secure
+ * context — https, or localhost. Opened straight off the disk there is
+ * none, so rather than storing something weaker and calling it a password,
+ * the panel says so and stays shut.
+ */
+export function adminCanSet() { return !!PW_SUBTLE(); }
+
+/**
+ * Set (or change) the staff password. The username is stored as typed;
+ * only its comparison is case-insensitive.
+ */
+export async function setAdminPass(newPass, user) {
+  const name = String(user == null ? adminUser() : user).trim();
+  const pw = String(newPass || '');
+  if (!name || !pw) return false;
+  const salt = randomSalt();
+  const hash = await hashPassword(pw, salt);
+  if (!hash) return false;              // no subtle crypto: store nothing
+  state.adminAuth = { user: name, salt, hash };
+  save();
+  return true;
+}
+
 /**
  * Username is compared case-insensitively and trimmed: iOS auto-capitalises
  * the first letter of a text field, which used to lock the owner out on an
  * iPhone. The password stays exactly as typed.
+ *
+ * Async now, because a hash comparison is. It refuses when nothing has been
+ * set — an unset panel is claimed, not guessed into.
  */
-export function checkAdmin(user, pass) {
-  const c = adminCreds();
-  return String(user || '').trim().toLowerCase() === c.user.toLowerCase() && pass === c.pass;
-}
-export function setAdminPass(newPass) {
-  const c = adminCreds();
-  state.adminAuth = { user: c.user, pass: newPass };
-  save();
+export async function checkAdmin(user, pass) {
+  const a = state.adminAuth;
+  if (!a || !a.user || !a.hash) return false;
+  if (String(user || '').trim().toLowerCase() !== String(a.user).toLowerCase()) return false;
+  return (await hashPassword(String(pass || ''), a.salt || '')) === a.hash;
 }
 
 /* ---------------- auth tiers ---------------- */
@@ -1442,6 +1486,61 @@ export function myActiveListings() {
    truth, and the two drift. Handyman keeps its own stricter rule below. */
 export const MAX_ACTIVE_LISTINGS = 4;
 export const LISTING_DAYS = 14;
+
+/* ---------------- what a listing may contain ----------------
+   The form accepted `-500`, `999999999999` and `abc` as prices and
+   published all three, and a 300-character title as well. None of them is
+   a mistake the reader made — they are values the form never asked about.
+
+   The limits live here and not in the screen for the usual reason: the
+   admin's own add form, the importer and whatever the server batch adds
+   must all agree, and three copies of a number is three numbers.
+
+   Every message NAMES what is accepted. «قيمة غير صالحة» tells somebody
+   who typed 999999999999 nothing at all about what to type instead. */
+export const LISTING_TITLE_MIN = 3;
+export const LISTING_TITLE_MAX = 80;     // what the card's row actually fits
+export const LISTING_DESC_MAX = 2000;
+export const LISTING_PRICE_MAX = 500000;
+
+/** Arabic-Indic digits, the dollar sign, spaces and thousands separators
+    are all things people really type; none of them makes a price invalid. */
+function priceDigits(raw) {
+  return String(raw == null ? '' : raw)
+    .replace(/[\u0660-\u0669]/g, d => String(d.charCodeAt(0) - 0x0660))
+    .replace(/[\u06F0-\u06F9]/g, d => String(d.charCodeAt(0) - 0x06F0))
+    .replace(/[$\s,\u066C\u066B]/g, (c) => c === '\u066B' ? '.' : '')
+    .trim();
+}
+
+/**
+ * @returns {{ok:boolean, value:number, free:boolean, why:string}}
+ *          `why` is an i18n key, never a sentence.
+ */
+export function checkListingPrice(raw) {
+  const v = priceDigits(raw);
+  if (!v) return { ok: false, value: 0, free: false, why: 'priceRequired' };
+  if (!/^\d+(\.\d{1,2})?$/.test(v)) return { ok: false, value: 0, free: false, why: 'priceNotNumber' };
+  const n = Number(v);
+  if (!isFinite(n) || n < 0) return { ok: false, value: 0, free: false, why: 'priceNotNumber' };
+  if (n > LISTING_PRICE_MAX) return { ok: false, value: n, free: false, why: 'priceTooBig' };
+  // «0» is not a cheap price, it is «مجاني», and it says so rather than
+  // printing "$0" — which reads like a mistake in the listing.
+  return { ok: true, value: n, free: n === 0, why: '' };
+}
+
+export function checkListingTitle(raw) {
+  const v = String(raw == null ? '' : raw).trim();
+  if (v.length < LISTING_TITLE_MIN) return { ok: false, why: 'titleTooShort' };
+  if (v.length > LISTING_TITLE_MAX) return { ok: false, why: 'titleTooLong' };
+  return { ok: true, why: '' };
+}
+
+export function checkListingDesc(raw) {
+  const v = String(raw == null ? '' : raw).trim();
+  if (v.length > LISTING_DESC_MAX) return { ok: false, why: 'descTooLong' };
+  return { ok: true, why: '' };
+}
 export const MAX_PHOTOS = 5;
 
 /* ---- per-section rules (Handyman = 1 listing / 14 days, Free = no price) ---- */
@@ -2079,6 +2178,33 @@ export function sendSmsCode(phone) {
   return new Promise(res => setTimeout(() => res({ ok: true, code: DEMO_CODE }), 700));
 }
 
+/* ============================================================
+   chargeCard — a stand-in, and the three rules that replace it
+   ------------------------------------------------------------
+   It says `ok: true` to anything. There is no gateway, no card and no
+   money, so today that is honest: it is a simulation and the whole app
+   knows it. Measured for the record — with no card on file at all it
+   still produced a receipt reading { status:'paid', method:'card',
+   amount:5 }.
+
+   Acceptable now. NOT acceptable the moment the first dollar moves, and
+   these are written here rather than in a note somewhere because this is
+   the function the server batch replaces:
+
+   1. NO CHARGE WITHOUT A PAYMENT METHOD. `cardOnFile` is checked BEFORE
+      the call, not after it. None of the four call sites checks today.
+   2. NO `paid` RECEIPT WITHOUT THE GATEWAY SAYING SO. `addReceipt` is
+      called on the gateway's confirmation, never on our own optimism —
+      a receipt is the piece of paper that settles a dispute, and one
+      written before the money moved settles it the wrong way.
+   3. THE AMOUNT IS COMPUTED ON THE SERVER. It is passed in from the page
+      here, and whoever can edit the page can edit the number. The page
+      may say WHICH product; only the server may say what it costs.
+
+   The prices themselves already live in one place (`AD_PRODUCTS`,
+   `BOOST_PRICES`, `SUBSCRIPTION_PRICE`), which is what makes rule 3 a
+   move rather than a rewrite.
+   ============================================================ */
 export function chargeCard(amount, description) {
   return new Promise(res => setTimeout(() => res({ ok: true, id: 'pay_' + Date.now(), amount, description }), 1400));
 }
@@ -2480,6 +2606,10 @@ export function addClassified(item) {
  * @returns {{ rec: object, flagged: boolean }}
  */
 export function updateClassified(id, patch) {
+  /* Somebody else's listing is not yours to rewrite — and rewriting it is
+     worse than reading it, because the listing keeps its owner's name and
+     their phone conversations while carrying your words. */
+  if (!ownsListing(id)) return { rec: null, flagged: false };
   const c = state.extraClassifieds.find(x => x.id === id);
   if (!c) return { rec: null, flagged: false };
   Object.assign(c, patch);
@@ -2578,9 +2708,22 @@ export function rejectClassified(id, reason) {
 export function saveDraft(draft) { state.draft = draft; save(); return lastSaveOk; }
 export function takeDraft() { const d = state.draft; state.draft = null; save(); return d; }
 export function peekDraft() { return state.draft; }
+/** the single definition of "this listing is mine" */
+export function ownsListing(id) { return !!id && state.myListings.includes(id); }
+
+/**
+ * Boosting somebody else's listing pins THEIR advertisement to the top of
+ * the marketplace and writes the receipt in YOUR name. The screen guard
+ * below stops the screen; this stops everything else — the console today,
+ * an API call the day there is a server. That is the V.03.3 lesson about
+ * `startSubscription`, and this is the same shape of hole in the same
+ * kind of place.
+ */
 export function boostClassified(id) {
+  if (!ownsListing(id)) return false;
   if (!state.boosted.includes(id)) state.boosted.push(id);
   save();
+  return true;
 }
 export function reportItem(id, label) {
   if (!state.reported.includes(id)) state.reported.push(id);
@@ -2692,7 +2835,25 @@ export function pendingEvents() { return allEvents().filter(e => e.status === 'p
  * Add an event. `status` decides the path: the admin creates them live,
  * an organizer proposes them and they wait for approval.
  */
+/**
+ * An event is the proposer's if it is in their own `extraEvents`. There is
+ * no server and no author id yet, so that IS the ownership record — see
+ * `personKey()`, the same stand-in the rest of the app uses.
+ */
+export function ownsEvent(id) {
+  return !!id && state.extraEvents.some(e => e.id === id);
+}
+
+/**
+ * `status` is a decision, not a parameter the caller may assert: 'live'
+ * publishes to everybody and `featured` is the $99/week pin. Only an
+ * unlocked panel may set either, so the screen cannot grant itself the
+ * right by reading a flag off the URL — which is exactly what
+ * `?admin=1` was doing.
+ */
 export function addEvent(ev, status = 'pending') {
+  if (status !== 'pending' && !adminSession) status = 'pending';
+  if (ev && ev.featured && !adminSession) ev = Object.assign({}, ev, { featured: false });
   const rec = Object.assign({}, ev, {
     id: 'ev' + Date.now(),
     status,
@@ -2705,7 +2866,15 @@ export function addEvent(ev, status = 'pending') {
   if (!save()) { state.extraEvents.shift(); save(); return null; }
   return rec;
 }
-export function updateEvent(id, patch) {
+/**
+ * The admin edits through the organiser's own form — one form, one shape of
+ * data — so the panel passes `admin`, and nobody else may. Written here and
+ * not only on the screen: a guard on a screen is bypassed by anything that
+ * is not that screen.
+ */
+export function updateEvent(id, patch, admin = false) {
+  if (!admin && !ownsEvent(id)) return null;
+  if (!admin && patch && 'featured' in patch) { patch = Object.assign({}, patch); delete patch.featured; }
   const own = state.extraEvents.find(e => e.id === id);
   if (own) Object.assign(own, patch);
   else state.eventEdits[id] = Object.assign({}, state.eventEdits[id], patch);
@@ -2722,7 +2891,7 @@ export function deleteEvent(id) {
   save();
 }
 export function approveEvent(id) {
-  updateEvent(id, { status: 'live' });
+  updateEvent(id, { status: 'live' }, true);
   pushNotif({ icon: 'calendar', route: '#/events/' + id,
     title: { ar: 'تم اعتماد فعاليتك', en: 'Your event was approved' },
     body: { ar: 'فعاليتك صارت ظاهرة في قسم الفعاليات.', en: 'Your event is now listed in Events.' } });
@@ -2737,7 +2906,7 @@ export function rejectEvent(id, reason) {
   deleteEvent(id);
 }
 /** Featured = the paid "pin to the top" placement. */
-export function featureEvent(id, on = true) { updateEvent(id, { featured: !!on }); }
+export function featureEvent(id, on = true) { updateEvent(id, { featured: !!on }, true); }
 
 /* ========================= MODERATION QUEUE ========================= */
 
@@ -3408,7 +3577,17 @@ export function mapsApp() { return state.mapsApp || null; }
 export function setMapsApp(app) { state.mapsApp = app || null; save(); }
 
 export const SUPPORT_EMAIL = 'support@arabna.app';
-export const SUPPORT_PHONE = '(713) 555-0199';
+/* EMPTY UNTIL THERE IS A REAL ONE, and that is deliberate.
+   It read `(713) 555-0199`. 555 is the reserved fictional exchange, so
+   every page that carried it published a `tel:` link that rings nowhere —
+   to somebody reporting harassment or asking for their listing to be taken
+   down. `lookupLineType()` does not catch it either: that function reads
+   the AREA code and 713 is a real one, which is why the app's own rule
+   against invented numbers never fired here.
+   An email is published on all the same pages and satisfies what the app
+   stores ask for. Put a working number in this one line and it reappears
+   everywhere by itself; leave it empty and no dead link is printed. */
+export const SUPPORT_PHONE = '';
 
 export function personKey(x) {
   if (!x) return '';

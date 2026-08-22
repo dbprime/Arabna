@@ -55,6 +55,18 @@ const switchLang = async () => {
 
 const adminLogin = async () => {
   await go('#/admin');
+  /* V.03.6 — nothing ships a staff password any more, so a device is
+     CLAIMED before it can be logged into. This is the fixture doing what
+     the owner does once on the first run; the route is re-entered because
+     the setup screen is already on screen by the time we get here. */
+  await page.evaluate(async () => {
+    const S = (window.__m && window.__m.S)
+      || await import('arabna/js/store.js').catch(() => import('./js/store.js'));
+    if (!S.adminIsSet()) { await S.setAdminPass('Arabna@2026!', 'arabna.admin'); location.hash = '#/home'; }
+  });
+  await page.waitForTimeout(200);
+  await page.evaluate(() => { location.hash = '#/admin'; });
+  await page.waitForTimeout(600);
   if (await page.locator('#aUser').count()) {
     await page.fill('#aUser', 'arabna.admin');
     await page.fill('#aPass', 'Arabna@2026!');
@@ -452,13 +464,23 @@ const caps = await page.evaluate(async () => {
 ok('username field disables autocapitalise / autocorrect',
    !caps || (caps.cap === 'none' && caps.cor === 'off' && caps.sp === 'false'),
    caps ? JSON.stringify(caps) : 'already unlocked');
+/* V.03.6: `checkAdmin` is async now — it compares a salted hash instead of
+   a string, because the password is no longer a constant in a downloadable
+   file. The rule it enforces is unchanged and is what is asserted. */
 ok('username compare is case-insensitive', await page.evaluate(async () => {
-  const S = await import('./js/store.js');
-  return S.checkAdmin('Arabna.Admin', 'Arabna@2026!') && S.checkAdmin('  arabna.admin ', 'Arabna@2026!');
+  /* On the single-file build `import('./js/store.js')` fetches the file
+     again and hands back a SECOND instance with its own state — the app's
+     own lives behind the importmap. */
+  const S = await import('arabna/js/store.js').catch(() => import('./js/store.js'));
+  return (await S.checkAdmin('Arabna.Admin', 'Arabna@2026!'))
+      && (await S.checkAdmin('  arabna.admin ', 'Arabna@2026!'));
 }));
 ok('password stays case-sensitive', await page.evaluate(async () => {
-  const S = await import('./js/store.js');
-  return !S.checkAdmin('arabna.admin', 'arabna@2026!');
+  /* On the single-file build `import('./js/store.js')` fetches the file
+     again and hands back a SECOND instance with its own state — the app's
+     own lives behind the importmap. */
+  const S = await import('arabna/js/store.js').catch(() => import('./js/store.js'));
+  return !(await S.checkAdmin('arabna.admin', 'arabna@2026!'));
 }));
 
 /* ============ admin: events CRUD ============ */
@@ -517,9 +539,22 @@ await page.locator('#aTabs .tab[data-t="set"]').click(); await page.waitForTimeo
    build the admin panel's own password out of. */
 await page.fill('#apNew', 'Sh@mi-Katy!9'); await page.fill('#apConf', 'Sh@mi-Katy!9');
 await page.click('#apSave'); await page.waitForTimeout(500);
-ok('admin password can be changed and is stored', await page.evaluate(() => {
-  const a = (JSON.parse(localStorage.getItem('arabna.v1')) || {}).adminAuth;
-  return !!a && a.pass === 'Sh@mi-Katy!9' && a.user === 'arabna.admin';
+/* V.03.6 reversed what "stored" means, and that is the whole point of the
+   change: there is no `pass` field any more. What is kept is a salt and a
+   SHA-256 of the password, the same `pwSalt`/`pwHash` path a user's own
+   password already used — so the assertion is that the new password OPENS
+   the panel and that the plaintext is nowhere in storage. */
+ok('admin password can be changed and is stored hashed', await page.evaluate(async () => {
+  const raw = localStorage.getItem('arabna.v1');
+  const a = (JSON.parse(raw) || {}).adminAuth;
+  /* On the single-file build `import('./js/store.js')` fetches the file
+     again and hands back a SECOND instance with its own state — the app's
+     own lives behind the importmap. */
+  const S = await import('arabna/js/store.js').catch(() => import('./js/store.js'));
+  return !!a && a.user === 'arabna.admin' && !!a.hash && !!a.salt && a.pass === undefined
+      && !raw.includes('Sh@mi-Katy!9')
+      && (await S.checkAdmin('arabna.admin', 'Sh@mi-Katy!9'))
+      && !(await S.checkAdmin('arabna.admin', 'Arabna@2026!'));
 }));
 // restore the default so a later run starts clean
 await page.evaluate(() => {

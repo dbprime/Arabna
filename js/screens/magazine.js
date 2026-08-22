@@ -1,6 +1,6 @@
 /* ======================= MAGAZINE ======================= */
 import { t, L, icon, $, $$, go, back, renderHeader, toast, wireRoutes, emptyState, shareItem,
-         query, sectionNote, sectionSlider, sponsoredRows, historyKey } from '../ui.js';
+         query, sectionNote, sectionSlider, sponsoredRows, historyKey, esc } from '../ui.js';
 import { ARTICLES, MAG_CATS, MINI_ADS, AD_SLOTS, NEWCOMER_PARTS } from '../data.js';
 import * as S from '../store.js';
 import { catKeyOf, startSlider } from './home.js';
@@ -142,7 +142,7 @@ export function MagazineScreen(root) {
         const ad = ads[Math.floor(i / 3) % ads.length];
         out.push(`<button class="mini-ad" style="margin:0 0 11px" data-route="${ad.link}">
           <span class="m-ico">${icon(ad.icon, 19)}</span>
-          <span class="m-body"><span class="m-name">${L(ad.name)}</span><br><span class="m-tag">${L(ad.tag)}</span></span>
+          <span class="m-body"><span class="m-name">${esc(L(ad.name))}</span><br><span class="m-tag">${esc(L(ad.tag))}</span></span>
           <span class="ad-label">${t('sponsored')}</span></button>`);
       }
     });
@@ -167,9 +167,9 @@ function articleCard(a) {
         <span class="badge badge-cat">${t(catKeyOf(a.cat))}</span>
         ${a.sponsored ? `<span class="badge badge-sponsored">${t('sponsoredStory')}</span>` : ''}
       </div>
-      <div class="mag-title mt-8">${L(a.title)}</div>
-      <div class="mag-ex">${L(a.excerpt)}</div>
-      <div class="mag-meta"><span>${icon('clock', 13)} ${a.read} ${t('readTime')}</span><span>${L(a.date)}</span></div>
+      <div class="mag-title mt-8">${esc(L(a.title))}</div>
+      <div class="mag-ex">${esc(L(a.excerpt))}</div>
+      <div class="mag-meta"><span>${icon('clock', 13)} ${a.read} ${t('readTime')}</span><span>${esc(L(a.date))}</span></div>
     </div>
   </div>`;
 }
@@ -187,13 +187,13 @@ export function ArticleScreen(root, params) {
     <div class="article-body">
       <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
         <span class="badge badge-cat">${t(catKeyOf(a.cat))}</span>
-        ${a.sponsored ? `<span class="badge badge-sponsored">${t('sponsoredStory')} · ${L(a.advertiser || '')}</span>` : ''}
+        ${a.sponsored ? `<span class="badge badge-sponsored">${t('sponsoredStory')} · ${esc(L(a.advertiser || ''))}</span>` : ''}
       </div>
-      <h1>${L(a.title)}</h1>
+      <h1>${esc(L(a.title))}</h1>
       <div class="mag-meta" style="margin-bottom:16px">
-        <span>${t('by')} ${L(a.author)}</span><span>·</span><span>${L(a.date)}</span><span>·</span><span>${a.read} ${t('readTime')}</span>
+        <span>${t('by')} ${esc(L(a.author))}</span><span>·</span><span>${esc(L(a.date))}</span><span>·</span><span>${a.read} ${t('readTime')}</span>
       </div>
-      ${(L(a.body) || []).map(p => `<p>${p}</p>`).join('')}
+      ${(L(a.body) || []).map(p => `<p>${esc(p)}</p>`).join('')}
 
       <button class="mini-ad" style="margin:6px 0 0" data-route="#/advertise">
         <span class="m-ico">${icon('megaphone', 19)}</span>

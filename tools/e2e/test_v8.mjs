@@ -363,6 +363,18 @@ await go('#/directory/b1');
 ok('…and not shown on a business page either', !(await txt()).includes('إفطار جماعي'));
 
 await go('#/admin');
+/* V.03.6 — nothing ships a staff password any more, so a device is
+   CLAIMED before it can be logged into. This is the fixture doing what
+   the owner does once on the first run; the route is re-entered because
+   the setup screen is already on screen by the time we get here. */
+await page.evaluate(async () => {
+  const S = (window.__m && window.__m.S)
+    || await import('arabna/js/store.js').catch(() => import('./js/store.js'));
+  if (!S.adminIsSet()) { await S.setAdminPass('Arabna@2026!', 'arabna.admin'); location.hash = '#/home'; }
+});
+await page.waitForTimeout(200);
+await page.evaluate(() => { location.hash = '#/admin'; });
+await page.waitForTimeout(600);
 await page.fill('#aUser', 'arabna.admin');
 await page.fill('#aPass', 'Arabna@2026!');
 await page.click('#aGo'); await page.waitForTimeout(500);
@@ -639,6 +651,18 @@ await page.reload(); await page.waitForTimeout(700);
 
 // the admin panel locks itself again after a reload
 await go('#/admin');
+/* V.03.6 — nothing ships a staff password any more, so a device is
+   CLAIMED before it can be logged into. This is the fixture doing what
+   the owner does once on the first run; the route is re-entered because
+   the setup screen is already on screen by the time we get here. */
+await page.evaluate(async () => {
+  const S = (window.__m && window.__m.S)
+    || await import('arabna/js/store.js').catch(() => import('./js/store.js'));
+  if (!S.adminIsSet()) { await S.setAdminPass('Arabna@2026!', 'arabna.admin'); location.hash = '#/home'; }
+});
+await page.waitForTimeout(200);
+await page.evaluate(() => { location.hash = '#/admin'; });
+await page.waitForTimeout(600);
 await page.fill('#aUser', 'arabna.admin');
 await page.fill('#aPass', 'Arabna@2026!');
 await page.click('#aGo'); await page.waitForTimeout(500);

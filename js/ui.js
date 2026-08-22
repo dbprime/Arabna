@@ -231,7 +231,7 @@ export function openDropdown({ host, anchor, title, options, value, unit, onPick
           <button class="dd-row ${o.id === value ? 'selected' : ''}" type="button" role="option"
                   aria-selected="${o.id === value}" data-v="${o.id}">
             ${o.icon ? icon(o.icon, 18) : '<span class="dd-nogap"></span>'}
-            <span class="dd-name">${o.label}</span>
+            <span class="dd-name">${esc(o.label)}</span>
             ${o.count == null ? '' : `<span class="chip-n">${o.count}</span>`}
             <span class="dd-tick">${o.id === value ? icon('check', 16) : ''}</span>
           </button>`).join('')}
@@ -466,7 +466,7 @@ export function mountThemeWatch() {
 export function sectionSlider(ads, { product, sectionName }) {
   if (ads && ads.length) {
     return `<div class="slider"><div class="slider-track" id="secTrack">
-        ${ads.map((a, i) => `<div class="slide ${i === 0 ? 'active' : ''}" data-route="${a.link || '#/home'}" style="background:${a.color}">
+        ${ads.map((a, i) => `<div class="slide ${i === 0 ? 'active' : ''}" data-route="${esc(a.link || '#/home')}" style="background:${esc(a.color)}">
           <span class="slide-badge">${t('sponsored')}</span>
           <div class="slide-title">${L(a.name)}</div>
           <div class="slide-sub">${L(a.tag)}</div>
@@ -499,12 +499,12 @@ export function sectionSlider(ads, { product, sectionName }) {
 export function sponsoredRows(rows) {
   if (!rows || !rows.length) return '';
   return `<div class="spon-block">${rows.map(r => `
-    <div class="list-row spon" data-route="${r.route}">
-      ${r.img ? `<span class="row-ico shot"><img src="${r.img}" alt="" loading="lazy" /></span>`
+    <div class="list-row spon" data-route="${esc(r.route)}">
+      ${r.img ? `<span class="row-ico shot"><img src="${esc(r.img)}" alt="" loading="lazy" /></span>`
               : `<span class="row-ico">${icon(r.icon || 'megaphone', 22)}</span>`}
       <div class="row-main">
-        <div class="row-title">${r.title}<span class="badge badge-sponsored">${t('sponsored')}</span></div>
-        ${r.sub ? `<div class="row-sub">${r.sub}</div>` : ''}
+        <div class="row-title">${esc(r.title)}<span class="badge badge-sponsored">${t('sponsored')}</span></div>
+        ${r.sub ? `<div class="row-sub">${esc(r.sub)}</div>` : ''}
       </div>
       <span class="chev">${icon(document.documentElement.dir === 'rtl' ? 'chevronL' : 'chevronR', 19)}</span>
     </div>`).join('')}</div>`;
@@ -582,7 +582,7 @@ export function renderHeader(opts = {}) {
     // back + title only — language moved into the drawer
     head.innerHTML = `
       <button class="icon-btn" id="hBack" aria-label="${t('back')}">${icon(document.documentElement.dir === 'rtl' ? 'chevronR' : 'chevronL', 24)}</button>
-      <div class="h-title">${opts.title || ''}</div>
+      <div class="h-title">${esc(opts.title || '')}</div>
       <span class="h-spacer" aria-hidden="true"></span>`;
     $('#hBack').addEventListener('click', () => opts.onBack ? opts.onBack() : back());
   } else {
@@ -668,8 +668,8 @@ export function renderNav(active) {
     { id: 'profile',     label: t('navProfile'), ico: 'user',    route: '#/profile' },
   ];
   nav.innerHTML = items.map(i => i.center
-    ? `<button class="nav-item nav-add" id="navAdd"><span class="nav-post">${icon('plus', 28)}</span><span>${i.label}</span></button>`
-    : `<button class="nav-item ${active === i.id ? 'active' : ''}" data-route="${i.route}">${icon(i.ico, 25)}<span>${i.label}</span></button>`
+    ? `<button class="nav-item nav-add" id="navAdd"><span class="nav-post">${icon('plus', 28)}</span><span>${esc(i.label)}</span></button>`
+    : `<button class="nav-item ${active === i.id ? 'active' : ''}" data-route="${i.route}">${icon(i.ico, 25)}<span>${esc(i.label)}</span></button>`
   ).join('');
   $$('#bottomNav .nav-item[data-route]').forEach(b => b.addEventListener('click', () => go(b.dataset.route)));
   $('#navAdd').addEventListener('click', openAddSheet);
@@ -835,8 +835,8 @@ export function openDrawer() {
   const head = member ? `
       <div class="drawer-head">
         <img data-logo="wide" src="${logoSrc('wide')}" alt="ARABNA" />
-        <div style="font-weight:700">${u.name}</div>
-        <div class="drawer-user">${u.email} · ${tierLabel}</div>
+        <div style="font-weight:700">${esc(u.name)}</div>
+        <div class="drawer-user">${esc(u.email)} · ${tierLabel}</div>
       </div>` : `
       <div class="drawer-head">
         <img data-logo="wide" src="${logoSrc('wide')}" alt="ARABNA" />
@@ -911,6 +911,30 @@ export function closeDrawer() {
 }
 
 /* ---------------- small builders ---------------- */
+/**
+ * The one escape in the project. Everything else was five copies of it in
+ * five screens plus a sixth in the admin panel that guarded the quote and
+ * nothing else — so the protection existed and was not binding, and the
+ * fifth screen written after them had none at all.
+ *
+ * THE RULE, and it is not a matter of judgement: **every value that was
+ * not written in `i18n.js` goes through `esc()` before it reaches
+ * `innerHTML`.** A name, an address, a description, a tag, a review and
+ * its author, a search term, an offer, a price somebody typed, anything
+ * off a form, anything off the URL. `t()` and `icon()` are ours and do
+ * not; a number we computed does not.
+ *
+ * The apostrophe is escaped too, so the same function is safe inside a
+ * single-quoted attribute as well as a double-quoted one — one function
+ * that is right in every position beats two the caller has to choose
+ * between.
+ */
+export function esc(v) {
+  return String(v == null ? '' : v)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
 export function emptyState(ico, title, sub, ctaLabel, ctaRoute) {
   return `<div class="empty">
     <div class="empty-ico">${icon(ico, 35)}</div>

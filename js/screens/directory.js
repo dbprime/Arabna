@@ -5,7 +5,7 @@ import { t, L, icon, $, $$, go, back, renderHeader, openSheet, closeSheet, confi
          pickerBtn, setPickerValue, openDropdown, closeDropdown,
          showsPrices, priceGate, wirePriceGates,
          openBadge, openBadgeSlot, onMinute, distLabel, cityChipLabel, fmtMiles, attrChips, fmtDay, fmtTime, bizBadge,
-         sponsoredRows, historyKey } from '../ui.js';
+         sponsoredRows, historyKey, esc } from '../ui.js';
 import { CATEGORIES, SUBSCRIPTION_PRICE, DAY_KEYS } from '../data.js';
 import * as S from '../store.js';
 import { catIcon, startSlider } from './home.js';
@@ -67,7 +67,7 @@ export function DirectoryScreen(root) {
          flex: 0 0 auto, so the city chip beside it cannot squeeze it. -->
     <div class="search-row">
       <div class="search-bar big">${icon('search', 22)}
-        <input id="dirSearch" placeholder="${t('searchExample')}" value="${attr(st.term)}" />
+        <input id="dirSearch" placeholder="${t('searchExample')}" value="${esc(st.term)}" />
         <button class="search-clear" id="dirClear" hidden aria-label="${t('clear')}">${icon('x', 16)}</button>
       </div>
       <button class="loc-chip ${S.hasLocation() ? '' : 'unset'}" data-loc>${icon('mapPin', 17)}<span>${cityChipLabel()}</span></button>
@@ -162,7 +162,7 @@ export function DirectoryScreen(root) {
     if (st.hasOffer) on.push({ k: '__offer', label: t('offerHas') });
 
     host.innerHTML = on.length ? `<div class="pill-row">
-      ${on.map(p => `<button class="pill" data-off="${p.k}">${p.label} ${icon('x', 13)}</button>`).join('')}
+      ${on.map(p => `<button class="pill" data-off="${esc(p.k)}">${esc(p.label)} ${icon('x', 13)}</button>`).join('')}
       ${on.length > 1 ? `<button class="pill clear" id="pillClear">${t('clearAll')}</button>` : ''}
     </div>` : '';
 
@@ -296,7 +296,7 @@ export function DirectoryScreen(root) {
     const sec = CATEGORIES.find(c => c.id === st.cat);
     $('#dirNote').innerHTML = sectionNote(sec ? t(sec.key) : '', list.length)
       + (found.mode === 'loose'
-        ? `<div class="near-miss">${icon('info', 15)} ${t('nearMiss').replace('{q}', attr(st.term))}</div>` : '');
+        ? `<div class="near-miss">${icon('info', 15)} ${t('nearMiss').replace('{q}', esc(st.term))}</div>` : '');
     paintPills();
     paintCatSlider();
 
@@ -310,7 +310,7 @@ export function DirectoryScreen(root) {
       if (found.suggestions.length) {
         box.insertAdjacentHTML('beforeend',
           `<div class="sugg-row">${found.suggestions.map(sg =>
-            `<button class="pill sugg" data-sk="${sg.kind}" data-sv="${attr(sg.value)}">${sg.label} <span class="chip-n">${sg.count}</span></button>`).join('')}</div>`);
+            `<button class="pill sugg" data-sk="${sg.kind}" data-sv="${esc(sg.value)}">${esc(sg.label)} <span class="chip-n">${sg.count}</span></button>`).join('')}</div>`);
       }
       box.insertAdjacentHTML('beforeend', `<button class="btn btn-gold mt-8" id="clrF">${t('clearFiltersBtn')}</button>`);
       el.querySelectorAll('[data-sk]').forEach(b => b.addEventListener('click', () => {
@@ -457,7 +457,7 @@ function rowHtml(b, sponsored) {
   return `<div class="list-row ${paid ? 'premium' : ''}" data-route="#/directory/${b.id}">
     <span class="row-ico">${icon(catIcon(b.cat), 22)}</span>
     <div class="row-main">
-      <div class="row-title">${L(b.name)}${bizBadge(b)}${
+      <div class="row-title">${esc(L(b.name))}${bizBadge(b)}${
         S.hasOffers(b) ? `<span class="badge-offer">${icon('tag', 11)}${t('offerHas')}</span>` : ''}${
         sponsored ? `<span class="badge badge-sponsored">${t('sponsored')}</span>` : ''}</div>
       <div class="row-sub">${r.count ? stars(r.avg) + `<span>· ${r.count} ${t('reviews')}</span> · ` : ''}
@@ -465,7 +465,7 @@ function rowHtml(b, sponsored) {
         ${openBadgeSlot(b)}
       </div>
       ${b.phone ? `<div class="row-actions">
-        <button class="mini-btn gold" data-call="${b.phone}">${icon('phone', 15)} ${t('call')}</button>
+        <button class="mini-btn gold" data-call="${esc(b.phone)}">${icon('phone', 15)} ${t('call')}</button>
       </div>` : ''}
     </div>
   </div>`;
@@ -601,15 +601,15 @@ function worshipFields(b) {
     </div>
     <div class="field"><label class="label">${t('jumuahTime')}</label>
       <div class="hours-row">
-        <input class="input ltr" id="eJum1" dir="ltr" placeholder="13:30" value="${attr(j[0] || '')}" />
-        <input class="input ltr" id="eJum2" dir="ltr" placeholder="${t('prJumuahTwo')}" value="${attr(j[1] || '')}" />
+        <input class="input ltr" id="eJum1" dir="ltr" placeholder="13:30" value="${esc(j[0] || '')}" />
+        <input class="input ltr" id="eJum2" dir="ltr" placeholder="${t('prJumuahTwo')}" value="${esc(j[1] || '')}" />
       </div>
     </div>
     <div class="field"><label class="label">${t('prIqama')}</label>
       ${IQAMA_KEYS.map(k => `<div class="hours-row">
         <span>${t('pr' + k[0].toUpperCase() + k.slice(1))}</span>
         <input class="input ltr" dir="ltr" data-iq="${k}" placeholder="—"
-               value="${attr((w.prayers && w.prayers[k]) || '')}" />
+               value="${esc((w.prayers && w.prayers[k]) || '')}" />
       </div>`).join('')}
     </div>`;
 }
@@ -648,9 +648,9 @@ function catHouseHtml(catName) {
 function catSlideHtml(a, i) {
   return `<div class="slide ${i === 0 ? 'active' : ''}" style="background:${a.color}">
     <span class="slide-badge">${t('sponsored')}</span>
-    <div class="slide-title">${L(a.name)}</div>
-    <div class="slide-sub">${L(a.tag)}</div>
-    <div class="slide-cta">${L(a.cta)} ${icon(document.documentElement.dir === 'rtl' ? 'chevronL' : 'chevronR', 15)}</div>
+    <div class="slide-title">${esc(L(a.name))}</div>
+    <div class="slide-sub">${esc(L(a.tag))}</div>
+    <div class="slide-cta">${esc(L(a.cta))} ${icon(document.documentElement.dir === 'rtl' ? 'chevronL' : 'chevronR', 15)}</div>
     <div class="slide-icon">${icon(a.icon, 86)}</div>
   </div>`;
 }
@@ -670,7 +670,7 @@ function outingBlock(b) {
   const price = String(b.entryPrice || '').trim();
   return `${!free && price
       ? `<div class="info-row"><span class="i-ico">${icon('ticket', 21)}</span>
-           <div class="i-txt"><b class="ltr">${attr(price)}</b><span>${t('entryPrice')}</span></div></div>`
+           <div class="i-txt"><b class="ltr">${esc(price)}</b><span>${t('entryPrice')}</span></div></div>`
       : ''}
     <div class="list-note" style="margin-inline:0">${icon('alert', 18)}<span>${t('outingsWarn')}</span></div>`;
 }
@@ -724,12 +724,12 @@ function offerCard(o, owner) {
              : o.status === 'rejected' ? t('offerRejected') : '';
   return `<div class="offer-card ${o.status}">
     <div class="offer-main">
-      <div class="offer-text">${attr(o.text)}</div>
-      ${o.price ? `<div class="offer-price ltr">${attr(o.price)}</div>` : ''}
+      <div class="offer-text">${esc(o.text)}</div>
+      ${o.price ? `<div class="offer-price ltr">${esc(o.price)}</div>` : ''}
       <div class="offer-meta">${icon('clock', 15)}<span>${offerEndsLabel(o)}</span>${
         flag ? `<span class="offer-flag">${flag}</span>` : ''}</div>
       ${owner && o.status === 'rejected' && o.reason
-        ? `<div class="offer-why">${attr(o.reason)}</div>` : ''}
+        ? `<div class="offer-why">${esc(o.reason)}</div>` : ''}
     </div>
     ${owner ? `<button class="icon-btn" data-deloffer="${o.id}" aria-label="${t('offerRemove')}">${icon('trash', 19)}</button>` : ''}
   </div>`;
@@ -804,14 +804,14 @@ export function ListingScreen(root, params) {
   root.innerHTML = `
     <div class="detail-hero ${hero ? 'has-photo' : ''}">
       <button class="back-btn" id="bk">${icon(document.documentElement.dir === 'rtl' ? 'chevronR' : 'chevronL', 22)}</button>
-      ${hero ? `<img class="hero-img" src="${hero}" alt="${L(b.name)}" />`
+      ${hero ? `<img class="hero-img" src="${esc(hero)}" alt="${esc(L(b.name))}" />`
              : `<div style="color:var(--gold-bright)">${icon(catIcon(b.cat), 54)}</div>`}
     </div>
 
     <div class="detail-body">
       <div class="row-between">
         <div>
-          <div class="detail-title">${L(b.name)}${bizBadge(b)}</div>
+          <div class="detail-title">${esc(L(b.name))}${bizBadge(b)}</div>
           <div class="row-sub">${rate.count
             ? stars(rate.avg) + `<span>· ${rate.count} ${t('reviews')}</span>`
             : `<span class="muted fs-12">${t('noReviewsYet')}</span>`}</div>
@@ -824,7 +824,7 @@ export function ListingScreen(root, params) {
         </div>
       </div>
 
-      <p class="fs-13 muted mt-12">${L(b.desc || '')}</p>
+      <p class="fs-13 muted mt-12">${esc(L(b.desc || ''))}</p>
       ${attrChips(b)}
 
       ${/* A button that cannot do anything is worse than no button: nine of
@@ -842,7 +842,7 @@ export function ListingScreen(root, params) {
           ? `<div class="info-row"><span class="i-ico">${icon('phone', 21)}</span><div class="i-txt"><b class="muted">${t('noPhoneUseMap')}</b><span>${t('phoneLabel')}</span></div></div>`
           : ''}
       ${b.address
-        ? `<div class="info-row"><span class="i-ico">${icon('mapPin', 21)}</span><div class="i-txt"><b class="ltr">${b.address}</b><span>${t('address')}${S.distanceTo(b) != null ? ` · ${fmtMiles(S.distanceTo(b))} ${t('miles')} ${t('distanceAway')}` : (S.cityOf(b) ? ` · ${S.cityOf(b)}` : '')}</span></div></div>`
+        ? `<div class="info-row"><span class="i-ico">${icon('mapPin', 21)}</span><div class="i-txt"><b class="ltr">${esc(b.address)}</b><span>${t('address')}${S.distanceTo(b) != null ? ` · ${fmtMiles(S.distanceTo(b))} ${t('miles')} ${t('distanceAway')}` : (S.cityOf(b) ? ` · ${S.cityOf(b)}` : '')}</span></div></div>`
         : ''}
       ${hoursBlock(b)}
       ${worshipBlock(b)}
@@ -853,7 +853,7 @@ export function ListingScreen(root, params) {
         <div class="section-head" style="padding:0;margin-top:20px"><div class="section-title">${t('photos')}</div></div>
         <div class="photo-strip">
           ${strip.map(p => `<div class="photo-tile shot ${p.status === 'pending' ? 'pending' : ''}">
-            <img src="${p.url}" alt="" loading="lazy" />
+            <img src="${esc(p.url)}" alt="" loading="lazy" />
             ${p.status === 'pending' ? `<span class="shot-flag">${t('statusPending')}</span>` : ''}
           </div>`).join('')}
         </div>` : ''}
@@ -983,7 +983,7 @@ function ownerBlock(b, mine, paid, claim) {
           ? `<div class="hint" style="text-align:center">${t('bizVerifyPending')}</div>`
           : paid
             ? `<button class="btn btn-outline-gold btn-block mt-8" id="verifyBtn">${icon('checkCircle', 19)} ${t('verifyBusiness')}</button>
-               ${vs && vs.status === 'rejected' && vs.reason ? `<div class="err-msg">${icon('alert', 15)} ${vs.reason}</div>` : ''}`
+               ${vs && vs.status === 'rejected' && vs.reason ? `<div class="err-msg">${icon('alert', 15)} ${esc(vs.reason)}</div>` : ''}`
             : `<div class="hint" style="text-align:center">${t('verifyNeedsPlan')}</div>`}
       ${publicPlace ? publicNote : !paid ? `<div class="upsell" style="margin:12px 0 0">
         <div class="upsell-txt"><b>${t('upgradeBanner')}</b><span>${showsPrices()
@@ -1034,7 +1034,7 @@ export function openReplySheet(reviewId, onSaved) {
   openSheet(`
     <div class="sheet-title">${t('ownerReply')}</div>
     <div class="sheet-sub">${t('ownerReplySub')}</div>
-    <div class="field"><textarea class="textarea" id="rpTxt">${existing ? existing.text : ''}</textarea></div>
+    <div class="field"><textarea class="textarea" id="rpTxt">${esc(existing ? existing.text : '')}</textarea></div>
     <button class="btn btn-gold btn-block" id="rpSend">${t('send')}</button>
   `, (panel) => {
     panel.querySelector('#rpSend').addEventListener('click', () => {
@@ -1062,12 +1062,12 @@ export function reviewHtml(r, isOwner = false) {
   return `<div class="review" data-rev="${r.id || ''}">
     <div class="review-head">
       <span class="avatar">${(r.user || '?')[0]}</span>
-      <div><b class="fs-13">${r.user}</b><div class="fs-12 muted">${L(r.when)} · ${stars(r.rating)}</div></div>
+      <div><b class="fs-13">${r.user}</b><div class="fs-12 muted">${esc(L(r.when))} · ${stars(r.rating)}</div></div>
     </div>
-    <p>${L(r.text)}</p>
+    <p>${esc(L(r.text))}</p>
     ${reply ? `<div class="owner-reply">
       <div class="or-head">${icon('briefcase', 14)} ${t('ownerReply')}</div>
-      <p>${reply.text}</p>
+      <p>${esc(reply.text)}</p>
       ${isOwner ? `<div class="row-actions">
         <button class="mini-btn" data-reply="${r.id}">${icon('edit', 15)} ${t('edit')}</button>
         <button class="mini-btn" data-delreply="${r.id}">${icon('trash', 15)}</button>
@@ -1152,7 +1152,7 @@ export function openReviewSheet(bizId, onSaved) {
       ${[1, 2, 3, 4, 5].map(i => `<button data-s="${i}" style="color:var(--gold-bright)">${icon('star', 33)}</button>`).join('')}
     </div>
     <div class="field"><label class="label">${t('yourReview')}</label>
-      <textarea class="textarea" id="revTxt" placeholder="...">${existing ? L(existing.text) : ''}</textarea></div>
+      <textarea class="textarea" id="revTxt" placeholder="...">${esc(existing ? L(existing.text) : '')}</textarea></div>
     <button class="btn btn-gold btn-block" id="revSend">${t('submitReview')}</button>
   `, (panel) => {
     const paint = () => panel.querySelectorAll('#rateRow button')
@@ -1455,10 +1455,10 @@ export function openSimilarSheet(hits, onProceed) {
       ${hero ? `<img class="sim-photo" src="${hero}" alt="" />`
              : `<span class="sim-ico">${icon(catIcon(top.biz.cat), 26)}</span>`}
       <div class="sim-main">
-        <div class="row-title">${L(top.biz.name)}${bizBadge(top.biz)}</div>
+        <div class="row-title">${esc(L(top.biz.name))}${bizBadge(top.biz)}</div>
         <div class="row-sub"><span>${t(catKey(top.biz.cat))}</span></div>
-        ${top.biz.address ? `<div class="row-sub"><span class="ltr">${top.biz.address}</span></div>` : ''}
-        ${top.biz.phone ? `<div class="row-sub"><span class="ltr">${top.biz.phone}</span></div>` : ''}
+        ${top.biz.address ? `<div class="row-sub"><span class="ltr">${esc(top.biz.address)}</span></div>` : ''}
+        ${top.biz.phone ? `<div class="row-sub"><span class="ltr">${esc(top.biz.phone)}</span></div>` : ''}
         <div class="row-sub gold">${why}</div>
       </div>
     </div>
@@ -1522,8 +1522,8 @@ export function ClaimScreen(root, params) {
     <div class="pad mt-16">
       <div class="list-row" style="margin-bottom:14px">
         <span class="row-ico">${icon(catIcon(b.cat), 20)}</span>
-        <div class="row-main"><div class="row-title">${L(b.name)}</div>
-          <div class="row-sub"><span class="ltr">${b.address}</span></div></div>
+        <div class="row-main"><div class="row-title">${esc(L(b.name))}</div>
+          <div class="row-sub"><span class="ltr">${esc(b.address)}</span></div></div>
       </div>
       <div class="list-note" style="margin:0 0 14px">${icon('info', 18)}<span>${t('claimFormNote')}</span></div>
 
@@ -1572,8 +1572,8 @@ function pickBusinessToClaim(root) {
       <div class="list-row">
         <span class="row-ico">${icon(catIcon(b.cat), 20)}</span>
         <div class="row-main">
-          <div class="row-title">${L(b.name)}</div>
-          <div class="row-sub">${icon('mapPin', 13)} <span class="ltr">${b.address}</span></div>
+          <div class="row-title">${esc(L(b.name))}</div>
+          <div class="row-sub">${icon('mapPin', 13)} <span class="ltr">${esc(b.address)}</span></div>
           <div class="row-actions"><button class="mini-btn gold" data-claim="${b.id}">${icon('check', 15)} ${t('claimIt')}</button></div>
         </div>
       </div>`).join('') : emptyState('search', t('emptyDirTitle'), t('emptyDirSub'));
@@ -1620,22 +1620,22 @@ export function BusinessEditScreen(root, params) {
       ${S.adminEditing(b.id)
         ? `<div class="admin-as">${icon('shield', 17)}<span>${t('adminAsAdmin')}</span></div>` : ''}
       <div class="field"><label class="label">${t('nameEn')}</label>
-        <input class="input ltr" id="eName" dir="ltr" value="${attr((b.name && b.name.en) || '')}" /></div>
+        <input class="input ltr" id="eName" dir="ltr" value="${esc((b.name && b.name.en) || '')}" /></div>
       <div class="field"><label class="label">${t('nameAr')} <span class="muted">(${t('optional')})</span></label>
-        <input class="input" id="eNameAr" value="${attr((b.name && b.name.ar) || '')}" />
+        <input class="input" id="eNameAr" value="${esc((b.name && b.name.ar) || '')}" />
         <div class="hint">${t('nameArHint')}</div></div>
       <div class="field"><label class="label">${t('phoneLabel')} <span class="muted">(${t('optional')})</span></label>
-        <input class="input" id="ePhone" inputmode="tel" value="${attr(b.phone || '')}" />
+        <input class="input" id="ePhone" inputmode="tel" value="${esc(b.phone || '')}" />
         <div class="hint">${t('phoneOptionalHint')}</div></div>
       <div class="field"><label class="label">${t('address')} <span class="muted">(${t('optional')})</span></label>
-        <input class="input" id="eAddr" value="${attr(b.address || '')}" /></div>
-      <div class="field"><label class="label">${t('descLabel')}</label><textarea class="textarea" id="eDesc">${L(b.desc || '')}</textarea></div>
+        <input class="input" id="eAddr" value="${esc(b.address || '')}" /></div>
+      <div class="field"><label class="label">${t('descLabel')}</label><textarea class="textarea" id="eDesc">${esc(L(b.desc || ''))}</textarea></div>
       <div class="field"><label class="label">${t('keywords')}</label>
-        <input class="input" id="eTags" value="${attr((b.tags || []).join('، '))}" />
+        <input class="input" id="eTags" value="${esc((b.tags || []).join('، '))}" />
         <div class="hint">${t('keywordsHint')}</div></div>
       <div class="field"><label class="label">${t('features')}</label><div id="eAttrs"></div></div>
       ${cat === 'outings' ? `<div class="field"><label class="label">${t('entryPrice')} <span class="muted">(${t('optional')})</span></label>
-        <input class="input ltr" id="eEntry" dir="ltr" value="${attr(b.entryPrice || '')}" placeholder="$12 / person" />
+        <input class="input ltr" id="eEntry" dir="ltr" value="${esc(b.entryPrice || '')}" placeholder="$12 / person" />
         <div class="hint">${t('entryPriceHint')}</div></div>` : ''}
       ${worshipFields(b)}
       <label class="consent-row" style="margin:4px 0 16px">
@@ -1768,7 +1768,7 @@ export function BusinessVerifyScreen(root, params) {
   root.innerHTML = `
     <div class="pad mt-16">
       ${st && st.status === 'rejected' && st.reason
-        ? `<div class="err-msg" style="margin-bottom:12px">${icon('alert', 15)} ${st.reason}</div>` : ''}
+        ? `<div class="err-msg" style="margin-bottom:12px">${icon('alert', 15)} ${esc(st.reason)}</div>` : ''}
       <div class="section-title">${t('verifySteps')}</div>
       <div class="mt-12">
         ${[['file', 'verifyStep1'], ['camera', 'verifyStep2'], ['clock', 'verifyStep3']].map(([ico, key], i) => `
@@ -1802,10 +1802,6 @@ export function BusinessVerifyScreen(root, params) {
     go('#/directory/' + b.id);
   });
   wireRoutes(root);
-}
-
-function attr(v) {
-  return String(v == null ? '' : v).replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c])).replace(/"/g, '&quot;');
 }
 
 /* --------------------------- SUBSCRIBE --------------------------- */
@@ -1979,7 +1975,7 @@ export function SubscribeConsentScreen(root, params) {
        first real charge gets its own. */
     S.addReceipt({
       kind: 'subscription', amount: 0, method: 'card', bizId,
-      description: `${t('subscription')} — ${L(b ? b.name : '')}`,
+      description: `${t('subscription')} — ${esc(L(b ? b.name : ''))}`,
       autoRenew: true,
       covers: { from: S.now(), to: started.currentPeriodEnd },
     });
@@ -2016,7 +2012,7 @@ export function MySubscriptionScreen(root) {
         <div class="sub-hero">
           <span class="sub-status ${sub.status}">${t(statusKey)}</span>
           <div class="sub-amount ltr">${fmtMoney(sub.price)}<span>${sub.plan === 'yearly' ? t('year') : t('month')}</span></div>
-          ${biz ? `<div class="muted fs-13">${L(biz.name)}</div>` : ''}
+          ${biz ? `<div class="muted fs-13">${esc(L(biz.name))}</div>` : ''}
         </div>
 
         ${!ended ? `<div class="info-row"><span class="i-ico">${icon('calendar', 21)}</span>

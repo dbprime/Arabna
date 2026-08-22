@@ -2,7 +2,7 @@
 import { t, arCount, L, icon, $, $$, go, renderHeader, toast, wireRoutes, emptyState, confirmSheet,
          openSheet, closeSheet,
          fmtMoney, priceLabel, statusBadge, stars, logoSrc, shareItem,
-         mapChoices } from '../ui.js';
+         mapChoices, esc } from '../ui.js';
 import { SUBSCRIPTION_PRICE, CATEGORIES } from '../data.js';
 import * as S from '../store.js';
 import { catIcon } from './home.js';
@@ -39,10 +39,10 @@ export function ProfileScreen(root) {
   root.innerHTML = `
     <div class="pad mt-16 center-col">
       <div class="avatar" style="width:66px;height:66px;font-size:1.5rem;overflow:hidden">
-        ${avatarUrl ? `<img src="${avatarUrl}" alt="" style="width:100%;height:100%;object-fit:cover" />`
+        ${avatarUrl ? `<img src="${esc(avatarUrl)}" alt="" style="width:100%;height:100%;object-fit:cover" />`
                     : u.name[0].toUpperCase()}
       </div>
-      <b style="font-size:1.125rem;margin-top:10px">${u.name}
+      <b style="font-size:1.125rem;margin-top:10px">${esc(u.name)}
         ${S.hasBadge() ? `<span class="badge-check" title="${t('verifiedBadge')}">${icon('check', 12)}</span>` : ''}</b>
       <span class="badge ${S.tier() === 2 ? 'badge-verified' : 'badge-free'} mt-8">${tierLabel}</span>
       ${u.avatar && u.avatar.status === 'pending' ? `<span class="hint">${t('photoPendingReview')}</span>` : ''}
@@ -50,11 +50,11 @@ export function ProfileScreen(root) {
 
     <div class="pad mt-16">
       <div class="info-row"><span class="i-ico">${icon('mail', 21)}</span>
-        <div class="i-txt"><b class="ltr">${u.email}</b><span>${t('email')}</span></div></div>
+        <div class="i-txt"><b class="ltr">${esc(u.email)}</b><span>${t('email')}</span></div></div>
 
       <div class="info-row"><span class="i-ico">${icon('phone', 21)}</span>
         <div class="i-txt">
-          <b class="ltr">${u.phone || '—'}</b>
+          <b class="ltr">${esc(u.phone || '—')}</b>
           <span>${u.phone
             ? (u.phoneVerified
                 ? `<span class="ok-inline">${icon('check', 12)} ${t('verified')}</span>`
@@ -107,11 +107,11 @@ export function EditProfileScreen(root) {
       </div>
 
       <div class="field"><label class="label">${t('fullName')}</label>
-        <input class="input" id="pName" value="${attr(u.name)}" /></div>
+        <input class="input" id="pName" value="${esc(u.name)}" /></div>
       <div class="field"><label class="label">${t('email')}</label>
-        <input class="input" id="pEmail" type="email" value="${attr(u.email)}" /></div>
+        <input class="input" id="pEmail" type="email" value="${esc(u.email)}" /></div>
       <div class="field"><label class="label">${t('phoneNumber')}</label>
-        <input class="input" id="pPhone" inputmode="tel" value="${attr(u.phone || '')}" />
+        <input class="input" id="pPhone" inputmode="tel" value="${esc(u.phone || '')}" />
         <div class="hint">${u.phoneVerified ? t('verified') : t('phoneNotVerified')} — ${t('phoneChangedReverify')}</div></div>
 
       <button class="btn btn-gold btn-block mt-8" id="pSave">${icon('check', 19)} ${t('saveChanges')}</button>
@@ -319,11 +319,6 @@ export function wirePasswordToggles(root) {
   }));
 }
 
-function attr(s) {
-  return String(s == null ? '' : s)
-    .replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]))
-    .replace(/"/g, '&quot;');
-}
 
 
 /** Personal screens are for account holders only. If the session ended while
@@ -378,7 +373,7 @@ function adOrderCard(o) {
     </div>
     <div class="row-sub">${p ? t(p.nameKey) : o.product}${o.cat ? ' · ' + t(catKeyFor(o.cat)) : ''} · <span class="ltr">${fmtMoney(o.price)}</span></div>
     ${left !== null ? `<div class="row-sub ${ending ? 'gold' : ''}">${t('adEndsOn')}: ${fmtDate(o.endsAt)} · ${t('adDaysLeft').replace('{c}', arCount(left, t('plDay')))}</div>` : ''}
-    ${o.reason ? `<div class="err-msg">${icon('alert', 15)} ${o.reason}</div>` : ''}
+    ${o.reason ? `<div class="err-msg">${icon('alert', 15)} ${esc(o.reason)}</div>` : ''}
 
     <div class="stat-row" style="padding:10px 0 0">
       <div class="stat"><b>${st.impressions}</b><span>${t('adImpressions')}</span></div>
@@ -414,7 +409,7 @@ export function MyAdsScreen(root) {
             ? `<img src="${c.photos[c.mainPhoto || 0] || c.photos[0]}" style="width:100%;height:100%;object-fit:cover" alt="" />`
             : icon(c.icon || 'image', 24)}</span>
           <div class="row-main">
-            <div class="row-title">${L(c.title)} ${c.boosted ? `<span class="badge badge-boost">${t('boosted')}</span>` : ''} ${statusBadge(c, true)}</div>
+            <div class="row-title">${esc(L(c.title))} ${c.boosted ? `<span class="badge badge-boost">${t('boosted')}</span>` : ''} ${statusBadge(c, true)}</div>
             <div class="row-sub gold"><span class="ltr">${priceLabel(c.price)}</span> · ${t('expiresIn')} ${c.daysLeft} ${t('days')}</div>
             <div class="row-actions">
               <button class="mini-btn gold" data-route="#/boost/${c.id}">${icon('bolt', 15)} ${t('boost')}</button>
@@ -473,11 +468,11 @@ export function MyReviewsScreen(root) {
         const b = S.businessById(r.bizId);
         return `<div class="card" style="padding:14px;margin-bottom:10px">
           <div class="row-between">
-            <div><b class="fs-13">${b ? L(b.name) : r.bizId}</b>
-              <div class="fs-12 muted">${L(r.when)} · ${stars(r.rating)}</div></div>
+            <div><b class="fs-13">${esc(b ? L(b.name) : r.bizId)}</b>
+              <div class="fs-12 muted">${esc(L(r.when))} · ${stars(r.rating)}</div></div>
             <button class="mini-btn" data-route="#/directory/${r.bizId}">${icon('eye', 15)}</button>
           </div>
-          <p class="fs-13 mt-8" style="margin:8px 0 0">${L(r.text)}</p>
+          <p class="fs-13 mt-8" style="margin:8px 0 0">${esc(L(r.text))}</p>
           <div class="row-actions mt-8">
             <button class="mini-btn gold" data-edit="${r.bizId}">${icon('edit', 15)} ${t('editReview')}</button>
             <button class="mini-btn" data-del="${r.id}">${icon('trash', 15)} ${t('delete')}</button>
@@ -537,9 +532,9 @@ export function MyBusinessScreen(root) {
         <div class="list-row premium" data-route="#/directory/${b.id}">
           <span class="row-ico">${icon(catIcon(b.cat), 22)}</span>
           <div class="row-main">
-            <div class="row-title">${L(b.name)}
+            <div class="row-title">${esc(L(b.name))}
               ${S.businessVerified(b) ? `<span class="badge badge-bizverified">${icon('checkCircle', 12)}${t('bizVerified')}</span>` : ''}</div>
-            <div class="row-sub">${icon('mapPin', 13)} <span class="ltr">${b.address}</span></div>
+            <div class="row-sub">${icon('mapPin', 13)} <span class="ltr">${esc(b.address)}</span></div>
           </div>
         </div>
         ${S.businessPlan(b) === 'paid'
@@ -754,8 +749,8 @@ export function NotificationsScreen(root) {
     <div class="notif-row ${n.unread ? 'unread' : ''}" data-notif="${n.id}"
          ${n.route ? `data-go="${n.route}"` : ''} style="cursor:pointer">
       <span class="notif-ico">${icon(n.icon, 20)}</span>
-      <div class="notif-txt"><b>${L(n.title)}</b><span>${L(n.body)}</span>
-        <div class="fs-12 muted mt-8">${L(n.when)}</div></div>
+      <div class="notif-txt"><b>${esc(L(n.title))}</b><span>${esc(L(n.body))}</span>
+        <div class="fs-12 muted mt-8">${esc(L(n.when))}</div></div>
       ${n.route ? `<span class="chev">${icon(document.documentElement.dir === 'rtl' ? 'chevronL' : 'chevronR', 18)}</span>` : ''}
     </div>`;
 
@@ -876,7 +871,7 @@ export function AboutScreen(root) {
         <div class="cb-title">${t('contactUsTitle')}</div>
         <div class="hint" style="margin-bottom:8px">${t('contactUsSub')}</div>
         <a class="contact-line" href="mailto:${S.SUPPORT_EMAIL}">${icon('mail', 18)}<span class="ltr">${S.SUPPORT_EMAIL}</span></a>
-        <a class="contact-line" href="tel:${S.SUPPORT_PHONE.replace(/[^0-9+]/g, '')}">${icon('phone', 18)}<span class="ltr">${S.SUPPORT_PHONE}</span></a>
+        ${S.SUPPORT_PHONE ? `<a class="contact-line" href="tel:${esc(S.SUPPORT_PHONE.replace(/[^0-9+]/g, ''))}">${icon('phone', 18)}<span class="ltr">${esc(S.SUPPORT_PHONE)}</span></a>` : ''}
       </div>
       <span class="muted fs-12 mt-16">${t('version')} 0.1 · est. 2026</span>
     </div>`;
@@ -884,8 +879,10 @@ export function AboutScreen(root) {
 
 /** the same published address on every page that has to carry one */
 function contactBlock(en) {
-  return `<p><a class="gold ltr" href="mailto:${S.SUPPORT_EMAIL}">${S.SUPPORT_EMAIL}</a><br>
-    <a class="gold ltr" href="tel:${S.SUPPORT_PHONE.replace(/[^0-9+]/g, '')}">${S.SUPPORT_PHONE}</a></p>
+  /* No number means no line — never a `tel:` that rings nowhere. The same
+     rule the directory already follows for a shop with no phone. */
+  return `<p><a class="gold ltr" href="mailto:${esc(S.SUPPORT_EMAIL)}">${esc(S.SUPPORT_EMAIL)}</a>${
+    S.SUPPORT_PHONE ? `<br><a class="gold ltr" href="tel:${esc(S.SUPPORT_PHONE.replace(/[^0-9+]/g, ''))}">${esc(S.SUPPORT_PHONE)}</a>` : ''}</p>
     <p>${en ? 'We answer complaints and content removal requests within two working days.'
             : 'نرد على الشكاوى وطلبات إزالة المحتوى خلال يومَي عمل.'}</p>`;
 }

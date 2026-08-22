@@ -1,6 +1,6 @@
 /* ============================ HOME ============================ */
 import { t, L, icon, $, $$, go, renderHeader, openSheet, closeSheet, toast, stars, wireRoutes,
-         distLabel, cityChipLabel, mountAdRotator } from '../ui.js';
+         distLabel, cityChipLabel, mountAdRotator, esc } from '../ui.js';
 import { CATEGORIES, HOME_CATS, MINI_ADS, ARTICLES, ZIPS, CITY_SUGGESTIONS, AD_SLOTS,
          CITY_POINTS } from '../data.js';
 import * as S from '../store.js';
@@ -14,11 +14,6 @@ let miniStop = null;
 const HOME_OFFERS = 6;
 
 /** the same one-liner three other screens keep locally */
-function attr(v) {
-  return String(v == null ? '' : v)
-    .replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]))
-    .replace(/"/g, '&quot;');
-}
 
 /**
  * One offer, with the shop's name above it. The name is the half that
@@ -27,9 +22,9 @@ function attr(v) {
 export function offerTile({ offer, biz }) {
   const ends = endsLabel(offer);
   return `<button class="card offer-tile" data-route="#/directory/${biz.id}">
-    <div class="offer-shop">${icon(catIcon(biz.cat), 15)}<b>${L(biz.name)}</b></div>
-    <div class="offer-text">${attr(offer.text)}</div>
-    ${offer.price ? `<div class="offer-price ltr">${attr(offer.price)}</div>` : ''}
+    <div class="offer-shop">${icon(catIcon(biz.cat), 15)}<b>${esc(L(biz.name))}</b></div>
+    <div class="offer-text">${esc(offer.text)}</div>
+    ${offer.price ? `<div class="offer-price ltr">${esc(offer.price)}</div>` : ''}
     <div class="offer-meta">${icon('clock', 15)}<span>${ends}</span></div>
   </button>`;
 }
@@ -48,9 +43,9 @@ export function OffersScreen(root) {
     : `<div class="pad mt-16">${live.map(x => `
         <div class="offer-card" data-route="#/directory/${x.biz.id}" style="cursor:pointer">
           <div class="offer-main">
-            <div class="offer-shop">${icon(catIcon(x.biz.cat), 15)}<b>${L(x.biz.name)}</b></div>
-            <div class="offer-text">${attr(x.offer.text)}</div>
-            ${x.offer.price ? `<div class="offer-price ltr">${attr(x.offer.price)}</div>` : ''}
+            <div class="offer-shop">${icon(catIcon(x.biz.cat), 15)}<b>${esc(L(x.biz.name))}</b></div>
+            <div class="offer-text">${esc(x.offer.text)}</div>
+            ${x.offer.price ? `<div class="offer-price ltr">${esc(x.offer.price)}</div>` : ''}
             <div class="offer-meta">${icon('clock', 15)}<span>${endsLabel(x.offer)}</span></div>
           </div>
         </div>`).join('')}</div>`;
@@ -136,7 +131,7 @@ export function HomeScreen(root) {
               ${b.verified ? `<span class="badge badge-verified" style="position:absolute;inset-block-start:8px;inset-inline-start:8px">${icon('check', 12)}${t('verified')}</span>` : ''}
             </div>
             <div class="feat-body">
-              <div class="feat-name">${L(b.name)}</div>
+              <div class="feat-name">${esc(L(b.name))}</div>
               <div class="feat-meta">${stars(b.rating)} <span>· ${b.reviewCount} ${t('reviews')}</span></div>
               ${distLabel(b) ? `<div class="feat-meta">${distLabel(b)}</div>` : ''}
             </div>
@@ -183,7 +178,7 @@ export function HomeScreen(root) {
             </div>
             <div class="feat-body">
               <span class="badge badge-cat">${t(catKeyOf(a.cat))}</span>
-              <div class="feat-name mt-8" style="line-height:1.45">${L(a.title)}</div>
+              <div class="feat-name mt-8" style="line-height:1.45">${esc(L(a.title))}</div>
               <div class="feat-meta">${icon('clock', 13)} ${a.read} ${t('readTime')}</div>
             </div>
           </div>`).join('')}
@@ -223,9 +218,9 @@ function slideHtml(a, i) {
   }
   return `<div class="slide ${i === 0 ? 'active' : ''}" data-i="${i}" data-route="${a.link}" style="background:${a.color}">
     <span class="slide-badge">${t('sponsored')}</span>
-    <div class="slide-title">${L(a.name)}</div>
-    <div class="slide-sub">${L(a.tag)}</div>
-    <div class="slide-cta">${L(a.cta)} ${icon(document.documentElement.dir === 'rtl' ? 'chevronL' : 'chevronR', 15)}</div>
+    <div class="slide-title">${esc(L(a.name))}</div>
+    <div class="slide-sub">${esc(L(a.tag))}</div>
+    <div class="slide-cta">${esc(L(a.cta))} ${icon(document.documentElement.dir === 'rtl' ? 'chevronL' : 'chevronR', 15)}</div>
     <div class="slide-icon">${icon(a.icon, 86)}</div>
   </div>`;
 }
@@ -290,7 +285,7 @@ function startMiniAd() {
     host: el, items: ads, interval: 16000,
     paint: (a, i) => {
       el.innerHTML = `<span class="m-ico">${icon(a.icon, 19)}</span>
-        <span class="m-body"><span class="m-name">${L(a.name)}</span><br><span class="m-tag">${L(a.tag)}</span></span>
+        <span class="m-body"><span class="m-name">${esc(L(a.name))}</span><br><span class="m-tag">${esc(L(a.tag))}</span></span>
         <span class="ad-label">${t('adLabel')}</span>`;
       el.dataset.link = a.link;
       if (dots) [...dots.children].forEach((d, n) => d.classList.toggle('active', n === i));
@@ -715,7 +710,7 @@ export function openLocationSheet() {
           if (!z) { input.classList.add('input-err'); msg.innerHTML = `<div class="err-msg">${icon('alert', 15)} ${t('invalidZip')}</div>`; return; }
           picked = { zip: v, city: z.city, state: z.state };
           markCity(z.city);
-          msg.innerHTML = `<div class="ok-msg">${t('zipResolved')}: <b>${z.city}, ${z.state}</b></div>`;
+          msg.innerHTML = `<div class="ok-msg">${t('zipResolved')}: <b>${esc(z.city)}, ${z.state}</b></div>`;
         } else if (v.length >= 2) {
           const hits = CITY_SUGGESTIONS.filter(c => c.toLowerCase().includes(v.toLowerCase())).slice(0, 6);
           sugg.innerHTML = hits.map(h => `<button class="dr-item" style="padding:10px 8px;border-radius:10px" data-city="${h}">${icon('mapPin', 18)}<span>${h}</span></button>`).join('')
@@ -725,7 +720,7 @@ export function openLocationSheet() {
             picked = { zip: '', city, state: st };
             input.value = b.dataset.city; sugg.innerHTML = '';
             markCity(city);
-            msg.innerHTML = `<div class="ok-msg">${t('zipResolved')}: <b>${b.dataset.city}</b></div>`;
+            msg.innerHTML = `<div class="ok-msg">${t('zipResolved')}: <b>${esc(b.dataset.city)}</b></div>`;
           }));
         }
       }, 250);

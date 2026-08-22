@@ -1,7 +1,7 @@
 /* ======================= EVENTS ======================= */
 import { t, L, icon, $, $$, go, back, renderHeader, toast, wireRoutes, replaceHash,
          emptyState, query, sectionNote, pickerBtn, setPickerValue, openDropdown, ltr,
-         sectionSlider, sponsoredRows, historyKey } from '../ui.js';
+         sectionSlider, sponsoredRows, historyKey, esc } from '../ui.js';
 import { getLang } from '../i18n.js';
 import { EVENT_TYPES, nextOccurrence, AD_SLOTS } from '../data.js';
 import { startSlider } from './home.js';
@@ -137,13 +137,13 @@ function typeLabel(id) {
 function cardHtml(e) {
   return `<div class="card ev-card ${e.featured ? 'featured' : ''}" data-route="#/events/${e.id}">
     <div class="ev-cover">
-      ${e.photo ? `<img src="${e.photo}" alt="${L(e.title)}" loading="lazy" />` : icon(e.icon || 'calendar', 30)}
+      ${e.photo ? `<img src="${esc(e.photo)}" alt="${esc(L(e.title))}" loading="lazy" />` : icon(e.icon || 'calendar', 30)}
       ${e.featured ? `<span class="badge badge-boost" style="position:absolute;inset-block-start:8px;inset-inline-start:8px">${icon('bolt', 12)}${t('featuredEvent')}</span>` : ''}
     </div>
     <div class="ev-body">
       <div class="ev-when">${icon('clock', 13)} ${whenLabel(e.startsAt)}</div>
-      <div class="ev-title">${L(e.title)}</div>
-      <div class="ev-meta">${icon('mapPin', 13)} ${L(e.venue)} · <span class="ltr">${e.city}</span></div>
+      <div class="ev-title">${esc(L(e.title))}</div>
+      <div class="ev-meta">${icon('mapPin', 13)} ${esc(L(e.venue))} · <span class="ltr">${esc(e.city)}</span></div>
       ${typeBadge(e)}
     </div>
   </div>`;
@@ -181,12 +181,12 @@ export function EventScreen(root, params) {
 
   root.innerHTML = `
     <div class="ev-hero">
-      ${e.photo ? `<img src="${e.photo}" alt="${L(e.title)}" />` : icon(e.icon || 'calendar', 56)}
+      ${e.photo ? `<img src="${esc(e.photo)}" alt="${esc(L(e.title))}" />` : icon(e.icon || 'calendar', 56)}
       ${e.featured ? `<span class="badge badge-boost" style="position:absolute;inset-block-end:12px;inset-inline-start:14px">${icon('bolt', 13)}${t('featuredEvent')}</span>` : ''}
       ${past ? `<span class="badge badge-free" style="position:absolute;inset-block-end:12px;inset-inline-end:14px">${t('eventPast')}</span>` : ''}
     </div>
     <div class="detail-body">
-      <div class="detail-title">${L(e.title)}</div>
+      <div class="detail-title">${esc(L(e.title))}</div>
       ${e.status === 'pending' ? `<div class="list-note" style="margin-inline:0">${icon('clock', 18)}<span>${t('pendingNote')}</span></div>` : ''}
 
       <div class="info-row"><span class="i-ico">${icon('calendar', 21)}</span>
@@ -194,14 +194,14 @@ export function EventScreen(root, params) {
           <span>${e.endsAt ? `${t('eventEnds')}: ${fmtEventDate(e.endsAt)}` : t('eventWhen')}</span></div></div>
 
       <div class="info-row"><span class="i-ico">${icon('mapPin', 21)}</span>
-        <div class="i-txt"><b>${L(e.venue)}</b><span class="ltr">${e.city}</span></div></div>
+        <div class="i-txt"><b>${esc(L(e.venue))}</b><span class="ltr">${esc(e.city)}</span></div></div>
 
       <div class="info-row"><span class="i-ico">${icon('users', 21)}</span>
-        <div class="i-txt"><b>${L(e.organizer)}</b><span>${t('eventOrganizer')}</span></div></div>
+        <div class="i-txt"><b>${esc(L(e.organizer))}</b><span>${t('eventOrganizer')}</span></div></div>
 
       ${concertBlock(e)}
 
-      <p class="fs-13 muted mt-12" style="white-space:pre-wrap">${L(e.desc || '')}</p>
+      <p class="fs-13 muted mt-12" style="white-space:pre-wrap">${esc(L(e.desc || ''))}</p>
 
       ${e.ticketUrl
         ? `<a class="btn btn-gold btn-block mt-16" href="${e.ticketUrl}" target="_blank" rel="noopener">
@@ -228,7 +228,7 @@ export function EventScreen(root, params) {
   });
 
   $('#mapBtn').addEventListener('click', () =>
-    import('../ui.js').then(m => m.openMaps(`${L(e.venue)} ${e.city}`)));
+    import('../ui.js').then(m => m.openMaps(`${esc(L(e.venue))} ${esc(e.city)}`)));
   $('#shareBtn').addEventListener('click', () =>
     import('../ui.js').then(m => m.shareItem(L(e.title), location.href)));
   wireRoutes(root);
@@ -244,11 +244,20 @@ export function EventScreen(root, params) {
 export function EventFormScreen(root, params) {
   const editId = params && params[0] ? params[0] : (query().edit || '');
   const editing = editId ? S.eventById(editId) : null;
-  const isAdmin = !!query().admin;
+  /* NOT `query().admin`. Reading it off the URL let anybody — signed in or
+     not — open the admin form, publish an event LIVE to everyone and tick
+     `featured`, which is the $99/week pin. A flag in the address bar is a
+     request, never a permission; `adminUnlocked()` is the session, and it
+     is memory-only so a reload asks for the password again. */
+  const isAdmin = S.adminUnlocked() && !!query().admin;
 
   renderHeader({ simple: true, title: editing ? t('editEvent') : (isAdmin ? t('addEvent') : t('proposeEvent')) });
 
   if (!isAdmin && !S.requireTier(1, '#/events/propose', go)) return;
+  /* An event somebody else proposed is not yours to rewrite. The admin
+     edits through this same form on purpose — one form, one shape of data
+     — so an unlocked panel passes, and nothing else does. */
+  if (editing && !isAdmin && !S.ownsEvent(editing.id)) { go('#/events/' + editing.id); return; }
 
   const e = editing || S.blankEvent();
 
@@ -257,7 +266,7 @@ export function EventFormScreen(root, params) {
       ${!isAdmin ? `<div class="list-note" style="margin:0 0 14px">${icon('info', 18)}<span>${t('eventProposed')}</span></div>` : ''}
 
       <div class="field"><label class="label">${t('eventTitleLabel')}</label>
-        <input class="input" id="evTitle" value="${attr(L(e.title))}" /></div>
+        <input class="input" id="evTitle" value="${esc(L(e.title))}" /></div>
 
       <div class="field"><label class="label">${t('eventType')}</label>
         <select class="select" id="evType">
@@ -267,13 +276,13 @@ export function EventFormScreen(root, params) {
       <!-- concert-only, revealed by the type above -->
       <div id="evConcert" hidden>
         <div class="field"><label class="label">${t('evArtist')}</label>
-          <input class="input" id="cnArtist" value="${attr((e.concert || {}).artist || '')}" /></div>
+          <input class="input" id="cnArtist" value="${esc((e.concert || {}).artist || '')}" /></div>
         <div class="field"><label class="label">${t('evDoors')} <span class="muted">(${t('optional')})</span></label>
-          <input class="input" id="cnDoors" type="time" value="${attr((e.concert || {}).doorsAt || '')}" /></div>
+          <input class="input" id="cnDoors" type="time" value="${esc((e.concert || {}).doorsAt || '')}" /></div>
         <div class="field"><label class="label">${t('evPriceFrom')} <span class="muted">(${t('optional')})</span></label>
-          <input class="input ltr" id="cnPrice" inputmode="decimal" placeholder="35" value="${attr((e.concert || {}).priceFrom || '')}" /></div>
+          <input class="input ltr" id="cnPrice" inputmode="decimal" placeholder="35" value="${esc((e.concert || {}).priceFrom || '')}" /></div>
         <div class="field"><label class="label">${t('evAgeLimit')} <span class="muted">(${t('optional')})</span></label>
-          <input class="input" id="cnAge" placeholder="${t('evAgeHint')}" value="${attr((e.concert || {}).ageLimit || '')}" /></div>
+          <input class="input" id="cnAge" placeholder="${t('evAgeHint')}" value="${esc((e.concert || {}).ageLimit || '')}" /></div>
         <label class="setting-row" style="padding:8px 0;border:none">
           <input type="checkbox" id="cnFamily" ${(e.concert || {}).familySeating ? 'checked' : ''} class="check-gold" />
           <span class="s-txt"><b style="font-weight:500;font-size:.78125rem">${t('evFamilySeating')}</b></span></label>
@@ -281,20 +290,20 @@ export function EventFormScreen(root, params) {
       </div>
 
       <div class="field"><label class="label">${t('eventStarts')}</label>
-        <input class="input" id="evStart" type="datetime-local" value="${attr(e.startsAt)}" /></div>
+        <input class="input" id="evStart" type="datetime-local" value="${esc(e.startsAt)}" /></div>
       <div class="field"><label class="label">${t('eventEnds')} <span class="muted">(${t('optional')})</span></label>
-        <input class="input" id="evEnd" type="datetime-local" value="${attr(e.endsAt)}" /></div>
+        <input class="input" id="evEnd" type="datetime-local" value="${esc(e.endsAt)}" /></div>
 
       <div class="field"><label class="label">${t('eventVenue')}</label>
-        <input class="input" id="evVenue" value="${attr(L(e.venue))}" /></div>
+        <input class="input" id="evVenue" value="${esc(L(e.venue))}" /></div>
       <div class="field"><label class="label">${t('cityLabel')}</label>
-        <input class="input" id="evCity" value="${attr(e.city || (S.userCity() ? S.userCity() + ', ' + S.state.location.state : ''))}" /></div>
+        <input class="input" id="evCity" value="${esc(e.city || (S.userCity() ? S.userCity() + ', ' + S.state.location.state : ''))}" /></div>
 
       <div class="field"><label class="label">${t('eventOrganizerName')}</label>
-        <input class="input" id="evOrg" value="${attr(L(e.organizer))}" /></div>
+        <input class="input" id="evOrg" value="${esc(L(e.organizer))}" /></div>
 
       <div class="field"><label class="label">${t('eventTicketUrl')} <span class="muted">(${t('optional')})</span></label>
-        <input class="input" id="evUrl" inputmode="url" placeholder="https://" value="${attr(e.ticketUrl)}" /></div>
+        <input class="input" id="evUrl" inputmode="url" placeholder="https://" value="${esc(e.ticketUrl)}" /></div>
 
       <div class="field"><label class="label">${t('eventDescLabel')}</label>
         <textarea class="textarea" id="evDesc">${esc(L(e.desc || ''))}</textarea></div>
@@ -350,6 +359,28 @@ export function EventFormScreen(root, params) {
     const venue = $('#evVenue').value.trim();
     if (!title || !start || !venue) { toast(t('required'), 'err'); return; }
 
+    /* A start in 2020 and an end in 2019 both went into the review queue
+       with no warning at all — an event nobody can attend, in a list sorted
+       soonest-first, taking a moderator's time to throw away. The admin is
+       exempt from the past rule alone: correcting last month's record is a
+       real thing to do, and «النهاية بعد البداية» is arithmetic either way. */
+    const err = (sel, key) => {
+      const el = $(sel);
+      if (el) { el.classList.add('input-err'); el.focus(); }
+      toast(t(key), 'err');
+    };
+    const startMs = new Date(start).getTime();
+    const endRaw = $('#evEnd').value;
+    const endMs = endRaw ? new Date(endRaw).getTime() : null;
+    if (!isAdmin && isFinite(startMs) && startMs < S.now() - 60 * 60 * 1000) {
+      return err('#evStart', 'evStartPast');
+    }
+    if (endMs != null && isFinite(endMs) && isFinite(startMs) && endMs < startMs) {
+      return err('#evEnd', 'evEndBeforeStart');
+    }
+    $('#evStart').classList.remove('input-err');
+    if ($('#evEnd')) $('#evEnd').classList.remove('input-err');
+
     const kind = typeSel.value;
     const payload = {
       title: { ar: title, en: title },
@@ -375,7 +406,7 @@ export function EventFormScreen(root, params) {
     };
 
     if (editing) {
-      S.updateEvent(editing.id, payload);
+      S.updateEvent(editing.id, payload, isAdmin);
       toast(t('eventSaved'), 'ok');
       go(isAdmin ? '#/admin' : '#/events/' + editing.id);
       return;
@@ -388,7 +419,3 @@ export function EventFormScreen(root, params) {
   });
 }
 
-function esc(s) {
-  return String(s == null ? '' : s).replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
-}
-function attr(s) { return esc(s).replace(/"/g, '&quot;'); }

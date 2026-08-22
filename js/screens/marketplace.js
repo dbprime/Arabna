@@ -4,7 +4,7 @@ import { t, L, icon, $, $$, go, back, renderHeader, confirmSheet, toast, wireRou
          emptyState, query, shareItem, fmtMoney, priceLabel, statusBadge,
          openSheet, closeSheet, openFilterSheet, activeFilterCount, sectionNote,
          showsPrices, replaceHash, goAfterDone, ltr,
-         sectionSlider, sponsoredRows, historyKey } from '../ui.js';
+         sectionSlider, sponsoredRows, historyKey, esc } from '../ui.js';
 import { MARKET_CATS, BOOST_PRICES, FREE_PRICE, SUBSCRIPTION_PRICE, AD_SLOTS } from '../data.js';
 import { startSlider } from './home.js';
 import { getLang } from '../i18n.js';
@@ -209,7 +209,7 @@ export function MarketplaceScreen(root) {
 
 function thumb(c) {
   return c.photos && c.photos.length
-    ? `<img src="${c.photos[c.mainPhoto || 0] || c.photos[0]}" alt="${L(c.title)}" loading="lazy" />`
+    ? `<img src="${c.photos[c.mainPhoto || 0] || c.photos[0]}" alt="${esc(L(c.title))}" loading="lazy" />`
     : icon(c.icon || 'image', 35);
 }
 
@@ -221,8 +221,8 @@ function cardHtml(c, isNew) {
     </div>
     <div class="cl-body">
       <div class="cl-price">${priceLabel(c.price)}</div>
-      <div class="cl-title">${L(c.title)}</div>
-      <div class="cl-meta"><span>${icon('mapPin', 12)} <span class="ltr">${c.city}</span></span><span>${L(c.when)}</span></div>
+      <div class="cl-title">${esc(L(c.title))}</div>
+      <div class="cl-meta"><span>${icon('mapPin', 12)} <span class="ltr">${esc(c.city)}</span></span><span>${esc(L(c.when))}</span></div>
       ${statusBadge(c)}
     </div>
   </div>`;
@@ -246,14 +246,14 @@ export function ListingDetailScreen(root, params) {
     ${photos.length ? `
       <div style="position:relative;padding-top:14px">
         <button class="back-btn" id="bk2" style="position:absolute;inset-block-start:22px;inset-inline-start:20px;z-index:3">${icon(document.documentElement.dir === 'rtl' ? 'chevronR' : 'chevronL', 22)}</button>
-        <div class="cl-gallery">${photos.map(p => `<img src="${p}" alt="${L(c.title)}" />`).join('')}</div>
+        <div class="cl-gallery">${photos.map(p => `<img src="${esc(p)}" alt="${esc(L(c.title))}" />`).join('')}</div>
       </div>` : ''}
 
     <div class="detail-body">
       <div class="row-between">
         <div>
           <div class="cl-price" style="font-size:1.5rem">${priceLabel(c.price)}</div>
-          <div class="detail-title" style="font-size:1.0625rem">${L(c.title)}</div>
+          <div class="detail-title" style="font-size:1.0625rem">${esc(L(c.title))}</div>
           <div class="mt-8">${statusBadge(c, mine)}</div>
         </div>
         <div class="top-actions">
@@ -265,8 +265,8 @@ export function ListingDetailScreen(root, params) {
           <button class="icon-btn" id="saveBtn" aria-label="${t('save')}">${icon('heart', 22)}</button>
         </div>
       </div>
-      <div class="row-sub mt-8">${icon('mapPin', 14)} <span class="ltr">${c.city}</span> · ${icon('clock', 14)} ${L(c.when)}</div>
-      <p class="fs-13 muted mt-12" style="white-space:pre-wrap">${L(c.desc || '')}</p>
+      <div class="row-sub mt-8">${icon('mapPin', 14)} <span class="ltr">${esc(c.city)}</span> · ${icon('clock', 14)} ${esc(L(c.when))}</div>
+      <p class="fs-13 muted mt-12" style="white-space:pre-wrap">${esc(L(c.desc || ''))}</p>
 
       ${c.status === 'pending' ? `<div class="list-note" style="margin-inline:0">${icon('clock', 18)}<span>${t('pendingNote')}</span></div>` : ''}
       ${c.cat === 'free' ? `<div class="list-note" style="margin-inline:0">${icon('gift', 18)}<span>${t('freeRule')}</span></div>` : ''}
@@ -458,6 +458,11 @@ export function PostScreen(root) {
   const q = query();
   const editId = q.edit || '';
   const editing = editId ? S.classifiedById(editId) : null;
+  /* `?edit=` names a listing, and naming one is not owning it: this opened
+     a stranger's listing with their text already in the fields. Same rule
+     as `#/boost/` and as every business screen — whoever edits by an id
+     taken from the address is checked against what they own. */
+  if (editing && !S.ownsListing(editing.id)) { go('#/marketplace/' + editing.id); return; }
   renderHeader({ simple: true, title: editing ? t('editListing') : t('postTitle') });
 
   // A draft parked before a verification detour comes back with everything
@@ -482,15 +487,21 @@ export function PostScreen(root) {
       <div class="field"><label class="label">${t('category')}</label>
         <select class="select" id="pCat">${MARKET_CATS.map(c =>
           `<option value="${c.id}" ${c.id === startCat ? 'selected' : ''}>${t(c.key)}</option>`).join('')}</select></div>
-      <div class="field"><label class="label">${t('titleLabel')}</label>
-        <input class="input" id="pTitle" value="${escapeAttr(editing ? L(editing.title) : (draft && draft.title) || '')}" /></div>
+      <div class="field"><label class="label">${t('titleLabel')}
+          <span class="ch-count" id="c_pTitle"></span></label>
+        <input class="input" id="pTitle" maxlength="${S.LISTING_TITLE_MAX}"
+               value="${esc(editing ? L(editing.title) : (draft && draft.title) || '')}" />
+        <div id="e_pTitle"></div></div>
       <div class="field" id="priceField"><label class="label">${t('priceLabel')}</label>
         <input class="input" id="pPrice" inputmode="decimal" placeholder="$"
-               value="${escapeAttr(editing ? (editing.price !== FREE_PRICE ? editing.price : '') : (draft && draft.price) || '')}" /></div>
+               value="${esc(editing ? (editing.price !== FREE_PRICE ? editing.price : '') : (draft && draft.price) || '')}" />
+        <div id="e_pPrice"></div></div>
       <div class="field"><label class="label">${t('cityLabel')}</label>
-        <input class="input" id="pCity" value="${escapeAttr(editing ? editing.city : (draft && draft.city) || (S.userCity() ? S.userCity() + ', ' + S.state.location.state : ''))}" /></div>
-      <div class="field"><label class="label">${t('descLabel')}</label>
-        <textarea class="textarea" id="pDesc">${escapeHtml(editing ? L(editing.desc || '') : (draft && draft.desc) || '')}</textarea></div>
+        <input class="input" id="pCity" value="${esc(editing ? editing.city : (draft && draft.city) || (S.userCity() ? S.userCity() + ', ' + S.state.location.state : ''))}" /></div>
+      <div class="field"><label class="label">${t('descLabel')}
+          <span class="ch-count" id="c_pDesc"></span></label>
+        <textarea class="textarea" id="pDesc" maxlength="${S.LISTING_DESC_MAX}">${esc(editing ? L(editing.desc || '') : (draft && draft.desc) || '')}</textarea>
+        <div id="e_pDesc"></div></div>
 
       <div class="field"><label class="label">${t('photosLabel')}</label><div id="phHost"></div></div>
 
@@ -500,6 +511,37 @@ export function PostScreen(root) {
       ${S.tier() < 2 ? `<div class="hint" style="text-align:center;margin-top:8px">${t('signInToPublish')}</div>` : ''}
       <div class="hint" style="text-align:center;margin-top:10px">${t('needPhoneSub')}</div>
     </div>`;
+
+  /* The counter is visible BEFORE the send button, so a 300-character
+     title is stopped while it is being typed rather than announced after
+     the reader thinks they are finished. `maxlength` does the stopping;
+     the counter is what makes it explicable rather than mysterious. */
+  const counter = (id, max) => {
+    const el = $('#' + id), out = $('#c_' + id);
+    if (!el || !out) return;
+    const paint = () => {
+      out.textContent = t('charCount').replace('{n}', el.value.length).replace('{max}', max);
+      out.classList.toggle('over', el.value.length >= max);
+    };
+    el.addEventListener('input', paint);
+    paint();
+  };
+  counter('pTitle', S.LISTING_TITLE_MAX);
+  counter('pDesc', S.LISTING_DESC_MAX);
+
+  /* «0» is a real answer and gets a note rather than an error: it means
+     «مجاني», and the listing will say so. */
+  const priceNote = () => {
+    const el = $('#pPrice'), out = $('#e_pPrice');
+    if (!el || !out) return;
+    const v = el.value.trim();
+    const r = v ? S.checkListingPrice(v) : { ok: true, free: false, why: '' };
+    el.classList.toggle('input-err', !!v && !r.ok);
+    out.innerHTML = !v ? ''
+      : !r.ok ? `<div class="err-msg">${icon('alert', 15)} ${t(r.why)}</div>`
+      : r.free ? `<div class="hint">${t('priceZeroFree')}</div>` : '';
+  };
+  if ($('#pPrice')) $('#pPrice').addEventListener('input', priceNote);
 
   const pics = mountPhotoPicker($('#phHost'),
     editing ? (editing.photos || []) : (draft && draft.photos) || [],
@@ -557,6 +599,27 @@ export function PostScreen(root) {
     });
     if (missing) { toast(t('required'), 'err'); missing.focus(); return; }
 
+    /* …and being filled in is not the same as being possible. `-500`,
+       `999999999999` and `abc` all published before this, and a
+       three-hundred-character title with them. Each message names the
+       range that IS accepted, under the field it belongs to, because an
+       alert names no field and is gone before the reader looks up. */
+    const say = (sel, key) => {
+      const el = $(sel), box = $('#e_' + sel.slice(1));
+      if (el) el.classList.add('input-err');
+      if (box) box.innerHTML = `<div class="err-msg">${icon('alert', 15)} ${t(key)}</div>`;
+      if (el) el.focus();
+    };
+    const tOk = S.checkListingTitle(rawTitle);
+    if (!tOk.ok) { say('#pTitle', tOk.why); return; }
+    const dOk = S.checkListingDesc(rawDesc);
+    if (!dOk.ok) { say('#pDesc', dOk.why); return; }
+    let priceCheck = { ok: true, free: false };
+    if (!rule.freeOnly) {
+      priceCheck = S.checkListingPrice(rawPrice);
+      if (!priceCheck.ok) { say('#pPrice', priceCheck.why); return; }
+    }
+
     // Free section, new listing: refuse outright before anything is stored.
     // An *edit* that adds a price is not refused — it is published back into
     // the review queue by updateClassified() so a human sees what changed.
@@ -591,8 +654,11 @@ export function PostScreen(root) {
     const desc = S.stripPhones(rawDesc, lang);
     if (title.removed || desc.removed) toast(t('phoneStripped'), 'err');
 
-    const price = rule.freeOnly ? FREE_PRICE
-      : ltr(rawPrice.startsWith('$') ? rawPrice : '$' + rawPrice);
+    // «0» is the word «مجاني», never the figure $0 — which reads as a fault
+    // in the listing rather than as a gift.
+    const price = (rule.freeOnly || priceCheck.free) ? FREE_PRICE
+      : ltr('$' + priceCheck.value.toLocaleString('en-US',
+            { minimumFractionDigits: 0, maximumFractionDigits: 2 }));
     const flagged = BIZ_KEYWORDS.some(k => (rawTitle + ' ' + rawDesc).toLowerCase().includes(k.toLowerCase()));
 
     const payload = {
@@ -639,12 +705,6 @@ export function PostScreen(root) {
   }
 }
 
-function escapeHtml(s) {
-  return String(s == null ? '' : s).replace(/[&<>]/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[ch]));
-}
-function escapeAttr(s) {
-  return escapeHtml(s).replace(/"/g, '&quot;');
-}
 
 /* --------------------------- MESSAGES --------------------------- */
 export function MessagesScreen(root, params) {
@@ -666,7 +726,7 @@ export function MessagesScreen(root, params) {
         (c.photos && c.photos.length)
           ? `<span class="row-ico shot"><img src="${c.photos[0]}" alt="" /></span>`
           : `<span class="row-ico">${icon(c.icon || 'image', 22)}</span>`}
-      <div class="row-main"><div class="row-title">${L(c.title)}</div>
+      <div class="row-main"><div class="row-title">${esc(L(c.title))}</div>
         <div class="row-sub gold"><span class="ltr">${priceLabel(c.price)}</span></div></div>
     </div>
     <div class="list-note">${icon('shield', 18)}<span>${t('scanNotice')}</span></div>
@@ -693,8 +753,8 @@ export function MessagesScreen(root, params) {
   const paint = () => {
     const list = S.messagesFor(listingId);
     $('#msgList').innerHTML = list.length
-      ? list.map(m => `<div class="msg ${m.from === 'me' ? 'me' : 'them'}">${escapeHtml(m.text)}
-          <div class="msg-when">${L(m.when)}</div></div>`).join('')
+      ? list.map(m => `<div class="msg ${m.from === 'me' ? 'me' : 'them'}">${esc(m.text)}
+          <div class="msg-when">${esc(L(m.when))}</div></div>`).join('')
       : `<div class="hint" style="text-align:center">${t('emptyMsgSub')}</div>`;
     const box = $('#msgList');
     box.scrollTop = box.scrollHeight;
@@ -726,7 +786,7 @@ function threadListView(root) {
         return `<div class="list-row" data-route="#/messages/${th.listingId}">
           <span class="row-ico">${icon(c.icon || 'image', 22)}</span>
           <div class="row-main">
-            <div class="row-title">${L(c.title)}</div>
+            <div class="row-title">${esc(L(c.title))}</div>
             <div class="row-sub">${th.count} · ${t('messagesTitle')}</div>
           </div></div>`;
       }).join('')}</div>`
@@ -741,6 +801,14 @@ export function BoostScreen(root, params) {
   // boost prices are our prices — never rendered for a visitor, not even
   // by typing the route
   if (!S.requireTier(1, location.hash, go)) return;
+  /* …and being signed in is not the same as owning it. Every other screen
+     that edits something named in the URL already refuses a stranger —
+     `#/business/edit/`, `#/business/photos/`, `#/verify-business/`,
+     `#/subscribe-consent/` — and this one had fallen out of the pattern,
+     so anybody could pin somebody else's listing to the top of the
+     marketplace and have the receipt written in their own name. No toast:
+     the reader is put back on the listing, which is where they belong. */
+  if (!S.ownsListing(c.id)) { go('#/marketplace/' + c.id); return; }
   renderHeader({ simple: true, title: t('boost') });
   let sel = BOOST_PRICES[1];
 
@@ -768,11 +836,16 @@ export function BoostScreen(root, params) {
 
   $('#payBtn').addEventListener('click', async (e) => {
     if (!S.requireTier(2, location.hash, go)) return;
+    /* Ownership is re-checked HERE and not only at the top: the screen was
+       drawn once and the session can end under it. And nothing is charged
+       and no receipt is written unless the boost itself took — a receipt
+       for a boost that did not happen is worse than either fault alone. */
+    if (!S.ownsListing(c.id)) { go('#/marketplace/' + c.id); return; }
     e.target.innerHTML = `<span class="spinner"></span> ${t('paying')}`;
     await S.chargeCard(sel.price, 'Marketplace boost');
-    S.boostClassified(c.id);
+    if (!S.boostClassified(c.id)) { go('#/marketplace/' + c.id); return; }
     S.addReceipt({ kind: 'boost', amount: sel.price, method: 'card',
-                   refId: c.id, description: `${t('boost')} — ${L(c.title)}` });
+                   refId: c.id, description: `${t('boost')} — ${esc(L(c.title))}` });
     toast(t('done'), 'ok');
     go('#/marketplace/' + c.id);
   });

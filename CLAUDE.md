@@ -7,7 +7,7 @@ ARABNA · عربنا — a mobile-first web app for the Arab community in the U.
 **business directory + marketplace + events + magazine**, Arabic-first with a full English toggle.
 ("Classifieds / الإعلانات الشخصية" is now "Marketplace / السوق" — the old `#/classifieds`
 routes still resolve so shared links keep working.)
-Current version: **V.03.5 (prototype)**. Owner: Rai Elby (@dbprime). Deploys to Vercel (team DB Prime).
+Current version: **V.03.6 (prototype)**. Owner: Rai Elby (@dbprime). Deploys to Vercel (team DB Prime).
 
 ## Hard rules (from the product brief)
 1. **One repository, one Vercel project.** No duplicates, no stray preview projects.
@@ -122,11 +122,11 @@ Screens never touch storage directly — they only call `store.js`.
 ## Demo credentials (prototype only)
 Verification code `123456` (the verify screen shows it and has a "fill demo code" button) ·
 accepted mobile `(713) 466-9182` · rejected as VOIP: anything starting 555/800/888 ·
-admin panel reachable **only** by typing `#/admin` (not linked from the drawer or profile),
-username `arabna.admin` password `Arabna@2026!` — defaults in `js/store.js`, and the owner can
-change the password from the panel's Settings tab (stored in `state.adminAuth`). The username
-compare is case-insensitive + trimmed so iOS auto-capitalisation cannot lock you out ·
-payments are simulated.
+admin panel reachable **only** by typing `#/admin` (not linked from the drawer or profile).
+**No staff password ships any more (V.03.6)** — the first `#/admin` on a device asks the owner
+to set one, and only its salted SHA-256 is kept in `state.adminAuth`. The username compare is
+case-insensitive + trimmed so iOS auto-capitalisation cannot lock you out · payments are
+simulated.
 
 ## Interface rules (V.01.4 — simplification pass)
 Nothing is shown unless the user needs it at that moment; anything advanced or
@@ -493,10 +493,10 @@ and `outingFeature` (15).
 ```
 python3 -m http.server 8099        # from the repo root
 node tools/e2e/chk_i18n.mjs        # both packs, every derived key, seconds
-tools/e2e/run.sh                   # 26 suites × 2 builds, ~25 minutes
+tools/e2e/run.sh                   # 27 suites × 2 builds, ~30 minutes
 python3 tools/build_single.py > index-single-file.html
 ```
-1. `tools/e2e/` holds every suite, v3 to v28, one per batch, and `run.sh`
+1. `tools/e2e/` holds every suite, v3 to v29, one per batch, and `run.sh`
    runs all of them against **both** `index.html` and the generated
    `index-single-file.html`. A change is not finished until both are green.
 2. Check **both** languages (the AR/EN button in the header) and **both**
@@ -2127,7 +2127,162 @@ now. And the drawer gap itself is worth reading twice: **the rows grow
 all**, so the overflow — the difference between the two — grows far
 faster than the text. 46px over at 16, **72 at 17**, 127 at «أكبر».
 
+## V.03.6 — batch nine (ح): the security pass
+
+**Nothing here made the app look broken.** It worked exactly as it always
+had, which is why none of it surfaced in eight batches of screen-by-screen
+review. That is the reason this file went first: every other file in the
+batch adds display sites, and a new display site over an unguarded base is
+a new hole.
+
+### The user's text was running as code, and a link was enough
+Measured before the fix: a probe element sent in `#/directory?q=…` **became
+part of the page**, not a word on it. So did a marketplace listing's title
+and description, a review and its author, an offer — and the queue **inside
+the admin panel**, which is the one that matters most: reaching Rai's own
+screen needed no break-in, only posting an advertisement and waiting for him
+to open it.
+
+- **The protection existed and was not binding.** `esc` was copied into five
+  screens, a sixth copy in `admin.js` guarded the quote and nothing else, a
+  seventh (`att`) sat beside it, and one template escaped `&` and `<` by
+  hand. So a fifth screen written afterwards had none. Adding the call in
+  the four reported places would have left the sixth to be written tomorrow.
+- **`esc()` is now exported from `ui.js` and is the only one.** All seven
+  copies are deleted. It escapes the apostrophe too, so it is correct inside
+  a single-quoted attribute as well as a double-quoted one — one function
+  that is right everywhere beats two the caller has to choose between.
+- **129 interpolations were wrapped** across nine files: names, addresses,
+  descriptions, tags, reviews and their authors, search terms, offers,
+  prices somebody typed, photo URLs, an advertiser's own colour in a `style`
+  attribute, and the city that comes back from the reverse-geocoder — that
+  last one is somebody else's server, which is the same category of trust.
+- **THE RULE, and it is not a matter of judgement:** *every value that was
+  not written in `i18n.js` goes through `esc()` before it reaches
+  `innerHTML`.* `t()` and `icon()` are ours; a number we computed is ours;
+  everything else is not. Reviewing a change means looking for `${` inside a
+  template and asking where the value came from.
+- **Two places deliberately do NOT escape**, and both would break if they
+  did: `toDataFile()` in `store.js` emits JavaScript source for `data.js`
+  (it uses `JSON.stringify`, which is the right escape for that target), and
+  a handful of interpolations whose value is markup we built, not a value —
+  the phone line on `#/profile` is one, and wrapping it printed the tags.
+
+### The second layer, which does not excuse the first
+`script-src 'self'` in a `Content-Security-Policy` — as a `<meta>` in
+`index.html` and as a real header in `vercel.json`. Injected code is not a
+file from this origin, so it does not run whatever anybody forgets.
+
+- Every host in `connect-src` is one the app really calls: `api.zippopotam.us`
+  and the two reverse-geocoders. **A host forgotten here fails silently**,
+  which is why v29 walks fifteen screens and asserts zero violations, and
+  proves each of the three passes the policy while an unlisted host does not.
+- `style-src` needs `'unsafe-inline'`: the app sets `style="…"` on elements
+  it builds and an advertiser's colour is one of them. A style cannot execute.
+- **The single-file build gets a different policy, and that is not a
+  loophole.** It *is* an inline importmap plus modules as `data:` URLs, so
+  the strict rule would refuse to run the app itself. It is the offline
+  backup, opened from a file and never from the web; `build_single.py`
+  rewrites the line and v29 asserts both cases rather than skipping one.
+
+### Signed in is not the same as owning it
+`#/boost/<somebody else's listing>` charged the reader, pinned **the other
+person's advertisement** to the top of the marketplace and wrote the receipt
+in the reader's name. The file reported that one. Auditing every screen that
+edits by an id from the URL turned up two more:
+
+- **`#/post?edit=<not yours>`** opened a stranger's listing with their text
+  in the fields.
+- **`#/events/propose?admin=1`** — the worst of the three. `isAdmin` was read
+  **off the query string**, so anybody, signed in or not, got the staff form,
+  published an event **live to everyone**, and could tick `featured`, which
+  is the $99/week pin. A flag in the address bar is a request, never a
+  permission; it is `adminUnlocked()` now, which is memory-only.
+
+Guarded at the door **and in the store**, because a guard on a screen is
+bypassed by anything that is not that screen — the console today, an API
+call tomorrow. That is the V.03.3 lesson about `startSubscription`, and
+`ownsListing()` / `ownsEvent()` are now the single definitions.
+`boostClassified`, `updateClassified` and `updateEvent` refuse; `addEvent`
+downgrades a `live` status and strips `featured` unless the panel asked.
+**The owner and the panel lose nothing** — v29 asserts that too, because a
+guard that also blocks the right people is a different bug.
+
+### The staff password is out of the file
+`ADMIN_USER` and `ADMIN_PASS` were two exported constants in a module the
+browser downloads: **published, not stored.** Combined with the injection
+above they were worse than either alone — code running in the page reads the
+app's state.
+
+- Both are deleted and **nothing replaced them.** The panel is now **claimed
+  on first use**: a device with no staff password shows a setup screen, the
+  owner sets one, and it is asked for from then on. Rai types it himself and
+  it is in no file and in no message.
+- **Only a salted SHA-256 is kept** (`{user, salt, hash}`), the same
+  `pwSalt`/`pwHash` path a user's own password already used — this was the
+  one place left out of it. `checkAdmin` is async now, and it refuses when
+  nothing is set: an unclaimed panel is claimed, not guessed into.
+- Hashing needs `crypto.subtle`, which needs a secure context. Opened
+  straight off the disk there is none, so the screen **says so and stays
+  shut** rather than storing something weaker and calling it a password.
+- Thirteen suites had the old pair as a fixture; each now claims the device
+  first, which is what the owner does once.
+
+### The forms accepted what cannot be true
+Published, all four: `-500`, `999999999999`, `abc`, and a 300-character
+title. `#/events/propose` took a start in 2020 with an end in 2019.
+
+- The limits live in `store.js` — `LISTING_TITLE_MIN/MAX` (3 / 80),
+  `LISTING_DESC_MAX` (2000), `LISTING_PRICE_MAX` (500,000) — so the admin
+  form, the importer and the server batch cannot disagree; three copies of a
+  number is three numbers.
+- **Every message names what IS accepted**, under its own field: «السعر
+  أرقام فقط — مثال: 250 أو 1200.50». «قيمة غير صالحة» tells somebody who
+  typed 999999999999 nothing about what to type instead.
+- **«0» is an answer, not an error**: it means «مجاني», it says so live
+  while being typed, and it publishes as `FREE_PRICE` — never as "$0", which
+  reads as a fault in the listing.
+- The counter is on the label and `maxlength` does the stopping, so a long
+  title is caught **while it is typed** rather than announced after the
+  reader thinks they have finished.
+- Events: a start in the past is refused (the admin is exempt — correcting
+  last month's record is a real thing to do), and an end before its start is
+  refused for everybody, because that is arithmetic.
+
+### The payment rules are written now and built later
+`chargeCard()` says `ok: true` to anything, and with no card on file at all
+it still produced `{ status:'paid', method:'card', amount:5 }`. **That is
+acceptable today** — there is no gateway and the whole app knows it — and
+unacceptable the moment the first dollar moves. The three rules are written
+at the seam itself, where the server batch will be standing:
+no charge without a payment method · no `paid` receipt without the
+gateway's confirmation · **the amount is computed on the server**, because
+whoever can edit the page can edit the number.
+
+### Three claims from the previous file, corrected
+The second audit was right on all three and they are recorded rather than
+quietly dropped: hiding a listing does **not** remove it from its owner's
+own view (it keeps a «مخفي» badge, `store.js:1428`), «امسح التصفية» **does**
+work, and the app does **not** reject 555 numbers at sign-up.
+
+That last one had a real fault underneath the wrong reason.
+`lookupLineType()` reads the **area code**, not the exchange — so
+`(713) 555-0199`, the published support number, passes the app's own check.
+555 is the reserved fictional exchange, so **every legal page carried a
+`tel:` link that rings nowhere**, offered to somebody reporting harassment
+or asking for their listing to come down. `SUPPORT_PHONE` is **empty** until
+there is a working number; no line is drawn when it is empty (the same rule
+the directory already follows for a shop with no phone), and the email is
+published on all the same pages. **One line in `store.js` brings it back
+everywhere.** And «امسح التصفية» now reads «امسح البحث والتصفية», which is
+what the button actually does.
+
 ## Known open items
+- **`SUPPORT_PHONE` is empty and needs a real number from Rai.** It held
+  `(713) 555-0199` — a reserved fictional exchange — so every legal page
+  published a `tel:` link that rang nowhere. One line in `js/store.js`
+  brings the line back on all three pages at once; the email is published
+  there meanwhile.
 - Legal pages are first drafts — a lawyer must review before public launch.
 - Push notifications: triggers are defined in Settings but not wired to a real service.
   The prayer settings name a pre-adhan alert as coming later, for the same reason.

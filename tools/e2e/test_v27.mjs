@@ -38,6 +38,18 @@ const txt = (p = page) => p.textContent('#app');
 const patch = async (fn, p = page) => { await p.evaluate(fn); await p.reload(); await p.waitForTimeout(800); await mods(p); };
 const adminIn = async (p = page) => {
   await go('#/admin', p);
+  /* V.03.6 — nothing ships a staff password any more, so a device is
+     CLAIMED before it can be logged into. This is the fixture doing what
+     the owner does once on the first run; the route is re-entered because
+     the setup screen is already on screen by the time we get here. */
+  await p.evaluate(async () => {
+    const S = (window.__m && window.__m.S)
+      || await import('arabna/js/store.js').catch(() => import('./js/store.js'));
+    if (!S.adminIsSet()) { await S.setAdminPass('Arabna@2026!', 'arabna.admin'); location.hash = '#/home'; }
+  });
+  await p.waitForTimeout(200);
+  await p.evaluate(() => { location.hash = '#/admin'; });
+  await p.waitForTimeout(600);
   if (await p.locator('#aUser').count()) {
     await p.fill('#aUser', 'arabna.admin'); await p.fill('#aPass', 'Arabna@2026!');
     await p.click('#aGo'); await p.waitForTimeout(800);

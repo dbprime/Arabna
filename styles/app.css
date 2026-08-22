@@ -2272,6 +2272,14 @@ input[inputmode="tel"], input[type="email"], input[inputmode="decimal"], #zipIn 
            white-space: nowrap; max-width: 100%; }
 /* A real directory row at the size on offer. Four words named «كبير» tell
    nobody how large large is. */
+/* The count sits on the label, not under the field: under it is where the
+   error goes, and two things in one place is neither of them. */
+.ch-count {
+  float: inline-end; font-size: .71875rem; font-weight: 600; color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+.ch-count.over { color: var(--gold-bright); }
+
 .font-sample {
   margin: 10px 14px 2px; padding: 12px 14px; border-radius: var(--r-md);
   background: var(--surface-2); color: var(--text);
