@@ -32,7 +32,14 @@ function whenLabel(iso) {
   const time = d.toLocaleTimeString(locale, { hour: 'numeric', minute: '2-digit' });
   if (sameDay(d, today)) return `${t('eventToday')} · ${time}`;
   if (sameDay(d, tomorrow)) return `${t('eventTomorrow')} · ${time}`;
-  return d.toLocaleDateString(locale, { weekday: 'short', day: 'numeric', month: 'short' }) + ` · ${time}`;
+  /* The year is printed whenever it is not this one. «السبت، 20 فبراير»
+     for an event in 2027, read in August 2026, says «that has been and
+     gone» — and the detail page had the year all along, so the list was
+     the only place saying something untrue. Dropped again for this year,
+     where it is noise. */
+  const opts = { weekday: 'short', day: 'numeric', month: 'short' };
+  if (d.getFullYear() !== today.getFullYear()) opts.year = 'numeric';
+  return d.toLocaleDateString(locale, opts) + ` · ${time}`;
 }
 
 /* ----------------------------- LIST ----------------------------- */

@@ -454,10 +454,17 @@ export async function reverseGeocode(lat, lng) {
  * ask again — so nothing in this app calls the browser at launch, and
  * nothing calls it before this sheet has been answered.
  */
-export function openGeoPrompt(onAllow) {
+/**
+ * @param why  an i18n key prefix for the reason THIS caller is asking.
+ *             The prayer screen asks for a different thing than the
+ *             directory does, and «لنعرض لك أقرب المحلات إليك» over a
+ *             screen of prayer times is the app answering a question
+ *             nobody asked.
+ */
+export function openGeoPrompt(onAllow, why) {
   openSheet(`
-    <div class="sheet-title">${t('geoAskTitle')}</div>
-    <div class="sheet-sub">${t('geoAskBody')}</div>
+    <div class="sheet-title">${t(why ? why + 'Title' : 'geoAskTitle')}</div>
+    <div class="sheet-sub">${t(why ? why + 'Body' : 'geoAskBody')}</div>
     <button class="btn btn-gold btn-block" id="geoYes">${icon('navigation', 19)} ${t('geoAllow')}</button>
     <button class="btn btn-ghost btn-block mt-8" id="geoNo">${t('geoNotNow')}</button>
     <div class="hint mt-12">${icon('info', 15)} ${t('locPrivacyLine')}</div>
@@ -622,7 +629,7 @@ export function mountGeoRefresh() {
   });
 }
 
-export function askForLocation(after) {
+export function askForLocation(after, why) {
   openGeoPrompt(() => {
     toast(t('locating'));
     requestGeo({
@@ -637,7 +644,7 @@ export function askForLocation(after) {
         openLocationSheet();
       },
     });
-  });
+  }, why);
 }
 
 export function openLocationSheet() {

@@ -23,7 +23,18 @@ import { ProfileScreen, EditProfileScreen, ChangePasswordScreen, SavedScreen, My
 import { SignUpScreen, SignInScreen, EmailVerifyScreen, PhoneVerifyScreen, ForgotScreen } from './screens/auth.js';
 import { AdvertiseScreen } from './screens/advertise.js';
 import { PrayerScreen } from './screens/prayer.js';
-import { AdminScreen } from './screens/admin.js';
+
+/* One module, fetched once and remembered. The panel repaints itself by
+   re-entering the route, so this must not re-fetch on every paint. */
+let adminMod = null;
+function adminLazy(root, params) {
+  if (adminMod) { adminMod.AdminScreen(root, params); return; }
+  import('./screens/admin.js').then(m => {
+    adminMod = m;
+    // the reader may have moved on while it loaded
+    if ((location.hash || '').split('?')[0] === '#/admin') m.AdminScreen(root, params);
+  });
+}
 
 const ROUTES = [
   { re: /^#\/home$/,              screen: HomeScreen,        nav: 'home' },
@@ -79,7 +90,12 @@ const ROUTES = [
   { re: /^#\/auth\/phone$/,       screen: PhoneVerifyScreen, nav: null },
   { re: /^#\/auth\/forgot$/,      screen: ForgotScreen,      nav: null },
   { re: /^#\/advertise(?:\/(.+))?$/, screen: AdvertiseScreen, nav: 'home' },
-  { re: /^#\/admin$/,             screen: AdminScreen,       nav: null },
+  /* Loaded only when somebody asks for it. A static import put 80 KB of
+     back office into the first paint of every reader in the community,
+     and the panel is reached by typing `#/admin` and knowing a password.
+     A dynamic import needs no build step and no dependency — every
+     browser that runs modules runs this. */
+  { re: /^#\/admin$/,             screen: adminLazy,         nav: null },
 ];
 
 /* Screens that must always open at the top: a form, a sign-up step, or

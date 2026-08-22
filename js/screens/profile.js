@@ -3,7 +3,7 @@ import { t, arCount, L, icon, $, $$, go, renderHeader, toast, wireRoutes, emptyS
          openSheet, closeSheet,
          fmtMoney, priceLabel, statusBadge, stars, logoSrc, shareItem,
          mapChoices, esc } from '../ui.js';
-import { SUBSCRIPTION_PRICE, CATEGORIES } from '../data.js';
+import { SUBSCRIPTION_PRICE, CATEGORIES, APP_VERSION } from '../data.js';
 import * as S from '../store.js';
 import { catIcon } from './home.js';
 import { openReviewSheet, fmtDate } from './directory.js';
@@ -873,7 +873,7 @@ export function AboutScreen(root) {
         <a class="contact-line" href="mailto:${S.SUPPORT_EMAIL}">${icon('mail', 18)}<span class="ltr">${S.SUPPORT_EMAIL}</span></a>
         ${S.SUPPORT_PHONE ? `<a class="contact-line" href="tel:${esc(S.SUPPORT_PHONE.replace(/[^0-9+]/g, ''))}">${icon('phone', 18)}<span class="ltr">${esc(S.SUPPORT_PHONE)}</span></a>` : ''}
       </div>
-      <span class="muted fs-12 mt-16">${t('version')} 0.1 · est. 2026</span>
+      <span class="muted fs-12 mt-16">${t('version')} ${APP_VERSION} · est. 2026</span>
     </div>`;
 }
 

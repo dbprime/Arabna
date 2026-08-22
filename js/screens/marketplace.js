@@ -505,7 +505,12 @@ export function PostScreen(root) {
 
       <div class="field"><label class="label">${t('photosLabel')}</label><div id="phHost"></div></div>
 
-      <div class="list-note" style="margin:0 0 14px">${icon('shield', 18)}<span>${t('phoneStripped')}</span></div>
+      <!-- «حذفنا رقم الهاتف» is a claim about something that HAPPENED, and
+           on an empty form nothing has. It stays as the message shown at
+           the moment a number really is removed (see the publish handler);
+           the standing note here says the rule instead of reporting an
+           event that did not occur. -->
+      <div class="list-note" style="margin:0 0 14px">${icon('shield', 18)}<span>${t('phoneRuleNote')}</span></div>
 
       <button class="btn btn-gold btn-block mt-16" id="pubBtn">${icon('send', 19)} ${editing ? t('saveChanges') : t('publish')}</button>
       ${S.tier() < 2 ? `<div class="hint" style="text-align:center;margin-top:8px">${t('signInToPublish')}</div>` : ''}

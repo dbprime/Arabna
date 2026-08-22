@@ -4,7 +4,7 @@
 
 import { icon, iconFilled } from './icons.js';
 import { t, L, arCount, getLang, setLang } from './i18n.js';
-import { FREE_PRICE } from './data.js';
+import { FREE_PRICE, APP_VERSION } from './data.js';
 import * as S from './store.js';
 
 export const $ = (sel, root = document) => root.querySelector(sel);
@@ -865,7 +865,7 @@ export function openDrawer() {
       ${item('megaphone', t('advertiseWithUs'), '#/advertise', 0, true)}
       ${group('help', t('grpHelp'), help)}
       ${member ? `<button class="dr-item ink-danger" id="drOut">${icon('logout', 22)}<span>${t('signOut')}</span></button>` : ''}
-      <div class="dr-version">ARABNA · عربنا — ${t('version')} 0.1</div>
+      <div class="dr-version">ARABNA · عربنا — ${t('version')} ${APP_VERSION}</div>
     </aside>`;
 
   root.setAttribute('aria-hidden', 'false');
@@ -1245,7 +1245,10 @@ export function activeFilterCount(v) {
   /* The category is not counted: it has a control of its own now, printed
      on the row where the reader can already see it. A badge that repeats
      what is written beside it teaches nobody anything. */
-  if (v.sort && v.sort !== 'newest') n++;
+  /* …and neither is the sort, for exactly the same reason: it has its own
+     picker printing the chosen value in gold, and ordering 514 results
+     differently is not filtering them. Choosing «الأعلى تقييماً» made the
+     badge read 1 over a list that had not lost a single row. */
   if (v.priceMin) n++;
   if (v.priceMax) n++;
   if (v.openNow) n++;
@@ -1594,9 +1597,42 @@ export function openMapSheet(address) {
   });
 }
 
+/**
+ * Share, and say only what actually happened.
+ *
+ * `clipboard.writeText` returns a PROMISE, so the `try/catch` around it
+ * caught nothing — the rejection escaped as an uncaught error — and the
+ * toast sat outside any `then`, so «تم نسخ الرابط» appeared whether the
+ * clipboard had been written or not. On a desktop browser without
+ * `navigator.share`, or on any page that is not a secure context, the
+ * reader was told the link was copied and pasted nothing.
+ *
+ * A share button that lies is worse than one that is missing: the reader
+ * finds out in somebody else's chat window.
+ *
+ * The last resort is not an apology — it is the link, selected, so it can
+ * be copied by hand. That is the project's rule about dead ends.
+ */
 export function shareItem(title, url) {
-  if (navigator.share) navigator.share({ title, url }).catch(() => {});
-  else { try { navigator.clipboard.writeText(url); } catch (e) {} toast(getLang() === 'ar' ? 'تم نسخ الرابط' : 'Link copied', 'ok'); }
+  if (navigator.share) { navigator.share({ title, url }).catch(() => {}); return; }
+  if (!navigator.clipboard || !navigator.clipboard.writeText) { promptCopy(url); return; }
+  navigator.clipboard.writeText(url)
+    .then(() => toast(t('linkCopied'), 'ok'))
+    .catch(() => promptCopy(url));
+}
+
+/** the link itself, selected and ready — never a toast about a failure */
+function promptCopy(url) {
+  openSheet(`
+    <div class="sheet-title">${t('copyTitle')}</div>
+    <div class="sheet-sub">${t('copySub')}</div>
+    <input class="input ltr mt-12" id="cpUrl" readonly value="${esc(url)}" />
+    <button class="btn btn-ghost btn-block mt-12" data-close>${t('close')}</button>
+  `, (panel) => {
+    const el = panel.querySelector('#cpUrl');
+    if (el) { el.focus(); el.select(); }
+    panel.querySelector('[data-close]').addEventListener('click', closeSheet);
+  });
 }
 
 export { L, t, arCount, icon };

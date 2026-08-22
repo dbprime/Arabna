@@ -11,7 +11,7 @@
 # belongs with the thing it protects.
 cd "$(dirname "$0")"
 HOST="${HOST:-http://localhost:8099}"
-SUITES="${SUITES:-3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29}"
+SUITES="${SUITES:-3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30}"
 # A suite that CRASHES prints no "passed," line at all, and counting only
 # `^FAIL` reported that as "0 FAIL" — which is how an aborted v15 once read
 # as green. The exit code is the truth; the counts are the detail.

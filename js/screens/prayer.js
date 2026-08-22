@@ -180,9 +180,16 @@ function draw(root) {
           <div class="empty-ico">${icon('moon', 40)}</div>
           <div class="empty-title">${t('prNoLocation')}</div>
           <button class="btn btn-gold mt-12" id="prLoc">${icon('navigation', 18)} ${t('useMyLocation')}</button>
+          <!-- The second door. The calculation method needs no location at
+               all — it is a table of angles — so a reader who will not share
+               where they are could still not reach the one setting that was
+               already theirs to change. One screen, one button, one dead end. -->
+          <button class="btn btn-ghost mt-8" id="prSet0">${icon('settings', 18)} ${t('prSettings')}</button>
         </div>
       </div>`;
-    $('#prLoc').addEventListener('click', () => askForLocation(() => go('#/prayer')));
+    // …and the prompt says why THIS screen is asking, not why the directory does
+    $('#prLoc').addEventListener('click', () => askForLocation(() => go('#/prayer'), 'geoAskPrayer'));
+    $('#prSet0').addEventListener('click', () => openPrayerSettings(() => draw(root)));
     return;
   }
 

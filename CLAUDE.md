@@ -7,7 +7,7 @@ ARABNA · عربنا — a mobile-first web app for the Arab community in the U.
 **business directory + marketplace + events + magazine**, Arabic-first with a full English toggle.
 ("Classifieds / الإعلانات الشخصية" is now "Marketplace / السوق" — the old `#/classifieds`
 routes still resolve so shared links keep working.)
-Current version: **V.03.6 (prototype)**. Owner: Rai Elby (@dbprime). Deploys to Vercel (team DB Prime).
+Current version: **V.03.7 (prototype)**. Owner: Rai Elby (@dbprime). Deploys to Vercel (team DB Prime).
 
 ## Hard rules (from the product brief)
 1. **One repository, one Vercel project.** No duplicates, no stray preview projects.
@@ -493,10 +493,10 @@ and `outingFeature` (15).
 ```
 python3 -m http.server 8099        # from the repo root
 node tools/e2e/chk_i18n.mjs        # both packs, every derived key, seconds
-tools/e2e/run.sh                   # 27 suites × 2 builds, ~30 minutes
+tools/e2e/run.sh                   # 28 suites × 2 builds, ~30 minutes
 python3 tools/build_single.py > index-single-file.html
 ```
-1. `tools/e2e/` holds every suite, v3 to v29, one per batch, and `run.sh`
+1. `tools/e2e/` holds every suite, v3 to v30, one per batch, and `run.sh`
    runs all of them against **both** `index.html` and the generated
    `index-single-file.html`. A change is not finished until both are green.
 2. Check **both** languages (the AR/EN button in the header) and **both**
@@ -2294,7 +2294,130 @@ published on all the same pages. **One line in `store.js` brings it back
 everywhere.** And «امسح التصفية» now reads «امسح البحث والتصفية», which is
 what the button actually does.
 
+## V.03.7 — batch nine (ز): what a full pass over the running app found
+
+Not a spec. Somebody opened the app and looked, and every one of these had
+survived eight batches **because none of them looks like a fault** — they
+look like the app working.
+
+### A visitor who had never signed up owned a listing
+```js
+myListings: ['c1'],       // js/store.js — a value put in to try something
+```
+Two lines under `user: null`. So on a clean browser `#/marketplace/c1`
+showed **the owner's buttons** — تعديل · ميّز · تجديد · **أخفِ الإعلان** —
+and no «تواصل مع البائع» at all; «أخفِ» really wrote to `hiddenListings`;
+«تعديل» opened `#/post?edit=c1` full of somebody else's text; and `#/post`
+read **1/4** before a character was typed.
+
+- **Changing the default was not enough.** Anybody who had opened the app
+  already had `["c1"]` written into their own localStorage, where it
+  survives every update — so it is cleared once at boot **for whoever has
+  no account**, since somebody with no account owns nothing by definition.
+- **And `signUp` clears it too.** It survived the sign-up as well: a brand-
+  new account's first «إعلاناتي» showed a stranger's car, editable.
+- **THE RULE, and it belongs here:** *the default state in `store.js` is a
+  brand-new visitor, never a test seat.* Any id written into it is a bug
+  waiting for somebody's first launch. This one waited eight batches.
+
+### The share button said «تم نسخ الرابط» over an empty clipboard
+`navigator.clipboard.writeText` returns a **promise**, so the `try/catch`
+around it caught nothing — the rejection escaped as an uncaught error — and
+the toast sat outside any `then`, firing whether the write had happened or
+not. On a desktop browser with no Web Share, or any page that is not a
+secure context, the reader was told the link was copied and pasted nothing.
+
+**A share button that lies is worse than one that is missing**, because the
+reader finds out in somebody else's chat window. It is a promise chain now,
+and the last resort is not an apology — it is **the link itself, selected,
+ready to copy by hand**. Measured in all three states: the clipboard really
+holds the link when it says so, and neither failure path produces a toast
+or an uncaught error. (The string was hard-coded in `ui.js` too; it is
+`linkCopied` in both packs now.)
+
+### An empty search blamed filters nobody had set
+Typing «sushi» on a clean directory produced «لا توجد نتائج بهذه الفلاتر ·
+جرّب إزالة خيار أو اثنين» over an empty filter row. The button worked — it
+cleared the word — which is why this reads as wording and is really a dead
+end: the sentence sends the reader hunting for a control that is not there.
+
+**A search is not a filter**, and merging them was the fault. Three states
+now: the word named back to the reader when nothing is filtered; «ما وجدنا
+«sushi» ضمن هذه الفلاتر» when something is; and inside a category, the move
+that is actually useful — **«ابحث في كل الأقسام»**. The clear button appears
+**only when there is something to clear**, and names which of the two it
+will clear. Same rule as the picker row: an option that does nothing is not
+an option.
+
+### 80 KB of admin panel in every reader's first paint
+`import { AdminScreen } from './screens/admin.js'` was static, so every
+person in the community downloaded and parsed the back office to look at a
+restaurant. It is a dynamic import on the `#/admin` route — no build step,
+no dependency, every module-capable browser does it — cached after the
+first load so the panel's own repaints do not refetch. **Measured: not
+requested across six screens of ordinary browsing; fetched once on
+`#/admin` and it opens.**
+
+### Four small ones
+- **The empty post form claimed a phone number had been removed.** «حذفنا
+  رقم الهاتف» is a claim about something that *happened*; on a blank form
+  nothing has. It stays as the message shown when a number really is
+  stripped, and the standing note states the rule instead.
+- **The filter badge counted the sort.** Choosing «الأعلى تقييماً» made it
+  read **1** over a list that had not lost a row. Ordering is not
+  filtering — `activeFilterCount` already excluded the category for exactly
+  this reason, and now excludes the sort with it.
+- **The events list dropped the year.** «السبت، 20 فبراير» for an event in
+  **2027**, read in August 2026, says «that has been and gone». The detail
+  page had the year all along, so the list was the only place saying
+  something untrue. Printed now whenever it is not this year, and only then.
+- **The prayer screen's one door carried the directory's words.** With no
+  location it offered a single button opening a sheet titled «لنعرض لك أقرب
+  المحلات إليك». `openGeoPrompt(onAllow, why)` takes the caller's own
+  reason, so prayer asks «لنحسب مواقيت الصلاة عندك» — and the settings,
+  which need no location at all (they are a table of angles), got the second
+  door they had been missing.
+- **The version said 0.1** in the drawer and in About while the project was
+  at V.03.6 — two hand-typed literals, both stale, so a reader reporting a
+  fault could not say which build they were on. `APP_VERSION` in `data.js`,
+  one place, raised with this file's version line.
+
+### Two items deferred, on the file's own instruction
+- **The 818 KB header logo**, displayed at 80×65 — 37% of a 2.1 MB first
+  load, and another 812 KB the moment somebody flips the theme. The fix is
+  a properly downscaled mark, and the file assigns it to batch (ج), which
+  changes what the header shows. **Measured and waiting, not forgotten.**
+- **Keyboard access**: 515 directory rows, none reachable by Tab; Escape
+  closes neither a sheet nor the drawer; only three elements have a visible
+  focus ring. Assigned to batch (و), which is the one that opens the app on
+  a desktop — and a desktop screen that cannot be driven from the keyboard
+  is half a screen.
+
+### And the dependency that governs the whole batch
+**Zero of the 514 listings has coordinates.** So «الأقرب» is never chosen,
+«محلات قريبة منك» promises a nearness nothing computes, no mile figure
+appears for anybody, and the radius filter is inert. The fallback does not
+save it either: **485 of 485 real listings have a rating of 0** (the seven
+that exist are all on demo records), so the real order is city, then
+subscriber, then file order. It is a data job, done outside the app — and
+half of what the later files in this batch describe is built on it.
+
 ## Known open items
+- **The header logo is 818 KB for an 80×65 box** — 37% of a 2.1 MB first
+  load, and another 812 KB on a theme flip. Assigned to batch (ج), which
+  changes what the header shows; the mark wants generating at ~3× the
+  displayed size, never cropping the 1173px original.
+- **Nothing in the app is reachable by keyboard**: 515 directory rows with
+  no `tabindex` and no Enter handler, Escape closes neither a sheet nor the
+  drawer, and only three elements have a visible focus ring. Assigned to
+  batch (و), the desktop one.
+- **Zero of the 514 listings has coordinates**, so «الأقرب», the mile
+  figures, «قريب منك» and the radius filter are all inert — and the
+  fallback ranks on a rating that is 0 on all 485 real records. A data job
+  outside the app, and half of the later batch-nine files depend on it.
+- **`APP_VERSION` in `data.js` is raised by hand** with the version line at
+  the top of this file. It is one constant; two hand-typed literals is what
+  it replaced.
 - **`SUPPORT_PHONE` is empty and needs a real number from Rai.** It held
   `(713) 555-0199` — a reserved fictional exchange — so every legal page
   published a `tel:` link that rang nowhere. One line in `js/store.js`

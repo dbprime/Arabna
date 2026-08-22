@@ -44,7 +44,18 @@ const DEFAULTS = {
   area: 'all',          // 'all' · 'city' · a number of miles
   user: null,               // { name, email, emailVerified, phone, phoneVerified }
   saved: [],                // ids of saved businesses / classifieds
-  myListings: ['c1'],       // classifieds owned by the current user
+  /* EMPTY, and this is not a style preference. It read `['c1']` — a value
+     put in to try something and left there for eight batches — so a
+     visitor who had never signed up owned a seed listing: the owner's
+     buttons on `#/marketplace/c1` instead of «تواصل مع البائع», an edit
+     form full of somebody else's text, and a quota already reading 1/4
+     before they had typed a character. And hiding it really wrote to
+     `hiddenListings`.
+
+     THE RULE, and it belongs in CLAUDE.md: **the default state in this
+     file is a brand-new visitor, never a test seat.** Any id written into
+     it is a bug waiting for somebody's first launch. */
+  myListings: [],           // classifieds owned by the current user
   myBusinessId: null,       // claimed / added business id
   subscription: null,       // { businessId, since }
   myAds: [],                // purchased ad placements (pending review / live)
@@ -98,6 +109,17 @@ const DEFAULTS = {
 };
 
 export const state = Object.assign({}, DEFAULTS, load() || {});
+
+/* Changing the default is not enough: anybody who opened the app before
+   this fix has `["c1"]` written into their own localStorage, and it
+   survives every update. So it is cleared once, at boot, for whoever has
+   no account — because somebody with no account owns nothing, by
+   definition. `signUp` clears it too: it survived the sign-up as well,
+   and a brand-new account was starting life owning a stranger's car. */
+if (!state.user && state.myListings && state.myListings.length) {
+  state.myListings = [];
+  try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) { /* memory only */ }
+}
 
 /** Last write result — false when the browser refused (quota full, private mode). */
 export let lastSaveOk = true;
@@ -2488,6 +2510,11 @@ export async function signUp({ name, email, password, phone }) {
     avatar: null,          // { url, status: 'pending' | 'live' }
     badge: null,           // { status: 'pending' | 'live', since }
   };
+  /* A new account owns nothing. The boot cleanup above only runs while
+     there is no user, so a device that still carried the old `['c1']`
+     kept it the moment somebody signed up — and their first «إعلاناتي»
+     showed a stranger's car, editable. */
+  state.myListings = [];
   save();
   await setUserPassword(password || '');
 }

@@ -301,23 +301,54 @@ export function DirectoryScreen(root) {
     paintCatSlider();
 
     const el = $('#dirList');
-    const filtered = st.openNow || st.hasOffer || st.attrs.length || st.term || st.featured
+    /* A SEARCH IS NOT A FILTER, and merging the two was the whole fault.
+       Typing «sushi» with nothing else set produced «لا توجد نتائج بهذه
+       الفلاتر · جرّب إزالة خيار أو اثنين» and a «امسح التصفية» button —
+       asking the reader to undo choices they never made. The button did
+       work (it cleared the word), which is why this reads as a wording
+       bug and is really a dead end: the sentence sends you looking for a
+       filter row that is empty.
+
+       So the two states are separated. `filters` is what the reader
+       actually chose; `st.term` is what they typed, and it is answered by
+       naming the word back to them. */
+    const filters = st.openNow || st.hasOffer || st.attrs.length || st.featured
       || (st.area && st.area !== 'all');
-    if (!list.length && filtered) {
+    const inSection = st.cat && st.cat !== 'all';
+    if (!list.length && (filters || st.term)) {
+      const title = st.term
+        ? (filters ? t('noSearchInFilters') : t('noSearchTitle')).replace('{q}', esc(st.term))
+        : t('noFilterResults');
+      const sub = st.term && !filters ? t('noSearchSub') : t('noFilterResultsSub');
       // a dead end offers something to press, not just an apology
-      el.innerHTML = emptyState('filter', t('noFilterResults'), t('noFilterResultsSub'));
+      el.innerHTML = emptyState('search', title, sub);
       const box = el.querySelector('.empty');
       if (found.suggestions.length) {
         box.insertAdjacentHTML('beforeend',
           `<div class="sugg-row">${found.suggestions.map(sg =>
             `<button class="pill sugg" data-sk="${sg.kind}" data-sv="${esc(sg.value)}">${esc(sg.label)} <span class="chip-n">${sg.count}</span></button>`).join('')}</div>`);
       }
-      box.insertAdjacentHTML('beforeend', `<button class="btn btn-gold mt-8" id="clrF">${t('clearFiltersBtn')}</button>`);
+      /* Searching inside one category and finding nothing has an obvious
+         next move that is not «clear»: look everywhere. */
+      if (st.term && inSection) {
+        box.insertAdjacentHTML('beforeend',
+          `<button class="btn btn-gold mt-8" id="allSec">${t('searchAllSections')}</button>`);
+      }
+      /* …and the clear button appears ONLY when there is something to
+         clear. An option that does nothing is not an option — the same
+         rule the picker row follows. */
+      if (filters) {
+        // …and it names what it will actually clear, which is not always both
+        box.insertAdjacentHTML('beforeend', `<button class="btn ${st.term && inSection ? 'btn-ghost' : 'btn-gold'} mt-8" id="clrF">${t(st.term ? 'clearBothBtn' : 'clearFiltersBtn')}</button>`);
+      }
       el.querySelectorAll('[data-sk]').forEach(b => b.addEventListener('click', () => {
         if (b.dataset.sk === 'cat') { st.term = ''; $('#dirSearch').value = ''; setCat(b.dataset.sv); }
         else { st.term = b.dataset.sv; $('#dirSearch').value = st.term; writeUrl(); paint(); }
       }));
-      el.querySelector('#clrF').addEventListener('click', () => {
+      const all = el.querySelector('#allSec');
+      if (all) all.addEventListener('click', () => setCat('all'));
+      const clr = el.querySelector('#clrF');
+      if (clr) clr.addEventListener('click', () => {
         st.openNow = false; st.attrs = []; st.term = ''; st.area = 'all';
         st.featured = false; st.hasOffer = false; S.setArea('all');
         $('#dirSearch').value = '';

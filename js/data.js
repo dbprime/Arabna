@@ -83,6 +83,12 @@ export const CLASSIFIED_CATS = MARKET_CATS;
 
 /** Sentinel stored as the price of a "Free stuff" listing — rendered
     through priceLabel() so it reads "مجاني" / "Free" in both languages. */
+/* The version, in ONE place. The drawer and the About page each printed a
+   hand-typed «0.1» while the project had reached V.03.6 — two literals,
+   both stale, and a reader reporting a fault could not tell us which build
+   they were on. Raise it here when CLAUDE.md's version line moves. */
+export const APP_VERSION = '0.3.6';
+
 export const FREE_PRICE = '__FREE__';
 
 export const MAG_CATS = [
