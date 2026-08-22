@@ -200,7 +200,21 @@ ok('4.3 it opens the full screen', await page.getAttribute('.pr-bar', 'data-rout
 await go('#/prayer');
 ok('4.4 five prayers and the sunrise between them',
    await page.locator('.pr-row').count() >= 6, String(await page.locator('.pr-row').count()));
-ok('4.5 the next one is picked out', await page.locator('.pr-row.next').count() === 1);
+/* V.03.9: this asserted `=== 1` unconditionally and was therefore
+   time-of-day dependent — it fails every evening after isha, when the
+   next prayer is TOMORROW's fajr and the screen deliberately marks no
+   row (`!nx.tomorrow`). Marking today's fajr, hours after it passed,
+   would be the actual bug. The invariant is: exactly one row when the
+   next prayer is today, none when it is tomorrow's — and the card above
+   says «غداً» either way. Nothing in this batch touched that path; the
+   check had simply never run late enough in the day. */
+{
+  const tomorrow = /غد|Tomorrow/i.test(await page.textContent('.pr-next'));
+  const marked = await page.locator('.pr-row.next').count();
+  ok('4.5 the next one is picked out — and only when it is today\'s',
+     tomorrow ? marked === 0 : marked === 1,
+     (tomorrow ? "tomorrow's fajr, " : 'today, ') + marked + ' marked');
+}
 ok('4.6 the standing line: the calculation is astronomical, the iqama is not',
    /حساب فلكي|astronomical/.test(await txt()));
 ok('4.7 a drawer row, not a sixth tab — the bar still holds five',
