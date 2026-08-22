@@ -580,10 +580,10 @@ export function requestGeo({ onStep, onOk, onFail }) {
          comes from nearestCity — coverage is one question, the name is
          another. */
       const near = S.nearestCity({ lat: latitude, lng: longitude });
-      S.setUserLocation({ zip: r.zip || '', city: cityNameFor(r, near), state: r.state },
-                        { lat: latitude, lng: longitude });
-      onOk({ zip: r.zip || '', city: cityNameFor(r, near), state: r.state,
-             lat: latitude, lng: longitude, inRegion: !!near, naming: false });
+      // resolved once: saving it and reporting it are the same answer
+      const named = { zip: r.zip || '', city: cityNameFor(r, near), state: r.state };
+      S.setUserLocation(named, { lat: latitude, lng: longitude });
+      onOk({ ...named, lat: latitude, lng: longitude, inRegion: !!near, naming: false });
     },
     (err) => {
       S.setGeoPending(false);
