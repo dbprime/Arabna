@@ -262,8 +262,25 @@ await go('#/directory');
 await page.click('#dirFilter'); await page.waitForTimeout(450);
 await page.click('#fSort .chip[data-s="rated"]'); await page.waitForTimeout(150);
 await page.click('#fApply'); await page.waitForTimeout(500);
-ok('filter button shows the active count', (await page.textContent('#fCount')).trim() === '1',
+/* V.03.7 REVERSED this. Choosing a sort used to make the badge read 1
+   over a list that had not lost a single row — ordering 514 results
+   differently is not filtering them, and the sort already prints its
+   chosen value in gold on its own picker. `activeFilterCount` excluded
+   the category for exactly this reason and now excludes the sort with it.
+   So the badge stays empty here, and a REAL filter is what has to move
+   it. */
+ok('a sort alone leaves the filter badge empty',
+   (await page.textContent('#fCount')).trim() === '',
+   (await page.textContent('#fCount')).trim() || '(empty)');
+await page.click('#dirFilter'); await page.waitForTimeout(450);
+await page.click('#fOpenNow'); await page.waitForTimeout(150);
+await page.click('#fApply'); await page.waitForTimeout(500);
+ok('…and a real filter does move it', (await page.textContent('#fCount')).trim() === '1',
    (await page.textContent('#fCount')).trim());
+// back to sort-only, which is the state the rest of this block measures
+await page.click('#dirFilter'); await page.waitForTimeout(450);
+await page.click('#fOpenNow'); await page.waitForTimeout(150);
+await page.click('#fApply'); await page.waitForTimeout(500);
 /* V.02.8: the top-rated business may be lifted into the sponsored band on
    some visits, so "is it the first row" is not the invariant any more.
    These two are: it is at the top of the screen one way or the other, and
