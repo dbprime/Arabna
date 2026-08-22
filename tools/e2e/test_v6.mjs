@@ -261,6 +261,14 @@ ok('member: subscribe shows the price', (await dollars()).includes('$29'));
 ok('member: subscribe shows its CTA', await page.locator('#subBtn').count() === 1);
 await go('#/marketplace?cat=handyman');
 ok('member: handyman upsell shows $29', (await dollars()).includes('$29'));
+/* V.03.7: `myListings` no longer ships with `['c1']` in it — a visitor who
+   had never signed up owned a seed listing — so a member who is to boost
+   one has to own one. That is the fixture doing what publishing does. */
+await page.evaluate(async () => {
+  const S = (window.__m && window.__m.S)
+    || await import('arabna/js/store.js').catch(() => import('./js/store.js'));
+  if (!S.state.myListings.includes('c1')) { S.state.myListings.push('c1'); S.save(); }
+});
 await go('#/boost/c1');
 ok('member: boost screen opens', (await hash()) === '#/boost/c1', await hash());
 ok('member: boost prices shown', (await dollars()).length >= 3, (await dollars()).join(' '));

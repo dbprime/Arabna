@@ -289,8 +289,12 @@ await toggleAttr(page, 'halalMeat');
 /* V.02.6: «زربيان» is in the synonym dictionary and finds the mandi
    houses now, so the dead end needs a word that really is nowhere */
 await page.fill('#dirSearch', 'زرافة'); await page.waitForTimeout(400);
+/* V.03.7: with a filter set AND a word typed, the empty state names the
+   word inside the filters — «ما وجدنا «زرافة» ضمن هذه الفلاتر» — instead
+   of the old blanket «لا توجد نتائج بهذه الفلاتر», which was also what a
+   search with no filters at all used to say. */
 ok('an impossible combination shows the designed empty state',
-   (await txt()).includes('لا توجد نتائج بهذه الفلاتر'));
+   (await txt()).includes('زرافة') && (await txt()).includes('الفلاتر'));
 ok('…with a clear-filters button', await page.locator('#clrF').count() === 1);
 await page.click('#clrF'); await page.waitForTimeout(450);
 ok('clearing brings results back', (await rows()).length > 0);

@@ -31,8 +31,17 @@ function adminLazy(root, params) {
   if (adminMod) { adminMod.AdminScreen(root, params); return; }
   import('./screens/admin.js').then(m => {
     adminMod = m;
-    // the reader may have moved on while it loaded
-    if ((location.hash || '').split('?')[0] === '#/admin') m.AdminScreen(root, params);
+    /* `root.isConnected` and not just the hash. `render()` replaces the
+       whole view on every navigation, so a second entry into `#/admin`
+       while the first import is still in flight leaves this callback
+       holding a DETACHED node — and the panel's own `$('#aGo')` queries
+       the document, finds nothing, and throws on null. The hash would
+       still read `#/admin` in exactly that case, so it cannot be the
+       test. Painting into a node nobody is looking at is the bug; the
+       live render has already drawn the real one. */
+    if (root.isConnected && (location.hash || '').split('?')[0] === '#/admin') {
+      m.AdminScreen(root, params);
+    }
   });
 }
 

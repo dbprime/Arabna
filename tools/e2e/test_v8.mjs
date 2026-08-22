@@ -207,12 +207,20 @@ ok('tatweel is folded away too',
    tatweel.length === plain.length && tatweel.length > 0,
    tatweel.length + ' vs ' + plain.length);
 
-/* the designed dead end */
+/* the designed dead end.
+
+   V.03.7 REVERSED what it says. A search with no filter set used to print
+   «لا توجد نتائج بهذه الفلاتر» and offer «امسح التصفية» — blaming choices
+   the reader had never made and sending them to look for an empty filter
+   row. A search is not a filter: the word is named back to them instead,
+   and the clear button appears only when there is something to clear. */
 await searchFor('زرافة');
-ok('a filtered dead end has its own empty state', (await txt()).includes('لا توجد نتائج بهذه الفلاتر'));
-ok('…with a "clear filters" button', await page.locator('#clrF').count() === 1);
-await page.click('#clrF'); await page.waitForTimeout(450);
-ok('clearing brings the list back', (await rows()).length > 0, (await rows()).length + ' rows');
+ok('a search that finds nothing names the word back', (await txt()).includes('زرافة'));
+ok('…and does not blame filters nobody set',
+   !(await txt()).includes('لا توجد نتائج بهذه الفلاتر'));
+ok('…so no "clear filters" button is offered', await page.locator('#clrF').count() === 0);
+await page.fill('#dirSearch', ''); await page.waitForTimeout(600);
+ok('clearing the word brings the list back', (await rows()).length > 0, (await rows()).length + ' rows');
 ok('…and empties the search box', (await page.inputValue('#dirSearch')) === '');
 
 /* ======================================================================

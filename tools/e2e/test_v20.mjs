@@ -291,8 +291,10 @@ ok('8.2 …and on a marketplace listing', await page.evaluate(() =>
   !!document.querySelector('.top-actions #shareTop') && !document.querySelector('#shareBtn')));
 await page.context().close();
 page = await openPage();          // a visitor, not the member from section 3
-/* c1 is seeded into myListings so the owner view can be demonstrated —
-   c2 belongs to somebody else, which is the case being checked here. */
+/* c2 belongs to somebody else, which is the case being checked here.
+   (V.03.7: c1 is no longer seeded into `myListings` — a visitor who had
+   never signed up owned it — so the owner view below is set up explicitly
+   a few lines down, the way publishing would.) */
 await go(page, '#/marketplace/c2');
 ok('8.3 the visitor is offered the seller', await page.evaluate(() =>
   [...document.querySelectorAll('#app button')].some(b => /البائع/.test(b.textContent))));
