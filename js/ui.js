@@ -1350,8 +1350,15 @@ export function fmtMiles(d) {
  * every prayer time is being computed from it. «موقعك الحالي» says
  * exactly what is true. No invented city name, and no «unknown».
  */
+/**
+ * Four states, and the fourth is new. A city the device found and a city
+ * the reader typed both read «Houston», so nothing on screen said which
+ * one is live and which is pinned — and a pinned city is precisely the
+ * one that will not follow you. «Houston · تلقائي» says it follows.
+ */
 export function cityChipLabel() {
-  if (S.userCity()) return S.userCity();
+  const c = S.userCity();
+  if (c) return S.cityIsManual() ? c : `${c} · ${t('locAuto')}`;
   return S.state.geo ? t('locNameUnknown') : t('setLocation');
 }
 

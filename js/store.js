@@ -41,6 +41,13 @@ const DEFAULTS = {
   geo: null,                 // { lat, lng, at } — the user's own point, never sent anywhere
   geoAsked: false,           // the pre-prompt has been shown once
   geoDenied: false,          // …and refused: iOS will not ask again, so neither do we
+  /* Permission was granted ONCE, and this survives a hand-picked city.
+     `state.geo` cannot stand in for it: choosing a city by hand clears the
+     point on purpose (it belonged to somewhere the reader has left), so
+     the quiet refresh — gated on `!geo` — switched itself off for good and
+     froze the app on that city without saying so. Rai sat in Richmond and
+     the app said Houston, for exactly this reason. */
+  geoGranted: false,
   area: 'all',          // 'all' · 'city' · a number of miles
   user: null,               // { name, email, emailVerified, phone, phoneVerified }
   saved: [],                // ids of saved businesses / classifieds
@@ -802,8 +809,17 @@ export function directoryCities() {
 export function userCity() { return (state.location && state.location.city) || ''; }
 export function hasLocation() { return !!userCity(); }
 
+/**
+ * @param geo  the device's point, or null when the reader picked the city
+ *             themselves. That difference is recorded as `location.manual`
+ *             and decides whether the city may later change behind their
+ *             back: a point that arrives on its own may update in silence,
+ *             a city somebody typed may not.
+ */
 export function setUserLocation(loc, geo) {
-  state.location = Object.assign({ zip: '', city: '', state: 'TX' }, loc);
+  const fromDevice = !!(geo && isFinite(geo.lat) && isFinite(geo.lng));
+  state.location = Object.assign({ zip: '', city: '', state: 'TX' }, loc, { manual: !fromDevice });
+  if (fromDevice) state.geoGranted = true;
   /* A hand-picked city carries no point of its own, and the point we had
      belonged to wherever the reader was before. Keeping it would compute
      miles from a place they have left, which is worse than no miles. */
@@ -817,6 +833,15 @@ export function clearUserLocation() {
   state.geo = null;
   save();
 }
+/** did the reader choose this city by hand? */
+export function cityIsManual() { return !!(state.location && state.location.manual); }
+export function geoGranted() { return !!state.geoGranted; }
+/* Asked once per session and never again after a «no» — memory only,
+   because «leave it» is an answer about this visit, not a setting. */
+let moveAsked = false;
+export function moveAlreadyAsked() { return moveAsked; }
+export function markMoveAsked() { moveAsked = true; }
+
 export function markGeoAsked() { state.geoAsked = true; save(); }
 export function markGeoDenied() { state.geoDenied = true; save(); }
 
@@ -2158,7 +2183,25 @@ export function deleteReply(reviewId) {
  * water parks — are real businesses and real advertisers, so they keep every
  * button; the flag is only for the places nobody owns.
  */
-export function isNonCommercial(b) { return !!(b && b.nonCommercial); }
+/**
+ * A place of worship is non-commercial BY ITS CATEGORY, not by a switch
+ * somebody has to remember to flip — and the switch was forgotten on all
+ * thirty-five of them.
+ *
+ * What the owner of a mosque saw the moment they claimed their page:
+ * «رقّي صفحة نشاطك — صور، فيديو، وتقييمات المستخدمين · $29 شهرياً».
+ * That is not an interface slip, it is an insult, and it would have
+ * greeted the very first imam who claimed his masjid.
+ *
+ * Deriving it from `cat === 'worship'` means it cannot be forgotten again
+ * — including on every mosque and church added from here on. The manual
+ * `nonCommercial` flag stays for what the category cannot tell us: the
+ * parks, preserves and libraries among the outings, where 28 records
+ * carry it correctly and are untouched by this.
+ */
+export function isNonCommercial(b) {
+  return !!(b && (b.nonCommercial || b.cat === 'worship'));
+}
 export function setNonCommercial(bizId, on) { applyBusinessEdit(bizId, { nonCommercial: !!on }); }
 
 /**

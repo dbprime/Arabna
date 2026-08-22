@@ -645,11 +645,16 @@ function repaintCityChips() {
  */
 export function shouldRefreshGeo(force = false) {
   if (document.visibilityState !== 'visible') return false;
-  const g = S.state.geo;
-  if (!g || S.state.geoDenied) return false;      // never granted, or refused
+  /* `geoGranted`, not `geo`. Gating on the POINT meant that choosing a
+     city by hand — which clears the point on purpose — switched the quiet
+     refresh off permanently, and the app froze on that city and never
+     said so. Permission granted once is a different question from having
+     a point right now, and the two were the same line. */
+  if (!S.geoGranted() || S.state.geoDenied) return false;   // never granted, or refused
   if (force) return true;
+  const g = S.state.geo;
   const t0 = S.now();
-  if (g.at && t0 - g.at < GEO_STALE_MS) return false;
+  if (g && g.at && t0 - g.at < GEO_STALE_MS) return false;
   if (t0 - lastQuietTry < GEO_STALE_MS) return false;
   return true;
 }
@@ -683,14 +688,51 @@ export function refreshLocationQuietly(force = false) {
       if (!r || r.error) return;                  // silence: the old point stands
       const near = S.nearestCity({ lat: latitude, lng: longitude });
       const before = S.userCity();
+      const city = cityNameFor(r, near);
+      /* A CITY SOMEBODY TYPED IS NOT CHANGED BEHIND THEIR BACK. They may
+         have picked Houston deliberately while sitting in Richmond, to
+         look at Houston's shops — that is their right, and so is knowing
+         that we noticed. A point that arrived on its own still updates in
+         silence, exactly as before. */
+      if (S.cityIsManual() && city && city !== before) {
+        if (!S.moveAlreadyAsked()) {
+          S.markMoveAsked();
+          askToMove(city, { zip: r.zip || '', city, state: r.state }, { lat: latitude, lng: longitude });
+        }
+        return;
+      }
       S.setUserLocation(
-        { zip: r.zip || '', city: cityNameFor(r, near), state: r.state },
+        { zip: r.zip || '', city, state: r.state },
         { lat: latitude, lng: longitude });
       if (S.userCity() !== before) repaintCityChips();
     },
     () => { /* silent: no toast, no prompt, no second attempt */ },
     { maximumAge: 300000, timeout: 8000 }
   );
+}
+
+/**
+ * «It looks like you are in Richmond — update your location?»
+ *
+ * Asked once per session and never again after a «no», because «leave it»
+ * is an answer about this visit and not a setting to store. The refusal
+ * is honoured even if the city really has changed.
+ */
+function askToMove(city, loc, geo) {
+  openSheet(`
+    <div class="sheet-title">${t('locMovedTitle').replace('{city}', esc(city))}</div>
+    <div class="sheet-sub">${t('locMovedSub')}</div>
+    <button class="btn btn-gold btn-block mt-12" id="mvYes">${t('locMovedYes')}</button>
+    <button class="btn btn-ghost btn-block mt-8" id="mvNo">${t('locMovedNo').replace('{city}', esc(S.userCity()))}</button>
+  `, (panel) => {
+    panel.querySelector('#mvYes').addEventListener('click', () => {
+      S.setUserLocation(loc, geo);
+      closeSheet();
+      repaintCityChips();
+      window.dispatchEvent(new HashChangeEvent('hashchange'));
+    });
+    panel.querySelector('#mvNo').addEventListener('click', () => closeSheet());
+  });
 }
 
 /** mounted once at boot — the only listener this feature owns */
