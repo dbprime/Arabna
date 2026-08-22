@@ -7,7 +7,7 @@ ARABNA · عربنا — a mobile-first web app for the Arab community in the U.
 **business directory + marketplace + events + magazine**, Arabic-first with a full English toggle.
 ("Classifieds / الإعلانات الشخصية" is now "Marketplace / السوق" — the old `#/classifieds`
 routes still resolve so shared links keep working.)
-Current version: **V.03.7 (prototype)**. Owner: Rai Elby (@dbprime). Deploys to Vercel (team DB Prime).
+Current version: **V.03.8 (prototype)**. Owner: Rai Elby (@dbprime). Deploys to Vercel (team DB Prime).
 
 ## Hard rules (from the product brief)
 1. **One repository, one Vercel project.** No duplicates, no stray preview projects.
@@ -493,10 +493,10 @@ and `outingFeature` (15).
 ```
 python3 -m http.server 8099        # from the repo root
 node tools/e2e/chk_i18n.mjs        # both packs, every derived key, seconds
-tools/e2e/run.sh                   # 28 suites × 2 builds, ~30 minutes
+tools/e2e/run.sh                   # 29 suites × 2 builds, ~35 minutes
 python3 tools/build_single.py > index-single-file.html
 ```
-1. `tools/e2e/` holds every suite, v3 to v30, one per batch, and `run.sh`
+1. `tools/e2e/` holds every suite, v3 to v31, one per batch, and `run.sh`
    runs all of them against **both** `index.html` and the generated
    `index-single-file.html`. A change is not finished until both are green.
 2. Check **both** languages (the AR/EN button in the header) and **both**
@@ -2401,6 +2401,78 @@ save it either: **485 of 485 real listings have a rating of 0** (the seven
 that exist are all on demo records), so the real order is city, then
 subscriber, then file order. It is a data job, done outside the app — and
 half of what the later files in this batch describe is built on it.
+
+## V.03.8 — «سمحتُ بالموقع ولم يظهر شيء»
+
+Somebody allowed the location on the prayer screen and nothing happened.
+He chose «Katy» by hand a moment later and the times appeared at once — so
+the permission, the point, the arithmetic and the screen were all working.
+
+**The app had the coordinates and threw them away because it could not
+find out the name of the town.** `setUserLocation` lived inside `onOk`,
+and `onOk` only ran after `reverseGeocode()` — a call to somebody else's
+server. Fail that call and the point the device had just handed over was
+gone, along with the only thing prayer times need.
+
+Any of these is enough to fail it and none is a fault in this app: an ad
+blocker (the three hosts look like trackers to one), Nominatim's rate
+limit on browser traffic, a weak cellular signal against an 8-second
+timeout, an office or school network filtering outside domains. That is
+why it failed for him and works for you.
+
+**And `prayer.js` says at the top of its own file** that everything on
+that screen is computed on the device and nothing is fetched, so it works
+with no signal at all. That was true — and then the screen was wired to
+the internet through the back door.
+
+> **THE RULE: prayer times need a POINT and a DATE and nothing else.
+> The name of the city is the directory's business alone.**
+
+### Two stages, and the first owes nothing to the network
+`requestGeo` saves the point **the moment it arrives, before any request
+goes out**, and calls `onOk({…, naming: true})`. The name is asked for
+afterwards and calls `onOk({…, naming: false})` if it comes. **It may
+never come, and that is fine.**
+
+- **Measured with all three hosts blocked: the times appear in 971ms**,
+  the point is stored, and the directory prints real miles from it. Before
+  the fix: never.
+- **`geoOutsideUs` is unchanged.** Being outside the United States is not
+  a failure to name a place, it is a fact the reader has to be told — the
+  first draft of this fix dropped that line and it is back.
+- **A naming call that simply did not answer says nothing to anybody.** No
+  red message: from the reader's side nothing failed. The screen repaints
+  because the point landed a moment ago.
+- **The city list no longer opens itself after a granted permission.** It
+  opens on a real refusal, which is what `onFail` now means. He picked
+  Katy from a list the app had put in front of him — his behaviour was
+  right, the app had sent him there.
+- **`markGeoDenied` still fires on `err.code === 1` alone.** The flag is
+  permanent on iOS; setting it on a network failure would silence the ask
+  for good.
+
+### Both providers at once
+They were awaited in turn, 8 seconds each, so a hung network was **16
+seconds of a screen saying nothing** — which is literally «I pressed allow
+and nothing showed». `Promise.all`, so the worst case halves. The second
+provider was being called in most cases anyway, so this costs no real
+traffic.
+
+### The third state, which was half the fault
+The bar and `#/prayer` had two states — times, or «حدّد موقعك» — and
+**nothing in between**, so a reader who pressed «سماح» went on looking at
+the very screen they had just pressed and concluded their tap had not
+registered. **«جارٍ تحديد موقعك…»** now stands in the place the times will
+take, at the same height so nothing jumps. `geoPending()` is memory-only
+and lives in `store.js`, because the Home bar and the prayer screen must
+not disagree about whether a request is in flight and `render()` rebuilds
+both from scratch.
+
+### And a point with no name is not «no location»
+`cityChipLabel()` had two answers and needed three. With a point and no
+name it reads **«موقعك الحالي»** — not «حدّد موقعك», which is false (every
+distance and every prayer time is being computed), and not an invented
+city name. The point is right; only the label is missing.
 
 ## Known open items
 - **The header logo is 818 KB for an 80×65 box** — 37% of a 2.1 MB first

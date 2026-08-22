@@ -963,6 +963,7 @@ html[dir="rtl"] .switch.on::after { transform: translateX(-18px); }
   border: 2px solid var(--wash-4); border-top-color: var(--text);
   animation: spin .7s linear infinite;
 }
+.spinner.sm { width: 14px; height: 14px; border-width: 2px; flex: 0 0 14px; }
 @keyframes spin { to { transform: rotate(360deg); } }
 
 .skeleton { background: linear-gradient(90deg, var(--skeleton), var(--wash-3), var(--skeleton)); background-size: 200% 100%; animation: sk 1.2s infinite; border-radius: 8px; }

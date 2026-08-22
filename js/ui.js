@@ -1338,8 +1338,16 @@ export function fmtMiles(d) {
  * touched anything, so before there is a location it is a button asking for
  * one.
  */
+/**
+ * Three states, not two. A point can arrive without a name — the device
+ * gives coordinates, the naming server may never answer — and in that
+ * case «حدّد موقعك» is wrong: the location IS set, every distance and
+ * every prayer time is being computed from it. «موقعك الحالي» says
+ * exactly what is true. No invented city name, and no «unknown».
+ */
 export function cityChipLabel() {
-  return S.userCity() || t('setLocation');
+  if (S.userCity()) return S.userCity();
+  return S.state.geo ? t('locNameUnknown') : t('setLocation');
 }
 
 /**

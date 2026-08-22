@@ -617,6 +617,15 @@ export function setFontScale(px) {
   save();
 }
 
+/* ---------------- the wait between «سماح» and the point ----------------
+   Memory only, never saved: a reload is not still waiting for anything.
+   It lives here rather than in a screen because the prayer bar on Home
+   and the `#/prayer` screen must not disagree about whether a request is
+   in flight, and `render()` rebuilds both from scratch. */
+let geoInFlight = false;
+export function geoPending() { return geoInFlight; }
+export function setGeoPending(on) { geoInFlight = !!on; }
+
 export function themeMode() { return state.theme || 'auto'; }
 export function setThemeMode(mode) {
   state.theme = (mode === 'light' || mode === 'dark') ? mode : 'auto';

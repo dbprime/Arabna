@@ -62,9 +62,21 @@ export function fmtLeft(mins) {
  * It rides the app's existing minute ticker — there is exactly one timer
  * in this app and this does not add a second.
  */
+/** true between «سماح» and the point landing — see `locating` in home.js */
+export function prayerLocating() { return S.geoPending(); }
+
 export function prayerBarHtml() {
   const times = todaysTimes();
   if (!times) {
+    /* THE THIRD STATE. There were two — times, or «حدّد موقعك» — and
+       nothing in between, so somebody who pressed «سماح» went on looking
+       at the very screen they had just pressed, and concluded their tap
+       had not registered. A still screen was half the fault. Same row,
+       same height, so nothing jumps when it resolves. */
+    if (prayerLocating()) {
+      return `<span class="pr-bar unset" aria-live="polite">
+        <span class="spinner sm"></span><span>${t('prLocating')}</span></span>`;
+    }
     return `<button class="pr-bar unset" data-route="#/prayer">
       ${icon('moon', 17)}<span>${t('prNoLocation')}</span></button>`;
   }
@@ -174,6 +186,17 @@ function draw(root) {
   const inGroup = (k) => grouped.find(g => g.includes(k));
 
   if (!point) {
+    // …and the same third state here, in the place the times will occupy
+    if (prayerLocating()) {
+      root.innerHTML = `
+        <div class="pad mt-16">
+          <div class="empty" aria-live="polite">
+            <div class="empty-ico"><span class="spinner"></span></div>
+            <div class="empty-title">${t('prLocating')}</div>
+          </div>
+        </div>`;
+      return;
+    }
     root.innerHTML = `
       <div class="pad mt-16">
         <div class="empty">

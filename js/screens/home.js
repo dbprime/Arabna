@@ -409,20 +409,27 @@ async function rgNominatim(lat, lng) {
 export async function reverseGeocode(lat, lng) {
   const complete = (h) => h && h.city && h.state;
 
-  let hit = await rgBigDataCloud(lat, lng);
-  if (hit && hit.country && hit.country !== 'US') return { error: 'outside' };
+  /* Both providers at once, not one after the other. Each has an 8-second
+     timeout, and asking them in turn made the worst case 16 seconds of a
+     screen saying nothing at all — which is what «I pressed allow and
+     nothing happened» actually was. In practice the second one was being
+     called most of the time anyway, so this costs no real traffic. */
+  const [a, b] = await Promise.all([
+    rgBigDataCloud(lat, lng).catch(() => null),
+    rgNominatim(lat, lng).catch(() => null),
+  ]);
+  if (a && a.country && a.country !== 'US') return { error: 'outside' };
+  if (b && b.country && b.country !== 'US') return { error: 'outside' };
 
-  // Second provider whenever the first one is missing or incomplete —
-  // then keep whichever field each of them actually resolved.
-  if (!complete(hit) || !hit.zip) {
-    const alt = await rgNominatim(lat, lng);
-    if (alt && alt.country && alt.country !== 'US') return { error: 'outside' };
-    if (alt) hit = hit ? {
-      country: hit.country || alt.country,
-      city: hit.city || alt.city,
-      state: hit.state || alt.state,
-      zip: hit.zip || alt.zip,
-    } : alt;
+  // keep whichever field each of them actually resolved
+  let hit = complete(a) && a.zip ? a : null;
+  if (!hit) {
+    hit = a ? {
+      country: a.country || (b && b.country) || '',
+      city: a.city || (b && b.city) || '',
+      state: a.state || (b && b.state) || '',
+      zip: a.zip || (b && b.zip) || '',
+    } : b;
   }
   if (!hit) return { error: 'lookup' };
 
@@ -484,18 +491,76 @@ export function openGeoPrompt(onAllow, why) {
  * desktop with no GPS or a point outside the region, the reader still has
  * the city list and the ZIP box behind this.
  */
+/* ------------------------------------------------------------
+   TWO STAGES, AND THE FIRST ONE OWES NOTHING TO THE NETWORK
+
+   Somebody allowed the location and nothing happened. He chose «Katy» by
+   hand a moment later and the prayer times appeared at once — so the
+   permission, the point, the calculation and the screen were all fine.
+
+   What was wrong: the app HAD the coordinates and then threw them away
+   because it could not find out the name of the town. `setUserLocation`
+   lived inside `onOk`, and `onOk` only ran after `reverseGeocode()` — a
+   call to somebody else's server. Fail that call and the point the device
+   had just handed us was lost, along with the only thing prayer times
+   actually need.
+
+   Any of these is enough to fail it, and none of them is a fault in this
+   app: an ad blocker (these three hosts look like trackers to one),
+   Nominatim's rate limit on browser traffic, a weak cellular signal
+   against an 8-second timeout, a school or office network filtering
+   outside domains. It is why it failed for him and works for you.
+
+   `prayer.js` says at the top of the file that everything on that screen
+   is computed on the device and nothing is fetched, so it works with no
+   signal at all. That was true, and then the screen was wired to the
+   internet through the back door.
+
+   THE RULE: prayer times need a POINT and a DATE and nothing else. The
+   name of the city is the directory's business alone.
+
+   So: the point is saved the moment it arrives, before any request goes
+   out. The name is asked for afterwards, and failing to get it takes
+   nothing away — `onOk` simply fires twice, once with the point and once
+   with the name, and the second may never come.
+   ------------------------------------------------------------ */
 export function requestGeo({ onStep, onOk, onFail }) {
   const step = onStep || (() => {});
   const fail = onFail || (() => {});
-  if (!navigator.geolocation) { fail('geoUnsupported'); return; }
+  if (!navigator.geolocation) { S.setGeoPending(false); fail('geoUnsupported'); return; }
   step('locating');
+  /* The screens read this to show «جارٍ تحديد موقعك…» in the place the
+     times will take, so nobody is left looking at the button they just
+     pressed. Cleared on every exit below, success or failure. */
+  S.setGeoPending(true);
+  // repaint straight away: the flag is useless if nothing redraws to read it
+  window.dispatchEvent(new HashChangeEvent('hashchange'));
   navigator.geolocation.getCurrentPosition(
     async (pos) => {
       const { latitude, longitude } = pos.coords;
+
+      /* ——— stage one: the point, kept now ———
+         Whatever name we end up with, this is already enough for the
+         prayer times and for every distance in the directory. */
+      S.setGeoPending(false);          // the point is here; the name is extra
+      const prev = S.state.location || {};
+      const keep = { zip: prev.zip || '', city: prev.city || '', state: prev.state || 'TX' };
+      S.setUserLocation(keep, { lat: latitude, lng: longitude });
+      onOk({ ...keep, lat: latitude, lng: longitude,
+             inRegion: !!S.nearestCity({ lat: latitude, lng: longitude }), naming: true });
+
+      /* ——— stage two: the name, which is an improvement, not a condition ——— */
       step('resolvingLocation');
       const r = await reverseGeocode(latitude, longitude);
+      /* Being outside the United States is not a failure to NAME a place —
+         it is a fact about the place, and the reader has to be told: the
+         directory covers Houston and the times are computed anywhere, but
+         «my city» cannot mean anything here. */
       if (r.error === 'outside') { fail('geoOutsideUs'); return; }
-      if (r.error) { fail('geoLookupFailed'); return; }
+      /* …and a naming call that simply did not answer says nothing to
+         anybody. No red message: from the reader's side nothing failed.
+         The screen repaints because the point landed a moment ago. */
+      if (r.error) { window.dispatchEvent(new HashChangeEvent('hashchange')); return; }
       /* The reverse lookup names the town it thinks the point is in, which
          may be a place the directory has never heard of. Snapping to the
          nearest city we actually cover keeps "my city" meaning something,
@@ -515,10 +580,16 @@ export function requestGeo({ onStep, onOk, onFail }) {
          comes from nearestCity — coverage is one question, the name is
          another. */
       const near = S.nearestCity({ lat: latitude, lng: longitude });
+      S.setUserLocation({ zip: r.zip || '', city: cityNameFor(r, near), state: r.state },
+                        { lat: latitude, lng: longitude });
       onOk({ zip: r.zip || '', city: cityNameFor(r, near), state: r.state,
-             lat: latitude, lng: longitude, inRegion: !!near });
+             lat: latitude, lng: longitude, inRegion: !!near, naming: false });
     },
     (err) => {
+      S.setGeoPending(false);
+      // markGeoDenied ONLY on a real refusal (code 1): the flag is permanent
+      // on iOS, and setting it on a network failure would silence the ask
+      // for good.
       if (err && err.code === 1) { S.markGeoDenied(); fail('geoDenied'); }
       else if (err && err.code === 3) fail('geoTimeout');
       else fail('geoUnavailable');
@@ -633,13 +704,19 @@ export function askForLocation(after, why) {
   openGeoPrompt(() => {
     toast(t('locating'));
     requestGeo({
+      /* Called twice: once the moment the point lands, and again if the
+         name arrives. The point is already saved by then — `requestGeo`
+         does that before it asks anybody anything — so this only decides
+         what to say and when to repaint. Nothing is announced twice. */
       onOk: (r) => {
-        S.setUserLocation({ zip: r.zip, city: r.city, state: r.state }, { lat: r.lat, lng: r.lng });
-        toast(`${t('locSetTo')}: ${r.city || t('regionName')}`, 'ok');
+        if (!r.naming) toast(`${t('locSetTo')}: ${r.city || t('regionName')}`, 'ok');
         if (after) after(); else window.dispatchEvent(new HashChangeEvent('hashchange'));
       },
+      /* A refusal is not a dead end: the city list is one tap behind it.
+         But this now fires ONLY on a real refusal or an unusable point —
+         never because a naming server did not answer, which used to open
+         the city list on top of a reader who had just said yes. */
       onFail: (key) => {
-        // a refusal is not a dead end: the city list is one tap behind it
         toast(t(key), 'err');
         openLocationSheet();
       },
