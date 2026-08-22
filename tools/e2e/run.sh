@@ -12,12 +12,22 @@
 cd "$(dirname "$0")"
 HOST="${HOST:-http://localhost:8099}"
 SUITES="${SUITES:-3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29}"
+# A suite that CRASHES prints no "passed," line at all, and counting only
+# `^FAIL` reported that as "0 FAIL" — which is how an aborted v15 once read
+# as green. The exit code is the truth; the counts are the detail.
 run() {
   build=$1; tag=$2
   for v in $SUITES; do
     BASE="$HOST/$build" node test_v$v.mjs > /tmp/e2e-$tag-$v.txt 2>&1
-    echo "$tag v$v: $(grep -a 'passed,' /tmp/e2e-$tag-$v.txt|tail -1) | $(grep -ac '^FAIL' /tmp/e2e-$tag-$v.txt) FAIL"
-    grep -a '^FAIL' /tmp/e2e-$tag-$v.txt | head -5
+    code=$?
+    line=$(grep -a 'passed,' /tmp/e2e-$tag-$v.txt | tail -1)
+    if [ -z "$line" ]; then
+      echo "$tag v$v: *** CRASHED (exit $code) — no result line ***"
+      tail -6 /tmp/e2e-$tag-$v.txt
+    else
+      echo "$tag v$v: $line | $(grep -ac '^FAIL' /tmp/e2e-$tag-$v.txt) FAIL$([ "$code" != 0 ] && echo " (exit $code)")"
+      grep -a '^FAIL' /tmp/e2e-$tag-$v.txt | head -5
+    fi
   done
   echo "DONE-$tag"
 }

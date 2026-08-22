@@ -8,11 +8,54 @@ const ok = (n, c, extra = '') => { if (c) { pass++; console.log('PASS ' + n + (e
 const browser = await chromium.launch();
 const errors = [];
 
+/* V.03.6: installed as a real function instead of a source string that
+   the page had to `eval`. The app's CSP forbids `eval`, and this only ever
+   worked because the surrounding callback happened not to await first —
+   Playwright's own call frame slips past the policy, but a continuation
+   after an await does not. `addInitScript` runs before the document, so
+   it survives every reload this suite does. */
+const installContrast = (p) => p.addInitScript(() => {
+  window.__ratio = (() => {
+  const lin = c => { c /= 255; return c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4); };
+  const lum = ([r, g, b]) => 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b);
+  const parse = s => { const m = (s || '').match(/[\d.]+/g); return m ? m.slice(0, 4).map(Number) : null; };
+  const over = (fg, bg) => { const a = fg[3] === undefined ? 1 : fg[3];
+    return [0, 1, 2].map(i => fg[i] * a + bg[i] * (1 - a)); };
+  // the stack of grounds behind an element, innermost first
+  function ground(el) {
+    let stack = [], n = el;
+    while (n && n !== document.documentElement) {
+      const cs = getComputedStyle(n);
+      const c = parse(cs.backgroundColor);
+      if (c && (c[3] === undefined || c[3] > 0)) stack.push(c);
+      if (cs.backgroundImage && cs.backgroundImage !== 'none') {
+        // a gradient: take the darkest and the lightest stop we can read
+        const stops = (cs.backgroundImage.match(/rgba?\([^)]+\)/g) || []).map(parse).filter(Boolean);
+        if (stops.length) { stack.push(stops[0]); }
+      }
+      n = n.parentElement;
+    }
+    stack.push([14, 24, 41]);
+    let g = stack.pop();
+    while (stack.length) g = over(stack.pop(), g);
+    return g;
+  }
+  return function ratio(el) {
+    const fg = parse(getComputedStyle(el).color);
+    const g = ground(el);
+    const f = over(fg, g);
+    const a = lum(f), b = lum(g);
+    return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
+  };
+  })();
+});
+
 const openPage = async (opts = {}) => {
   const ctx = await browser.newContext(Object.assign({ colorScheme: 'dark', viewport: { width: 390, height: 844 } }, opts));
   const p = await ctx.newPage();
   p.on('console', m => { if (m.type() === 'error' && !/ERR_CONNECTION|ERR_CERT|ERR_TUNNEL|fonts\.googleapis/.test(m.text())) errors.push(m.text()); });
   p.on('pageerror', e => errors.push('PAGEERROR ' + e.message));
+  await installContrast(p);       // before the first navigation, so reloads keep it
   await p.goto(BASE); await p.waitForTimeout(700);
   return p;
 };
@@ -30,47 +73,14 @@ const setTheme = async (p, mode) => {
 };
 
 /* ---- the contrast maths, run in the page over the real background stack ---- */
-const CONTRAST = `(() => {
-  const lin = c => { c /= 255; return c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4); };
-  const lum = ([r, g, b]) => 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b);
-  const parse = s => { const m = (s || '').match(/[\\d.]+/g); return m ? m.slice(0, 4).map(Number) : null; };
-  const over = (fg, bg) => { const a = fg[3] === undefined ? 1 : fg[3];
-    return [0, 1, 2].map(i => fg[i] * a + bg[i] * (1 - a)); };
-  // the stack of grounds behind an element, innermost first
-  function ground(el) {
-    let stack = [], n = el;
-    while (n && n !== document.documentElement) {
-      const cs = getComputedStyle(n);
-      const c = parse(cs.backgroundColor);
-      if (c && (c[3] === undefined || c[3] > 0)) stack.push(c);
-      if (cs.backgroundImage && cs.backgroundImage !== 'none') {
-        // a gradient: take the darkest and the lightest stop we can read
-        const stops = (cs.backgroundImage.match(/rgba?\\([^)]+\\)/g) || []).map(parse).filter(Boolean);
-        if (stops.length) { stack.push(stops[0]); }
-      }
-      n = n.parentElement;
-    }
-    stack.push([14, 24, 41]);
-    let g = stack.pop();
-    while (stack.length) g = over(stack.pop(), g);
-    return g;
-  }
-  return function ratio(el) {
-    const fg = parse(getComputedStyle(el).color);
-    const g = ground(el);
-    const f = over(fg, g);
-    const a = lum(f), b = lum(g);
-    return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
-  };
-})()`;
 
 /* ============ 1 — the paid slider reads in both themes ============ */
 console.log('--- the ad slider ---');
 for (const theme of ['dark', 'light']) {
   let page = await openPage();
   await setTheme(page, theme);
-  const r = await page.evaluate(C => {
-    const ratio = eval(C);
+  const r = await page.evaluate(() => {
+    const ratio = window.__ratio;
     const out = [];
     document.querySelectorAll('.slider .slide').forEach(s => {
       const house = s.classList.contains('slide-house');
@@ -80,7 +90,7 @@ for (const theme of ['dark', 'light']) {
       if (u) out.push({ house, part: 'sub', r: ratio(u) });
     });
     return out;
-  }, CONTRAST);
+  });
   const paid = r.filter(x => !x.house), house = r.filter(x => x.house);
   ok(`1.${theme === 'dark' ? 1 : 3} ${theme}: every paid slide reads`,
      paid.length >= 4 && paid.every(x => x.r >= 4.5),
@@ -109,13 +119,13 @@ for (const theme of ['dark', 'light']) {
   await page.reload(); await page.waitForTimeout(700);
   await page.evaluate(() => { location.hash = '#/directory?cat=restaurants'; });
   await page.waitForTimeout(700);
-  const r = await page.evaluate(C => {
-    const ratio = eval(C);
+  const r = await page.evaluate(() => {
+    const ratio = window.__ratio;
     return [...document.querySelectorAll('.slide')].map(s => {
       const t = s.querySelector('.slide-title');
       return t ? { house: s.classList.contains('slide-house'), r: ratio(t) } : null;
     }).filter(Boolean);
-  }, CONTRAST);
+  });
   ok(`1.${theme === 'dark' ? 5 : 6} ${theme}: the category strip reads`,
      r.length > 0 && r.every(x => x.r >= 4.5), r.map(x => x.r.toFixed(2)).join(' '));
   await page.context().close();

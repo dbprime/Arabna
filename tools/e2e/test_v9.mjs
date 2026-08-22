@@ -448,13 +448,14 @@ ok('…and the hours-less row exports seven nulls',
    /hours: \[null, null, null, null, null, null, null\]/.test(exported.text));
 ok('…keywords and attributes carried across',
    exported.text.includes('"مشاوي"') && exported.text.includes('"halalMeat"'));
-ok('…and it is valid JavaScript', await page.evaluate((src) => {
-  try { new Function('return [' + src.replace(/^\/\*[\s\S]*?\*\/\s*/, '') + ']')(); return true; }
-  catch (e) { return 'ERR ' + e.message; }
-}, exported.text) === true, String(await page.evaluate((src) => {
+/* V.03.6: parsed HERE rather than inside the page. The app's CSP forbids
+   `eval`, and this never needed the browser anyway — the text is already
+   in Node, and what is being checked is the text. */
+const parseCheck = (src) => {
   try { new Function('return [' + src.replace(/^\/\*[\s\S]*?\*\/\s*/, '') + ']')(); return 'ok'; }
   catch (e) { return e.message; }
-}, exported.text)));
+};
+ok('…and it is valid JavaScript', parseCheck(exported.text) === 'ok', parseCheck(exported.text));
 
 /* backup */
 const backup = await grab(() => page.click('#bkExport'));

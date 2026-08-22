@@ -7,25 +7,34 @@ const ok = (n, c, extra = '') => { if (c) { pass++; console.log('PASS ' + n + (e
 const browser = await chromium.launch();
 const errors = [];
 
+const installPatch = (p) => p.addInitScript(() => {
+  window.__patch = (f) => {
+    const k = 'arabna.v1';
+    const s = JSON.parse(localStorage.getItem(k) || '{}');
+    f(s);
+    localStorage.setItem(k, JSON.stringify(s));
+  };
+});
+
 const openPage = async (opts = {}) => {
   const ctx = await browser.newContext(Object.assign({ colorScheme: 'dark', viewport: { width: 390, height: 844 } }, opts));
   const p = await ctx.newPage();
   p.on('console', m => { if (m.type() === 'error' && !/ERR_CONNECTION|ERR_CERT|ERR_TUNNEL|fonts\.googleapis/.test(m.text())) errors.push(m.text()); });
   p.on('pageerror', e => errors.push('PAGEERROR ' + e.message));
+  await installPatch(p);          // before the first navigation, so it survives reloads
   await p.goto(BASE); await p.waitForTimeout(700);
   return p;
 };
-const setState = (p, fn) => p.evaluate(f => {
-  const k = 'arabna.v1';
-  const s = JSON.parse(localStorage.getItem(k) || '{}');
-  // eslint-disable-next-line no-new-func
-  (new Function('s', f))(s);
-  localStorage.setItem(k, JSON.stringify(s));
-}, fn.toString().replace(/^[^{]*\{/, '').replace(/\}\s*$/, ''));
-const asMember = (p) => setState(p, (s) => {
+/* V.03.6: the app's CSP forbids `eval` and `new Function`, and a function
+   is not a serialisable argument either — so the mutator IS the evaluated
+   function, and it reads and writes the state itself through one helper
+   installed in the page. Playwright serialises the callback; nothing is
+   rebuilt from a string inside the page, which is what CSP refuses. */
+const setState = (p, fn) => p.evaluate(fn);
+const asMember = (p) => setState(p, () => window.__patch((s) => {
   s.user = { name: 'رامي البي', email: 'r@x.com', tier: 2, emailVerified: true,
              phone: '(713) 466-9182', phoneVerified: true, joined: Date.now() };
-});
+}));
 const go = async (p, h) => { await p.evaluate(x => { location.hash = x; }, h); await p.waitForTimeout(600); };
 
 /* ============ 1 — Latin digits everywhere in Arabic ============ */
@@ -220,7 +229,7 @@ await page.context().close();
 
 /* the «قريباً» branch: no subscriber, no destination */
 page = await openPage();
-await setState(page, (s) => { s.showDemo = false; });
+await setState(page, () => window.__patch((s) => { s.showDemo = false; }));
 await page.reload(); await page.waitForTimeout(800);
 await page.click('#hMenu'); await page.waitForTimeout(450);
 await page.evaluate(() => { const h = [...document.querySelectorAll('.dr-head')].find(x => /تصنيفات/.test(x.textContent)); h && h.click(); });
@@ -289,14 +298,14 @@ ok('8.3 the visitor is offered the seller', await page.evaluate(() =>
   [...document.querySelectorAll('#app button')].some(b => /البائع/.test(b.textContent))));
 
 await asMember(page);
-await setState(page, (s) => { s.myListings = ['c1']; s.messages = []; });
+await setState(page, () => window.__patch((s) => { s.myListings = ['c1']; s.messages = []; }));
 await page.reload(); await page.waitForTimeout(800);
 await go(page, '#/marketplace/c1');
 ok('8.4 the owner sees no message button while nobody has written',
    await page.evaluate(() => ![...document.querySelectorAll('#app button')].some(b => /رسائل/.test(b.textContent))));
 ok('8.5 …and «أخفِ الإعلان» has replaced «حذف»', await page.evaluate(() =>
   !!document.querySelector('#hideBtn') && !document.querySelector('#delBtn')));
-await setState(page, (s) => { s.messages = [{ id: 'm1', listingId: 'c1', from: 'them', text: 'مرحبا', when: Date.now() }]; });
+await setState(page, () => window.__patch((s) => { s.messages = [{ id: 'm1', listingId: 'c1', from: 'them', text: 'مرحبا', when: Date.now() }]; }));
 await page.reload(); await page.waitForTimeout(800);
 await go(page, '#/marketplace/c1');
 ok('8.6 one message makes the button appear, counted', await page.evaluate(() =>

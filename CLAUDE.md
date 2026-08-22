@@ -2259,6 +2259,23 @@ no charge without a payment method · no `paid` receipt without the
 gateway's confirmation · **the amount is computed on the server**, because
 whoever can edit the page can edit the number.
 
+### And the harness had to stop doing what the app is now forbidden
+`script-src 'self'` refuses `eval` and `new Function`. **The app never used
+either** — so the policy stands and five suites changed instead.
+
+- The trap that made it look intermittent: a callback that **awaits** before
+  calling `new Function` runs its continuation as ordinary page code, where
+  CSP applies; one that does not stays inside Playwright's own call frame
+  and slips through. So v9's check moved into Node (the text was already
+  there), v15 and v29 prime the module once and read it synchronously, v20
+  installs one `__patch` helper with `addInitScript`, and v18's contrast
+  maths stopped being a source string. **Zero `eval` left in `tools/e2e`.**
+- **`run.sh` was reporting a crashed suite as «0 FAIL».** It counted `^FAIL`
+  lines, and a suite that aborts prints none — which is how a v15 that died
+  at check 55 of 88 read as green in a full run. It now reports
+  `*** CRASHED ***` with the exit code and the last six lines. A net that
+  can score a crash as a pass is worse than no net, because it is trusted.
+
 ### Three claims from the previous file, corrected
 The second audit was right on all three and they are recorded rather than
 quietly dropped: hiding a listing does **not** remove it from its owner's

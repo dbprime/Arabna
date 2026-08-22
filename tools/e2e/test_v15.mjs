@@ -18,12 +18,26 @@ page.on('pageerror', e => errors.push('PAGEERROR ' + e.message + ' @ ' + (e.stac
 const go = async (h) => { await page.evaluate(x => { location.hash = x; }, h); await page.waitForTimeout(450); };
 const txt = () => page.textContent('#app');
 const ls = () => page.evaluate(() => JSON.parse(localStorage.getItem('arabna.v1') || '{}'));
-const S = (fn, arg) => page.evaluate(async ([f, a]) => {
+/* V.03.6: the app's CSP forbids `eval` and `new Function`, and the app
+   itself never used either — so the harness is what changes, not the
+   policy. Playwright serialises a real function for `evaluate`; building
+   one from a string inside the page is page code, and page code obeys the
+   page's rules.
+
+   The subtlety that made this look intermittent: a helper that AWAITS
+   before calling `new Function` runs its continuation as ordinary page
+   microtask code, where CSP applies. One that does not await stays inside
+   Playwright's own call frame and slips through. So the module is primed
+   once and read synchronously afterwards. */
+const prime = () => page.evaluate(async () => {
   // the single-file build carries the same module under an importmap name
-  let M;
-  try { M = await import('arabna/js/store.js'); } catch (e) { M = await import('/js/store.js'); }
-  return (new Function('S', 'a', 'return (' + f + ')(S, a)'))(M, a);
-}, [fn.toString(), arg]);
+  if (!window.__S) {
+    try { window.__S = await import('arabna/js/store.js'); }
+    catch (e) { window.__S = await import('/js/store.js'); }
+  }
+  return true;
+});
+const S = async (fn, arg) => { await prime(); return page.evaluate(fn, arg); };
 
 /* geolocation is stubbed rather than granted: the point of the sixth fix is
    *when* the browser is asked, so the test has to be able to count the calls */
@@ -247,9 +261,9 @@ ok('6.31 a geocoded listing shows real miles', b30row && /\d+(\.\d)?\s*ميل/.t
 const others = await page.evaluate(() => [...document.querySelectorAll('#dirList .list-row')]
   .filter(r => r.dataset.route !== '#/directory/b30').slice(0, 5).map(r => r.textContent.replace(/\s+/g, ' ').trim()));
 ok('6.32 the rest still show their area, never a number', others.every(r => !/\d+(\.\d)?\s*ميل/.test(r)), others[0].slice(0, 50));
-const dist = await S((S) => S.distanceTo(S.businessById('b30')));
+const dist = await S(() => { const S = window.__S; return (S.distanceTo(S.businessById('b30'))); });
 ok('6.33 the distance is a Haversine mile figure', dist > 5 && dist < 12, String(Math.round(dist * 10) / 10));
-ok('6.34 an ungeocoded listing has no distance at all', await S((S) => S.distanceTo(S.businessById('b31'))) === null);
+ok('6.34 an ungeocoded listing has no distance at all', await S(() => { const S = window.__S; return (S.distanceTo(S.businessById('b31'))); }) === null);
 await page.click('#dirFilter'); await page.waitForTimeout(450);
 const opts3 = await page.evaluate(() => [...document.querySelectorAll('#fArea .chip')].map(c => c.textContent.replace(/\s+/g, ' ').trim()));
 ok('6.35 the mile options appear on their own', opts3.some(o => /^5 ميل/.test(o)), opts3.join(' | '));
@@ -300,7 +314,7 @@ await page.evaluate(() => {
 await page.goto(BASE); await page.waitForTimeout(500);
 await go('#/directory');
 ok('6.40b and nobody in Dallas', await page.evaluate(() => document.querySelectorAll('#dirList .badge-sponsored').length) === 0);
-ok('6.40c the coverage rule is the region, not the city', await S((S) => S.inCoverage()) === false);
+ok('6.40c the coverage rule is the region, not the city', await S(() => { const S = window.__S; return (S.inCoverage()); }) === false);
 
 /* i. a refusal still leaves a usable screen */
 const ctx2 = await browser.newContext({ colorScheme: 'dark', viewport: { width: 390, height: 844 } });
@@ -373,7 +387,8 @@ if (dl) {
 } else { ok('6.48 the file holds every waiting address', false, 'no download'); ok('6.49 with the id and the address', false, 'no download'); }
 
 /* k. a moved shop never keeps the old point */
-const moved = await S((S) => {
+const moved = await S(() => {const S = window.__S;
+    
   S.applyBusinessEdit('b30', { address: '9999 Somewhere Else Rd, Katy, TX 77450' });
   const b = S.businessById('b30');
   return { lat: b.lat, lng: b.lng, needsGeo: b.needsGeo, dist: S.distanceTo(b) };
@@ -383,12 +398,12 @@ ok('6.51 and puts the listing back in the queue', moved.needsGeo === true);
 ok('6.52 so it stops claiming a distance', moved.dist === null);
 
 /* l. the rules underneath */
-ok('6.53 a distance needs both points', await S((S) => S.distanceTo({ id: 'x', lat: 29.7, lng: -95.4 }) === null || !S.state.geo));
-ok('6.54 the city comes out of the address', await S((S) => S.cityOf({ address: '1234 Fry Rd, Katy, TX 77450' })) === 'Katy');
-ok('6.55 every listing yields a city', await S((S) => S.allBusinesses().filter(b => !S.cityOf(b)).length) === 0);
-ok('6.56 Houston to Katy is about 27 miles', Math.abs(await S((S) => S.haversine({ lat: 29.7604, lng: -95.3698 }, { lat: 29.7858, lng: -95.8245 })) - 27) < 3);
-ok('6.57 Dallas is outside the region we cover', await S((S) => S.nearestCity({ lat: 32.7767, lng: -96.797 })) === null);
-ok('6.58 a Katy point is named Katy', (await S((S) => S.nearestCity({ lat: 29.7858, lng: -95.8245 }))).city === 'Katy');
+ok('6.53 a distance needs both points', await S(() => { const S = window.__S; return (S.distanceTo({ id: 'x', lat: 29.7, lng: -95.4 }) === null || !S.state.geo); }));
+ok('6.54 the city comes out of the address', await S(() => { const S = window.__S; return (S.cityOf({ address: '1234 Fry Rd, Katy, TX 77450' })); }) === 'Katy');
+ok('6.55 every listing yields a city', await S(() => { const S = window.__S; return (S.allBusinesses().filter(b => !S.cityOf(b)).length); }) === 0);
+ok('6.56 Houston to Katy is about 27 miles', Math.abs(await S(() => { const S = window.__S; return (S.haversine({ lat: 29.7604, lng: -95.3698 }, { lat: 29.7858, lng: -95.8245 })); }) - 27) < 3);
+ok('6.57 Dallas is outside the region we cover', await S(() => { const S = window.__S; return (S.nearestCity({ lat: 32.7767, lng: -96.797 })); }) === null);
+ok('6.58 a Katy point is named Katy', (await S(() => { const S = window.__S; return (S.nearestCity({ lat: 29.7858, lng: -95.8245 })); })).city === 'Katy');
 
 /* m. the same, in English */
 await page.evaluate(() => {

@@ -33,12 +33,10 @@ const mods = () => page.evaluate(async () => {
   return true;
 });
 const go = async (h) => { await page.evaluate(x => { location.hash = x; }, h); await page.waitForTimeout(620); };
-const S = (fn, arg) => page.evaluate(async ([f, a]) => {
-  const S = (window.__m && window.__m.S)
-    || await import('arabna/js/store.js').catch(() => import('./js/store.js'));
-  // eslint-disable-next-line no-new-func
-  return await (new Function('S', 'a', 'return (' + f + ')(S, a);'))(S, a);
-}, [fn.toString(), arg]);
+/* The CSP this suite is here to defend forbids `eval` and `new Function`,
+   so the harness may not use them either. The module is primed once and
+   read from `window.__m.S` inside a function Playwright serialises. */
+const S = async (fn, arg) => { await mods(); return page.evaluate(fn, arg); };
 
 await page.goto(BASE); await page.waitForTimeout(900); await mods();
 
@@ -56,7 +54,7 @@ ok('1.1 a tag in ?q= does not become an element',
    !(await page.evaluate(() => !!document.querySelector('#pX'))));
 
 await mods();
-await S((S, P) => {
+await S((P) => {const S = window.__m.S;
   S.state.user = { name: 'ر' + P, email: 'r@x.com', phone: '7134669182',
                    phoneVerified: true, emailVerified: true, joined: Date.now(), tier: 2 };
   S.state.extraClassifieds = [{ id: 'cX', cat: 'cars', title: { ar: P, en: P }, desc: { ar: P, en: P },
@@ -162,14 +160,14 @@ ok('2.6 the font and the logo still load', await page.evaluate(async () => {
    3 — signed in is not the same as owning it
    ====================================================================== */
 console.log('--- who may change what ---');
-await S((S) => {
+await S(() => {const S = window.__m.S;
   S.setAdminUnlocked(false);
   S.state.user = { name: 'غريب', email: 'x@x.com', phone: '7134669182',
                    phoneVerified: true, emailVerified: true, joined: Date.now(), tier: 2 };
   S.state.myListings = [];                    // owns nothing
   S.save();
 });
-const theirs = await S((S) => (S.allClassifieds()[0] || {}).id);
+const theirs = await S(() => { const S = window.__m.S; return ((S.allClassifieds()[0] || {}).id); });
 await go('#/boost/' + theirs);
 ok('3.1 #/boost/<not mine> is refused at the door',
    (await page.evaluate(() => location.hash)) === '#/marketplace/' + theirs
@@ -177,7 +175,7 @@ ok('3.1 #/boost/<not mine> is refused at the door',
 /* `state.boosted` may already carry a seed listing, so the assertion is
    that the CALL is refused and adds nothing — not that the list is bare. */
 ok('3.2 …and boosting it from the console is refused too',
-   await S((S, id) => {
+   await S((id) => {const S = window.__m.S;
      const before = S.state.boosted.length;
      return S.boostClassified(id) === false && S.state.boosted.length === before;
    }, theirs));
@@ -185,7 +183,7 @@ await go('#/post?edit=' + theirs);
 ok('3.3 #/post?edit=<not mine> does not open their listing',
    !(await page.locator('#pTitle').count()), await page.evaluate(() => location.hash));
 ok('3.4 …and rewriting it from the console is refused',
-   await S((S, id) => S.updateClassified(id, { city: 'X' }).rec === null, theirs));
+   await S((id) => { const S = window.__m.S; return S.updateClassified(id, { city: 'X' }).rec === null; }, theirs));
 
 /* `?admin=1` was a permission taken from the address bar: it opened the
    staff form, published LIVE to everybody, and offered `featured`, which
@@ -194,19 +192,19 @@ await go('#/events/propose?admin=1');
 ok('3.5 ?admin=1 does not hand out the staff form',
    !(await page.locator('#evFeat').count()));
 ok('3.6 …and the store refuses a live event from anyone but the panel',
-   await S((S) => {
+   await S(() => {const S = window.__m.S;
      const r = S.addEvent({ title: { ar: 'ت', en: 't' }, startsAt: '2027-01-01T10:00', featured: true }, 'live');
      const okk = r.status === 'pending' && !r.featured;
      S.state.extraEvents = S.state.extraEvents.filter(e => e.id !== r.id); S.save();
      return okk;
    }));
-const someEvent = await S((S) => (S.allEvents()[0] || {}).id);
+const someEvent = await S(() => { const S = window.__m.S; return ((S.allEvents()[0] || {}).id); });
 await go('#/events/edit/' + someEvent);
 ok('3.7 an event somebody else proposed cannot be edited',
    !(await page.locator('#evTitle').count()), await page.evaluate(() => location.hash));
 
 /* …and the owner and the panel lose nothing */
-await S((S) => {
+await S(() => {const S = window.__m.S;
   S.state.extraClassifieds = [{ id: 'cMine', cat: 'cars', title: { ar: 'سيارتي', en: 'My car' },
                                 desc: { ar: 'د', en: 'd' }, price: '$100', city: 'Houston',
                                 at: Date.now(), status: 'live', by: 'me' }];
@@ -217,7 +215,7 @@ ok('3.8 my own listing still boosts', (await page.locator('#payBtn').count()) ==
 await go('#/post?edit=cMine');
 ok('3.9 my own listing still edits',
    (await page.evaluate(() => { const i = document.querySelector('#pTitle'); return i ? i.value : ''; })) === 'سيارتي');
-ok('3.10 the panel keeps every power it had', await S((S) => {
+ok('3.10 the panel keeps every power it had', await S(() => {const S = window.__m.S;
   S.setAdminUnlocked(true);
   const r = S.addEvent({ title: { ar: 'ت', en: 't' }, startsAt: '2027-01-01T10:00' }, 'pending');
   S.approveEvent(r.id);
@@ -252,7 +250,8 @@ ok('4.3 only a salt and a hash are stored', await page.evaluate(() => {
   const a = (JSON.parse(localStorage.getItem('arabna.v1')) || {}).adminAuth || {};
   return !!a.hash && !!a.salt && a.pass === undefined;
 }));
-ok('4.4 the panel refuses when nothing has been set', await S(async (S) => {
+ok('4.4 the panel refuses when nothing has been set', await S(async () => {
+  const S = window.__m.S;
   const keep = S.state.adminAuth;
   S.state.adminAuth = null;
   const refused = !(await S.checkAdmin('arabna.admin', 'Arabna@2026!')) && !S.adminIsSet();
@@ -272,7 +271,7 @@ ok('4.5 an unclaimed device is asked to SET one, not to guess', await (async () 
    5 — the forms refuse what cannot be true
    ====================================================================== */
 console.log('--- the forms ---');
-await S((S) => {
+await S(() => {const S = window.__m.S;
   S.state.user = { name: 'ر', email: 'r@x.com', phone: '7134669182', phoneVerified: true,
                    emailVerified: true, joined: Date.now(), tier: 2 };
   S.state.extraClassifieds = []; S.state.myListings = []; S.state.extraEvents = []; S.save();
@@ -281,10 +280,10 @@ const post = async (price, title = 'سيارة للبيع نظيفة') => {
   await go('#/post'); await page.waitForTimeout(350);
   await page.fill('#pTitle', title); await page.fill('#pPrice', price);
   await page.fill('#pCity', 'Houston'); await page.fill('#pDesc', 'وصف الإعلان هنا');
-  const before = await S((S) => S.state.extraClassifieds.length);
+  const before = await S(() => { const S = window.__m.S; return (S.state.extraClassifieds.length); });
   await page.click('#pubBtn'); await page.waitForTimeout(750);
   return {
-    published: (await S((S) => S.state.extraClassifieds.length)) > before,
+    published: (await S(() => { const S = window.__m.S; return (S.state.extraClassifieds.length); })) > before,
     msg: await page.evaluate(() => {
       const e = document.querySelector('#e_pPrice .err-msg, #e_pTitle .err-msg, #e_pDesc .err-msg');
       return e ? e.textContent.trim() : '';
@@ -300,11 +299,11 @@ for (const [v, n] of [['-500', '5.1'], ['999999999999', '5.2'], ['abc', '5.3']])
 }
 const zero = await post('0');
 ok('5.4 «0» publishes and reads «مجاني», never "$0"',
-   zero.published && (await S((S) => S.state.extraClassifieds[0].price)) === '__FREE__');
-await S((S) => { S.state.extraClassifieds = []; S.state.myListings = []; S.save(); });
+   zero.published && (await S(() => { const S = window.__m.S; return (S.state.extraClassifieds[0].price); })) === '__FREE__');
+await S(() => {const S = window.__m.S; S.state.extraClassifieds = []; S.state.myListings = []; S.save(); });
 const good = await post('14500');
 ok('5.5 a real price still publishes', good.published,
-   await S((S) => S.state.extraClassifieds[0] && S.state.extraClassifieds[0].price));
+   await S(() => { const S = window.__m.S; return (S.state.extraClassifieds[0] && S.state.extraClassifieds[0].price); }));
 await go('#/post');
 await page.fill('#pTitle', 'ع'.repeat(300));
 ok('5.6 a 300-character title is stopped at 80 while it is typed',
@@ -312,19 +311,19 @@ ok('5.6 a 300-character title is stopped at 80 while it is typed',
    && /80/.test(await page.evaluate(() => document.querySelector('#c_pTitle').textContent)));
 await page.fill('#pTitle', 'ab'); await page.fill('#pPrice', '100');
 await page.fill('#pCity', 'Houston'); await page.fill('#pDesc', 'x');
-const nBefore = await S((S) => S.state.extraClassifieds.length);
+const nBefore = await S(() => { const S = window.__m.S; return (S.state.extraClassifieds.length); });
 await page.click('#pubBtn'); await page.waitForTimeout(700);
 ok('5.7 a two-character title is refused under its own field',
-   (await S((S) => S.state.extraClassifieds.length)) === nBefore
+   (await S(() => { const S = window.__m.S; return (S.state.extraClassifieds.length); })) === nBefore
    && !!(await page.locator('#e_pTitle .err-msg').count()));
 
 const propose = async (start, end) => {
   await go('#/events/propose'); await page.waitForTimeout(350);
   await page.fill('#evTitle', 'مهرجان'); await page.fill('#evVenue', 'قاعة');
   await page.fill('#evStart', start); if (end) await page.fill('#evEnd', end);
-  const before = await S((S) => S.state.extraEvents.length);
+  const before = await S(() => { const S = window.__m.S; return (S.state.extraEvents.length); });
   await page.click('#evSave'); await page.waitForTimeout(750);
-  return (await S((S) => S.state.extraEvents.length)) > before;
+  return (await S(() => { const S = window.__m.S; return (S.state.extraEvents.length); })) > before;
 };
 ok('5.8 a start in the past never reaches the queue', !(await propose('2020-05-01T10:00', '')));
 ok('5.9 an end before its start never reaches the queue', !(await propose('2027-05-02T10:00', '2027-05-01T10:00')));
@@ -335,8 +334,8 @@ ok('5.10 a real future event still does', await propose('2027-05-01T10:00', '202
    ====================================================================== */
 console.log('--- the published contact ---');
 ok('6.1 the fictional 555 support number is gone',
-   await S((S) => S.SUPPORT_PHONE === '' || !/^\(?\d{3}\)?[ -]?555-/.test(S.SUPPORT_PHONE)),
-   await S((S) => S.SUPPORT_PHONE || '(empty)'));
+   await S(() => { const S = window.__m.S; return (S.SUPPORT_PHONE === '' || !/^\(?\d{3}\)?[ -]?555-/.test(S.SUPPORT_PHONE)); }),
+   await S(() => { const S = window.__m.S; return (S.SUPPORT_PHONE || '(empty)'); }));
 for (const [n, r] of [['6.2 About', '#/about'], ['6.3 Privacy', '#/privacy'], ['6.4 Terms', '#/terms']]) {
   await go(r);
   const links = await page.evaluate(() => [...document.querySelectorAll('a[href^="tel:"]')].map(a => a.getAttribute('href')));
