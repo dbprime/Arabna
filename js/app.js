@@ -23,6 +23,7 @@ import { ProfileScreen, EditProfileScreen, ChangePasswordScreen, SavedScreen, My
 import { SignUpScreen, SignInScreen, EmailVerifyScreen, PhoneVerifyScreen, ForgotScreen } from './screens/auth.js';
 import { AdvertiseScreen } from './screens/advertise.js';
 import { PrayerScreen } from './screens/prayer.js';
+import { MassScreen } from './screens/mass.js';
 
 /* One module, fetched once and remembered. The panel repaints itself by
    re-entering the route, so this must not re-fetch on every paint. */
@@ -49,6 +50,7 @@ const ROUTES = [
   { re: /^#\/home$/,              screen: HomeScreen,        nav: 'home' },
   { re: /^#\/categories$/,        screen: CategoriesScreen,  nav: 'home' },
   { re: /^#\/prayer$/,            screen: PrayerScreen,      nav: 'home' },
+  { re: /^#\/mass$/,              screen: MassScreen,        nav: 'home' },
   { re: /^#\/offers$/,            screen: OffersScreen,      nav: 'home' },
   { re: /^#\/events$/,            screen: EventsScreen,      nav: 'home' },
   { re: /^#\/events\/propose$/,   screen: EventFormScreen,   nav: 'home' },

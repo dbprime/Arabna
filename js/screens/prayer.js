@@ -17,6 +17,7 @@ import { t, arCount, icon, $, $$, go, renderHeader, openSheet, closeSheet, toast
          wireRoutes } from '../ui.js';
 import * as S from '../store.js';
 import { askForLocation } from './home.js';
+import { feastsBlockHtml } from './mass.js';
 import { prayerTimes, nextPrayer, minutesNow, fmtPrayer,
          PRAYER_KEYS, IS_PRAYER, METHODS, GROUPED } from '../prayer.js';
 
@@ -250,6 +251,10 @@ function draw(root) {
             </button>`).join('')}
         </div>`
         : `<div class="hint mt-16">${icon('info', 15)} ${t('prOutside')}</div>`}
+
+      ${/* the same block as #/mass, imported rather than copied: the
+           calendar belongs to both screens and is hidden from neither */''}
+      ${feastsBlockHtml()}
     </div>`;
 
   $('#prSet').addEventListener('click', () => openPrayerSettings(() => draw(root)));

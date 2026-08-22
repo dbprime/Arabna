@@ -714,6 +714,41 @@ export function worshipKind(biz) {
   return w && w.kind ? (w.kind === 'church' ? 'church' : 'mosque') : null;
 }
 export function isMosque(biz) { return worshipKind(biz) === 'mosque'; }
+export function isChurch(biz) { return worshipKind(biz) === 'church'; }
+
+/**
+ * The churches nearest the reader — the same component as `nearbyMosques`
+ * and deliberately not a second one.
+ *
+ * ORDERED BY DISTANCE AND BY NOTHING ELSE. Not the biggest, not the
+ * oldest, not the most viewed, and no placement in here is for sale. A
+ * place of worship is the one surface in this app where a ranking anybody
+ * could buy would cost more trust than the whole directory earns.
+ */
+export function nearbyChurches(n = 5) {
+  if (!inCoverage()) return [];
+  const withD = allBusinesses().filter(isChurch).map(b => ({ b, d: distanceTo(b) }));
+  const known = withD.filter(x => x.d !== null).sort((a, b) => a.d - b.d);
+  const rest = withD.filter(x => x.d === null)
+    .sort((a, b) => (sameCity(b.b) ? 1 : 0) - (sameCity(a.b) ? 1 : 0));
+  return known.concat(rest).slice(0, n).map(x => x.b);
+}
+
+/**
+ * What a church has actually published about its services — never a time
+ * we worked out for it. The same rule that stopped us inventing a jumuah
+ * for a mosque: a blank is what creates the pressure that fills it, and an
+ * invented mass time sends somebody to a locked door.
+ */
+export function servicesFor(biz) {
+  const own = (state.bizEdits && state.bizEdits[biz && biz.id]) || {};
+  const sv = own.services || (biz && biz.services) || null;
+  if (!sv) return null;
+  const sunday = (sv.sunday || []).filter(Boolean);
+  const weekday = (sv.weekday || []).filter(Boolean);
+  if (!sunday.length && !weekday.length && !(sv.note && (sv.note.ar || sv.note.en))) return null;
+  return { sunday, weekday, note: sv.note || { ar: '', en: '' } };
+}
 
 /** the jumuah / iqama a place of worship has actually published */
 export function worshipOf(biz) { return (biz && biz.worship) || null; }

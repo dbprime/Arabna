@@ -72,6 +72,10 @@ const P = {
   /* V.01.8 — directory attributes, worship, hours */
   landmark: '<line x1="3" y1="21" x2="21" y2="21"/><line x1="4" y1="21" x2="4" y2="10"/><line x1="20" y1="21" x2="20" y2="10"/><line x1="9" y1="21" x2="9" y2="10"/><line x1="15" y1="21" x2="15" y2="10"/><polygon points="12 2 22 8 2 8 12 2"/>',
   moon: '<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/>',
+  /* A church: a cross above a roof line. Drawn in the same one-stroke,
+     24-grid, no-fill idiom as every other icon here, so it sits beside
+     `moon` on the same row without either looking borrowed. */
+  church: '<line x1="12" y1="2" x2="12" y2="7"/><line x1="9.5" y1="4" x2="14.5" y2="4"/><path d="M4 21V11l8-4 8 4v10"/><path d="M4 21h16"/><path d="M10 21v-4a2 2 0 0 1 4 0v4"/>',
   dumbbell: '<rect x="1.5" y="9" width="4" height="6" rx="1"/><rect x="18.5" y="9" width="4" height="6" rx="1"/><rect x="6" y="7" width="3" height="10" rx="1"/><rect x="15" y="7" width="3" height="10" rx="1"/><line x1="9" y1="12" x2="15" y2="12"/>',
   wifi: '<path d="M5 12.5a10 10 0 0 1 14 0"/><path d="M8.5 16a5.5 5.5 0 0 1 7 0"/><path d="M2 9a15 15 0 0 1 20 0"/><circle cx="12" cy="19.5" r="1.2"/>',
   accessible: '<circle cx="12" cy="4" r="2"/><path d="M9 8h6"/><path d="M12 8v6h4l2 6"/><path d="M12 14H8l-2 6"/>',

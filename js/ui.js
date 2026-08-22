@@ -812,6 +812,11 @@ export function openDrawer() {
     /* Prayer times sit inside the sections group, not in the bottom bar:
        the bar has five slots and every one of them is spoken for. */
     item('moon', t('prayerTitle'), '#/prayer'),
+    /* Directly under it and in the same group, in the same weight and the
+       same font. «مواعيد القداس» and «مواقيت الصلاة» are two lines of one
+       shape: putting this in another group would make it an appendix, and
+       putting it above would reverse an order with no reason to reverse. */
+    item('church', t('massTitle'), '#/mass'),
     item('compass', t('ncTitle'), '#/newcomer'),
     item('calendar', t('eventsTitle'), '#/events'),
     item('newspaper', t('magazineTitle'), '#/magazine'),

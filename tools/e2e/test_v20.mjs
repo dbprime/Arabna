@@ -214,9 +214,14 @@ ok('6.3 «إعلانات مميّزة» took their place', dr.featured && dr.rou
    still a hard ceiling on a known gap, re-anchored to what the new base
    actually measures, and it is measured against the panel rather than a
    frozen 844. One row anywhere fixes every size; which row is Rai's
-   call. See CLAUDE.md, "The drawer scrolls when a group is open". */
+   call. See CLAUDE.md, "The drawer scrolls when a group is open".
+
+   V.03.9 raised it from 80 to 130, because «مواعيد القداس» was asked for
+   and a row costs 50px: 46 over at base 16, 72 at 17, 122 with this row.
+   The ceiling exists to stop the gap growing UNNOTICED — it did its job
+   here, and the number is written down rather than the check softened. */
 ok('6.4 the drawer overflow with a group open does not grow past the known gap',
-   dr.height - dr.box <= 80, (dr.height - dr.box) + 'px over, one row is ' + dr.row);
+   dr.height - dr.box <= 130, (dr.height - dr.box) + 'px over, one row is ' + dr.row);
 await page.evaluate(() => { const f = [...document.querySelectorAll('.dr-item')].find(x => /مميّزة/.test(x.textContent)); f && f.click(); });
 await page.waitForTimeout(700);
 ok('6.5 …and it really filters to the subscribers', await page.evaluate(() => {

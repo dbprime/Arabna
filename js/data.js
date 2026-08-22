@@ -6302,6 +6302,21 @@ export function blankEvent() {
  * the two Eids arrive about eleven days earlier each Gregorian year. Getting
  * that wrong by a fortnight would be worse than not repeating at all.
  */
+/* ---------------- a church's own service times ----------------
+   EMPTY, all of them, and filled only by the parish itself once it has
+   claimed its page — or, from the server batch on, read from the `.ics`
+   calendar most parishes already publish. `eventImportNote` promised that
+   reader for Ticketmaster and ICS feeds in V.03.1 and the same reader
+   serves both, so it is not built twice.
+
+   Reading an `.ics` needs a server (the browser blocks cross-origin
+   reads), so `icsUrl` is carried now and stays empty until then.
+
+   Never invented. The same rule that stopped us writing a jumuah time for
+   a mosque: a wrong mass time sends somebody to a locked door on a Sunday
+   morning, and the blank is what creates the pressure that fills it. */
+export const BLANK_SERVICES = { sunday: [], weekday: [], note: { ar: '', en: '' } };
+
 export const HIJRI_YEAR_DAYS = 354.367;
 export function nextOccurrence(iso, kind) {
   const base = new Date(iso);

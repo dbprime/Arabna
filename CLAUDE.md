@@ -7,7 +7,7 @@ ARABNA · عربنا — a mobile-first web app for the Arab community in the U.
 **business directory + marketplace + events + magazine**, Arabic-first with a full English toggle.
 ("Classifieds / الإعلانات الشخصية" is now "Marketplace / السوق" — the old `#/classifieds`
 routes still resolve so shared links keep working.)
-Current version: **V.03.8 (prototype)**. Owner: Rai Elby (@dbprime). Deploys to Vercel (team DB Prime).
+Current version: **V.03.9 (prototype)**. Owner: Rai Elby (@dbprime). Deploys to Vercel (team DB Prime).
 
 ## Hard rules (from the product brief)
 1. **One repository, one Vercel project.** No duplicates, no stray preview projects.
@@ -35,6 +35,7 @@ js/i18n.js            all UI strings (ar + en)
 js/data.js            seed data — replaced by Supabase queries in V.02
 js/store.js           state, entitlements, and ALL backend seams
 js/prayer.js          the prayer-time arithmetic — no API, no library
+js/feasts.js          Easter (both), the movable feasts, and the estimated Hijri dates
 js/synonyms.js        the search dictionary — expands the QUERY, never the data
 tools/synonyms.test.mjs  runs all 984 words against the real listings
 tools/e2e/               the Playwright suites, v3–v27, plus run.sh and the i18n check
@@ -493,10 +494,10 @@ and `outingFeature` (15).
 ```
 python3 -m http.server 8099        # from the repo root
 node tools/e2e/chk_i18n.mjs        # both packs, every derived key, seconds
-tools/e2e/run.sh                   # 29 suites × 2 builds, ~35 minutes
+tools/e2e/run.sh                   # 30 suites × 2 builds, ~35 minutes
 python3 tools/build_single.py > index-single-file.html
 ```
-1. `tools/e2e/` holds every suite, v3 to v31, one per batch, and `run.sh`
+1. `tools/e2e/` holds every suite, v3 to v32, one per batch, and `run.sh`
    runs all of them against **both** `index.html` and the generated
    `index-single-file.html`. A change is not finished until both are green.
 2. Check **both** languages (the AR/EN button in the header) and **both**
@@ -2474,6 +2475,107 @@ name it reads **«موقعك الحالي»** — not «حدّد موقعك», w
 distance and every prayer time is being computed), and not an invented
 city name. The point is right; only the label is missing.
 
+## V.03.9 — batch nine (أ): the churches, and the mass times
+
+Rai asked for a churches section in the drawer — «so a Christian feels
+there is something here for him» — and asked what to put in it.
+
+### The naming is the message
+```
+مواقيت الصلاة   →  #/prayer
+مواعيد القداس   →  #/mass
+```
+Not «الكنائس»: a church is a building, and «مواقيت الصلاة» beside it names
+a service. **The parallel in the WORDING is what carries what Rai meant**;
+the row merely existing does not. Directly under it, in the same group, at
+the same size and weight — measured identical at 14.6625px / 500. In
+another group it would be an appendix; above it would reverse an order
+with no reason to reverse.
+
+### The calendar is computed, never stored
+Storing a table of dates is the worse answer: it goes stale and it is
+wrong the first year nobody remembers to extend it. **Easter is
+arithmetic, exactly as the prayer times are** — `js/feasts.js` imports
+nothing, fetches nothing and works with no signal at all.
+
+**Both Easters, both named.** Half the churches in the directory are
+Coptic and a third evangelical, in near-equal numbers, so choosing one
+date would be choosing a congregation:
+
+| | western | eastern | gap |
+|---|---|---|---|
+| 2026 | 5 Apr | 12 Apr | 7 days |
+| **2027** | **28 Mar** | **2 May** | **35 days** |
+| 2028 | 16 Apr | 16 Apr | the same day |
+| 2029 | 1 Apr | 8 Apr | 7 days |
+| 2030 | 21 Apr | 28 Apr | 7 days |
+
+**In 2027 they are thirty-five days apart.** An app printing one date that
+year is wrong for half the people reading it.
+
+- **When they coincide the row carries NO tradition.** «الفصح (غربي)»
+  standing alone in 2028 would read to an Orthodox family as though their
+  date had been left out. One line, unqualified.
+- Palm Sunday, Good Friday, Ascension and Pentecost are **derived by
+  subtraction** from Easter and are computed — but the block shows the
+  **principal** feasts only, because six rows of Holy Week pushed *both
+  Easters off the bottom*, and the two Easters are why the block exists.
+- **Christmas is two lines**: 25 December, and 7 January named as the
+  Coptic one.
+- **Ordered by date, not by religion.** One list everybody reads. Two
+  lists side by side would separate people on the screen, which is the
+  opposite of the point.
+- **The same block on `#/prayer`**, imported from `mass.js` rather than
+  copied — it belongs to both screens and is hidden from neither.
+
+### What is certain is separated from what is not
+Christmas and Easter are pure mathematics. **The Hijri dates depend on
+sighting the crescent and differ between authorities**, so every one
+carries **«تقديري»** and a line saying the announcement comes from the
+local Islamic centres. Easter and Christmas carry no such word. A
+religious date said with confidence and then found wrong hurts far more
+than one we never claimed.
+
+### The churches, and the two rules that do not bend
+`nearbyChurches()` is `nearbyMosques()`'s twin and deliberately not a
+second component. Measured from Houston with points injected (no listing
+has coordinates yet): **1.4 → 6.3 → 17 miles**, nearest first. Outside the
+region the block is **hidden rather than empty** — Dallas keeps the
+calendar, which is arithmetic, and loses the churches. The V.03.1 rule,
+unchanged.
+
+1. **We never assign a denomination.** «قبطية», «أنطاكية», «ملكية» appear
+   only where they are already in the registered name or where the owner
+   declared them after claiming the page. There is no denomination field
+   in any form we show. That is the mosque rule word for word.
+2. **Ordered by distance and nothing else**, and **no advertising is ever
+   sold on this screen** — asserted, not merely intended.
+
+### Service times: published, or honestly absent
+`BLANK_SERVICES` — `{sunday, weekday, note}` plus `icsUrl` — empty on
+every record and filled only by the parish itself, or from the `.ics`
+calendar most of them already publish. **Reading an `.ics` needs a
+server** (the browser blocks cross-origin reads), so that layer belongs to
+the server batch and the same reader `eventImportNote` already promised
+for Ticketmaster serves both. Until then: **«مواعيد القداس: غير متوفّرة —
+اتصل بالكنيسة»**, and never a time we worked out. A wrong mass time sends
+somebody to a locked door on a Sunday morning.
+
+### Two corrections to the batch file's own numbers
+- **`b11` is Al Rahma Mosque, not a church.** So it is **12 churches now
+  and 11 at launch** — one demo record (`b12`, the St Mary), not two.
+- The distribution behind the design holds: 6 Coptic · 4 evangelical ·
+  1 Antiochian · 1 Melkite.
+
+### And the drawer moved further past its own rule
+The new row costs 50px. With «تصنيفات عربنا» open the panel overflows by
+**122px at base 17** (146 at «كبير», 180 at «أكبر»), against 72 before.
+**Two test guards caught it** — they exist to stop exactly that growing
+unnoticed — and both were raised with the numbers written into them
+rather than the checks being softened. **The drawer misses its
+never-scrolls rule by more than two rows now, and which row goes is still
+the owner's decision.**
+
 ## Known open items
 - **The header logo is 818 KB for an 80×65 box** — 37% of a 2.1 MB first
   load, and another 812 KB on a theme flip. Assigned to batch (ج), which
@@ -2556,12 +2658,15 @@ city name. The point is right; only the label is missing.
   The switch, the bar, the filters and the counts all work; filling
   `iftar` / `suhoor` / `ramadanHours` on the real listings is a data job,
   and its moment is a month before Ramadan, not the night of.
-- **The drawer scrolls when a group is open** — measured again at the new
-  base: 890/844 at 16px, **916/844 at 17**, 939 at «كبير» and 971 at
-  «أكبر», with «تصنيفات عربنا» open (the newcomer row); «حسابي» has been
-  over since before V.03.1. The larger text widens a gap that was already
-  there rather than opening one, and one row anywhere fixes every size.
-  Which row to drop is the owner's call, not the code's.
+- **The drawer scrolls when a group is open, and V.03.9 made it worse** —
+  «مواعيد القداس» costs 50px, so with «تصنيفات عربنا» open the panel is
+  **966/844 at base 17** (990 at «كبير», 1024 at «أكبر») against 916
+  before. That is **more than two rows past** the drawer's standing rule
+  that it never scrolls; «حسابي» has been over since before V.03.1. One
+  row anywhere fixes every size at once. **Which row to drop is the
+  owner's call, and it has been open since V.03.2** — the section group
+  now holds prayer times, mass times, the newcomer guide, events, the
+  magazine, featured listings and all-categories.
 - **None of the 514 listings has coordinates yet.** That is a data job done
   outside the app (admin → directory exports the addresses). Until they
   arrive the app shows each listing's area name, never a figure in miles,
