@@ -97,7 +97,15 @@ export function ramadanStart(y) {
  *          'copt' | 'islam' | '' and only exists so the label can name
  *          which Easter or which Christmas is meant.
  */
-export function feastsBetween(from, to) {
+/** 'YYYY-MM-DD' → a UTC Date, or null if it is not a real date */
+function parseDay(v) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec((v || '').trim());
+  if (!m) return null;
+  const d = new Date(Date.UTC(+m[1], +m[2] - 1, +m[3]));
+  return isNaN(d.getTime()) ? null : d;
+}
+
+export function feastsBetween(from, to, dates) {
   const out = [];
   const y0 = new Date(from).getUTCFullYear();
   const y1 = new Date(to).getUTCFullYear();
@@ -118,11 +126,29 @@ export function feastsBetween(from, to) {
     // fixed, and there are two of them
     out.push({ id: 'christmas', at: new Date(Date.UTC(y, 11, 25)), tradition: 'west', estimated: false, principal: true });
     out.push({ id: 'christmas', at: new Date(Date.UTC(y, 0, 7)), tradition: 'copt', estimated: false, principal: true });
-    // …and the ones nobody can promise
-    const r = ramadanStart(y);
+    /* …and the ones nobody can promise — unless a person has announced
+       them. THE HAND BEATS THE ARITHMETIC AND THE ARITHMETIC FILLS THE
+       GAP: a written date is printed as fact and «تقديري» is dropped from
+       it; with nothing written the computation stands and says so.
+       `dates` is passed IN rather than read from anywhere, so this file
+       still imports nothing and still needs no network — the same reason
+       `synonyms.js` is handed `normalize` instead of importing it. */
+    const fromDate = parseDay(dates && dates.from);
+    const eidDate = parseDay(dates && dates.eid);
+    const useFrom = fromDate && fromDate.getUTCFullYear() === y ? fromDate : null;
+    const useEid = eidDate && eidDate.getUTCFullYear() === y ? eidDate : null;
+    const r = useFrom || ramadanStart(y);
     if (r) {
-      out.push({ id: 'ramadan', at: r, tradition: 'islam', estimated: true, principal: true });
-      out.push({ id: 'eidFitr', at: shift(r, 30), tradition: 'islam', estimated: true, principal: true });
+      out.push({ id: 'ramadan', at: r, tradition: 'islam', estimated: !useFrom, principal: true });
+      /* Eid al-Fitr is thirty days on from whichever start we are using,
+         so writing only the start still moves both — but a written Eid
+         wins over that in turn, because Ramadan runs 29 days as often as
+         30 and only the announcement knows which. */
+      const fitr = useEid || shift(r, 30);
+      out.push({ id: 'eidFitr', at: fitr, tradition: 'islam', estimated: !useEid, principal: true });
+      /* Adha is not one of the two fields, so it stays an estimate even
+         when the other two are settled — claiming otherwise would put a
+         fact's face on a guess. */
       out.push({ id: 'eidAdha', at: shift(r, 99), tradition: 'islam', estimated: true, principal: true });
     }
   }
@@ -135,9 +161,9 @@ export function feastsBetween(from, to) {
  * The next `n` from today. `principalOnly` is the default because that is
  * what the block shows — see MOVABLE above.
  */
-export function upcomingFeasts(n = 6, now = Date.now(), principalOnly = true) {
+export function upcomingFeasts(n = 6, now = Date.now(), principalOnly = true, dates) {
   const start = new Date(now);
   start.setHours(0, 0, 0, 0);
-  const all = feastsBetween(start, new Date(start.getTime() + 400 * day));
+  const all = feastsBetween(start, new Date(start.getTime() + 400 * day), dates);
   return (principalOnly ? all.filter(f => f.principal) : all).slice(0, n);
 }

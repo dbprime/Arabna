@@ -435,7 +435,21 @@ ok('6.51 and puts the listing back in the queue', moved.needsGeo === true);
 ok('6.52 so it stops claiming a distance', moved.dist === null);
 
 /* l. the rules underneath */
-ok('6.53 a distance needs both points', await S(() => { const S = window.__S; return (S.distanceTo({ id: 'x', lat: 29.7, lng: -95.4 }) === null || !S.state.geo); }));
+/* V.04.2: this used to lean on `state.geo` happening to be null at this
+   point in the suite, and a cold open now reads the device when the
+   permission is granted — so it states the rule directly instead: no
+   reader point, no figure; a reader point, a figure. */
+ok('6.53 a distance needs both points', await S(() => {
+  const S = window.__S;
+  const keep = S.state.geo;
+  S.state.geo = null;
+  const without = S.distanceTo({ id: 'x', lat: 29.7, lng: -95.4 });
+  S.state.geo = { lat: 29.7604, lng: -95.3698, at: Date.now() };
+  const with_ = S.distanceTo({ id: 'x', lat: 29.7, lng: -95.4 });
+  const half = S.distanceTo({ id: 'y' });
+  S.state.geo = keep;
+  return without === null && typeof with_ === 'number' && half === null;
+}));
 ok('6.54 the city comes out of the address', await S(() => { const S = window.__S; return (S.cityOf({ address: '1234 Fry Rd, Katy, TX 77450' })); }) === 'Katy');
 ok('6.55 every listing yields a city', await S(() => { const S = window.__S; return (S.allBusinesses().filter(b => !S.cityOf(b)).length); }) === 0);
 ok('6.56 Houston to Katy is about 27 miles', Math.abs(await S(() => { const S = window.__S; return (S.haversine({ lat: 29.7604, lng: -95.3698 }, { lat: 29.7858, lng: -95.8245 })); }) - 27) < 3);
@@ -445,7 +459,11 @@ ok('6.58 a Katy point is named Katy', (await S(() => { const S = window.__S; ret
 /* m. the same, in English */
 await page.evaluate(() => {
   const s = JSON.parse(localStorage.getItem('arabna.v1'));
+  /* V.04.2: "no location at all" now has to say so completely — a cold
+     open reads the device when the permission is still granted, so a
+     reader with nothing set is a reader who has not granted it either. */
   s.lang = 'en'; s.location = { zip: '', city: '', state: 'TX' }; s.geo = null;
+  s.geoGranted = false;
   localStorage.setItem('arabna.v1', JSON.stringify(s));
 });
 await page.goto(BASE); await page.waitForTimeout(600);

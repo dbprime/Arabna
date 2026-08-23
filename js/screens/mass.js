@@ -49,7 +49,9 @@ function feastLabel(f) {
  * of what this section is for.
  */
 export function feastsBlockHtml(n = 6) {
-  const list = upcomingFeasts(n);
+  /* the two dates Rai announces, if he has: the calendar itself reads
+     nothing and is handed them, which is what keeps it dependency-free */
+  const list = upcomingFeasts(n, Date.now(), true, S.ramadanDates());
   if (!list.length) return '';
   const anyEstimated = list.some(f => f.estimated);
   return `
@@ -94,7 +96,7 @@ export function MassScreen(root) {
       ${!S.prayerPoint() ? `
         <div class="empty mt-12">
           <div class="empty-ico">${icon('mapPin', 34)}</div>
-          <div class="empty-title">${t('prNoLocation')}</div>
+          <div class="empty-title">${t('massNoLocation')}</div>
           <button class="btn btn-gold mt-12" id="msLoc">${icon('navigation', 18)} ${t('useMyLocation')}</button>
         </div>`
       /* Outside Greater Houston the block is HIDDEN rather than empty —

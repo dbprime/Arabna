@@ -623,15 +623,29 @@ export function requestGeo({ onStep, onOk, onFail }) {
    question. A failure is swallowed and the stored point stands.
    --------------------------------------------------------------- */
 const GEO_STALE_MS = 30 * 60 * 1000;
+/* How far the reader has to have travelled before the stored CITY NAME is
+   treated as a claim rather than a fact. Under three miles you are almost
+   certainly still in your own town, so a correct name is never wiped;
+   above it the old name is an assertion about somewhere the reader is not. */
+const NAME_STALE_MI = 3;
 let lastQuietTry = 0;
 
 /** repaint the city chips in place — the new name is the whole signal */
+/* The chip has FOUR states and only `cityChipLabel()` knows all of them:
+   a hand-picked city, a city the device found («Houston · تلقائي»), a
+   point whose name has not arrived («موقعك الحالي»), and nothing at all.
+   This function had its own older two-state formula, so every quiet
+   refresh repainted the chip into a shape the render path would never
+   have drawn — and the honest «موقعك الحالي», which is exactly what a
+   reader who has just moved and cannot be named should see, was the
+   state it could not express. One definition, three screens. */
 function repaintCityChips() {
-  const label = S.userCity() || t('setLocation');
+  const label = cityChipLabel();
+  const known = !!(S.userCity() || S.state.geo);
   $$('.loc-chip').forEach(el => {
     const span = el.querySelector('span');
     if (span) span.textContent = label;
-    el.classList.toggle('unset', !S.userCity());
+    el.classList.toggle('unset', !known);
   });
 }
 
@@ -687,9 +701,47 @@ export function refreshLocationQuietly(force = false) {
   navigator.geolocation.getCurrentPosition(
     async (pos) => {
       const { latitude, longitude } = pos.coords;
+      const pt = { lat: latitude, lng: longitude };
+
+      /* THE POINT IS SAVED BEFORE ANY NETWORK CALL. Throwing away a
+         coordinate the device just handed us because a naming service did
+         not answer is the V.03.8 fault living on in a second function:
+         the distances in the directory and every prayer time on #/prayer
+         are computed from `state.geo`, so somebody who moved and could not
+         be named went on praying to the timetable of the city they left.
+         The rule in CLAUDE.md is explicit — the times need a point and a
+         date and nothing else, and the city name is the directory's
+         business alone.
+
+         Except for somebody who chose their city by hand: nothing moves
+         for them until they say so. That is the V.04.0 decision and it is
+         not reversed here — and note the ORDER, because `setUserLocation`
+         writes `manual` from whether a point came with it, so calling it
+         with one would erase the mark. */
+      if (!S.cityIsManual()) {
+        /* No stored point means nothing says the name has gone stale, and
+           a name is only dropped when we can show the reader travelled.
+           `Infinity` here would wipe a correct city on the first open
+           after any state that lost its point. */
+        const moved = S.state.geo ? S.haversine(S.state.geo, pt) : 0;
+        /* and the old NAME is dropped when the point really travelled: a
+           name for a place its owner has left is worse than no name, and
+           the chip already knows how to say «موقعك الحالي» until one
+           arrives. Three miles keeps you inside your own town on any
+           ordinary errand, so a correct name is never wiped for it.
+           `haversine` is local arithmetic — even this judgement needs no
+           network. */
+        S.setUserLocation(
+          moved >= NAME_STALE_MI
+            ? { zip: '', city: '', state: S.state.location.state }
+            : S.state.location,
+          pt);
+        repaintCityChips();
+      }
+
       const r = await reverseGeocode(latitude, longitude);
-      if (!r || r.error) return;                  // silence: the old point stands
-      const near = S.nearestCity({ lat: latitude, lng: longitude });
+      if (!r || r.error) return;                  // silence: the point is already in
+      const near = S.nearestCity(pt);
       const before = S.userCity();
       const city = cityNameFor(r, near);
       /* A CITY SOMEBODY TYPED IS NOT CHANGED BEHIND THEIR BACK. They may
@@ -700,13 +752,11 @@ export function refreshLocationQuietly(force = false) {
       if (S.cityIsManual() && city && city !== before) {
         if (!S.moveAlreadyAsked()) {
           S.markMoveAsked();
-          askToMove(city, { zip: r.zip || '', city, state: r.state }, { lat: latitude, lng: longitude });
+          askToMove(city, { zip: r.zip || '', city, state: r.state }, pt);
         }
         return;
       }
-      S.setUserLocation(
-        { zip: r.zip || '', city, state: r.state },
-        { lat: latitude, lng: longitude });
+      S.setUserLocation({ zip: r.zip || '', city, state: r.state }, pt);
       if (S.userCity() !== before) repaintCityChips();
     },
     () => { /* silent: no toast, no prompt, no second attempt */ },
@@ -738,11 +788,30 @@ function askToMove(city, loc, geo) {
   });
 }
 
-/** mounted once at boot — the only listener this feature owns */
+/**
+ * Mounted once at boot — the only listener this feature owns, and one
+ * read at startup.
+ *
+ * `visibilitychange` DOES NOT FIRE WHEN THE APP OPENS. The page is born
+ * visible, so there is no hidden→visible transition to hear; the event
+ * only arrives when somebody returns to an app that was still running.
+ * That is the whole of «sometimes it asks and sometimes it doesn't»:
+ * warm return, one read — cold open, none at all. And closing the app,
+ * travelling, and opening it again is the ordinary way a phone is used,
+ * so the one case that most needed the refresh was the one case that
+ * never got it.
+ *
+ * `shouldRefreshGeo` is untouched, so the conditions are exactly the same
+ * ones a warm return already passed: granted before, not refused, the
+ * stored point older than thirty minutes, the page visible. Nobody new is
+ * asked anything, and somebody who never granted permission is not read
+ * at startup either.
+ */
 export function mountGeoRefresh() {
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible') refreshLocationQuietly();
   });
+  refreshLocationQuietly();
 }
 
 export function askForLocation(after, why) {

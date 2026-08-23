@@ -104,6 +104,12 @@ const DEFAULTS = {
   showDemo: true,            // the invented prototype data is visible until the owner hides it
   demoPurged: false,         // …or erased for good, which the switch cannot undo
   seasons: { ramadan: false },   // seasonal attribute groups the owner has switched on
+  /* The two dates only a human can know. Ramadan begins when the crescent
+     is sighted, not when a table says so, and the calendar's own figure is
+     labelled «تقديري» for exactly that reason. The moment Rai writes the
+     announced date the estimate has no business standing beside it. Empty
+     strings, ISO 'YYYY-MM-DD' when set. */
+  ramadanDates: { from: '', eid: '' },
   /* The calculation method is a SETTING, never a constant. Houston holds a
      large Iraqi and Lebanese Shia community whose times genuinely differ,
      and one fixed set of times tells them the app is not for them. */
@@ -125,6 +131,18 @@ export const state = Object.assign({}, DEFAULTS, load() || {});
    and a brand-new account was starting life owning a stranger's car. */
 if (!state.user && state.myListings && state.myListings.length) {
   state.myListings = [];
+  try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) { /* memory only */ }
+}
+
+/* `location.manual` did not exist before V.04.0, so a reader upgrading
+   carries a city with no word on where it came from — and the whole of
+   this batch turns on that question. The answer is already in their data:
+   `setUserLocation` only ever stores a point when the DEVICE supplied one,
+   so a saved city with no point beside it was typed or picked by hand.
+   Inferring it once at boot beats guessing on every read, and guessing
+   wrong here wipes a city somebody chose deliberately. */
+if (state.location && state.location.city && state.location.manual === undefined) {
+  state.location = Object.assign({}, state.location, { manual: !state.geo });
   try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) { /* memory only */ }
 }
 
@@ -535,6 +553,27 @@ export function seasonCount(season) {
   return allBusinesses().filter(b => (b.attributes || []).some(id => ids.includes(id))).length;
 }
 
+/**
+ * THE HAND BEATS THE ARITHMETIC, AND THE ARITHMETIC FILLS THE GAP.
+ *
+ * No date written → the computed one, carrying «تقديري».
+ * A date written  → that date, and the word is dropped.
+ *
+ * And a computed number is never "corrected" by another computed number.
+ * Moving 7 February to 8 February would be swapping one guess for another
+ * when the difference comes from the crescent and not from the table; the
+ * right answer is for a person to write the announced date, at which point
+ * the whole estimate falls away.
+ */
+export function ramadanDates() {
+  const d = state.ramadanDates || {};
+  return { from: d.from || '', eid: d.eid || '' };
+}
+export function setRamadanDates(from, eid) {
+  state.ramadanDates = { from: (from || '').trim(), eid: (eid || '').trim() };
+  save();
+}
+
 export function setSeason(season, on) {
   state.seasons = Object.assign({}, state.seasons, { [season]: !!on });
   save();
@@ -895,7 +934,13 @@ export function setUserLocation(loc, geo) {
   save();
 }
 export function clearUserLocation() {
-  state.location = { zip: '', city: '', state: 'TX' };
+  /* `manual: true` — clearing is a decision, exactly like picking a city
+     by hand, and it has to survive the next cold open. Without it the
+     quiet refresh would put a city straight back and «امسح الموقع» would
+     read as a button that does nothing. The permission itself is NOT
+     revoked (iOS asks once, and we do not spend that question twice), so
+     the reader is offered the new city rather than given it. */
+  state.location = { zip: '', city: '', state: 'TX', manual: true };
   state.geo = null;
   save();
 }

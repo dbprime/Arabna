@@ -298,6 +298,12 @@ function panelView(root) {
       paint();
     }));
 
+    const ramSave = $('#ramSave');
+    if (ramSave) ramSave.addEventListener('click', () => {
+      S.setRamadanDates($('#ramFrom').value, $('#ramEid').value);
+      toast(t('done'), 'ok');
+    });
+
     const ram = $('#ramSw');
     if (ram) ram.addEventListener('click', () => {
       // one switch turns the whole Ramadan group on: attributes, chips, filters
@@ -754,6 +760,22 @@ function setHtml() {
           number turns "nothing happened" into a job somebody can do. */''}
     <div class="hint">${t('seasonCountLine')
       .replace('{c}', arCount(S.seasonCount('ramadan'), t('plBiz'))).replace('{min}', S.CHIP_MIN)}</div>
+
+    ${/* The hand beats the arithmetic. The feast calendar computes Ramadan
+          and marks it «تقديري», because the crescent decides and no table
+          does. The moment the announced dates are written here they are
+          printed as fact and the word is dropped — and clearing them puts
+          the estimate back. Nothing else in the app may overrule a
+          computed date with another computed date. */''}
+    <div class="label mt-16">${t('ramDatesTitle')}</div>
+    <div class="hint" style="margin-bottom:10px">${t('ramDatesSub')}</div>
+    <div class="action-grid">
+      <div class="field"><label class="label" for="ramFrom">${t('ramDateFrom')}</label>
+        <input class="input ltr" id="ramFrom" type="date" value="${esc(S.ramadanDates().from)}" /></div>
+      <div class="field"><label class="label" for="ramEid">${t('ramDateEid')}</label>
+        <input class="input ltr" id="ramEid" type="date" value="${esc(S.ramadanDates().eid)}" /></div>
+    </div>
+    <button class="btn btn-ghost btn-sm" id="ramSave">${t('save')}</button>
 
     <div class="section-title mt-20">${t('demoTitle')}</div>
     <div class="hint" style="margin-bottom:10px">${t('demoWhy')}</div>

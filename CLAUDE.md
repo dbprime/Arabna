@@ -7,7 +7,7 @@ ARABNA · عربنا — a mobile-first web app for the Arab community in the U.
 **business directory + marketplace + events + magazine**, Arabic-first with a full English toggle.
 ("Classifieds / الإعلانات الشخصية" is now "Marketplace / السوق" — the old `#/classifieds`
 routes still resolve so shared links keep working.)
-Current version: **V.04.1 (prototype)**. Owner: Rai Elby (@dbprime). Deploys to Vercel (team DB Prime).
+Current version: **V.04.2 (prototype)**. Owner: Rai Elby (@dbprime). Deploys to Vercel (team DB Prime).
 
 ## Hard rules (from the product brief)
 1. **One repository, one Vercel project.** No duplicates, no stray preview projects.
@@ -489,6 +489,17 @@ and `outingFeature` (15).
   `HIJRI_YEAR_DAYS`). `dueRepeats()` warns the admin `REPEAT_LEAD_DAYS` ahead and
   `spawnRepeat()` makes a **draft** — the venue, the price and the line-up change
   every year, so a human checks before it goes live.
+
+## The version number is part of the batch, not a step after it
+> **`APP_VERSION` in `js/data.js` is raised inside the batch that changes
+> the app, and a batch is not closed while that number disagrees with the
+> one at the top of this file.**
+
+It has now drifted twice — found at `0.1` while the project was V.03.5,
+and at `0.3.8` while this file read V.03.9 — and both times it was
+corrected by hand, which is precisely the thing that forgets. **It is
+printed in the drawer and in «حسابي»**, so somebody filing a report reads a
+number that is not their build's, and the report cannot be placed.
 
 ## Testing before you ship a change
 ```
@@ -2791,6 +2802,111 @@ The marketplace's price, the magazine's advertiser and the events date are
 real text; `esc(L(name))` on every row title is right and stays. **The
 fault was in one place and its cause was general** — which is why the rule
 above is written down rather than the line simply repaired.
+
+## V.04.2 — «انتقلتُ إلى مدينة أخرى والبرنامج ما زال في الأولى»
+
+Half the report was already gone by `baa42bb` — the `geoGranted` split, the
+manual-city question, «حدّث موقعي», `cityNameFor`. Two functions were left,
+and they are the same mistake in two costumes: **the app knew where the
+reader was and did not act on it.**
+
+### `visibilitychange` does not fire when an app OPENS
+The page is born visible, so there is no hidden→visible transition to
+hear. The event arrives when somebody **returns to an app that was still
+running** — never when they launch one. Measured on `baa42bb` with the
+permission granted and the point three hours old:
+
+```
+cold open  (closed it, opened it)   getCurrentPosition → 0
+warm return (it was still running)  getCurrentPosition → 1
+```
+
+**That is «sometimes it asks and sometimes it doesn't», exactly.** And
+closing the app, travelling, and opening it again is the ordinary way a
+phone is used — so the one case that most needed the refresh was the one
+case that never got it. The fix is `refreshLocationQuietly()` at the end
+of `mountGeoRefresh()`. **`shouldRefreshGeo` is untouched**: the same four
+conditions a warm return already passed, so nobody new is asked anything
+and a reader who never granted is not read at startup either.
+
+### The point was thrown away because the NAME did not arrive
+```js
+const r = await reverseGeocode(lat, lng);
+if (!r || r.error) return;          // ← the coordinate that just landed, discarded
+```
+
+**This is the V.03.8 fault living on in a second function**, and the rule
+was already written down: *the prayer times need a point and a date and
+nothing else, and the city name is the directory's business alone.* The
+reach is wider than the chip — **every distance in the directory and every
+time on `#/prayer` is computed from `state.geo`** — so somebody who moved
+and could not be named went on **praying to the timetable of the city they
+left**.
+
+So the point is saved **before any network call**, and the name catches up:
+
+- **`NAME_STALE_MI = 3`.** Below it you are almost certainly still in your
+  own town, so a correct name is never wiped; above it the old name is a
+  claim about somewhere the reader is not, and it is cleared so the chip
+  can say «موقعك الحالي» honestly until a name arrives. `haversine` is
+  local arithmetic — **even this judgement needs no network.**
+- **A hand-picked city does not move.** That is the V.04.0 decision and it
+  is not reversed. And **the order matters**: `setUserLocation` writes
+  `manual` from whether a point came with it, so calling it with one would
+  erase the mark — which is why the whole early-save branch is skipped for
+  a manual city rather than the condition being inverted.
+- **`repaintCityChips` had its own older two-state formula** and was
+  repainting the chip into a shape the render path would never draw. It
+  calls `cityChipLabel()` now — the one definition that knows all four
+  states, including the «موقعك الحالي» this batch depends on.
+
+**And the reader sees nothing.** No message, no spinner, no question. The
+silent refresh is genuinely silent — except when the name changes, and
+then the chip alone is rewritten in place. **The new name is the whole
+signal.**
+
+### Two the regression turned up, both about the same missing word
+Making the cold open read the device exposed two states where nothing said
+whether a city had been **chosen** or **found** — and this batch turns
+entirely on that question.
+
+- **`location.manual` did not exist before V.04.0.** A reader upgrading
+  carries a city with no word on its origin, and treating that as "found"
+  would wipe a city they picked deliberately on their very first cold
+  open. The answer was already in their data: `setUserLocation` only ever
+  stores a point when the DEVICE supplied one, **so a saved city with no
+  point beside it was chosen by hand.** Inferred once at boot rather than
+  guessed on every read.
+- **«امسح الموقع» has to survive an open.** `clearUserLocation` now writes
+  `manual: true`: clearing is a decision exactly like picking, and without
+  it the quiet refresh put a city straight back and the button read as
+  doing nothing. **The permission is not revoked** — iOS asks once and we
+  do not spend that question twice — so the reader is *offered* the new
+  city rather than given it.
+- And the name is only dropped when we can **show** the reader travelled:
+  with no stored point to compare against, `moved` is 0, not `Infinity`.
+  «A correct name is never wiped» has to hold when we cannot tell, too.
+
+### Three from the churches file
+- **`#/mass` was asking for the location in `#/prayer`'s words** —
+  «حدّد موقعك لتظهر مواقيت الصلاة» on a screen titled «مواعيد القداس».
+  A ready key is not a reason to reuse a sentence. **`massNoLocation` is
+  its own string**, and the rule is that *every screen that asks for the
+  location says why IT is asking, never why its neighbour does.*
+- **`APP_VERSION` had drifted twice**, so it is now a rule with a test
+  behind it — see the section above, and v35 compares `data.js` against
+  the line at the top of this file on every run.
+- **The hand beats the arithmetic, and the arithmetic fills the gap.**
+  `ramadanDates()` / `setRamadanDates()` hold the two dates only a person
+  can know, and admin → settings has the fields. With nothing written the
+  calendar computes and prints «تقديري»; with a date written it prints
+  that date and **drops the word**. `feasts.js` is **handed** the dates
+  rather than importing them, so it still imports nothing and fetches
+  nothing — the same reason `synonyms.js` takes `normalize` as an
+  argument. **Eid al-Adha stays an estimate**, because nobody wrote it,
+  and **a computed number is never corrected by another computed number**:
+  moving 7 February to 8 February would swap one guess for another when
+  the difference comes from the crescent, not the table.
 
 ## Known open items
 - **The header logo is 818 KB for an 80×65 box** — 37% of a 2.1 MB first

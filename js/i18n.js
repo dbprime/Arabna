@@ -354,6 +354,14 @@ export const STRINGS = {
     plTimes:  ['ضعف',   'ضعفين',   'أضعاف',  'ضعفاً'],
     prTomorrow: 'غداً',
     prNoLocation: 'حدّد موقعك لتظهر مواقيت الصلاة',
+    /* Its own sentence, not «مواقيت الصلاة» borrowed. A screen that asks
+       for the location says why IT is asking — never why its neighbour
+       does — and a ready key is not a reason to reuse a sentence. */
+    massNoLocation: 'حدّد موقعك لتظهر الكنائس القريبة منك',
+    ramDatesTitle: 'تواريخ رمضان والعيد',
+    ramDatesSub: 'اتركها فارغة ليعرض التقويم الحساب الفلكي مع كلمة «تقديري». اكتب التاريخ المُعلَن فيُعرَض كما هو وتسقط الكلمة.',
+    ramDateFrom: 'أول رمضان',
+    ramDateEid: 'عيد الفطر',
     prCalcNote: 'الحساب فلكي — والإقامة يحدّدها كل مسجد',
     prMethod: 'طريقة الحساب',
     prMethodIsna: 'ISNA — أمريكا الشمالية',
@@ -1906,6 +1914,11 @@ export const STRINGS = {
     plTimes:  ['1×',       '2×',        '×',       '×'],
     prTomorrow: 'tomorrow',
     prNoLocation: 'Set your location to see prayer times',
+    massNoLocation: 'Set your location to see churches near you',
+    ramDatesTitle: 'Ramadan and Eid dates',
+    ramDatesSub: 'Leave empty and the calendar shows the astronomical estimate, marked "estimated". Write the announced date and it is shown as given, with the word dropped.',
+    ramDateFrom: 'First of Ramadan',
+    ramDateEid: 'Eid al-Fitr',
     prCalcNote: 'Times are astronomical — each mosque sets its own iqama',
     prMethod: 'Calculation method',
     prMethodIsna: 'ISNA — North America',
