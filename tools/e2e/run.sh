@@ -18,6 +18,12 @@ SUITES="${SUITES:-3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 
 # The exit code has to travel out of the two background subshells, or
 # `daily.sh` prints "suites: clean" over a red run — which is the same
 # fault as counting only `^FAIL` and reading a crashed suite as zero.
+# Clear the previous run's per-suite files first. They are not the report
+# — the summary lines are — but they are what somebody reads while a run
+# is in progress, and a stale set from an earlier run sitting beside the
+# current one reads as progress that has not happened. It misled me into
+# reporting a run near v38 when it was at v9.
+rm -f /tmp/e2e-m-*.txt /tmp/e2e-s-*.txt
 BAD=$(mktemp)
 run() {
   build=$1; tag=$2
