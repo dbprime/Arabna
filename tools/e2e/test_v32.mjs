@@ -184,10 +184,27 @@ ok('4.12 …and it really mixes the two, rather than grouping them',
    5 — one component, on both screens
    ====================================================================== */
 console.log('--- shared, not copied ---');
+/* V.04.3 REVERSED the identical part of this, and had to. One list
+   ordered by date was the right idea and the wrong result: slicing six
+   off it does not know about religion, so BOTH screens showed four
+   Christian occasions and two Islamic, and Eid al-Adha fell off the end.
+   Each screen leads with its own now and carries the community's others
+   underneath — so the counts differ by design.
+
+   What this check was really guarding survives untouched, and is what it
+   asserts now: ONE component, imported by both screens, drawing a real
+   calendar on each. 5.2 below is the other half — that it comes from one
+   definition and prayer.js computes no Easter of its own. */
 const onMass = await page.evaluate(() => document.querySelectorAll('.feast-row').length);
+const massTables = await page.evaluate(() => document.querySelectorAll('.feast-list').length);
 await go('#/prayer');
 const onPrayer = await page.evaluate(() => document.querySelectorAll('.feast-row').length);
-ok('5.1 the same calendar appears on #/prayer', onPrayer > 0 && onPrayer === onMass, `${onMass} / ${onPrayer}`);
+const prayerTables = await page.evaluate(() => document.querySelectorAll('.feast-list').length);
+ok('5.1 the same calendar component draws on both screens',
+   onPrayer > 0 && onMass > 0 && prayerTables === 2 && massTables === 2,
+   `mass ${onMass} rows / ${massTables} tables · prayer ${onPrayer} / ${prayerTables}`);
+ok('5.1b …and each leads with its own, so they are not identical',
+   onPrayer !== onMass, `${onMass} vs ${onPrayer}`);
 ok('5.2 …from one definition, not a second copy', await page.evaluate(async () => {
   const src = await (await fetch('js/screens/prayer.js')).text().catch(() => '');
   if (!src) return true;                       // inlined in the single-file build

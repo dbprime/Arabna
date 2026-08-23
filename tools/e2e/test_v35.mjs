@@ -264,15 +264,18 @@ ok('B3.2 …and it is what the drawer prints', drawerV.includes(vShown), drawerV
 await page.keyboard.press('Escape'); await page.waitForTimeout(400);
 
 console.log('--- the hand beats the arithmetic ---');
+/* V.04.3 renamed `.ltr` to `.feast-date` on this row, deliberately:
+   `.ltr` is an isolate for numbers and Latin names, and «25 ديسمبر 2026»
+   is Arabic with a number in it, so it was being reordered on screen. */
 const feastRow = () => page.evaluate(() => {
   const r = [...document.querySelectorAll('.feast-row')]
     .find(x => /رمضان/.test(x.querySelector('.row-title').textContent));
-  return r ? { at: r.querySelector('.ltr').textContent.trim(), est: !!r.querySelector('.feast-est') } : null;
+  return r ? { at: r.querySelector('.feast-date').textContent.trim(), est: !!r.querySelector('.feast-est') } : null;
 });
 const eidRow = () => page.evaluate(() => {
   const r = [...document.querySelectorAll('.feast-row')]
     .find(x => /الفطر/.test(x.querySelector('.row-title').textContent));
-  return r ? { at: r.querySelector('.ltr').textContent.trim(), est: !!r.querySelector('.feast-est') } : null;
+  return r ? { at: r.querySelector('.feast-date').textContent.trim(), est: !!r.querySelector('.feast-est') } : null;
 });
 await page.evaluate(() => { location.hash = '#/mass'; }); await page.waitForTimeout(900);
 const beforeRam = await feastRow();
