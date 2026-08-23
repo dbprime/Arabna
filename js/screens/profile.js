@@ -1,7 +1,7 @@
 /* ======================= PROFILE & ACCOUNT SCREENS ======================= */
 import { t, arCount, L, icon, $, $$, go, renderHeader, toast, wireRoutes, emptyState, confirmSheet,
          openSheet, closeSheet,
-         fmtMoney, priceLabel, statusBadge, stars, logoSrc, shareItem,
+         fmtMoney, priceLabel, statusBadgeHtml, stars, logoSrc, shareItem,
          mapChoices, esc } from '../ui.js';
 import { SUBSCRIPTION_PRICE, CATEGORIES, APP_VERSION } from '../data.js';
 import * as S from '../store.js';
@@ -409,7 +409,7 @@ export function MyAdsScreen(root) {
             ? `<img src="${c.photos[c.mainPhoto || 0] || c.photos[0]}" style="width:100%;height:100%;object-fit:cover" alt="" />`
             : icon(c.icon || 'image', 24)}</span>
           <div class="row-main">
-            <div class="row-title">${esc(L(c.title))} ${c.boosted ? `<span class="badge badge-boost">${t('boosted')}</span>` : ''} ${statusBadge(c, true)}</div>
+            <div class="row-title">${esc(L(c.title))} ${c.boosted ? `<span class="badge badge-boost">${t('boosted')}</span>` : ''} ${statusBadgeHtml(c, true)}</div>
             <div class="row-sub gold"><span class="ltr">${priceLabel(c.price)}</span> · ${t('expiresIn')} ${c.daysLeft} ${t('days')}</div>
             <div class="row-actions">
               <button class="mini-btn gold" data-route="#/boost/${c.id}">${icon('bolt', 15)} ${t('boost')}</button>

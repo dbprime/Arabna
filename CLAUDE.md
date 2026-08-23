@@ -7,7 +7,7 @@ ARABNA · عربنا — a mobile-first web app for the Arab community in the U.
 **business directory + marketplace + events + magazine**, Arabic-first with a full English toggle.
 ("Classifieds / الإعلانات الشخصية" is now "Marketplace / السوق" — the old `#/classifieds`
 routes still resolve so shared links keep working.)
-Current version: **V.04.0 (prototype)**. Owner: Rai Elby (@dbprime). Deploys to Vercel (team DB Prime).
+Current version: **V.04.1 (prototype)**. Owner: Rai Elby (@dbprime). Deploys to Vercel (team DB Prime).
 
 ## Hard rules (from the product brief)
 1. **One repository, one Vercel project.** No duplicates, no stray preview projects.
@@ -2732,6 +2732,65 @@ an `#/advertise` link and the word itself.
   V.03.9. Both now read the same. It is still raised by hand, which is why
   it drifts.
 - **v33 is 61 checks** over the spec's own 26, and is in `run.sh`.
+
+## V.04.1 — the `<svg>` printed as words, and the rule it leaves behind
+
+### The fault, on the two rows we sell
+Under the name of every sponsored business on `#/directory`, in both
+languages, the pin icon's own source was printed as text:
+
+```
+Al Huda Law Office   [إعلان مموّل]
+<span><svg class="" width="13" height="13" viewBox="0 0 24 24" …/></svg> Houston</span>
+```
+
+**The worst visible fault in the app**, because it stood on the first two
+cards of the most-opened screen — and those two cards are the thing we ask
+shop owners to pay for.
+
+**Every link in the chain was right and the result was wrong.**
+`distLabel()` returned HTML and said nothing about it in its name;
+`sponsoredRows()` took `sub` as a text field; `esc()` escaped it —
+**correctly** — and out came the markup.
+
+- **`esc()` is not the cause and was not touched.** It is what stopped a
+  user's text executing inside the admin panel in V.03.6, and deleting it
+  from this row would open an injection hole in **the one row that prints
+  names people type**. That is the fast-looking wrong answer.
+- **The icon comes from the row now, because an icon is not data**:
+  `sponsoredRows` gained `subIcon`, and the directory passes
+  `sub: distText(b) || t(catKey(b.cat))` with `subIcon: where ? 'mapPin' : ''`.
+  A pin over a category name would be an icon hanging on nothing.
+- **There is deliberately no `subHtml` field.** An unescaped field in that
+  row is the same injection six months from now, by our own hand. v34
+  asserts the hatch does not exist.
+
+### THE RULE, because this is a class and not an accident
+> **Every function that returns HTML ends its name in `Html`.** Anything
+> whose name does not **returns text**, and may pass through `esc()` safely.
+
+Applied to what was already there, in the same pass — the spec's own
+instruction, and the reason it matters is that the next person to hand one
+of these to a text field reproduces this fault word for word:
+
+```
+distLabel   → distLabelHtml   + distText   (new, the text half)
+bizBadge    → bizBadgeHtml
+openBadge   → openBadgeHtml
+openBadgeSlot → openBadgeSlotHtml
+attrChips   → attrChipsHtml
+statusBadge → statusBadgeHtml
+```
+
+All five sisters were already used outside `esc()`, which was correct —
+only their names lied. **The old names are gone rather than aliased**, so
+there is nothing left to misuse.
+
+### What was checked and found sound, so it is not re-checked
+The marketplace's price, the magazine's advertiser and the events date are
+real text; `esc(L(name))` on every row title is right and stays. **The
+fault was in one place and its cause was general** — which is why the rule
+above is written down rather than the line simply repaired.
 
 ## Known open items
 - **The header logo is 818 KB for an 80×65 box** — 37% of a 2.1 MB first

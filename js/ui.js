@@ -526,7 +526,11 @@ export function sponsoredRows(rows) {
               : `<span class="row-ico">${icon(r.icon || 'megaphone', 22)}</span>`}
       <div class="row-main">
         <div class="row-title">${esc(r.title)}<span class="badge badge-sponsored">${t('sponsored')}</span></div>
-        ${r.sub ? `<div class="row-sub">${esc(r.sub)}</div>` : ''}
+        ${/* the icon comes from the ROW, because an icon is not data. There
+             is deliberately no `subHtml` field beside it: an unescaped
+             field in a row that prints names people type is the same
+             injection six months from now, by our own hand. */''}
+        ${r.sub ? `<div class="row-sub">${r.subIcon ? icon(r.subIcon, 13) : ''} ${esc(r.sub)}</div>` : ''}
       </div>
       <span class="chev">${icon(document.documentElement.dir === 'rtl' ? 'chevronL' : 'chevronR', 19)}</span>
     </div>`).join('')}</div>`;
@@ -1342,7 +1346,7 @@ export function priceLabel(price) {
  * Status pill for a marketplace listing.
  * Pending always shows; "published" only on the owner's own screens.
  */
-export function statusBadge(c, showLive = false) {
+export function statusBadgeHtml(c, showLive = false) {
   if (!c) return '';
   if (c.status === 'pending') return `<span class="badge badge-pending">${icon('clock', 12)}${t('statusPending')}</span>`;
   // hidden is the owner's own doing, so it is marked plainly, not as an error
@@ -1395,11 +1399,32 @@ export function fmtDay(spans) {
  * says where it is, not how far, and the moment they arrive this line
  * turns into miles by itself.
  */
-export function distLabel(biz) {
+export function distLabelHtml(biz) {
   const d = S.distanceTo(biz);
   if (d != null) return `<span>${icon('mapPin', 13)} ${fmtMiles(d)} ${t('miles')}</span>`;
   const city = S.cityOf(biz);
   return city ? `<span>${icon('mapPin', 13)} ${city}</span>` : '';
+}
+
+/**
+ * The same answer as plain text — «3.2 ميل» or «Houston», not one tag.
+ *
+ * THE RULE, and the fault that wrote it: a function returning HTML ends
+ * its name in `Html`; anything else returns text and may pass through
+ * `esc()` safely. `distLabel` returned markup, said nothing about it in
+ * its name, and was handed to `sponsoredRows` as a text field — where
+ * `esc()` correctly escaped it and printed `<svg …>` under the name of
+ * every sponsored business on the most-opened screen in the app.
+ *
+ * Every link in that chain was right and the result was wrong, so the
+ * fix is the name and the shape, never `esc()`. Deleting the escape from
+ * that row would have opened an injection hole in the one row that
+ * prints names people type — the fast-looking wrong answer.
+ */
+export function distText(biz) {
+  const d = S.distanceTo(biz);
+  if (d != null) return `${fmtMiles(d)} ${t('miles')}`;
+  return S.cityOf(biz) || '';
 }
 
 /** 0.4 · 3.2 · 14 — a tenth of a mile matters up close and nowhere else */
@@ -1528,7 +1553,7 @@ export function refreshOpenBadges() {
   const now = new Date();
   $$('[data-openbadge]').forEach(el => {
     const b = S.businessById(el.dataset.openbadge);
-    if (b) el.innerHTML = openBadge(b, now);
+    if (b) el.innerHTML = openBadgeHtml(b, now);
   });
 }
 
@@ -1553,11 +1578,11 @@ export function startClock() {
 }
 
 /** a badge that can be rewritten later without touching the row around it */
-export function openBadgeSlot(biz, now = new Date()) {
-  return `<span data-openbadge="${biz.id}">${openBadge(biz, now)}</span>`;
+export function openBadgeSlotHtml(biz, now = new Date()) {
+  return `<span data-openbadge="${biz.id}">${openBadgeHtml(biz, now)}</span>`;
 }
 
-export function openBadge(biz, now = new Date()) {
+export function openBadgeHtml(biz, now = new Date()) {
   const st = S.openState(biz, now);
   if (!st) return '';
   if (st.always) return `<span class="open-pill open">${icon('clock', 12)}${t('open24')}</span>`;
@@ -1579,13 +1604,13 @@ export function openBadge(biz, now = new Date()) {
  * It reads `businessVerified`, which is an explicit decision and is never
  * inferred from whether the shop pays us.
  */
-export function bizBadge(b) {
+export function bizBadgeHtml(b) {
   if (!S.businessVerified(b)) return '';
   return `<span class="badge badge-bizverified" title="${t('bizVerified')}">${icon('checkCircle', 12)}${t('bizVerified')}</span>`;
 }
 
 /** the attribute pills shown under a business description */
-export function attrChips(biz) {
+export function attrChipsHtml(biz) {
   const list = (biz.attributes || [])
     .map(id => S.attrById(id))
     .filter(a => a && S.seasonOn(a.season));

@@ -4,7 +4,7 @@ import { t, L, icon, $, $$, go, back, renderHeader, openSheet, closeSheet, confi
          openFilterSheet, activeFilterCount, sectionNote, replaceHash, goAfterDone,
          pickerBtn, setPickerValue, openDropdown, closeDropdown,
          showsPrices, priceGate, wirePriceGates,
-         openBadge, openBadgeSlot, onMinute, distLabel, cityChipLabel, fmtMiles, attrChips, fmtDay, fmtTime, bizBadge,
+         openBadgeHtml, openBadgeSlotHtml, onMinute, distLabelHtml, distText, cityChipLabel, fmtMiles, attrChipsHtml, fmtDay, fmtTime, bizBadgeHtml,
          sponsoredRows, historyKey, esc } from '../ui.js';
 import { CATEGORIES, SUBSCRIPTION_PRICE, DAY_KEYS } from '../data.js';
 import * as S from '../store.js';
@@ -275,13 +275,23 @@ export function DirectoryScreen(root) {
     const stripIds = (st.cat === 'all' ? [] : S.catSliderAds(st.cat)).map(a => a.id);
     const sponPool = list.filter(b => S.isPaid(b));
     const sponTop = S.rotate(sponPool, 2, key, stripIds);
-    $('#sponRows').innerHTML = sponsoredRows(sponTop.map(b => ({
-      id: b.id,
-      route: '#/directory/' + b.id,
-      icon: catIcon(b.cat),
-      title: L(b.name),
-      sub: distLabel(b) || t(catKey(b.cat)),
-    })));
+    $('#sponRows').innerHTML = sponsoredRows(sponTop.map(b => {
+      /* `sub` is a TEXT field — the row escapes it, and it must. Handing
+         it `distLabelHtml` printed the pin's own `<svg …>` under the name
+         of every sponsored business here, on the most-opened screen in
+         the app and in the two rows we sell. The icon comes from the row
+         instead, and only when there is a place for it to mark: a pin
+         over a category name would be an icon hanging on nothing. */
+      const where = distText(b);
+      return {
+        id: b.id,
+        route: '#/directory/' + b.id,
+        icon: catIcon(b.cat),
+        title: L(b.name),
+        sub: where || t(catKey(b.cat)),
+        subIcon: where ? 'mapPin' : '',
+      };
+    }));
     wireRoutes($('#sponRows'));
     /* They stay in the list, in their own place — a business lifted into
        the band must not vanish from the directory, and the count has to
@@ -488,12 +498,12 @@ function rowHtml(b, sponsored) {
   return `<div class="list-row ${paid ? 'premium' : ''}" data-route="#/directory/${b.id}">
     <span class="row-ico">${icon(catIcon(b.cat), 22)}</span>
     <div class="row-main">
-      <div class="row-title">${esc(L(b.name))}${bizBadge(b)}${
+      <div class="row-title">${esc(L(b.name))}${bizBadgeHtml(b)}${
         S.hasOffers(b) ? `<span class="badge-offer">${icon('tag', 11)}${t('offerHas')}</span>` : ''}${
         sponsored ? `<span class="badge badge-sponsored">${t('sponsored')}</span>` : ''}</div>
       <div class="row-sub">${r.count ? stars(r.avg) + `<span>· ${r.count} ${t('reviews')}</span> · ` : ''}
-        ${distLabel(b)}
-        ${openBadgeSlot(b)}
+        ${distLabelHtml(b)}
+        ${openBadgeSlotHtml(b)}
       </div>
       ${b.phone ? `<div class="row-actions">
         <button class="mini-btn gold" data-call="${esc(b.phone)}">${icon('phone', 15)} ${t('call')}</button>
@@ -517,7 +527,7 @@ function hoursBlock(b) {
     <div class="hours-head">
       <span class="i-ico">${icon('clock', 21)}</span>
       <b>${t('hoursTitle')}</b>
-      ${openBadgeSlot(b)}
+      ${openBadgeSlotHtml(b)}
     </div>
     <div class="hours-week">
       ${b.hours.map((spans, i) => `
@@ -723,8 +733,8 @@ function halalNearbyBlock(b) {
       ${list.map(x => `<div class="list-row" data-route="#/directory/${x.id}">
         <span class="row-ico">${icon(catIcon(x.cat), 20)}</span>
         <div class="row-main">
-          <div class="row-title">${L(x.name)}${bizBadge(x)}</div>
-          <div class="row-sub">${distLabel(x)}${openBadgeSlot(x)}</div>
+          <div class="row-title">${L(x.name)}${bizBadgeHtml(x)}</div>
+          <div class="row-sub">${distLabelHtml(x)}${openBadgeSlotHtml(x)}</div>
         </div>
       </div>`).join('')}
     </div>
@@ -842,7 +852,7 @@ export function ListingScreen(root, params) {
     <div class="detail-body">
       <div class="row-between">
         <div>
-          <div class="detail-title">${esc(L(b.name))}${bizBadge(b)}</div>
+          <div class="detail-title">${esc(L(b.name))}${bizBadgeHtml(b)}</div>
           <div class="row-sub">${rate.count
             ? stars(rate.avg) + `<span>· ${rate.count} ${t('reviews')}</span>`
             : `<span class="muted fs-12">${t('noReviewsYet')}</span>`}</div>
@@ -856,7 +866,7 @@ export function ListingScreen(root, params) {
       </div>
 
       <p class="fs-13 muted mt-12">${esc(L(b.desc || ''))}</p>
-      ${attrChips(b)}
+      ${attrChipsHtml(b)}
 
       ${/* A button that cannot do anything is worse than no button: nine of
             these parks have no line at all, so the call button is removed
@@ -1051,8 +1061,8 @@ function similarBlock(b, paid) {
       ${list.map(x => `<div class="list-row" data-route="#/directory/${x.id}">
         <span class="row-ico">${icon(catIcon(x.cat), 20)}</span>
         <div class="row-main">
-          <div class="row-title">${L(x.name)}${bizBadge(x)}</div>
-          <div class="row-sub">${distLabel(x)}${openBadgeSlot(x)}</div>
+          <div class="row-title">${L(x.name)}${bizBadgeHtml(x)}</div>
+          <div class="row-sub">${distLabelHtml(x)}${openBadgeSlotHtml(x)}</div>
         </div>
       </div>`).join('')}
     </div>
@@ -1486,7 +1496,7 @@ export function openSimilarSheet(hits, onProceed) {
       ${hero ? `<img class="sim-photo" src="${hero}" alt="" />`
              : `<span class="sim-ico">${icon(catIcon(top.biz.cat), 26)}</span>`}
       <div class="sim-main">
-        <div class="row-title">${esc(L(top.biz.name))}${bizBadge(top.biz)}</div>
+        <div class="row-title">${esc(L(top.biz.name))}${bizBadgeHtml(top.biz)}</div>
         <div class="row-sub"><span>${t(catKey(top.biz.cat))}</span></div>
         ${top.biz.address ? `<div class="row-sub"><span class="ltr">${esc(top.biz.address)}</span></div>` : ''}
         ${top.biz.phone ? `<div class="row-sub"><span class="ltr">${esc(top.biz.phone)}</span></div>` : ''}

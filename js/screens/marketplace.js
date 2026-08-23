@@ -1,7 +1,7 @@
 /* ======================= MARKETPLACE ======================= */
 import { t, L, icon, $, $$, go, back, renderHeader, confirmSheet, toast, wireRoutes, cityChipLabel,
          pickerBtn, setPickerValue, openDropdown,
-         emptyState, query, shareItem, fmtMoney, priceLabel, statusBadge,
+         emptyState, query, shareItem, fmtMoney, priceLabel, statusBadgeHtml,
          openSheet, closeSheet, openFilterSheet, activeFilterCount, sectionNote,
          showsPrices, replaceHash, goAfterDone, ltr,
          sectionSlider, sponsoredRows, historyKey, esc } from '../ui.js';
@@ -223,7 +223,7 @@ function cardHtml(c, isNew) {
       <div class="cl-price">${priceLabel(c.price)}</div>
       <div class="cl-title">${esc(L(c.title))}</div>
       <div class="cl-meta"><span>${icon('mapPin', 12)} <span class="ltr">${esc(c.city)}</span></span><span>${esc(L(c.when))}</span></div>
-      ${statusBadge(c)}
+      ${statusBadgeHtml(c)}
     </div>
   </div>`;
 }
@@ -254,7 +254,7 @@ export function ListingDetailScreen(root, params) {
         <div>
           <div class="cl-price" style="font-size:1.5rem">${priceLabel(c.price)}</div>
           <div class="detail-title" style="font-size:1.0625rem">${esc(L(c.title))}</div>
-          <div class="mt-8">${statusBadge(c, mine)}</div>
+          <div class="mt-8">${statusBadgeHtml(c, mine)}</div>
         </div>
         <div class="top-actions">
           <!-- share sits beside the heart, where it is seen. It used to be

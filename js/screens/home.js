@@ -1,6 +1,6 @@
 /* ============================ HOME ============================ */
 import { t, L, icon, $, $$, go, renderHeader, openSheet, closeSheet, toast, stars, wireRoutes,
-         distLabel, cityChipLabel, mountAdRotator, esc,
+         distLabelHtml, distText, cityChipLabel, mountAdRotator, esc,
          pickerBtn, setPickerValue, openDropdown } from '../ui.js';
 import { CATEGORIES, HOME_CATS, MINI_ADS, ARTICLES, ZIPS, CITY_SUGGESTIONS, AD_SLOTS,
          CITY_POINTS } from '../data.js';
@@ -135,7 +135,7 @@ export function HomeScreen(root) {
             <div class="feat-body">
               <div class="feat-name">${esc(L(b.name))}</div>
               <div class="feat-meta">${stars(b.rating)} <span>· ${b.reviewCount} ${t('reviews')}</span></div>
-              ${distLabel(b) ? `<div class="feat-meta">${distLabel(b)}</div>` : ''}
+              ${distLabelHtml(b) ? `<div class="feat-meta">${distLabelHtml(b)}</div>` : ''}
             </div>
           </div>`).join('')}
       </div>

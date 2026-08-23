@@ -16,7 +16,7 @@
    2. ORDERED BY DISTANCE AND NOTHING ELSE, and no advertising space is
       ever sold on it.
    ========================================================= */
-import { t, L, icon, $, $$, go, renderHeader, wireRoutes, distLabel, esc,
+import { t, L, icon, $, $$, go, renderHeader, wireRoutes, distLabelHtml, distText, esc,
          openSheet, closeSheet, toast } from '../ui.js';
 import * as S from '../store.js';
 import { upcomingFeasts } from '../feasts.js';
@@ -110,7 +110,7 @@ export function MassScreen(root) {
                 <span class="row-title">${esc(L(c.name))}</span>
                 <span class="row-sub">${massLine(c)}</span>
               </span>
-              ${distLabel(c) ? `<span class="feast-at"><span class="ltr">${distLabel(c)}</span></span>` : ''}
+              ${distLabelHtml(c) ? `<span class="feast-at"><span class="ltr">${distLabelHtml(c)}</span></span>` : ''}
             </button>`).join('')}
         </div>
         <div class="hint mt-12">${icon('info', 15)} ${t('massCalcNote')}</div>`
