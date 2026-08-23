@@ -2197,6 +2197,35 @@ file from this origin, so it does not run whatever anybody forgets.
   backup, opened from a file and never from the web; `build_single.py`
   rewrites the line and v29 asserts both cases rather than skipping one.
 
+**And that difference is what these two lines are for.** The attack was
+re-run on both builds after this batch and the protection holds in each —
+but the second layer is not the same in each:
+
+```
+index.html                script-src 'self'
+index-single-file.html    script-src 'self' 'unsafe-inline' data: blob:
+```
+
+So `index.html` has two layers, `esc()` first and the policy refusing
+whatever survived it, while the single-file build has **one**. A display
+site that forgets `esc` prints markup as words in the first and is a whole
+hole in the second.
+
+> **`esc()` is compulsory with no exception, and is never leaned on CSP.**
+> The single-file build runs under `script-src 'unsafe-inline'` — the
+> condition of that build existing, not a choice — **so there is no second
+> layer in it.** Whatever escapes `esc()` executes.
+>
+> **No file with an `innerHTML` in it is closed before every `${` in it has
+> been read:** if the value is not from `t()`, `icon()`, or a number we
+> computed, **it needs `esc()`.**
+
+Two lines and not one, because the first says *why* and the second says
+*when it is checked* — **and a rule with no fixed moment of checking is a
+rule that gets forgotten.** That is exactly what happened to `distLabel`
+(V.04.1): the rule was already written down, the review was not a step in
+closing a batch, and the markup reached the most-opened screen in the app.
+
 ### Signed in is not the same as owning it
 `#/boost/<somebody else's listing>` charged the reader, pinned **the other
 person's advertisement** to the top of the marketplace and wrote the receipt
