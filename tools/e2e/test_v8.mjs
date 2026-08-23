@@ -27,9 +27,13 @@ const toggleAttr = (page, id) => viaSheet(page, async () => {
       return false;
     }, [host, id]);
     await page.waitForTimeout(300);
-    if (hit) return;
+    /* the multi-select STAYS OPEN by design — picking three attributes is
+       one gesture — so the panel has to be shut before the sheet's own
+       footer can be pressed. Leaving it open made #fApply unclickable and
+       the suite time out rather than fail. */
     await page.evaluate(b => document.querySelector(b).click(), btn);
     await page.waitForTimeout(250);
+    if (hit) return;
   }
 });
 /** the ids the sheet offers for the current category */
@@ -47,6 +51,26 @@ const sheetAttrIds = async (page) => {
   await page.click('#fApply'); await page.waitForTimeout(520);
   return ids;
 };
+/* V.04.0: the sheet's five headed groups of chips became two multi-select
+   pickers, so an option's label is a row inside a panel and no longer part
+   of the sheet body's text. Which options the registry offers per category
+   is unchanged, and that is what these lines have always measured. */
+const sheetLabels = async (page) => {
+  await page.click('#dirFilter'); await page.waitForTimeout(520);
+  const out = [];
+  for (const [btn, host] of attrHosts) {
+    if (!(await page.locator(btn).count())) continue;
+    await page.evaluate(b => document.querySelector(b).click(), btn);
+    await page.waitForTimeout(400);
+    out.push(...await page.evaluate(h => [...document.querySelectorAll(h + ' .dd-row .dd-name')].map(n => n.textContent.trim()), host));
+    await page.evaluate(b => document.querySelector(b).click(), btn);
+    await page.waitForTimeout(280);
+  }
+  await page.evaluate(() => { const x = document.querySelector('.sheet-scrim'); if (x) x.click(); });
+  await page.waitForTimeout(430);
+  return out;
+};
+const offers = (labels, ...words) => words.every(w => labels.some(l => l.includes(w)));
 const activeAttrPills = (page) => page.evaluate(() =>
   [...document.querySelectorAll('#pills [data-off]')].map(b => b.dataset.off));
 
@@ -284,35 +308,17 @@ chips = await sheetAttrIds(page);
    has content behind it — a short list, never an empty filter. */
 ok('a thin category offers only what has content', chips.length <= 6, chips.join(' '));
 await go('#/directory?cat=doctors');
-ok('…but the filter sheet still offers what has content', await (async () => {
-  await page.click('#dirFilter'); await page.waitForTimeout(500);
-  const sheet = await page.textContent('#sheet');
-  const has = sheet.includes('طبيبة') && sheet.includes('ميديكيد');
-  await page.evaluate(() => { const s = document.querySelector('.sheet-scrim'); if (s) s.click(); });
-  await page.waitForTimeout(430);
-  return has;
-})());
+ok('…but the filter sheet still offers what has content',
+   offers(await sheetLabels(page), 'طبيبة', 'ميديكيد'));
 ok('halal is not offered under doctors', !chips.includes('halalMeat'));
 
 await go('#/directory?cat=beauty');
-ok('beauty offers its specialities in the sheet', await (async () => {
-  await page.click('#dirFilter'); await page.waitForTimeout(500);
-  const sheet = await page.textContent('#sheet');
-  const has = sheet.includes('نسائي فقط') && sheet.includes('صالون نسائي');
-  await page.evaluate(() => { const s = document.querySelector('.sheet-scrim'); if (s) s.click(); });
-  await page.waitForTimeout(430);
-  return has;
-})());
+ok('beauty offers its specialities in the sheet',
+   offers(await sheetLabels(page), 'نسائي فقط', 'صالون نسائي'));
 
 await go('#/directory?cat=gyms');
-ok('the gyms category offers its own options', await (async () => {
-  await page.click('#dirFilter'); await page.waitForTimeout(500);
-  const sheet = await page.textContent('#sheet');
-  const has = sheet.includes('أوقات نسائية') && sheet.includes('ملاكمة');
-  await page.evaluate(() => { const s = document.querySelector('.sheet-scrim'); if (s) s.click(); });
-  await page.waitForTimeout(430);
-  return has;
-})());
+ok('the gyms category offers its own options',
+   offers(await sheetLabels(page), 'أوقات نسائية', 'ملاكمة'));
 
 /* chips combine. "Arabic spoken" is no longer offered as a chip in
    restaurants — 138 of 138 carry it, and CHIP_MAX_SHARE keeps anything
@@ -385,7 +391,7 @@ for (const [btn, host] of [['#fCtlTop', '#fDdTop'], ['#fCtlRest', '#fDdRest']]) 
 }
 // the sheet shows what has content: this clinic takes three of the four
 ok('…with the insurance options that have content',
-   ['ميديكيد', 'تأمين خاص', 'بدون تأمين'].every(x => docLabels.includes(x)),
+   offers(docLabels, 'ميديكيد', 'تأمين خاص', 'بدون تأمين'),
    docLabels.join(' · '));
 ok('the sheet offers "open now"', await page.locator('#fOpenNow').count() === 1);
 const sortLabels = await (async () => {
@@ -442,11 +448,8 @@ await page.click('#ramSw'); await page.waitForTimeout(400);
 ok('the switch turns on', await page.evaluate(() => document.querySelector('#ramSw').classList.contains('on')));
 
 await go('#/directory?cat=restaurants');
-await page.click('#dirFilter'); await page.waitForTimeout(500);
 ok('Ramadan options appear in the sheet once switched on',
-   (await page.textContent('#sheet')).includes('إفطار جماعي'));
-await page.evaluate(() => { const s = document.querySelector('.sheet-scrim'); if (s) s.click(); });
-await page.waitForTimeout(430);
+   offers(await sheetLabels(page), 'إفطار جماعي'));
 await go('#/directory/b1');
 ok('…and on the business page', (await txt()).includes('إفطار جماعي'));
 
@@ -503,19 +506,13 @@ ok('both a mosque and a church sit in the same category',
 
 /* Arabic schooling built out of the same system, not a bespoke sub-category */
 await go('#/directory?cat=education');
-await page.click('#dirFilter'); await page.waitForTimeout(500);
-const eduSheet = await page.textContent('#sheet');
 ok('education carries the Arabic-schooling options',
-   ['مدرسة عربية', 'تحفيظ قرآن', 'صفوف نهاية الأسبوع', 'دروس خصوصية'].every(x => eduSheet.includes(x)));
-await page.evaluate(() => { const s = document.querySelector('.sheet-scrim'); if (s) s.click(); });
-await page.waitForTimeout(430);
+   offers(await sheetLabels(page), 'مدرسة عربية', 'تحفيظ قرآن', 'صفوف نهاية الأسبوع', 'دروس خصوصية'));
 
 /* newcomer services, cross-category so nothing is listed twice */
 await go('#/directory?cat=lawyers');
-await page.click('#dirFilter'); await page.waitForTimeout(500);
-const lawSheet = await page.textContent('#sheet');
 ok('newcomer services are offered where they are looked for',
-   lawSheet.includes('هجرة') && lawSheet.includes('ترجمة معتمدة'));
+   offers(await sheetLabels(page), 'هجرة', 'ترجمة معتمدة'));
 await page.evaluate(() => { const s = document.querySelector('.sheet-scrim'); if (s) s.click(); });
 await page.waitForTimeout(430);
 
@@ -768,10 +765,9 @@ ok('EN: the week table uses English day names', body.includes('Wednesday'));
 ok('EN: attribute chips translated', body.includes('Halal meat') && body.includes('No alcohol'));
 
 await go('#/directory?cat=doctors');
-await page.click('#dirFilter'); await page.waitForTimeout(500);
+const enDoc = await sheetLabels(page);
 ok('EN: the sheet options are translated',
-   (await page.textContent('#sheet')).includes('Female doctor'),
-   (await page.textContent('#sheet')).trim().replace(/\s+/g, ' ').slice(0, 80));
+   enDoc.some(l => l.includes('Female doctor')), enDoc.slice(0, 6).join(' · '));
 await page.evaluate(() => { const s = document.querySelector('.sheet-scrim'); if (s) s.click(); });
 await page.waitForTimeout(430);
 await go('#/directory');

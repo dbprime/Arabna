@@ -28,9 +28,13 @@ const toggleAttr = (page, id) => viaSheet(page, async () => {
       return false;
     }, [host, id]);
     await page.waitForTimeout(300);
-    if (hit) return;
+    /* the multi-select STAYS OPEN by design — picking three attributes is
+       one gesture — so the panel has to be shut before the sheet's own
+       footer can be pressed. Leaving it open made #fApply unclickable and
+       the suite time out rather than fail. */
     await page.evaluate(b => document.querySelector(b).click(), btn);
     await page.waitForTimeout(250);
+    if (hit) return;
   }
 });
 /** the ids the sheet offers for the current category */
@@ -518,11 +522,26 @@ for (const label of ['Cafés & Hookah', 'Shopping & Fashion', 'Community & Servi
   ok('EN category: ' + label, body.includes(label));
 }
 await go('#/directory?cat=restaurants');
-await openSheet();
-sheet = await page.textContent('#sheet');
-ok('EN: cuisines translated', sheet.includes('Yemeni') && sheet.includes('Lebanese'));
-ok('EN: dishes translated', sheet.includes('Mandi & kabsa'));
-await shutSheet();
+/* V.04.0: the options are rows inside the two pickers now, so the labels
+   are read from the panels rather than from the sheet body's text. */
+const enLabels = await (async () => {
+  await page.click('#dirFilter'); await page.waitForTimeout(520);
+  const out = [];
+  for (const [btn, host] of attrHosts) {
+    if (!(await page.locator(btn).count())) continue;
+    await page.evaluate(b => document.querySelector(b).click(), btn);
+    await page.waitForTimeout(400);
+    out.push(...await page.evaluate(h => [...document.querySelectorAll(h + ' .dd-row .dd-name')].map(n => n.textContent.trim()), host));
+    await page.evaluate(b => document.querySelector(b).click(), btn);
+    await page.waitForTimeout(280);
+  }
+  await page.evaluate(() => { const x = document.querySelector('.sheet-scrim'); if (x) x.click(); });
+  await page.waitForTimeout(430);
+  return out;
+})();
+const enHas = (w) => enLabels.some(l => l.includes(w));
+ok('EN: cuisines translated', enHas('Yemeni') && enHas('Lebanese'), enLabels.slice(0, 5).join(' · '));
+ok('EN: dishes translated', enHas('Mandi & kabsa'));
 await go('#/events');
 ok('EN: event types translated', (await ddText('#ctlType')).includes('Festivals'));
 

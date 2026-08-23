@@ -209,7 +209,12 @@ ok('6.9 "not now" asks nothing at all', await page.evaluate(() => window.__geoCa
 await page.click('[data-loc]'); await page.waitForTimeout(450);
 const cityChips = (await ddRows('#ctlCity', '#cityDD')).map(r => r.txt);
 ok('6.10 every city the directory covers is listed', cityChips.length >= 24, cityChips.length + ' options');
-ok('6.11 the whole area is the first choice', /كل المنطقة 514/.test(cityChips[0]), cityChips[0]);
+/* V.04.0 reversed the wording deliberately: «كل المنطقة» answered no
+   question — all of Texas? all of America? — while `regionName` had
+   carried «Houston والمنطقة» since V.03.3 and was used everywhere else.
+   Two lines that explain the difference by themselves. */
+ok('6.11 the whole area is the first choice, and it says which area',
+   /Houston والمنطقة 514/.test(cityChips[0]), cityChips[0]);
 ok('6.12 Houston carries its real count', cityChips.some(c => /^Houston 376$/.test(c)), cityChips[1]);
 ok('6.13 Katy carries its real count', cityChips.some(c => /^Katy 39$/.test(c)));
 ok('6.14 the privacy line is on the sheet', /موقعك يبقى على جهازك/.test(await page.textContent('.sheet-panel')));
@@ -261,7 +266,13 @@ ok('6.27 "allow" is what reaches the browser', await page.evaluate(() => window.
 const st2 = await ls();
 ok('6.28 the point is kept', st2.geo && Math.abs(st2.geo.lat - 29.7604) < 0.01, JSON.stringify(st2.geo));
 ok('6.29 it is snapped to a city the directory covers', st2.location.city === 'Houston', st2.location.city);
-ok('6.30 the chip names it', (await page.textContent('[data-loc]')).trim() === 'Houston');
+/* V.04.0 reversed this one too: one word in both states told the reader
+   nothing, so a city the device found now reads «Houston · تلقائي» and a
+   city picked by hand reads «Houston» alone. This branch granted the
+   permission, so it is the live one. */
+ok('6.30 the chip names it, and says it is following the device',
+   /^Houston · /.test((await page.textContent('[data-loc]')).trim()),
+   (await page.textContent('[data-loc]')).trim());
 
 /* a listing given coordinates, the way geocoding will deliver them */
 await page.evaluate(() => {

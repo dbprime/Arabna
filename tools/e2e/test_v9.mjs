@@ -146,8 +146,17 @@ ok('the count and average show in the directory results',
 
 /* top-rated sorting is offered */
 await page.click('#dirFilter'); await page.waitForTimeout(500);
-ok('"top rated" sorting is in the filter sheet',
-   (await page.textContent('#sheet')).includes('الأعلى تقييماً'));
+/* V.04.0: the sort became a picker, so its options are rows in a panel
+   rather than chips in the sheet body. It is still offered, and that is
+   what this line has always been about. */
+ok('"top rated" sorting is in the filter sheet', await page.evaluate(async () => {
+  document.querySelector('#fCtlSort').click();
+  await new Promise(r => setTimeout(r, 400));
+  const has = [...document.querySelectorAll('#fDdSort .dd-row')].some(r => /الأعلى تقييماً/.test(r.textContent));
+  document.querySelector('#fCtlSort').click();
+  await new Promise(r => setTimeout(r, 250));
+  return has;
+}));
 await ddPick('#fCtlSort', '#fDdSort', 'rated');
 await page.click('#fApply'); await page.waitForTimeout(500);
 ok('sorting by rating applies', await page.evaluate((sel) => {

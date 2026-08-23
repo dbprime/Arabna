@@ -27,9 +27,13 @@ const toggleAttr = (page, id) => viaSheet(page, async () => {
       return false;
     }, [host, id]);
     await page.waitForTimeout(300);
-    if (hit) return;
+    /* the multi-select STAYS OPEN by design — picking three attributes is
+       one gesture — so the panel has to be shut before the sheet's own
+       footer can be pressed. Leaving it open made #fApply unclickable and
+       the suite time out rather than fail. */
     await page.evaluate(b => document.querySelector(b).click(), btn);
     await page.waitForTimeout(250);
+    if (hit) return;
   }
 });
 /** the ids the sheet offers for the current category */

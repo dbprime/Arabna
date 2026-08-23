@@ -34,6 +34,10 @@ page.on('pageerror', e => errors.push('PAGEERROR ' + e.message));
    app fault */
 const go = async (h) => {
   await page.evaluate(() => { location.hash = '#/home'; });
+  await page.waitForTimeout(120);
+  await page.evaluate(x => { location.hash = x; }, h);
+  await page.waitForTimeout(380);
+};
 /* V.04.0 reversed the SHEET'S SHAPE, not its contents. Five headed groups
    and sixteen options were two screens of scrolling; they collapsed into
    two multi-select pickers — «الأكثر استخداماً» and «خيارات إضافية» — so
@@ -67,15 +71,13 @@ const pickAttr = async (id) => {
       return false;
     }, [host, id]);
     await page.waitForTimeout(300);
-    if (hit) return true;
+    /* the multi-select stays open by design, so shut it before the sheet's
+       footer is pressed — an open panel covers #fApply */
     await page.evaluate(b => document.querySelector(b).click(), btn);
     await page.waitForTimeout(250);
+    if (hit) return true;
   }
   return false;
-};
-  await page.waitForTimeout(120);
-  await page.evaluate(x => { location.hash = x; }, h);
-  await page.waitForTimeout(380);
 };
 const txt = () => page.textContent('#app');
 const has = async (s) => (await txt()).includes(s);

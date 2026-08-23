@@ -28,6 +28,10 @@ const mods = () => page.evaluate(async () => {
 
 const go = async (h) => {
   await page.evaluate(() => { location.hash = '#/home'; });
+  await page.waitForTimeout(120);
+  await page.evaluate(x => { location.hash = x; }, h);
+  await page.waitForTimeout(520);
+};
 /* V.04.0: the sheet's five headed groups of chips became two multi-select
    pickers, so an attribute is a row inside a panel. What is measured here
    is unchanged — whether the seasonal specialities are offered at all. */
@@ -42,10 +46,6 @@ const sheetAttrIds25 = async () => {
     await page.waitForTimeout(280);
   }
   return ids;
-};
-  await page.waitForTimeout(120);
-  await page.evaluate(x => { location.hash = x; }, h);
-  await page.waitForTimeout(520);
 };
 const rows = () => page.evaluate(() => document.querySelectorAll('#dirList .list-row[data-route^="#/directory/"]').length);
 const txt = () => page.textContent('#app');

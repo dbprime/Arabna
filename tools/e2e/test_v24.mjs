@@ -100,10 +100,16 @@ ok('2.1 watchPosition is never used, anywhere', await page.evaluate(async () => 
   }
   return true;
 }));
+/* V.04.0 split one flag into two: "the permission was granted once" and
+   "we hold a point now" are different facts, because choosing a city by
+   hand deliberately clears the point — and gating the quiet refresh on the
+   POINT is what froze Rai's city on Houston for good. So the fixture has
+   to say both, as the real flow does. */
 const stale = (mins) => page.evaluate((m) => {
   const { H, S } = window.__m;
   S.state.geo = { lat: 29.76, lng: -95.37, at: Date.now() - m * 60000 };
   S.state.geoDenied = false;
+  S.state.geoGranted = true;
   return H.shouldRefreshGeo();
 }, mins);
 const five = await stale(5), hour = await stale(60);
@@ -112,12 +118,17 @@ ok('2.3 …one an hour old is', hour === true, String(hour));
 ok('2.4 a refusal is never asked again', await page.evaluate(() => {
   const { H, S } = window.__m;
   S.state.geo = { lat: 29.76, lng: -95.37, at: Date.now() - 3600000 };
+  S.state.geoGranted = true;
   S.state.geoDenied = true;
   return H.shouldRefreshGeo() === false;
 }));
+/* V.04.0: "never granted" is `geoGranted === false` now, not "there is no
+   point" — the two were one flag and separating them is the batch. The
+   limit itself is unchanged and is the one the whole thing exists to
+   protect: a reader who never allowed it is never read and never asked. */
 ok('2.5 somebody who never granted it is never asked either', await page.evaluate(() => {
   const { H, S } = window.__m;
-  S.state.geo = null; S.state.geoDenied = false;
+  S.state.geo = null; S.state.geoDenied = false; S.state.geoGranted = false;
   return H.shouldRefreshGeo() === false;
 }));
 
@@ -192,6 +203,13 @@ ok('3.16 …and starts no timer of its own', await page.evaluate(async () => {
 console.log('--- the four placements ---');
 await setLoc('Houston', 29.7604, -95.3698, Date.now());
 await go('#/home');
+/* V.04.0: the bar is asked for once, with a card, on the very first open —
+   hiding it by default means nobody finds it, and showing it forever to
+   somebody who does not want it is the other failure. Answer it, as every
+   real reader has by their second open, and then measure the bar. */
+await page.evaluate(() => { const b = document.querySelector('#prAskYes'); if (b) b.click(); });
+await page.waitForTimeout(600);
+await go('#/prayer'); await go('#/home');
 ok('4.1 one line under the header', await page.locator('.pr-bar').count() === 1);
 ok('4.2 …and it is one line, not a band',
    await page.evaluate(() => Math.round(document.querySelector('.pr-bar').getBoundingClientRect().height)) <= 56,

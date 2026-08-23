@@ -191,7 +191,8 @@ ok('5.1 the same calendar appears on #/prayer', onPrayer > 0 && onPrayer === onM
 ok('5.2 …from one definition, not a second copy', await page.evaluate(async () => {
   const src = await (await fetch('js/screens/prayer.js')).text().catch(() => '');
   if (!src) return true;                       // inlined in the single-file build
-  return /import \{ feastsBlockHtml \} from '\.\/mass\.js'/.test(src)
+  // V.04.0 added the suggest-a-mosque door to the same import
+  return /import \{[^}]*feastsBlockHtml[^}]*\} from '\.\/mass\.js'/.test(src)
       && !/easterWestern|easterEastern/.test(src);
 }));
 
