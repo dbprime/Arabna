@@ -57,7 +57,12 @@ const activeAttrPills = (page) => page.evaluate(() =>
 
 
 const BASE = process.env.BASE || 'http://localhost:8123/index.html';
-const DL = '/tmp/claude-0/-home-user-Arabna/251db543-2065-5c48-ad10-c7376686ff5c/scratchpad/dl10';
+/* One directory PER RUN. `run.sh` drives both builds in parallel, and a
+   hard-coded path meant whichever started second ran `rmSync` over the
+   file the first was about to upload — a race latent since this suite was
+   written, and it surfaced the day run.sh learned to report red. The
+   build is in BASE, so it is what keeps the two apart. */
+const DL = '/tmp/arabna-e2e/dl10-' + (/index-single-file/.test(BASE) ? 'single' : 'main');
 if (existsSync(DL)) rmSync(DL, { recursive: true });
 mkdirSync(DL, { recursive: true });
 
