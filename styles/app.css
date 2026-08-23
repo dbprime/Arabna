@@ -2275,6 +2275,25 @@ input[inputmode="tel"], input[type="email"], input[inputmode="decimal"], #zipIn 
    nobody how large large is. */
 /* The count sits on the label, not under the field: under it is where the
    error goes, and two things in one place is neither of them. */
+/* «تعرف مسجداً ليس هنا؟» — a quiet line and a small button, never a card
+   competing with the list above it. */
+.suggest-box {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  padding: 12px 14px; border-radius: var(--r-md);
+  background: var(--surface); border: 1px dashed var(--line-soft);
+}
+.suggest-txt { flex: 1 1 auto; min-width: 0; font-size: .84375rem; color: var(--text-2); }
+
+/* The one question, asked once, in the strip's own place on Home. */
+.pr-ask {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  margin: 10px 14px 0; padding: 12px 14px; border-radius: var(--r-md);
+  background: var(--surface); border: 1px solid var(--line-soft);
+}
+.pr-ask-txt { flex: 1 1 190px; display: flex; align-items: center; gap: 8px;
+              font-size: .84375rem; font-weight: 600; color: var(--text); }
+.pr-ask-btns { display: flex; gap: 8px; margin-inline-start: auto; }
+
 /* The feast rows: a name on one side, a date on the other, and the word
    «تقديري» under the date where the date cannot be promised. */
 .feast-row { align-items: center; }

@@ -1059,6 +1059,12 @@ export function wirePriceGates(root) {
  * attribute is written here: they are generated from the registry, so a
  * new one is a line in data.js and appears here on its own.
  */
+/* The sheet's own picker ids carry an `f` prefix. The directory's top row
+   already owns `#ctlSort`, and a second element with the same id meant
+   `setPickerValue('ctlSort', …)` wrote the sheet's choice onto the row
+   BEHIND the sheet and left the sheet's own button reading the old value.
+   Two controls doing the same job may share a shape; they may not share
+   an id. */
 export function openFilterSheet({ cat, cats, value, withPrice, withAttrs, withArea, countFor, onApply }) {
   const v = Object.assign({ cat: cat || 'all', area: 'all', sort: 'newest',
                             priceMin: '', priceMax: '', openNow: false,
@@ -1100,8 +1106,8 @@ export function openFilterSheet({ cat, cats, value, withPrice, withAttrs, withAr
   };
   const areaHtml = () => `
     <div class="label mt-16">${t('areaTitle')}</div>
-    ${pickerBtn({ id: 'ctlArea', label: t('areaTitle'), value: areaLabel(), wide: true })}
-    <div id="ddArea"></div>
+    ${pickerBtn({ id: 'fCtlArea', label: t('areaTitle'), value: areaLabel(), wide: true })}
+    <div id="fDdArea"></div>
     ${S.hasLocation() ? '' : `<button class="btn btn-ghost btn-sm btn-block mt-8" id="fLoc">${icon('navigation', 16)} ${t('setLocation')}</button>`}`;
 
   const attrSets = () => {
@@ -1157,11 +1163,11 @@ export function openFilterSheet({ cat, cats, value, withPrice, withAttrs, withAr
     sets = attrCounts();
     return `
       ${sets.top.length ? `<div class="label mt-16">${t('mostUsed')}</div>
-        ${pickerBtn({ id: 'ctlTop', label: t('mostUsed'), value: chosenLabel(v.attrs, sets.top), wide: true })}
-        <div id="ddTop"></div>` : ''}
+        ${pickerBtn({ id: 'fCtlTop', label: t('mostUsed'), value: chosenLabel(v.attrs, sets.top), wide: true })}
+        <div id="fDdTop"></div>` : ''}
       ${sets.rest.length ? `<div class="label mt-16">${t('moreFilters')}</div>
-        ${pickerBtn({ id: 'ctlRest', label: t('moreFilters'), value: chosenLabel(v.attrs, sets.rest), wide: true })}
-        <div id="ddRest"></div>` : ''}`;
+        ${pickerBtn({ id: 'fCtlRest', label: t('moreFilters'), value: chosenLabel(v.attrs, sets.rest), wide: true })}
+        <div id="fDdRest"></div>` : ''}`;
   };
 
   openSheet(`
@@ -1170,9 +1176,9 @@ export function openFilterSheet({ cat, cats, value, withPrice, withAttrs, withAr
     ${withArea ? areaHtml() : ''}
 
     <div class="label mt-16">${t('sortBy')}</div>
-    ${pickerBtn({ id: 'ctlSort', label: t('sortBy'),
+    ${pickerBtn({ id: 'fCtlSort', label: t('sortBy'),
                   value: (sorts.find(x => x[0] === v.sort) || sorts[0])[1], wide: true })}
-    <div id="ddSort"></div>
+    <div id="fDdSort"></div>
 
     ${withPrice ? `
       <div class="label mt-16">${t('priceRange')}</div>
@@ -1209,12 +1215,12 @@ export function openFilterSheet({ cat, cats, value, withPrice, withAttrs, withAr
     };
 
     if (withArea) {
-      const aBtn = panel.querySelector('#ctlArea');
+      const aBtn = panel.querySelector('#fCtlArea');
       aBtn.addEventListener('click', () => openDropdown({
-        host: panel.querySelector('#ddArea'), anchor: aBtn, title: t('areaTitle'),
+        host: panel.querySelector('#fDdArea'), anchor: aBtn, title: t('areaTitle'),
         options: areaOptions().map(o => ({ id: o.id, label: o.label, icon: 'mapPin', count: o.n })),
         value: String(v.area), unit: 'ddCity',
-        onPick: (id) => { v.area = id; setPickerValue('ctlArea', areaLabel()); refresh(); },
+        onPick: (id) => { v.area = id; setPickerValue('fCtlArea', areaLabel()); refresh(); },
       }));
       const loc = panel.querySelector('#fLoc');
       // no location yet: the way to get one is here, not a dead option
@@ -1224,9 +1230,9 @@ export function openFilterSheet({ cat, cats, value, withPrice, withAttrs, withAr
       });
     }
 
-    const sBtn = panel.querySelector('#ctlSort');
+    const sBtn = panel.querySelector('#fCtlSort');
     sBtn.addEventListener('click', () => openDropdown({
-      host: panel.querySelector('#ddSort'), anchor: sBtn, title: t('sortBy'),
+      host: panel.querySelector('#fDdSort'), anchor: sBtn, title: t('sortBy'),
       options: sorts.map(([id, lbl]) => ({ id, label: lbl, icon: 'filter' })),
       value: v.sort, unit: 'dd',
       onPick: (id) => {
@@ -1244,7 +1250,7 @@ export function openFilterSheet({ cat, cats, value, withPrice, withAttrs, withAr
           return;
         }
         v.sort = id;
-        setPickerValue('ctlSort', (sorts.find(x => x[0] === id) || sorts[0])[1]);
+        setPickerValue('fCtlSort', (sorts.find(x => x[0] === id) || sorts[0])[1]);
         refresh();
       },
     }));
@@ -1282,8 +1288,8 @@ export function openFilterSheet({ cat, cats, value, withPrice, withAttrs, withAr
           },
         }));
       };
-      wireAttr('ctlTop', 'ddTop', () => sets.top, 'mostUsed');
-      wireAttr('ctlRest', 'ddRest', () => sets.rest, 'moreFilters');
+      wireAttr('fCtlTop', 'fDdTop', () => sets.top, 'mostUsed');
+      wireAttr('fCtlRest', 'fDdRest', () => sets.rest, 'moreFilters');
     }
 
     refresh();

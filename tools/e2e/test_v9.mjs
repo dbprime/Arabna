@@ -19,6 +19,16 @@ page.on('console', m => { if (m.type() === 'error') errors.push(m.text()); });
 page.on('pageerror', e => errors.push('PAGEERROR ' + e.message));
 
 const go = async (h) => { await page.evaluate(x => { location.hash = x; }, h); await page.waitForTimeout(360); };
+/* V.04.0 reversed the SHAPE of three chip rows, not their content: the
+   rule "more than five options is a dropdown, five or fewer are chips"
+   had only ever reached the directory's top row. The same options are
+   still here, one line each, with the same counts beside them. */
+const ddPick = async (btnSel, hostSel, v) => {
+  await page.evaluate(s => document.querySelector(s).click(), btnSel);
+  await page.waitForTimeout(400);
+  await page.evaluate(a => document.querySelector(a[0] + ' .dd-row[data-v="' + a[1] + '"]').click(), [hostSel, v]);
+  await page.waitForTimeout(350);
+};
 const hash = () => page.evaluate(() => location.hash);
 const txt = () => page.textContent('#app');
 const rowEls = `#dirList .list-row[data-route^="#/directory/"]`;
@@ -138,7 +148,7 @@ ok('the count and average show in the directory results',
 await page.click('#dirFilter'); await page.waitForTimeout(500);
 ok('"top rated" sorting is in the filter sheet',
    (await page.textContent('#sheet')).includes('الأعلى تقييماً'));
-await page.click('#fSort .chip[data-s="rated"]'); await page.waitForTimeout(200);
+await ddPick('#fCtlSort', '#fDdSort', 'rated');
 await page.click('#fApply'); await page.waitForTimeout(500);
 ok('sorting by rating applies', await page.evaluate((sel) => {
   const list = Array.from(document.querySelectorAll(sel));

@@ -16,6 +16,22 @@ page.on('console', m => { if (m.type() === 'error' && !/ERR_CONNECTION|ERR_CERT|
 page.on('pageerror', e => errors.push('PAGEERROR ' + e.message + ' @ ' + (e.stack || '').split('\n')[1]));
 
 const go = async (h) => { await page.evaluate(x => { location.hash = x; }, h); await page.waitForTimeout(450); };
+/* V.04.0 reversed the sheet's SHAPE, not its contents: five headed groups
+   of chips became two multi-select pickers and the area became a third, so
+   an option is a row inside a panel rather than a chip in the sheet body.
+   Every rule these sections guard — no option twice, nothing offered with
+   nothing behind it, no mile option while nothing is geocoded — is
+   unchanged, and is read from the panels now. */
+const ddRows = async (btn, host) => {
+  if (!(await page.locator(btn).count())) return [];
+  await page.evaluate(b => document.querySelector(b).click(), btn);
+  await page.waitForTimeout(400);
+  const rows = await page.evaluate(h => [...document.querySelectorAll(h + ' .dd-row')]
+    .map(r => ({ id: r.dataset.v, txt: r.textContent.replace(/\s+/g, ' ').trim() })), host);
+  await page.evaluate(b => document.querySelector(b).click(), btn);
+  await page.waitForTimeout(280);
+  return rows;
+};
 const txt = () => page.textContent('#app');
 const ls = () => page.evaluate(() => JSON.parse(localStorage.getItem('arabna.v1') || '{}'));
 /* V.03.6: the app's CSP forbids `eval` and `new Function`, and the app
@@ -93,14 +109,12 @@ ok('1.4 the scroll is not filed under the wrong key', restored > 1000, String(re
 /* ============ 2 — no option twice in the filter sheet ============ */
 await go('#/directory?cat=restaurants');
 await page.click('#dirFilter'); await page.waitForTimeout(450);
-const ids = await page.evaluate(() => [...document.querySelectorAll('.sheet-panel [data-a]')].map(b => b.dataset.a));
+const topIds = (await ddRows('#fCtlTop', '#fDdTop')).map(r => r.id);
+const restIds = (await ddRows('#fCtlRest', '#fDdRest')).map(r => r.id);
+const ids = topIds.concat(restIds);
 const dupes = ids.filter((x, i) => ids.indexOf(x) !== i);
 ok('2.1 the sheet offers options', ids.length > 4, ids.length + ' options');
 ok('2.2 no option appears twice', dupes.length === 0, dupes.join(',') || 'none');
-const topIds = await page.evaluate(() => {
-  const lab = [...document.querySelectorAll('.sheet-panel .label')].find(l => /الأكثر|Most used/.test(l.textContent));
-  return lab ? [...lab.nextElementSibling.querySelectorAll('[data-a]')].map(b => b.dataset.a) : [];
-});
 ok('2.3 "most used" is not a copy of the groups', topIds.length > 0 && topIds.every(id => ids.filter(x => x === id).length === 1), topIds.join(','));
 ok('2.4 an attribute on 85% of the category does not lead it', !topIds.includes('arabicSpoken'), topIds[0] || '');
 
@@ -127,7 +141,7 @@ ok('3.3 the body is the only thing that scrolls', geom.bodyScrolls === 'auto' ||
 ok('3.4 the last group clears the footer', geom.lastBottom <= geom.footTop + 1, Math.round(geom.lastBottom) + ' vs ' + Math.round(geom.footTop));
 
 /* ============ 4 — the radius control ============ */
-const areaOpts = await page.evaluate(() => [...document.querySelectorAll('#fArea .chip')].map(c => c.textContent.replace(/\s+/g, ' ').trim()));
+const areaOpts = (await ddRows('#fCtlArea', '#fDdArea')).map(r => r.txt);
 ok('4.1 the radius slider is gone from the directory', await page.evaluate(() => !document.querySelector('#fRad')));
 ok('4.2 the area is a set of options', areaOpts.length >= 1, areaOpts.join(' | '));
 ok('4.3 every option carries its count', areaOpts.every(o => /\d/.test(o)), areaOpts[0]);
@@ -193,7 +207,7 @@ ok('6.9 "not now" asks nothing at all', await page.evaluate(() => window.__geoCa
 
 /* d. the city list, with real counts */
 await page.click('[data-loc]'); await page.waitForTimeout(450);
-const cityChips = await page.evaluate(() => [...document.querySelectorAll('#cityPick .chip')].map(c => c.textContent.replace(/\s+/g, ' ').trim()));
+const cityChips = (await ddRows('#ctlCity', '#cityDD')).map(r => r.txt);
 ok('6.10 every city the directory covers is listed', cityChips.length >= 24, cityChips.length + ' options');
 ok('6.11 the whole area is the first choice', /كل المنطقة 514/.test(cityChips[0]), cityChips[0]);
 ok('6.12 Houston carries its real count', cityChips.some(c => /^Houston 376$/.test(c)), cityChips[1]);
@@ -201,7 +215,10 @@ ok('6.13 Katy carries its real count', cityChips.some(c => /^Katy 39$/.test(c)))
 ok('6.14 the privacy line is on the sheet', /موقعك يبقى على جهازك/.test(await page.textContent('.sheet-panel')));
 
 /* e. a city picked by hand: no permission, no miles, own city first */
-await page.evaluate(() => [...document.querySelectorAll('#cityPick .chip')].find(x => x.dataset.city === 'Katy').click());
+await page.evaluate(() => document.querySelector('#ctlCity').click());
+await page.waitForTimeout(400);
+await page.evaluate(() => document.querySelector('#cityDD .dd-row[data-v="Katy"]').click());
+await page.waitForTimeout(300);
 await page.click('#applyLoc'); await page.waitForTimeout(600);
 ok('6.15 picking a city needs no permission', await page.evaluate(() => window.__geoCalls) === 0);
 ok('6.16 the chip now names the city', (await page.textContent('[data-loc]')).trim() === 'Katy');
@@ -218,10 +235,13 @@ ok('6.20 the area name stands where the distance would', /Katy/.test(top3[0]));
 
 /* f. the area filter, and what it degrades to */
 await page.click('#dirFilter'); await page.waitForTimeout(450);
-const opts2 = await page.evaluate(() => [...document.querySelectorAll('#fArea .chip')].map(c => c.textContent.replace(/\s+/g, ' ').trim()));
+const opts2 = (await ddRows('#fCtlArea', '#fDdArea')).map(r => r.txt);
 ok('6.21 the area offers "my city" once there is one', opts2.some(o => /^Katy 39$/.test(o)), opts2.join(' | '));
 ok('6.22 still no mile option — nothing is geocoded', !opts2.some(o => /ميل/.test(o)), opts2.join(' | '));
-await page.evaluate(() => document.querySelector('#fArea .chip[data-ar="city"]').click());
+await page.evaluate(() => document.querySelector('#fCtlArea').click());
+await page.waitForTimeout(400);
+await page.evaluate(() => document.querySelector('#fDdArea .dd-row[data-v="city"]').click());
+await page.waitForTimeout(300);
 await page.waitForTimeout(200);
 const applyLbl = (await page.textContent('#fApply')).trim();
 ok('6.23 the button counts the result before it is applied', /39/.test(applyLbl), applyLbl);
@@ -265,7 +285,7 @@ const dist = await S(() => { const S = window.__S; return (S.distanceTo(S.busine
 ok('6.33 the distance is a Haversine mile figure', dist > 5 && dist < 12, String(Math.round(dist * 10) / 10));
 ok('6.34 an ungeocoded listing has no distance at all', await S(() => { const S = window.__S; return (S.distanceTo(S.businessById('b31'))); }) === null);
 await page.click('#dirFilter'); await page.waitForTimeout(450);
-const opts3 = await page.evaluate(() => [...document.querySelectorAll('#fArea .chip')].map(c => c.textContent.replace(/\s+/g, ' ').trim()));
+const opts3 = (await ddRows('#fCtlArea', '#fDdArea')).map(r => r.txt);
 ok('6.35 the mile options appear on their own', opts3.some(o => /^5 ميل/.test(o)), opts3.join(' | '));
 await page.keyboard.press('Escape'); await page.waitForTimeout(300);
 const nearFirst = await page.evaluate(() => {
@@ -333,7 +353,13 @@ await p2.click('#geoBtn'); await p2.waitForTimeout(250);
 await p2.click('#geoYes'); await p2.waitForTimeout(900);
 const denyPanel = await p2.textContent('body');
 ok('6.41 a refusal says what happened', /رفض إذن الموقع/.test(denyPanel));
-ok('6.42 the city list is still right there', await p2.evaluate(() => document.querySelectorAll('#cityPick .chip').length) >= 24);
+ok('6.42 the city list is still right there', await p2.evaluate(async () => {
+  const b = document.querySelector('#ctlCity');
+  if (!b) return 0;
+  b.click();
+  await new Promise(r => setTimeout(r, 400));
+  return document.querySelectorAll('#cityDD .dd-row').length;
+}) >= 24);
 ok('6.43 the refusal is remembered', (await p2.evaluate(() => JSON.parse(localStorage.getItem('arabna.v1')).geoDenied)) === true);
 ok('6.44 nothing crashed on the way', errs2.length === 0, errs2.join(' | '));
 await ctx2.close();

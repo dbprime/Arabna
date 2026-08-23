@@ -7,7 +7,7 @@ ARABNA · عربنا — a mobile-first web app for the Arab community in the U.
 **business directory + marketplace + events + magazine**, Arabic-first with a full English toggle.
 ("Classifieds / الإعلانات الشخصية" is now "Marketplace / السوق" — the old `#/classifieds`
 routes still resolve so shared links keep working.)
-Current version: **V.03.9 (prototype)**. Owner: Rai Elby (@dbprime). Deploys to Vercel (team DB Prime).
+Current version: **V.04.0 (prototype)**. Owner: Rai Elby (@dbprime). Deploys to Vercel (team DB Prime).
 
 ## Hard rules (from the product brief)
 1. **One repository, one Vercel project.** No duplicates, no stray preview projects.
@@ -2575,6 +2575,163 @@ unnoticed — and both were raised with the numbers written into them
 rather than the checks being softened. **The drawer misses its
 never-scrolls rule by more than two rows now, and which row goes is still
 the owner's decision.**
+
+## V.04.0 — batch nine (ب): two bugs off the phone, and the dropdown rule finished
+
+### A place of worship is not a customer
+Every one of the 35 masjids and churches was offering its owner a $29
+monthly subscription. Measured before the fix: **35 worship records, 0
+marked non-commercial**, and a claimed mosque's page showed «رقّي صفحتك —
+صور وفيديو وتقييمات · $29 شهرياً». The first imam to claim his masjid
+would have met that, and it is not an interface slip — it is the app
+asking a mosque for rent.
+
+- **Fixed by category, never by a switch.** `isNonCommercial()` now
+  derives: `b.nonCommercial || b.cat === 'worship'`. A manual flag is
+  precisely what was forgotten on all thirty-five, and deriving it means
+  it cannot be forgotten on the ones added from here on — including the
+  ones strangers now add themselves (below).
+- **It did not widen.** The 28 free `outings` that carry the flag by hand
+  are untouched, a free restaurant still meets the claim card and the
+  offer, and the two are asserted against each other in v33 so neither can
+  drift into the other.
+
+### The city he picked by hand froze there for good
+Rai chose Houston by hand, drove, and the app stayed Houston forever. The
+quiet refresh was gated on `!state.geo` — and **choosing a city by hand
+clears the point on purpose**, because that point belonged to somewhere
+the reader had left. So one manual choice switched the refresh off
+permanently.
+
+**One flag was doing two jobs.** «الإذن مُنح مرّة» and «عندنا نقطة الآن»
+are different facts and are now two:
+
+- **`geoGranted`** survives a hand-picked city and is cleared only by a
+  refusal or by deleting the account. `refreshLocationQuietly` gates on
+  `!S.geoGranted() || S.state.geoDenied` instead of `!g`.
+- **`location.manual = !fromDevice`** records where the city came from.
+
+| The city came from | What happens |
+|---|---|
+| the device (`manual = false`) | it updates **in silence**, as before |
+| his hand (`manual = true`) | he is **asked**, never overwritten |
+
+He may have chosen Houston *deliberately* while standing in Richmond, to
+browse its shops. So «يبدو أنك في Richmond — تحدّث موقعك؟ [نعم] [لا،
+اترِكه Houston]», **once**: «لا» is honoured for the rest of the session
+and the city does not change anyway. And the chip finally says which mode
+it is in — **«Houston» pinned, «Houston · تلقائي» live** — where one word
+in both states had been telling the reader nothing.
+
+**`watchPosition` is still banned** and still not used: the read is one
+`getCurrentPosition` on return to the app, and a reader who never granted
+is never read and never asked. That is the limit the whole thing exists to
+protect, and v33 measures it from the source.
+
+### More than five options is a dropdown — in all four places, not one
+The rule was written in the filter batch and applied to **the directory's
+top row alone**. The three places holding the most options were left on
+chips, which is where the wall was.
+
+- **The location sheet**: 24 city chips → one picker with a live count
+  beside each city. **«استخدم موقعي الحالي» stays a full-width button
+  above it** — it is the fastest route for nine readers in ten, and
+  burying it in a list to tidy the sheet would slow the majority for the
+  minority.
+- **The magazine**: six sections → one picker. Wrapping to a second row
+  beat running off the edge, but a picker costs one line and names the
+  chosen section in gold.
+- **The filter sheet, the biggest**: five headed groups and sixteen
+  options over two screens became **area · sort · two multi-selects · the
+  open-now switch**. Measured: the body no longer scrolls at all on
+  390×844.
+
+`openDropdown` gains **`multi`** — several may be chosen and **the panel
+stays open**, because narrowing by three attributes is one gesture and not
+three visits to the same list. The button reads «2 مختارة». **The
+per-option count travels with it**: it is the most useful thing on the
+sheet, since it says what you will find *before* you press. Three
+exceptions stand: **«مفتوح الآن» stays a switch** (one option is never a
+list), the two multi-selects stay open, and the counts stay.
+
+And every one of them inherits the dropdown's **history entry** for free,
+so the device back button closes the list rather than leaving the screen.
+
+**Horizontal scrolling stays where it is display and not choice** — the
+photo strip, «مميّز هذا الأسبوع», the story cards, the ad slider — and the
+attribute chips in the add-business form stay chips: there the reader is
+marking several from named groups, which is that shape's right use.
+
+### «كل المنطقة» answered no question
+All of Texas? All of America? **`regionName` had carried the right words
+since V.03.3** — «Houston والمنطقة» — and was used everywhere except the
+one sheet where the difference matters:
+
+```
+Houston            376
+Houston والمنطقة   514
+```
+
+Two lines that explain themselves.
+
+### The prayer bar is asked for once, and never hidden by default
+Hiding it by default means nobody finds it; showing it forever to somebody
+who does not want it is the other failure. **One card, once**, on the
+first open: «نعرض مواقيت الصلاة على الرئيسية؟ [نعم] [لا]». «لا» removes
+the bar and **is never asked again** — measured over five reopens — while
+**`#/prayer` stays in the drawer**, because refusing a line on Home is not
+refusing the screen. Settings → المواقيت carries the switch that brings it
+back.
+
+### The pre-adhan alert is placed now and says what is true
+A web page cannot fire a notification with the tab closed, and this build
+has no server. So the switch is built, it is remembered, and under it
+stands **«يعمل مع إطلاق السيرفر»** — **and there is no tone picker**,
+because choosing a sound for something that cannot sound is the dishonest
+half. The honest blank is what creates the pressure that fills it.
+
+### A stranger adds the place, never its times
+Rai asked that anyone be able to add a masjid or a church, reviewed before
+it appears — «علشان نخلّي الكل يشتغل لخدمة البرنامج بدون ما يحسّ».
+**The machinery already existed** — the add-business queue, `findDuplicates()`,
+the merge button — so what was needed was a door, not a system.
+
+- **The door is on `#/prayer` and `#/mass`**, under the nearby list:
+  «تعرف مسجداً ليس هنا؟ [أضِف مسجداً]». **It is on the no-location branch
+  of `#/prayer` too**: knowing a masjid is missing has nothing to do with
+  knowing where you are standing, and the screen would otherwise have the
+  door only for readers who shared a point. **Not in the «+» button** —
+  that one is for commerce, and mixing them dirties both.
+- **Three fields**: name · address or ZIP · phone (optional). «بدون ما
+  يحسّ» is only true when the ask is twenty seconds.
+- **And the most important line in the item: the stranger adds the place,
+  never its times.** Adhan, iqama, jumuah and mass stay with the page's own
+  owner after a claim; everything else reads «غير متوفّر — اتصل بالمسجد».
+  **A wrong time makes people arrive late to their prayer, and the harm
+  lands on us, not on whoever typed it.**
+- **No denomination field, and not as an optional one — absent.** The
+  category is set to `worship` by the door itself, so the sender neither
+  chooses it nor gets it wrong, and the record is born non-commercial by
+  the rule above without anybody deciding it.
+- **And a thank-you line, with no points, no badges and no contributor
+  ranking.** People give more when they feel what they gave arrived, and
+  stop when they feel they are being worked.
+
+### The rule that protects the whole of it
+**No advertising space is ever sold on `#/prayer`, `#/mass`, or any mosque
+or church page. No slider, no banner, no «مموّل».** It is not a design
+preference, it is protection: **selling an ad beside a call to prayer
+costs the whole community in a day**, and nothing taken for it covers
+that. The right way these screens earn is that they bring people back
+daily — and then those people browse the directory, where advertising
+belongs. v33 measures all four surfaces for a slider, a sponsored badge,
+an `#/advertise` link and the word itself.
+
+### And two housekeeping notes
+- **`APP_VERSION` had drifted**: it read `0.3.8` while `CLAUDE.md` said
+  V.03.9. Both now read the same. It is still raised by hand, which is why
+  it drifts.
+- **v33 is 61 checks** over the spec's own 26, and is in `run.sh`.
 
 ## Known open items
 - **The header logo is 818 KB for an 80×65 box** — 37% of a 2.1 MB first

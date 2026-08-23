@@ -213,11 +213,15 @@ ok('marketplace: section note present', await page.locator('#secNote .sec-note')
    (await page.textContent('#secNote')).trim());
 
 await go('#/magazine?cat=business');
-cs = await chipState('#magChips .chip.active', '#magChips');
-ok('magazine: chip active on arrival (was broken)', cs && cs.active, cs && cs.label);
-ok('magazine: the FIRST chip is no longer force-active',
-   await page.evaluate(() => !document.querySelector('#magChips .chip[data-cat="all"]').classList.contains('active')));
-ok('magazine: chip scrolled into view', cs && cs.inView);
+/* V.04.0: six chips became a picker — the rule the batch finished is that
+   more than five options is a dropdown. "The chip is active on arrival"
+   became "the button names the section on arrival", which is the same
+   promise: a filtered arrival must say what it is filtered by. And a
+   picker needs no scrollIntoView, because there is nothing to scroll. */
+ok('magazine: the picker names the section on arrival',
+   (await pickerValue('#ctlMag .ctl-v')) === 'أعمال', await pickerValue('#ctlMag .ctl-v'));
+ok('magazine: it is not stuck on «الكل»',
+   (await pickerValue('#ctlMag .ctl-v')) !== 'الكل');
 ok('magazine: section note present', await page.locator('#magNote .sec-note').count() === 1,
    (await page.textContent('#magNote')).trim());
 const magFiltered = await page.evaluate(() => document.querySelectorAll('#magList .mag-card').length);
@@ -225,7 +229,7 @@ await go('#/magazine');
 const magAll = await page.evaluate(() => document.querySelectorAll('#magList .mag-card').length);
 ok('magazine: the filter really filters', magFiltered < magAll, magFiltered + ' vs ' + magAll);
 ok('magazine: unfiltered starts on "all"',
-   await page.evaluate(() => document.querySelector('#magChips .chip[data-cat="all"]').classList.contains('active')));
+   (await pickerValue('#ctlMag .ctl-v')) === 'الكل', await pickerValue('#ctlMag .ctl-v'));
 
 /* home circles + all-categories grid pass the category through */
 await go('#/home');
@@ -360,8 +364,8 @@ ok('EN drawer still needs no scrolling', d.panelScroll <= d.panelBox + 2, d.pane
 await closeDrawer();
 
 await go('#/magazine?cat=business');
-ok('EN magazine: chip still active on arrival',
-   await page.evaluate(() => !!document.querySelector('#magChips .chip[data-cat="business"].active')));
+ok('EN magazine: the picker still names the section on arrival',
+   (await pickerValue('#ctlMag .ctl-v')) === 'Business', await pickerValue('#ctlMag .ctl-v'));
 ok('EN magazine: section note is English',
    /results/.test((await page.textContent('#magNote')) || ''), (await page.textContent('#magNote')).trim());
 

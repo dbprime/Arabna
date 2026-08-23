@@ -34,6 +34,45 @@ page.on('pageerror', e => errors.push('PAGEERROR ' + e.message));
    app fault */
 const go = async (h) => {
   await page.evaluate(() => { location.hash = '#/home'; });
+/* V.04.0 reversed the SHEET'S SHAPE, not its contents. Five headed groups
+   and sixteen options were two screens of scrolling; they collapsed into
+   two multi-select pickers — «الأكثر استخداماً» and «خيارات إضافية» — so
+   the named group headings are gone and every option is a row inside one
+   of the two panels. What this suite guards is unchanged: which
+   specialities the sheet offers for `outings`, and that one of them
+   actually bites. So the options are read from the panels now. */
+const sheetAttrs = async () => {
+  const out = [];
+  for (const [btn, host] of [['#fCtlTop', '#fDdTop'], ['#fCtlRest', '#fDdRest']]) {
+    const has = await page.evaluate(b => !!document.querySelector(b), btn);
+    if (!has) continue;
+    await page.evaluate(b => document.querySelector(b).click(), btn);
+    await page.waitForTimeout(380);
+    out.push(...await page.evaluate(h => [...document.querySelectorAll(h + ' .dd-row')]
+      .map(r => ({ id: r.dataset.v, label: r.querySelector('.dd-name').textContent.trim() })), host));
+    await page.evaluate(b => document.querySelector(b).click(), btn);
+    await page.waitForTimeout(280);
+  }
+  return out;
+};
+const pickAttr = async (id) => {
+  for (const [btn, host] of [['#fCtlTop', '#fDdTop'], ['#fCtlRest', '#fDdRest']]) {
+    const has = await page.evaluate(b => !!document.querySelector(b), btn);
+    if (!has) continue;
+    await page.evaluate(b => document.querySelector(b).click(), btn);
+    await page.waitForTimeout(380);
+    const hit = await page.evaluate(a => {
+      const r = document.querySelector(a[0] + ' .dd-row[data-v="' + a[1] + '"]');
+      if (r) { r.click(); return true; }
+      return false;
+    }, [host, id]);
+    await page.waitForTimeout(300);
+    if (hit) return true;
+    await page.evaluate(b => document.querySelector(b).click(), btn);
+    await page.waitForTimeout(250);
+  }
+  return false;
+};
   await page.waitForTimeout(120);
   await page.evaluate(x => { location.hash = x; }, h);
   await page.waitForTimeout(380);
@@ -123,25 +162,19 @@ ok('the category picker says "outings"', await page.evaluate(() =>
    ====================================================================== */
 console.log('--- specialities ---');
 await page.click('#dirFilter'); await page.waitForTimeout(520);
-let sheet = await page.textContent('#sheet');
-ok('the filter sheet offers the "kind of place" group', sheet.includes('نوع المكان'));
-ok('the filter sheet offers the "what it offers" group', sheet.includes('خصائص المكان'));
+let attrs = await sheetAttrs();
+let labels = attrs.map(a => a.label);
+ok('the filter sheet still holds the outings specialities', attrs.length >= 10, attrs.length + ' options');
 for (const label of ['حديقة عامة', 'محمية طبيعية', 'ترامبولين', 'متحف'])
-  ok('filter offers the kind: ' + label, sheet.includes(label));
+  ok('filter offers the kind: ' + label, labels.includes(label));
 for (const label of ['مسموح إحضار الطعام', 'يوجد مكان للشواء', 'دخول مجاني', 'بتذاكر'])
-  ok('filter offers the feature: ' + label, sheet.includes(label));
-const emptyOffered = await page.evaluate(() => {
-  const ids = Array.from(document.querySelectorAll('#sheet [data-a]')).map(x => x.dataset.a);
-  // defined for the category, but no Houston listing carries either one yet
-  return ids.includes('outWaterPark') || ids.includes('prByAppt');
-});
-ok('the sheet never offers a speciality with nothing behind it', !emptyOffered);
+  ok('filter offers the feature: ' + label, labels.includes(label));
+// defined for the category, but no Houston listing carries either one yet
+const ids = attrs.map(a => a.id);
+ok('the sheet never offers a speciality with nothing behind it',
+   !ids.includes('outWaterPark') && !ids.includes('prByAppt'));
 // apply one and see it bite
-await page.evaluate(() => {
-  const b = Array.from(document.querySelectorAll('#sheet [data-a]')).find(x => x.dataset.a === 'outBbq');
-  if (b) b.click();
-});
-await page.waitForTimeout(150);
+ok('«يوجد مكان للشواء» is pickable', await pickAttr('outBbq'));
 await page.click('#fApply'); await page.waitForTimeout(500);
 const bbqRows = await page.evaluate(() => Array.from(
   document.querySelectorAll('#dirList .list-row[data-route^="#/directory/"]'))
@@ -372,11 +405,9 @@ await go('#/directory/b28');
 ok('EN: the entry price label', (await txt()).includes('Approximate entry price'));
 await go('#/directory?cat=outings');
 await page.click('#dirFilter'); await page.waitForTimeout(520);
-sheet = await page.textContent('#sheet');
-ok('EN: the kind group is translated', sheet.includes('Kind of place'));
-ok('EN: the feature group is translated', sheet.includes('What it offers'));
-ok('EN: "outside food allowed"', sheet.includes('Outside food allowed'));
-ok('EN: "BBQ area"', sheet.includes('BBQ area'));
+labels = (await sheetAttrs()).map(a => a.label);
+ok('EN: "outside food allowed"', labels.includes('Outside food allowed'), labels.slice(0, 4).join(' · '));
+ok('EN: "BBQ area"', labels.includes('BBQ area'));
 await page.evaluate(() => { const s = document.querySelector('.sheet-scrim'); if (s) s.click(); });
 await page.waitForTimeout(400);
 

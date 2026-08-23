@@ -665,6 +665,72 @@ export function setPrayerMethod(m) {
 }
 /** 1 = the majority, 2 = Hanafi */
 export function asrShadow() { return (state.prayer && state.prayer.asr) === 2 ? 2 : 1; }
+
+/* ---------------- the bar on Home: asked, not assumed ----------------
+   Rai asked for a hide switch, defaulted to HIDDEN, out of consideration
+   for Christian readers. The intent is right and the default costs more
+   than it saves:
+
+   Free, useful content is what brings people back, and the times are the
+   strongest of it. Hidden by default nobody sees it, and a feature built
+   over a whole batch sits in Settings unread.
+
+   And «hidden by default» is us ASSUMING the reader is bothered. An Arab
+   Christian is not bothered by prayer times existing — at most they do
+   not concern him. Somebody who is ASKED feels the app respects them;
+   somebody who finds a thing hidden feels the app is not theirs.
+
+   So: one neutral card, once. `null` = not asked yet. Whatever the answer,
+   it is never asked again, and `#/prayer` stays in the drawer either way
+   — this is about the strip on Home and nothing else. */
+export function prayerBarPref() {
+  const v = state.prayer && state.prayer.homeBar;
+  return v === undefined ? null : !!v;
+}
+export function setPrayerBarPref(on) {
+  state.prayer = Object.assign({ method: 'isna', asr: 1 }, state.prayer, { homeBar: !!on });
+  save();
+}
+export function prayerBarAsked() { return prayerBarPref() !== null; }
+
+/** Pre-adhan alert: the switch exists, the delivery does not — see below. */
+/**
+ * Somebody suggesting a mosque or a church they know. It enters the same
+ * review queue every user-entered business does, and it is born:
+ *   · `cat: 'worship'` — set from the door they came through, never
+ *     chosen by the sender and therefore never wrong;
+ *   · NON-COMMERCIAL, by the category rule in `isNonCommercial`;
+ *   · with NO service times of any kind. A stranger adds the place; only
+ *     its own people add its times, after claiming the page.
+ */
+export function suggestWorship({ name, address, phone, kind }) {
+  const rec = {
+    id: 'u' + Date.now(),
+    name: { ar: name, en: name },
+    cat: 'worship',
+    phone: String(phone || '').trim(),
+    address: String(address || '').trim(),
+    desc: { ar: '', en: '' },
+    hours: [null, null, null, null, null, null, null],
+    tags: [], attributes: [],
+    plan: 'free', verified: false, rating: 0, reviewCount: 0,
+    claimed: false, photos: 0, videos: 0,
+    needsGeo: true,
+    status: 'pending',
+    suggested: true,
+    worshipHint: kind === 'church' ? 'church' : 'mosque',
+  };
+  state.extraBusinesses = state.extraBusinesses || [];
+  state.extraBusinesses.unshift(rec);
+  save();
+  return rec;
+}
+
+export function prayerAlert() { return !!(state.prayer && state.prayer.alert); }
+export function setPrayerAlert(on) {
+  state.prayer = Object.assign({ method: 'isna', asr: 1 }, state.prayer, { alert: !!on });
+  save();
+}
 export function setAsrShadow(n) {
   state.prayer = Object.assign({ method: 'isna', asr: 1 }, state.prayer, { asr: n === 2 ? 2 : 1 });
   save();

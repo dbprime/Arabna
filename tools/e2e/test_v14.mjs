@@ -12,15 +12,38 @@ const viaSheet = async (page, fn) => {
   await page.click('#fApply'); await page.waitForTimeout(520);
 };
 const toggleOpenNow = (page) => viaSheet(page, () => page.click('#fOpenNow'));
+/* V.04.0 reversed the sheet's SHAPE, not its contents: five headed groups
+   of chips became two multi-select pickers, so an attribute is a row
+   inside `#fDdTop` or `#fDdRest` rather than a chip in the sheet body. */
+const attrHosts = [['#fCtlTop', '#fDdTop'], ['#fCtlRest', '#fDdRest']];
 const toggleAttr = (page, id) => viaSheet(page, async () => {
-  const sel = `.sheet-panel [data-a="${id}"]`;
-  if (await page.locator(sel).count()) await page.click(sel);
+  for (const [btn, host] of attrHosts) {
+    if (!(await page.locator(btn).count())) continue;
+    await page.evaluate(b => document.querySelector(b).click(), btn);
+    await page.waitForTimeout(380);
+    const hit = await page.evaluate(a => {
+      const r = document.querySelector(a[0] + ' .dd-row[data-v="' + a[1] + '"]');
+      if (r) { r.click(); return true; }
+      return false;
+    }, [host, id]);
+    await page.waitForTimeout(300);
+    if (hit) return;
+    await page.evaluate(b => document.querySelector(b).click(), btn);
+    await page.waitForTimeout(250);
+  }
 });
 /** the ids the sheet offers for the current category */
 const sheetAttrIds = async (page) => {
   await page.click('#dirFilter'); await page.waitForTimeout(520);
-  const ids = await page.evaluate(() =>
-    [...document.querySelectorAll('.sheet-panel [data-a]')].map(b => b.dataset.a));
+  const ids = [];
+  for (const [btn, host] of attrHosts) {
+    if (!(await page.locator(btn).count())) continue;
+    await page.evaluate(b => document.querySelector(b).click(), btn);
+    await page.waitForTimeout(380);
+    ids.push(...await page.evaluate(h => [...document.querySelectorAll(h + ' .dd-row')].map(r => r.dataset.v), host));
+    await page.evaluate(b => document.querySelector(b).click(), btn);
+    await page.waitForTimeout(250);
+  }
   await page.click('#fApply'); await page.waitForTimeout(520);
   return ids;
 };
@@ -404,10 +427,24 @@ ok('…with the search and filters still on', (await hash()).includes('cat=resta
 /* three filter changes, then one press of back */
 await go('#/directory?cat=restaurants');
 await toggleOpenNow(page);
-const chip2 = await page.evaluate(() => {
-  const c = document.querySelector('.sheet-panel [data-a]');
-  return c ? c.dataset.attr : null;
-});
+/* the first attribute the sheet offers for restaurants, whatever it is —
+   this only needs a second filter to be on, not a particular one.
+   (It read `dataset.attr` before, which no element ever carried, so the
+   toggle was silently skipped; the ids live on `data-v` in the panel.) */
+const chip2 = await (async () => {
+  await page.click('#dirFilter'); await page.waitForTimeout(520);
+  let id = null;
+  for (const [btn, host] of attrHosts) {
+    if (id || !(await page.locator(btn).count())) continue;
+    await page.evaluate(b => document.querySelector(b).click(), btn);
+    await page.waitForTimeout(400);
+    id = await page.evaluate(h => { const r = document.querySelector(h + ' .dd-row'); return r ? r.dataset.v : null; }, host);
+    await page.evaluate(b => document.querySelector(b).click(), btn);
+    await page.waitForTimeout(250);
+  }
+  await page.click('#fApply'); await page.waitForTimeout(450);
+  return id;
+})();
 if (chip2) { await toggleAttr(page, chip2); }
 await page.fill('#dirSearch', 'مشاوي'); await page.waitForTimeout(500);
 const filteredHash = await hash();
@@ -476,12 +513,27 @@ ok('picking one filters the list', (await hash()).includes('cat=restaurants'), a
 await page.click('#dirFilter'); await page.waitForTimeout(600);
 ok('the sheet does not repeat the category row', !(await page.textContent('#sheet')).includes('الفئة'));
 /* V.02.3: the slider filtered nothing and pointed the wrong way in RTL.
-   The area is a set of options, each carrying its count. */
+   The area is a set of options, each carrying its count.
+   V.04.0 turned those options from chips into picker rows — the sheet was
+   two screens of scrolling — so the counts are read from inside the two
+   panels now. The rule they guard is the same one: nothing is offered with
+   nothing behind it, and every option says how much it will leave. */
+const ddOpen = async (btn, host) => {
+  if (!(await page.locator(btn).count())) return [];
+  await page.evaluate(b => document.querySelector(b).click(), btn);
+  await page.waitForTimeout(400);
+  const n = await page.evaluate(h => [...document.querySelectorAll(h + ' .dd-row')]
+    .map(r => { const c = r.querySelector('.chip-n'); return c ? +c.textContent : null; }), host);
+  await page.evaluate(b => document.querySelector(b).click(), btn);
+  await page.waitForTimeout(280);
+  return n;
+};
+const areaCounts = await ddOpen('#fCtlArea', '#fDdArea');
 ok('the area is a set of counted options', await page.locator('#fRad').count() === 0
-   && await page.locator('#fArea .chip .chip-n').count() >= 1);
-ok('every option carries a count', await page.locator('#fAttrs .chip-n').count() > 3);
-ok('nothing with zero behind it is offered', await page.evaluate(() =>
-  Array.from(document.querySelectorAll('#fAttrs .chip-n')).every(n => +n.textContent > 0)));
+   && areaCounts.filter(n => n != null).length >= 1, areaCounts.join(','));
+const attrCountsSeen = (await ddOpen('#fCtlTop', '#fDdTop')).concat(await ddOpen('#fCtlRest', '#fDdRest'));
+ok('every option carries a count', attrCountsSeen.filter(n => n != null).length > 3, attrCountsSeen.length + ' options');
+ok('nothing with zero behind it is offered', attrCountsSeen.every(n => n == null || n > 0));
 /* V.02.3: "sticky" inside a panel taller than the screen covered the last
    group on a real device. The footer is now a flex sibling of the scrolling
    body, which pins it without overlapping anything. */

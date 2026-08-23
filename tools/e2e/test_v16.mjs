@@ -12,15 +12,38 @@ const viaSheet = async (page, fn) => {
   await page.click('#fApply'); await page.waitForTimeout(520);
 };
 const toggleOpenNow = (page) => viaSheet(page, () => page.click('#fOpenNow'));
+/* V.04.0 reversed the sheet's SHAPE, not its contents: five headed groups
+   of chips became two multi-select pickers, so an attribute is a row
+   inside `#fDdTop` or `#fDdRest` rather than a chip in the sheet body. */
+const attrHosts = [['#fCtlTop', '#fDdTop'], ['#fCtlRest', '#fDdRest']];
 const toggleAttr = (page, id) => viaSheet(page, async () => {
-  const sel = `.sheet-panel [data-a="${id}"]`;
-  if (await page.locator(sel).count()) await page.click(sel);
+  for (const [btn, host] of attrHosts) {
+    if (!(await page.locator(btn).count())) continue;
+    await page.evaluate(b => document.querySelector(b).click(), btn);
+    await page.waitForTimeout(380);
+    const hit = await page.evaluate(a => {
+      const r = document.querySelector(a[0] + ' .dd-row[data-v="' + a[1] + '"]');
+      if (r) { r.click(); return true; }
+      return false;
+    }, [host, id]);
+    await page.waitForTimeout(300);
+    if (hit) return;
+    await page.evaluate(b => document.querySelector(b).click(), btn);
+    await page.waitForTimeout(250);
+  }
 });
 /** the ids the sheet offers for the current category */
 const sheetAttrIds = async (page) => {
   await page.click('#dirFilter'); await page.waitForTimeout(520);
-  const ids = await page.evaluate(() =>
-    [...document.querySelectorAll('.sheet-panel [data-a]')].map(b => b.dataset.a));
+  const ids = [];
+  for (const [btn, host] of attrHosts) {
+    if (!(await page.locator(btn).count())) continue;
+    await page.evaluate(b => document.querySelector(b).click(), btn);
+    await page.waitForTimeout(380);
+    ids.push(...await page.evaluate(h => [...document.querySelectorAll(h + ' .dd-row')].map(r => r.dataset.v), host));
+    await page.evaluate(b => document.querySelector(b).click(), btn);
+    await page.waitForTimeout(250);
+  }
   await page.click('#fApply'); await page.waitForTimeout(520);
   return ids;
 };
@@ -265,9 +288,13 @@ ok('5.7 …and the button says which', await page.evaluate(() =>
   document.querySelector('#ctlSec .ctl-v').textContent.trim()) === 'سيارات');
 
 await go('#/magazine');
-ok('5.8 the magazine chips wrap rather than scroll', await page.evaluate(() => {
-  const el = document.querySelector('#magChips');
-  return getComputedStyle(el).flexWrap === 'wrap' && el.scrollWidth <= el.clientWidth + 2;
+/* V.04.0 went one better than wrapping: six sections is over the line the
+   rule draws at five, so the magazine took the same picker as everything
+   else. Nothing to wrap and nothing to scroll. */
+ok('5.8 the magazine is a picker, and nothing scrolls sideways', await page.evaluate(() => {
+  const b = document.querySelector('#ctlMag');
+  return !!b && !document.querySelector('#magChips .chip')
+    && document.documentElement.scrollWidth <= document.documentElement.clientWidth + 1;
 }));
 
 await go('#/home');

@@ -5,7 +5,8 @@ import { t, L, icon, $, $$, go, renderHeader, openSheet, closeSheet, toast, star
 import { CATEGORIES, HOME_CATS, MINI_ADS, ARTICLES, ZIPS, CITY_SUGGESTIONS, AD_SLOTS,
          CITY_POINTS } from '../data.js';
 import * as S from '../store.js';
-import { prayerBarHtml, mountPrayerBar, ramadanBarHtml, mountRamadanBar } from './prayer.js';
+import { prayerBarHtml, mountPrayerBar, mountPrayerAsk,
+         ramadanBarHtml, mountRamadanBar } from './prayer.js';
 import { newcomerCardHtml } from './magazine.js';
 
 let sliderStop = null;
@@ -198,6 +199,7 @@ export function HomeScreen(root) {
   startSlider(ads);
   startMiniAd();
   mountPrayerBar();
+  mountPrayerAsk(root);
   mountRamadanBar(root);
 
   $('#homeSearch').addEventListener('keydown', e => {

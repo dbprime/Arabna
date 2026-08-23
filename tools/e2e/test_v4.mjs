@@ -12,6 +12,16 @@ page.on('console', m => { if (m.type() === 'error') errors.push(m.text()); });
 page.on('pageerror', e => errors.push('PAGEERROR ' + e.message));
 
 const go = async (h) => { await page.evaluate(x => { location.hash = x; }, h); await page.waitForTimeout(300); };
+/* V.04.0 reversed the SHAPE of three chip rows, not their content: the
+   rule "more than five options is a dropdown, five or fewer are chips"
+   had only ever reached the directory's top row. The same options are
+   still here, one line each, with the same counts beside them. */
+const ddPick = async (btnSel, hostSel, v) => {
+  await page.evaluate(s => document.querySelector(s).click(), btnSel);
+  await page.waitForTimeout(400);
+  await page.evaluate(a => document.querySelector(a[0] + ' .dd-row[data-v="' + a[1] + '"]').click(), [hostSel, v]);
+  await page.waitForTimeout(350);
+};
 const txt = () => page.textContent('#app');
 const drawerTxt = () => page.textContent('#drawer');
 const openDrawer = async () => {
@@ -112,14 +122,29 @@ for (const [hash, label] of [['#/home', 'home'], ['#/directory', 'directory'], [
 await go('#/home');
 await page.click('#locBtn'); await page.waitForTimeout(450);
 /* V.02.3 reversed this deliberately: the radius chips filtered nothing (no
-   listing has coordinates), so the location sheet now holds the real city
-   list and the area lives in the filter sheet as counted options. */
-ok('the location sheet holds the real city list', await page.evaluate(() =>
-  !!document.querySelector('#cityPick') && document.querySelectorAll('#cityPick .chip').length >= 24));
+   listing has coordinates), so the location sheet holds the real city list
+   and the area lives in the filter sheet as counted options.
+   V.04.0 reversed the SHAPE, not the content: twenty-four chips were the
+   biggest place the "more than five options is a dropdown" rule had never
+   reached, so the same 24+ cities are now rows in one picker. */
+ok('the location sheet holds the real city list', await page.evaluate(async () => {
+  const btn = document.querySelector('#ctlCity');
+  if (!btn) return false;
+  btn.click();
+  await new Promise(r => setTimeout(r, 400));
+  return document.querySelectorAll('#cityDD .dd-row').length >= 24;
+}));
+await page.keyboard.press('Escape'); await page.waitForTimeout(300);
 await dismissSheet();
 
 /* ============ 3. home order: categories before the paid slider ============ */
 await go('#/home');
+/* V.04.0: the prayer bar is asked for once, with a card, on the very first
+   open — 131px that a reader sees exactly one time. Answer it, as every
+   real second open has, and then measure the steady state. */
+await page.evaluate(() => { const b = document.querySelector('#prAskYes'); if (b) b.click(); });
+await page.waitForTimeout(600);
+await go('#/directory'); await go('#/home');
 const order = await page.evaluate(() => {
   const pos = (s) => { const e = document.querySelector(s); return e ? e.getBoundingClientRect().top : 1e9; };
   return { cats: pos('#cats'), slider: pos('.slider'), feat: pos('.feat-card'), mini: pos('#miniAd'), mag: pos('.story-card') };
@@ -260,7 +285,7 @@ for (const [hash, btn, label] of [['#/directory', '#dirFilter', 'directory'], ['
 // applying a filter shows a count and actually filters
 await go('#/directory');
 await page.click('#dirFilter'); await page.waitForTimeout(450);
-await page.click('#fSort .chip[data-s="rated"]'); await page.waitForTimeout(150);
+await ddPick('#fCtlSort', '#fDdSort', 'rated');
 await page.click('#fApply'); await page.waitForTimeout(500);
 /* V.03.7 REVERSED this. Choosing a sort used to make the badge read 1
    over a list that had not lost a single row — ordering 514 results

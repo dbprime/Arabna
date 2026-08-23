@@ -11,15 +11,40 @@ const viaSheet = async (page, fn) => {
   await page.click('#fApply'); await page.waitForTimeout(520);
 };
 const toggleOpenNow = (page) => viaSheet(page, () => page.click('#fOpenNow'));
+/* V.04.0 reversed the sheet's SHAPE, not its contents: five headed groups
+   of chips became two multi-select pickers, so an attribute is a row
+   inside `#fDdTop` or `#fDdRest` rather than a chip in the sheet body.
+   Which attributes are offered, and that picking one bites, are unchanged
+   and are still what these two helpers measure. */
+const attrHosts = [['#fCtlTop', '#fDdTop'], ['#fCtlRest', '#fDdRest']];
 const toggleAttr = (page, id) => viaSheet(page, async () => {
-  const sel = `.sheet-panel [data-a="${id}"]`;
-  if (await page.locator(sel).count()) await page.click(sel);
+  for (const [btn, host] of attrHosts) {
+    if (!(await page.locator(btn).count())) continue;
+    await page.evaluate(b => document.querySelector(b).click(), btn);
+    await page.waitForTimeout(380);
+    const hit = await page.evaluate(a => {
+      const r = document.querySelector(a[0] + ' .dd-row[data-v="' + a[1] + '"]');
+      if (r) { r.click(); return true; }
+      return false;
+    }, [host, id]);
+    await page.waitForTimeout(300);
+    if (hit) return;
+    await page.evaluate(b => document.querySelector(b).click(), btn);
+    await page.waitForTimeout(250);
+  }
 });
 /** the ids the sheet offers for the current category */
 const sheetAttrIds = async (page) => {
   await page.click('#dirFilter'); await page.waitForTimeout(520);
-  const ids = await page.evaluate(() =>
-    [...document.querySelectorAll('.sheet-panel [data-a]')].map(b => b.dataset.a));
+  const ids = [];
+  for (const [btn, host] of attrHosts) {
+    if (!(await page.locator(btn).count())) continue;
+    await page.evaluate(b => document.querySelector(b).click(), btn);
+    await page.waitForTimeout(380);
+    ids.push(...await page.evaluate(h => [...document.querySelectorAll(h + ' .dd-row')].map(r => r.dataset.v), host));
+    await page.evaluate(b => document.querySelector(b).click(), btn);
+    await page.waitForTimeout(250);
+  }
   await page.click('#fApply'); await page.waitForTimeout(520);
   return ids;
 };
@@ -135,8 +160,12 @@ if (await page.locator('#aUser').count()) {
   await page.click('#aGo'); await page.waitForTimeout(600);
 }
 await page.click('[data-t="dir"]'); await page.waitForTimeout(500);
-ok('the admin panel lists all 28 public places',
-   await page.locator('#aBody [data-ncoff]').count() === 28,
+/* V.04.0: `isNonCommercial` derives from the category, so the 35 places of
+   worship joined the 28 free outings — a mosque has nobody to sell $29 to,
+   and that was the bug the batch opened with. The invariant is that the 28
+   outings are still all there and nothing else lost the flag. */
+ok('the admin panel lists the public places — 28 outings and 35 places of worship',
+   await page.locator('#aBody [data-ncoff]').count() === 63,
    String(await page.locator('#aBody [data-ncoff]').count()));
 
 /* a ticketed place in the same category is an ordinary business */

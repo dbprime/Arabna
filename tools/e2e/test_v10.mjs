@@ -13,15 +13,38 @@ const viaSheet = async (page, fn) => {
   await page.click('#fApply'); await page.waitForTimeout(520);
 };
 const toggleOpenNow = (page) => viaSheet(page, () => page.click('#fOpenNow'));
+/* V.04.0 reversed the sheet's SHAPE, not its contents: five headed groups
+   of chips became two multi-select pickers, so an attribute is a row
+   inside `#fDdTop` or `#fDdRest` rather than a chip in the sheet body. */
+const attrHosts = [['#fCtlTop', '#fDdTop'], ['#fCtlRest', '#fDdRest']];
 const toggleAttr = (page, id) => viaSheet(page, async () => {
-  const sel = `.sheet-panel [data-a="${id}"]`;
-  if (await page.locator(sel).count()) await page.click(sel);
+  for (const [btn, host] of attrHosts) {
+    if (!(await page.locator(btn).count())) continue;
+    await page.evaluate(b => document.querySelector(b).click(), btn);
+    await page.waitForTimeout(380);
+    const hit = await page.evaluate(a => {
+      const r = document.querySelector(a[0] + ' .dd-row[data-v="' + a[1] + '"]');
+      if (r) { r.click(); return true; }
+      return false;
+    }, [host, id]);
+    await page.waitForTimeout(300);
+    if (hit) return;
+    await page.evaluate(b => document.querySelector(b).click(), btn);
+    await page.waitForTimeout(250);
+  }
 });
 /** the ids the sheet offers for the current category */
 const sheetAttrIds = async (page) => {
   await page.click('#dirFilter'); await page.waitForTimeout(520);
-  const ids = await page.evaluate(() =>
-    [...document.querySelectorAll('.sheet-panel [data-a]')].map(b => b.dataset.a));
+  const ids = [];
+  for (const [btn, host] of attrHosts) {
+    if (!(await page.locator(btn).count())) continue;
+    await page.evaluate(b => document.querySelector(b).click(), btn);
+    await page.waitForTimeout(380);
+    ids.push(...await page.evaluate(h => [...document.querySelectorAll(h + ' .dd-row')].map(r => r.dataset.v), host));
+    await page.evaluate(b => document.querySelector(b).click(), btn);
+    await page.waitForTimeout(250);
+  }
   await page.click('#fApply'); await page.waitForTimeout(520);
   return ids;
 };
@@ -256,28 +279,36 @@ if (counts && quick) {
      sheetIds.length + ' in the sheet vs ' + quick.length + ' quick');
 }
 
-await openSheet();
-let sheet = await page.textContent('#sheet');
+/* V.04.0: the sheet's chips became rows inside two pickers, so its options
+   are read from the panels. The three layers themselves are untouched. */
+const sheetLabels = await (async () => {
+  await page.click('#dirFilter'); await page.waitForTimeout(520);
+  const out = [];
+  for (const [btn, host] of [['#fCtlTop', '#fDdTop'], ['#fCtlRest', '#fDdRest']]) {
+    if (!(await page.locator(btn).count())) continue;
+    await page.evaluate(b => document.querySelector(b).click(), btn);
+    await page.waitForTimeout(400);
+    out.push(...await page.evaluate(h => [...document.querySelectorAll(h + ' .dd-row .dd-name')].map(n => n.textContent.trim()), host));
+    await page.evaluate(b => document.querySelector(b).click(), btn);
+    await page.waitForTimeout(280);
+  }
+  await page.click('#fApply'); await page.waitForTimeout(450);
+  return out;
+})();
 ok('the sheet offers what has at least one business',
-   sheet.includes('يمني') && sheet.includes('مندي وكبسة'), '');
-ok('…but still not the empty ones', !sheet.includes('ليبي') && !sheet.includes('بنغالي'));
-await shutSheet();
+   sheetLabels.includes('يمني') && sheetLabels.includes('مندي وكبسة'), sheetLabels.length + ' options');
+ok('…but still not the empty ones', !sheetLabels.includes('ليبي') && !sheetLabels.includes('بنغالي'));
 
 /* no filter can ever return nothing */
 await go('#/directory?cat=restaurants');
-await openSheet();
-const sheetAttrs = await page.evaluate(() =>
-  Array.from(document.querySelectorAll('#sheet #fAttrs .chip')).map(c => c.dataset.a));
-await shutSheet();
+const sheetAttrs = await sheetAttrIds(page);
 let emptyOnes = [];
 for (const id of sheetAttrs.slice(0, 12)) {
   // hop away first: assigning the same hash does not re-render, and the
   // previous filter would still be live in the screen's closure
   await go('#/home');
   await go('#/directory?cat=restaurants');
-  await openSheet();
-  await page.click(`#sheet .chip[data-a="${id}"]`); await page.waitForTimeout(180);
-  await page.click('#fApply'); await page.waitForTimeout(450);
+  await toggleAttr(page, id);
   if ((await rows()).length === 0) emptyOnes.push(id);
 }
 ok('no filter offered in the sheet returns an empty list',

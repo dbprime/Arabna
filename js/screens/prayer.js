@@ -17,7 +17,7 @@ import { t, arCount, icon, $, $$, go, renderHeader, openSheet, closeSheet, toast
          wireRoutes } from '../ui.js';
 import * as S from '../store.js';
 import { askForLocation } from './home.js';
-import { feastsBlockHtml } from './mass.js';
+import { feastsBlockHtml, suggestWorshipHtml, mountSuggestWorship } from './mass.js';
 import { prayerTimes, nextPrayer, minutesNow, fmtPrayer,
          PRAYER_KEYS, IS_PRAYER, METHODS, GROUPED } from '../prayer.js';
 
@@ -66,7 +66,33 @@ export function fmtLeft(mins) {
 /** true between «سماح» and the point landing — see `locating` in home.js */
 export function prayerLocating() { return S.geoPending(); }
 
+/**
+ * Asked once, on the first Home. Whatever the answer it is never asked
+ * again, and `#/prayer` stays in the drawer for whoever wants it — this
+ * card is about the strip on Home and nothing else.
+ */
+export function prayerAskHtml() {
+  return `<div class="pr-ask" id="prAsk">
+    <div class="pr-ask-txt">${icon('moon', 19)}<span>${t('prAskHome')}</span></div>
+    <div class="pr-ask-btns">
+      <button class="btn btn-gold btn-sm" id="prAskYes">${t('yes')}</button>
+      <button class="btn btn-ghost btn-sm" id="prAskNo">${t('prAskNo')}</button>
+    </div>
+  </div>`;
+}
+export function mountPrayerAsk(root) {
+  const box = root.querySelector('#prAsk');
+  if (!box) return;
+  const answer = (on) => { S.setPrayerBarPref(on); window.dispatchEvent(new HashChangeEvent('hashchange')); };
+  box.querySelector('#prAskYes').addEventListener('click', () => answer(true));
+  box.querySelector('#prAskNo').addEventListener('click', () => answer(false));
+}
+
 export function prayerBarHtml() {
+  /* Not asked yet → the question. Answered «no» → nothing at all, and
+     never asked again. */
+  if (!S.prayerBarAsked()) return prayerAskHtml();
+  if (S.prayerBarPref() === false) return '';
   const times = todaysTimes();
   if (!times) {
     /* THE THIRD STATE. There were two — times, or «حدّد موقعك» — and
@@ -210,10 +236,16 @@ function draw(root) {
                already theirs to change. One screen, one button, one dead end. -->
           <button class="btn btn-ghost mt-8" id="prSet0">${icon('settings', 18)} ${t('prSettings')}</button>
         </div>
+        ${/* the third door, and the reason it is here as well as below the
+             nearby list: knowing a masjid that is missing has nothing to do
+             with knowing where you are standing. Somebody who will not share
+             their location can still be the person who adds the mosque. */''}
+        ${suggestWorshipHtml('mosque')}
       </div>`;
     // …and the prompt says why THIS screen is asking, not why the directory does
     $('#prLoc').addEventListener('click', () => askForLocation(() => go('#/prayer'), 'geoAskPrayer'));
     $('#prSet0').addEventListener('click', () => openPrayerSettings(() => draw(root)));
+    mountSuggestWorship(root, 'mosque');
     return;
   }
 
@@ -252,12 +284,17 @@ function draw(root) {
         </div>`
         : `<div class="hint mt-16">${icon('info', 15)} ${t('prOutside')}</div>`}
 
+      ${/* the same door as #/mass, and the same rule: a stranger adds the
+           place, never its times */''}
+      ${suggestWorshipHtml('mosque')}
+
       ${/* the same block as #/mass, imported rather than copied: the
            calendar belongs to both screens and is hidden from neither */''}
       ${feastsBlockHtml()}
     </div>`;
 
   $('#prSet').addEventListener('click', () => openPrayerSettings(() => draw(root)));
+  mountSuggestWorship(root, 'mosque');
   // one ticker, the app's own: the card counts down without a second timer
   const card = $('#prNext');
   onMinute(card, () => {
@@ -303,6 +340,25 @@ export function openPrayerSettings(after) {
       <button class="chip ${a === 1 ? 'active' : ''}" data-a="1">${t('prAsrStandard')}</button>
       <button class="chip ${a === 2 ? 'active' : ''}" data-a="2">${t('prAsrHanafi')}</button>
     </div>
+
+    <div class="label mt-16">${t('prOnHome')}</div>
+    <div class="setting-row" style="border:none;padding-inline:0">
+      <span class="s-txt"><b>${t('prOnHomeLbl')}</b><span>${t('prOnHomeSub')}</span></span>
+      <button class="switch ${S.prayerBarPref() ? 'on' : ''}" id="prHomeSw" role="switch"
+              aria-checked="${!!S.prayerBarPref()}"><span class="knob"></span></button>
+    </div>
+    <!-- The alert switch exists; the delivery does not, and the line under
+         it says so. A notification outside the app needs a server, on iOS
+         it needs the app added to the home screen, and a CHOSEN TONE
+         cannot work on the web at all — the system sound is played. So no
+         tone picker: a field promising something we do not have is worse
+         than its absence, which is the rule the receipts batch applied to
+         «email me a copy». -->
+    <div class="setting-row" style="border:none;padding-inline:0">
+      <span class="s-txt"><b>${t('prAlertLbl')}</b><span class="gold">${t('prAlertSoon')}</span></span>
+      <button class="switch ${S.prayerAlert() ? 'on' : ''}" id="prAlertSw" role="switch"
+              aria-checked="${S.prayerAlert()}"><span class="knob"></span></button>
+    </div>
     <div class="hint mt-16">${icon('info', 15)} ${t('prCalcNote')}</div>
     <div class="sheet-foot">
       <button class="btn btn-gold btn-block" id="prDone">${t('apply')}</button>
@@ -316,6 +372,21 @@ export function openPrayerSettings(after) {
       S.setAsrShadow(+b.dataset.a);
       panel.querySelectorAll('#prA .chip').forEach(x => x.classList.toggle('active', x === b));
     }));
+
+    const hs = panel.querySelector('#prHomeSw');
+    hs.addEventListener('click', () => {
+      const on = !S.prayerBarPref();
+      S.setPrayerBarPref(on);
+      hs.classList.toggle('on', on);
+      hs.setAttribute('aria-checked', String(on));
+    });
+    const as = panel.querySelector('#prAlertSw');
+    as.addEventListener('click', () => {
+      const on = !S.prayerAlert();
+      S.setPrayerAlert(on);
+      as.classList.toggle('on', on);
+      as.setAttribute('aria-checked', String(on));
+    });
     panel.querySelector('#prDone').addEventListener('click', () => {
       closeSheet();
       if (after) after();

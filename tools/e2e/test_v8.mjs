@@ -12,15 +12,38 @@ const viaSheet = async (page, fn) => {
   await page.click('#fApply'); await page.waitForTimeout(520);
 };
 const toggleOpenNow = (page) => viaSheet(page, () => page.click('#fOpenNow'));
+/* V.04.0 reversed the sheet's SHAPE, not its contents: five headed groups
+   of chips became two multi-select pickers, so an attribute is a row
+   inside `#fDdTop` or `#fDdRest` rather than a chip in the sheet body. */
+const attrHosts = [['#fCtlTop', '#fDdTop'], ['#fCtlRest', '#fDdRest']];
 const toggleAttr = (page, id) => viaSheet(page, async () => {
-  const sel = `.sheet-panel [data-a="${id}"]`;
-  if (await page.locator(sel).count()) await page.click(sel);
+  for (const [btn, host] of attrHosts) {
+    if (!(await page.locator(btn).count())) continue;
+    await page.evaluate(b => document.querySelector(b).click(), btn);
+    await page.waitForTimeout(380);
+    const hit = await page.evaluate(a => {
+      const r = document.querySelector(a[0] + ' .dd-row[data-v="' + a[1] + '"]');
+      if (r) { r.click(); return true; }
+      return false;
+    }, [host, id]);
+    await page.waitForTimeout(300);
+    if (hit) return;
+    await page.evaluate(b => document.querySelector(b).click(), btn);
+    await page.waitForTimeout(250);
+  }
 });
 /** the ids the sheet offers for the current category */
 const sheetAttrIds = async (page) => {
   await page.click('#dirFilter'); await page.waitForTimeout(520);
-  const ids = await page.evaluate(() =>
-    [...document.querySelectorAll('.sheet-panel [data-a]')].map(b => b.dataset.a));
+  const ids = [];
+  for (const [btn, host] of attrHosts) {
+    if (!(await page.locator(btn).count())) continue;
+    await page.evaluate(b => document.querySelector(b).click(), btn);
+    await page.waitForTimeout(380);
+    ids.push(...await page.evaluate(h => [...document.querySelectorAll(h + ' .dd-row')].map(r => r.dataset.v), host));
+    await page.evaluate(b => document.querySelector(b).click(), btn);
+    await page.waitForTimeout(250);
+  }
   await page.click('#fApply'); await page.waitForTimeout(520);
   return ids;
 };
@@ -40,6 +63,16 @@ page.on('console', m => { if (m.type() === 'error') errors.push(m.text()); });
 page.on('pageerror', e => errors.push('PAGEERROR ' + e.message));
 
 const go = async (h) => { await page.evaluate(x => { location.hash = x; }, h); await page.waitForTimeout(340); };
+/* V.04.0 reversed the SHAPE of three chip rows, not their content: the
+   rule "more than five options is a dropdown, five or fewer are chips"
+   had only ever reached the directory's top row. The same options are
+   still here, one line each, with the same counts beside them. */
+const ddPick = async (btnSel, hostSel, v) => {
+  await page.evaluate(s => document.querySelector(s).click(), btnSel);
+  await page.waitForTimeout(400);
+  await page.evaluate(a => document.querySelector(a[0] + ' .dd-row[data-v="' + a[1] + '"]').click(), [hostSel, v]);
+  await page.waitForTimeout(350);
+};
 const hash = () => page.evaluate(() => location.hash);
 const txt = () => page.textContent('#app');
 /** business rows only — the subscription upsell is a .list-row as well */
@@ -150,7 +183,7 @@ ok('turning the chip off restores the list', (await rows()).length === all9);
 
 /* sort: open first */
 await page.click('#dirFilter'); await page.waitForTimeout(450);
-await page.click('#fSort .chip[data-s="open"]'); await page.waitForTimeout(200);
+await ddPick('#fCtlSort', '#fDdSort', 'open');
 await page.click('#fApply'); await page.waitForTimeout(500);
 ok('"open first" sort is offered and applies', await page.evaluate((sel) => {
   const list = Array.from(document.querySelectorAll(sel));
@@ -313,9 +346,7 @@ ok('and each one is shown as a removable pill',
    listings. Below the chip threshold those filters live in the sheet. */
 const filterBy = async (cat, attrId) => {
   await go('#/directory?cat=' + cat);
-  await page.click('#dirFilter'); await page.waitForTimeout(500);
-  await page.click(`#sheet .chip[data-a="${attrId}"]`); await page.waitForTimeout(200);
-  await page.click('#fApply'); await page.waitForTimeout(500);
+  await toggleAttr(page, attrId);
   return rows();
 };
 const underWomen = await filterBy('beauty', 'women');
@@ -339,16 +370,35 @@ ok('changing category clears an attribute that does not apply there',
 /* the filter sheet builds itself from the same registry */
 await go('#/directory?cat=doctors');
 await page.click('#dirFilter'); await page.waitForTimeout(500);
-const sheet = await page.textContent('#sheet');
-ok('the sheet lists the insurance group for doctors', sheet.includes('التأمين المقبول'));
+/* V.04.0: the five headed groups collapsed into two multi-select pickers,
+   so «التأمين المقبول» is no longer a heading in the sheet body and the
+   options are rows inside a panel. What the registry puts in front of the
+   reader is unchanged, and that is what is measured. */
+const docLabels = [];
+for (const [btn, host] of [['#fCtlTop', '#fDdTop'], ['#fCtlRest', '#fDdRest']]) {
+  if (!(await page.locator(btn).count())) continue;
+  await page.evaluate(b => document.querySelector(b).click(), btn);
+  await page.waitForTimeout(400);
+  docLabels.push(...await page.evaluate(h => [...document.querySelectorAll(h + ' .dd-row .dd-name')].map(n => n.textContent.trim()), host));
+  await page.evaluate(b => document.querySelector(b).click(), btn);
+  await page.waitForTimeout(280);
+}
 // the sheet shows what has content: this clinic takes three of the four
 ok('…with the insurance options that have content',
-   ['ميديكيد', 'تأمين خاص', 'بدون تأمين'].every(x => sheet.includes(x)),
-   ['ميديكيد', 'ميديكير', 'تأمين خاص', 'بدون تأمين'].filter(x => sheet.includes(x)).join(' · '));
+   ['ميديكيد', 'تأمين خاص', 'بدون تأمين'].every(x => docLabels.includes(x)),
+   docLabels.join(' · '));
 ok('the sheet offers "open now"', await page.locator('#fOpenNow').count() === 1);
-ok('the sheet offers "open first" sorting', sheet.includes('المفتوح أولاً'));
-await page.click('#sheet .chip[data-a="insMedicaid"]'); await page.waitForTimeout(200);
-await page.click('#fApply'); await page.waitForTimeout(500);
+const sortLabels = await (async () => {
+  await page.evaluate(() => document.querySelector('#fCtlSort').click());
+  await page.waitForTimeout(400);
+  const l = await page.evaluate(() => [...document.querySelectorAll('#fDdSort .dd-row .dd-name')].map(n => n.textContent.trim()));
+  await page.evaluate(() => document.querySelector('#fCtlSort').click());
+  await page.waitForTimeout(280);
+  return l;
+})();
+ok('the sheet offers "open first" sorting', sortLabels.includes('المفتوح أولاً'), sortLabels.join(' · '));
+await page.click('#fApply'); await page.waitForTimeout(400);
+await toggleAttr(page, 'insMedicaid');
 ok('an insurance filter chosen in the sheet applies',
    (await rows()).length >= 1 && (await rows()).every(x => x.includes('النور')), (await rows()).join(' | '));
 await page.click('#dirFilter'); await page.waitForTimeout(450);

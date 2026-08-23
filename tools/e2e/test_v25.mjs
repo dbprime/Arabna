@@ -28,6 +28,21 @@ const mods = () => page.evaluate(async () => {
 
 const go = async (h) => {
   await page.evaluate(() => { location.hash = '#/home'; });
+/* V.04.0: the sheet's five headed groups of chips became two multi-select
+   pickers, so an attribute is a row inside a panel. What is measured here
+   is unchanged — whether the seasonal specialities are offered at all. */
+const sheetAttrIds25 = async () => {
+  const ids = [];
+  for (const [btn, host] of [['#fCtlTop', '#fDdTop'], ['#fCtlRest', '#fDdRest']]) {
+    if (!(await page.locator(btn).count())) continue;
+    await page.evaluate(b => document.querySelector(b).click(), btn);
+    await page.waitForTimeout(400);
+    ids.push(...await page.evaluate(h => [...document.querySelectorAll(h + ' .dd-row')].map(r => r.dataset.v), host));
+    await page.evaluate(b => document.querySelector(b).click(), btn);
+    await page.waitForTimeout(280);
+  }
+  return ids;
+};
   await page.waitForTimeout(120);
   await page.evaluate(x => { location.hash = x; }, h);
   await page.waitForTimeout(520);
@@ -291,10 +306,14 @@ ok('5.2 …that never sinks under the articles — it is above them',
 await go('#/magazine');
 ok('5.3 pinned at the head of the magazine', await page.locator('.nc-card').count() === 1);
 ok('5.4 …above the chips, so no filter can hide it', await page.evaluate(() => {
-  const c = document.querySelector('.nc-card'), ch = document.querySelector('#magChips');
+  const c = document.querySelector('.nc-card'), ch = document.querySelector('#ctlMag');
   return !!c && !!ch && c.getBoundingClientRect().top < ch.getBoundingClientRect().top;
 }));
-await page.evaluate(() => { document.querySelector('#magChips .chip:last-child').click(); });
+/* V.04.0: six sections became a picker — the pinned newcomer card must
+   still survive whatever section is chosen, so pick the last row. */
+await page.evaluate(() => document.querySelector('#ctlMag').click());
+await page.waitForTimeout(400);
+await page.evaluate(() => { const r = document.querySelectorAll('#magDD .dd-row'); r[r.length - 1].click(); });
 await page.waitForTimeout(500);
 ok('5.5 …and choosing a section does not remove it', await page.locator('.nc-card').count() === 1);
 
@@ -333,9 +352,8 @@ await go('#/home');
 ok('6.1 with the season off there is no bar', await page.locator('#rmBar').count() === 0);
 await go('#/directory?cat=restaurants');
 await page.click('#dirFilter'); await page.waitForTimeout(600);
-ok('6.2 …and no ramadan option in the sheet', await page.evaluate(() =>
-  [...document.querySelectorAll('.sheet-panel [data-a]')]
-    .filter(b => ['iftar', 'suhoor', 'ramadanHours'].includes(b.dataset.a)).length) === 0);
+ok('6.2 …and no ramadan option in the sheet',
+   (await sheetAttrIds25()).filter(id => ['iftar', 'suhoor', 'ramadanHours'].includes(id)).length === 0);
 await page.click('#fApply'); await page.waitForTimeout(400);
 
 await patch(() => {
@@ -371,9 +389,8 @@ ok('6.7 …and neither opens an empty list', rmFull, rmWorst || rmRoutes.join(' 
 
 await go('#/directory?cat=restaurants');
 await page.click('#dirFilter'); await page.waitForTimeout(600);
-ok('6.8 the ramadan specialities are back in the sheet', await page.evaluate(() =>
-  [...document.querySelectorAll('.sheet-panel [data-a]')]
-    .filter(b => ['iftar', 'suhoor', 'ramadanHours'].includes(b.dataset.a)).length) > 0);
+ok('6.8 the ramadan specialities are back in the sheet',
+   (await sheetAttrIds25()).filter(id => ['iftar', 'suhoor', 'ramadanHours'].includes(id)).length > 0);
 await page.click('#fApply'); await page.waitForTimeout(400);
 
 await go('#/admin');
