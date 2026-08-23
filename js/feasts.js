@@ -77,15 +77,40 @@ const MOVABLE = [
  */
 const RAMADAN_ANCHOR = Date.UTC(2026, 1, 18);
 const HIJRI_YEAR = 354.367;
+const ANCHOR_HY = 1447;          // …and that anchor is 1 Ramadan 1447
 
-/** the estimated start of Ramadan in a given Gregorian year, or null */
-export function ramadanStart(y) {
+/**
+ * Ramadan in a Gregorian year, WITH the Hijri year number, because the
+ * new year row needs it and nothing else can supply it.
+ */
+export function ramadanOf(y) {
   for (let n = -40; n <= 40; n++) {
     const d = new Date(RAMADAN_ANCHOR + Math.round(n * HIJRI_YEAR) * day);
-    if (d.getUTCFullYear() === y) return d;
+    if (d.getUTCFullYear() === y) return { at: d, hy: ANCHOR_HY + n };
   }
   return null;
 }
+/** the estimated start of Ramadan in a given Gregorian year, or null */
+export function ramadanStart(y) { const r = ramadanOf(y); return r ? r.at : null; }
+
+/* The Islamic year holds seven occasions and the file carried three, so
+   the nearest one the app knew about was Ramadan — five and a half months
+   out — while the Prophet's birthday was two days away and simply absent.
+   All six are stepped from the same anchor by the known lunar month
+   lengths (Ramadan 30 · Shawwal 29 · Dhu al-Qi'dah 30 · Dhu al-Hijjah 29 ·
+   Muharram 30 · Safar 29), so there is still no table, no storage and no
+   network — the principle at the head of this file, followed literally.
+
+   `hy` on the new year is `+1`: the Muharram that follows Ramadan 1447
+   opens 1448. It is the YEAR THAT BEGINS, not the one that ends. */
+const HIJRI_FROM_RAMADAN = [
+  { id: 'ramadan',      off: 0   },
+  { id: 'eidFitr',      off: 30  },
+  { id: 'eidAdha',      off: 99  },
+  { id: 'hijriNewYear', off: 118, newYear: true },
+  { id: 'ashura',       off: 127 },
+  { id: 'mawlid',       off: 188 },
+];
 
 /**
  * Every feast that falls inside a window, ordered BY DATE and not by
@@ -137,24 +162,62 @@ export function feastsBetween(from, to, dates) {
     const eidDate = parseDay(dates && dates.eid);
     const useFrom = fromDate && fromDate.getUTCFullYear() === y ? fromDate : null;
     const useEid = eidDate && eidDate.getUTCFullYear() === y ? eidDate : null;
-    const r = useFrom || ramadanStart(y);
+    const ram = ramadanOf(y);
+    const r = useFrom || (ram && ram.at);
     if (r) {
-      out.push({ id: 'ramadan', at: r, tradition: 'islam', estimated: !useFrom, principal: true });
-      /* Eid al-Fitr is thirty days on from whichever start we are using,
-         so writing only the start still moves both — but a written Eid
-         wins over that in turn, because Ramadan runs 29 days as often as
-         30 and only the announcement knows which. */
-      const fitr = useEid || shift(r, 30);
-      out.push({ id: 'eidFitr', at: fitr, tradition: 'islam', estimated: !useEid, principal: true });
-      /* Adha is not one of the two fields, so it stays an estimate even
-         when the other two are settled — claiming otherwise would put a
-         fact's face on a guess. */
-      out.push({ id: 'eidAdha', at: shift(r, 99), tradition: 'islam', estimated: true, principal: true });
+      for (const h of HIJRI_FROM_RAMADAN) {
+        /* Eid al-Fitr is thirty days on from whichever start we are using,
+           so writing only the start still moves it — but a written Eid
+           wins over that in turn, because Ramadan runs 29 days as often as
+           30 and only the announcement knows which. Nothing else here is
+           written by hand, so nothing else stops being an estimate. */
+        const written = h.id === 'ramadan' ? useFrom : h.id === 'eidFitr' ? useEid : null;
+        const row = { id: h.id, at: written || shift(r, h.off), tradition: 'islam',
+                      estimated: !written, principal: true };
+        if (h.newYear) row.hy = (ram ? ram.hy : ANCHOR_HY) + 1;
+        out.push(row);
+      }
     }
   }
   const a = new Date(from).getTime(), b = new Date(to).getTime();
   return out.filter(f => f.at.getTime() >= a && f.at.getTime() <= b)
             .sort((x, z) => x.at - z.at);
+}
+
+/**
+ * WHAT A SCREEN MAY SHOW RIGHT NOW — and it is two rules, not one.
+ *
+ * 1. The window opens a week EARLY, so an occasion does not vanish the
+ *    morning after. Somebody opening the app the day after Eid should
+ *    find it, and a row whose date has gone carries «مضت» instead of
+ *    «تقديري» — without that word a past date under «المناسبات القادمة»
+ *    reads as our mistake rather than as a feast that has been.
+ *
+ * 2. ONE ROW PER OCCASION. The list is ordered by date, so keeping the
+ *    first appearance of each keeps the near one and drops next year's;
+ *    the following year takes its place by itself once this one's window
+ *    closes. Without this the Prophet's birthday appears twice in the
+ *    same list — once in two days and once in a year.
+ *
+ * And the key is `id` PLUS tradition, never `id` alone: Western Christmas
+ * would swallow the Coptic one and Western Easter the Eastern, which
+ * would erase half the churches in the directory from the calendar —
+ * worse than the fault being fixed. The grace period is the same for
+ * everybody; no side's occasion lingers longer than another's.
+ */
+const GRACE_DAYS = 7;
+
+export function calendarNow(now = Date.now(), dates) {
+  const t0 = new Date(now); t0.setUTCHours(0, 0, 0, 0);
+  const rows = feastsBetween(shift(t0, -GRACE_DAYS), shift(t0, 400), dates)
+    .filter(f => f.principal);
+  const seen = new Set();
+  return rows.filter(f => {
+    const k = f.id + '|' + (f.tradition || '');
+    if (seen.has(k)) return false;
+    seen.add(k);
+    return true;
+  }).map(f => Object.assign({}, f, { passed: f.at.getTime() < t0.getTime() }));
 }
 
 /**

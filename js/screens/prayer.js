@@ -290,7 +290,7 @@ function draw(root) {
 
       ${/* the same block as #/mass, imported rather than copied: the
            calendar belongs to both screens and is hidden from neither */''}
-      ${feastsBlockHtml()}
+      ${feastsBlockHtml('islam')}
     </div>`;
 
   $('#prSet').addEventListener('click', () => openPrayerSettings(() => draw(root)));

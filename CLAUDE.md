@@ -7,7 +7,7 @@ ARABNA · عربنا — a mobile-first web app for the Arab community in the U.
 **business directory + marketplace + events + magazine**, Arabic-first with a full English toggle.
 ("Classifieds / الإعلانات الشخصية" is now "Marketplace / السوق" — the old `#/classifieds`
 routes still resolve so shared links keep working.)
-Current version: **V.04.2 (prototype)**. Owner: Rai Elby (@dbprime). Deploys to Vercel (team DB Prime).
+Current version: **V.04.3 (prototype)**. Owner: Rai Elby (@dbprime). Deploys to Vercel (team DB Prime).
 
 ## Hard rules (from the product brief)
 1. **One repository, one Vercel project.** No duplicates, no stray preview projects.
@@ -2936,6 +2936,94 @@ entirely on that question.
   and **a computed number is never corrected by another computed number**:
   moving 7 February to 8 February would swap one guess for another when
   the difference comes from the crescent, not the table.
+
+## V.04.3 — the calendar follows its screen, completes itself, and goes on time
+
+### Slicing six off a date-ordered list does not know about religion
+Both screens showed **the same six rows in the same order** — and that was
+a written decision, not a slip: *one calendar ordered by date and not by
+religion; two lists side by side separate people on the screen.* **The
+reasoning was right and the implementation was the fault.** What a reader
+opening `#/prayer` actually met was **four Christian occasions and two
+Islamic**, with **Eid al-Adha missing** — it was in the list and had
+fallen off the end of the slice. The one list had united nothing. It had
+cut.
+
+- **Split first, then slice.** `feastsBlockHtml(own)` takes `'islam'` or
+  `'christian'`, filters, and only then takes six and three.
+- **The second heading is not a separation.** Both tables are on the same
+  screen, read together with no tap and no tab: the reader finds theirs
+  first and sees their neighbour's underneath.
+- **Six in the first table and not four**, because the Islamic year now
+  holds seven — four would drop the new year and Ashura, the two just
+  added.
+- **No heading names a religion.** «مناسبات أخرى في الجالية», never
+  «مناسبات مسيحية». The screen already says where you are, and labelling
+  a section with the reader's own faith tells them they have been sorted.
+- **One row, written once.** Two tables with two copied rows become two
+  different shapes two batches later — one gets edited, the other is
+  forgotten. `feastRowHtml()` and `feastListHtml()`.
+
+### Three of seven, and the nearest one was five months away
+The file computed Ramadan, Eid al-Fitr and Eid al-Adha. **Measured on the
+day: the nearest Islamic occasion the app knew about was Ramadan, five and
+a half months out — while the Prophet's birthday was two days away and
+simply absent.** Also missing: Ashura and the Islamic new year.
+
+All three are stepped from the anchor already in the file by the known
+lunar month lengths, so **there is still no table, no storage and no
+network** — the principle at the head of `feasts.js`, followed literally:
+
+```
+1 شوّال        +30   ·  10 ذو الحجّة   +99   ·  1 محرّم    +118
+10 محرّم       +127  ·  12 ربيع الأوّل +188
+```
+
+Measured, not assumed: المولد 25 Aug 2026 · رمضان 7 Feb 2027 · الفطر
+9 Mar · الأضحى 17 May · رأس السنة 1449 on 5 Jun · عاشوراء 14 Jun.
+**Every one carries «تقديري»** — the crescent decides, not the table.
+
+- **`ramadanOf(y)` returns the Hijri year with the date**, because the new
+  year row needs it and nothing else can supply it. `ramadanStart` is
+  unchanged, still exported, and built on it.
+- **The number is the row, not decoration on it.** «رأس السنة الهجريّة»
+  alone tells nobody anything; **«1449» is the news.** And it is the year
+  that BEGINS — the Muharram after Ramadan 1447 opens 1448, so `hy + 1`.
+
+### It does not vanish the morning after, and it is never written twice
+`calendarNow()` in `feasts.js`, and it is two rules:
+
+- **A week of grace.** Somebody opening the app the day after Eid should
+  find it. A past row is dimmed and reads **«مضت»** instead of «تقديري» —
+  **without that word a past date under «المناسبات القادمة» reads as our
+  mistake rather than as a feast that has been.** The same week for
+  everybody; no side's occasion lingers longer than another's.
+- **One row per occasion.** The list is date-ordered, so keeping each
+  occasion's first appearance keeps the near one and drops next year's,
+  and next year takes its place by itself when this one's window closes.
+  Without it **the Prophet's birthday appeared twice in one list** — in
+  two days and in a year.
+- **The key is `id` PLUS tradition, never `id` alone.** Western Christmas
+  would swallow the Coptic and Western Easter the Eastern, **erasing half
+  the churches in the directory from the calendar** — worse than the fault
+  being fixed.
+- The «dates are estimates» line belongs to **the table holding a live
+  estimate**, not to the screen, and **never to one whose estimates have
+  all passed**: that estimate's business is finished.
+
+### `.ltr` reordered a date nobody had reported
+```
+written   25 ديسمبر 2026
+shown     25 2026 ديسمبر     ✗
+```
+`.ltr` is an isolate built for numbers and Latin names, and this string is
+**Arabic with a number in it**, so forcing left-to-right reordered its
+parts. **`.feast-date { unicode-bidi: plaintext }`** — `plaintext` takes
+its direction **from** the text where `isolate` imposes one **on** it, so
+the Arabic date reads Arabic and the English one English, one class and no
+condition. **Two places had it and only two**: this row and
+`adminLogHtml()`. Every other `.ltr` in the app wraps a phone, an address
+or a price, all pure Latin, and is correct.
 
 ## Known open items
 - **The header logo is 818 KB for an 80×65 box** — 37% of a 2.1 MB first

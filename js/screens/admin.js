@@ -739,7 +739,7 @@ function adminLogHtml() {
     ${rows.map(r => {
       const b = S.businessById(r.bizId);
       return `<div class="log-row">
-        <div class="log-head"><b>${esc(b ? L(b.name) : r.bizId)}</b><span class="ltr">${fmtDate(r.at)}</span></div>
+        <div class="log-head"><b>${esc(b ? L(b.name) : r.bizId)}</b><span class="feast-date">${fmtDate(r.at)}</span></div>
         <div class="log-field">${esc(r.field)}</div>
         <div class="log-diff"><span class="log-from">${t('adminLogFrom')}: ${val(r.from)}</span>
           <span class="log-to">${t('adminLogTo')}: ${val(r.to)}</span></div>

@@ -2298,8 +2298,17 @@ input[inputmode="tel"], input[type="email"], input[inputmode="decimal"], #zipIn 
    «تقديري» under the date where the date cannot be promised. */
 .feast-row { align-items: center; }
 .feast-at { margin-inline-start: auto; text-align: end; display: flex; flex-direction: column; gap: 1px; }
-.feast-at .ltr { font-size: .84375rem; font-weight: 600; color: var(--text); }
+/* `plaintext`, NOT `isolate`. The first takes its direction FROM the text,
+   the second imposes one on it — and «25 ديسمبر 2026» is Arabic with a
+   number in it, so `.ltr` reordered its parts into «25 2026 ديسمبر». One
+   class, no condition: the Arabic date reads Arabic and the English one
+   reads English. */
+.feast-date { unicode-bidi: plaintext; font-size: .84375rem; font-weight: 600; color: var(--text); }
 .feast-est { font-size: .6875rem; font-weight: 600; color: var(--muted); }
+/* an occasion keeps its place for a week after its day, dimmed and
+   labelled «مضت» — still readable, and never mistaken for the next one */
+.feast-row.past { opacity: .55; }
+.feast-past { color: var(--muted); }
 .feast-list .row-title { font-size: .875rem; }
 
 .ch-count {

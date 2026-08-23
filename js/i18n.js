@@ -91,8 +91,18 @@ export const STRINGS = {
     massWeekday: 'صلوات الأسبوع',
     massCalcNote: 'المواعيد من الكنائس نفسها — والقداس قد يتغيّر في المناسبات',
     massOutside: 'التقويم يعمل أينما كنت — والدليل يغطّي Houston وضواحيها حالياً',
-    feastsTitle: 'القادم',
+    /* «القادم» alone stopped being enough once the screen carried two
+       headings: the first says WHAT, the second says FOR WHOM. And no
+       heading names a religion — the screen already does that, and
+       labelling a section with the reader's own faith tells them they
+       have been sorted, which is the last thing this is for. */
+    feastsTitle: 'المناسبات القادمة',
+    feastsOthers: 'مناسبات أخرى في الجالية',
     feastEstimated: 'تقديري',
+    feastPassed: 'مضت',
+    feastHijriNewYear: 'رأس السنة الهجريّة',
+    feastAshura: 'عاشوراء',
+    feastMawlid: 'المولد النبوي',
     feastHijriNote: 'التاريخ تقديري — والإعلان النهائي من المراكز الإسلامية المحلية',
     feastPalm: 'أحد الشعانين',
     feastGoodFri: 'الجمعة العظيمة',
@@ -1673,8 +1683,13 @@ export const STRINGS = {
     massWeekday: 'Weekday services',
     massCalcNote: 'Times come from the churches themselves — mass may change on feast days',
     massOutside: 'The calendar works wherever you are — the directory covers Houston and its suburbs for now',
-    feastsTitle: 'Coming up',
+    feastsTitle: 'Upcoming occasions',
+    feastsOthers: 'Other occasions in the community',
     feastEstimated: 'estimated',
+    feastPassed: 'passed',
+    feastHijriNewYear: 'Islamic New Year',
+    feastAshura: 'Ashura',
+    feastMawlid: "The Prophet's birthday",
     feastHijriNote: 'The date is an estimate — the final announcement comes from the local Islamic centres',
     feastPalm: 'Palm Sunday',
     feastGoodFri: 'Good Friday',

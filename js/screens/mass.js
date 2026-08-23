@@ -19,7 +19,7 @@
 import { t, L, icon, $, $$, go, renderHeader, wireRoutes, distLabelHtml, distText, esc,
          openSheet, closeSheet, toast } from '../ui.js';
 import * as S from '../store.js';
-import { upcomingFeasts } from '../feasts.js';
+import { calendarNow } from '../feasts.js';
 import { askForLocation } from './home.js';
 
 const dtFmt = () => (S.state.lang === 'en' ? 'en-US' : 'ar-EG-u-nu-latn');
@@ -34,6 +34,9 @@ function feastDate(d) {
 /** «الفصح (غربي)» — the tradition only where it distinguishes two dates */
 function feastLabel(f) {
   const name = t('feast' + f.id[0].toUpperCase() + f.id.slice(1));
+  /* The year number is not decoration on the new year — it IS the row.
+     «رأس السنة الهجريّة» alone tells nobody anything; «1449» is the news. */
+  if (f.id === 'hijriNewYear') return `${name} ${f.hy}`;
   if (f.tradition === 'west' && f.id === 'christmas') return name;
   if (f.tradition === 'islam' || !f.tradition) return name;
   const trad = { west: 'tradWest', east: 'tradEast', copt: 'tradCopt' }[f.tradition];
@@ -41,35 +44,77 @@ function feastLabel(f) {
 }
 
 /**
- * THE ONE calendar, shown on `#/mass` and on `#/prayer` alike — it belongs
- * to both and is built once.
+ * THE ONE calendar, on `#/mass` and on `#/prayer` alike — built once and
+ * imported, never copied.
  *
- * ORDERED BY DATE, NOT BY RELIGION. One list everybody reads; two lists
- * side by side would separate people on the screen, which is the opposite
- * of what this section is for.
+ * It used to be one list ordered by date, on the reasoning that two lists
+ * side by side separate people on the screen. The reasoning was right and
+ * the implementation was the fault: SLICING SIX OFF A DATE-ORDERED LIST
+ * DOES NOT KNOW ABOUT RELIGION. Somebody opening the prayer screen to see
+ * when Ramadan is found four Christian occasions out of six and no Eid
+ * al-Adha at all — it was in the list and fell off the end. The one list
+ * had not united anything; it had cut.
+ *
+ * So: SPLIT FIRST, THEN SLICE. The reader's own occasions lead, and the
+ * community's others sit underneath in the same screen, read together
+ * with no tap and no tab. They find theirs first and see their
+ * neighbour's below it.
+ *
+ * Six in the first table and not four, because the Islamic year holds
+ * seven occasions now — four would drop the new year and Ashura, the two
+ * just added.
+ *
+ * @param own  'islam' on the prayer screen · 'christian' on the mass screen
  */
-export function feastsBlockHtml(n = 6) {
+export function feastsBlockHtml(own, nMine = 6, nOther = 3) {
   /* the two dates Rai announces, if he has: the calendar itself reads
      nothing and is handed them, which is what keeps it dependency-free */
-  const list = upcomingFeasts(n, Date.now(), true, S.ramadanDates());
-  if (!list.length) return '';
-  const anyEstimated = list.some(f => f.estimated);
+  /* `S.now()`, not `Date.now()` — the app has one clock and the admin
+     test panel winds it forward. Everything else dated reads it, and a
+     calendar that did not could not be checked without waiting a year. */
+  const all = calendarNow(S.now(), S.ramadanDates());
+  const mineP = (f) => (own === 'islam' ? f.tradition === 'islam' : f.tradition !== 'islam');
+  const mine = all.filter(mineP).slice(0, nMine);
+  const other = all.filter(f => !mineP(f)).slice(0, nOther);
+  if (!mine.length && !other.length) return '';
+  return feastListHtml(t('feastsTitle'), mine) + feastListHtml(t('feastsOthers'), other);
+}
+
+/* A heading over an empty list is never printed — the standing rule. And
+   the «dates are estimates» line belongs to the TABLE that holds an
+   estimate, not to the screen, and never to one whose estimates have all
+   already passed: that estimate's business is finished. */
+function feastListHtml(title, rows) {
+  if (!rows.length) return '';
+  const anyEstimated = rows.some(f => f.estimated && !f.passed);
   return `
-    <div class="section-title mt-20">${t('feastsTitle')}</div>
+    <div class="section-title mt-20">${title}</div>
     <div class="list feast-list">
-      ${list.map(f => `
-        <div class="list-row feast-row">
-          <span class="row-ico">${icon(f.tradition === 'islam' ? 'moon' : 'church', 19)}</span>
-          <span class="row-main">
-            <span class="row-title">${esc(feastLabel(f))}</span>
-          </span>
-          <span class="feast-at">
-            <span class="ltr">${esc(feastDate(f.at))}</span>
-            ${f.estimated ? `<span class="feast-est">${t('feastEstimated')}</span>` : ''}
-          </span>
-        </div>`).join('')}
+      ${rows.map(feastRowHtml).join('')}
     </div>
     ${anyEstimated ? `<div class="hint mt-8">${icon('info', 15)} ${t('feastHijriNote')}</div>` : ''}`;
+}
+
+/* One row, written once. Two tables with two copied rows become two
+   different shapes two batches later — one gets edited and the other is
+   forgotten. */
+function feastRowHtml(f) {
+  return `
+    <div class="list-row feast-row${f.passed ? ' past' : ''}">
+      <span class="row-ico">${icon(f.tradition === 'islam' ? 'moon' : 'church', 19)}</span>
+      <span class="row-main">
+        <span class="row-title">${esc(feastLabel(f))}</span>
+      </span>
+      <span class="feast-at">
+        ${/* NOT `.ltr`. The isolate was built for numbers and Latin names;
+             this string is Arabic with a number in it, and forcing it
+             left-to-right reordered the parts — «25 2026 ديسمبر».
+             `.feast-date` takes its direction FROM the text instead. */''}
+        <span class="feast-date">${esc(feastDate(f.at))}</span>
+        ${f.passed ? `<span class="feast-est feast-past">${t('feastPassed')}</span>`
+          : f.estimated ? `<span class="feast-est">${t('feastEstimated')}</span>` : ''}
+      </span>
+    </div>`;
 }
 
 /** what a church has published, or the truth that it has not */
@@ -120,7 +165,7 @@ export function MassScreen(root) {
 
       ${suggestWorshipHtml('church')}
 
-      ${feastsBlockHtml()}
+      ${feastsBlockHtml('christian')}
     </div>
     <div style="height:20px"></div>`;
 
