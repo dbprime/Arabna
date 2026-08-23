@@ -490,6 +490,24 @@ and `outingFeature` (15).
   `spawnRepeat()` makes a **draft** — the venue, the price and the line-up change
   every year, so a human checks before it goes live.
 
+## `docs/الحالة.md` — the memory every session reads
+The daily check runs in a NEW session each morning, and a new session
+knows nothing: not the numbering, not what is deferred by decision, not
+what was proposed and closed. So it reports the deferred as newly found,
+takes a number already in use, and reopens a settled argument.
+
+> **`docs/الحالة.md` is updated WITH each batch that ships, not after
+> it.** The version number, what left the waiting list, and what joined
+> the deferred-gaps table.
+>
+> **And no batch file is closed while its number is still under «ما ينتظر
+> الإرسال».**
+
+**Written in the file itself, not in anybody's head.** State that lives in
+one person's memory falls over on the first day they are not there — and
+it did: the record said batch nine (ب) had not shipped **while it was
+live in V.04.0**, and Rai found it from the colour of a dot on his phone.
+
 ## The version number is part of the batch, not a step after it
 > **`APP_VERSION` in `js/data.js` is raised inside the batch that changes
 > the app, and a batch is not closed while that number disagrees with the
