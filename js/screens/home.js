@@ -1,6 +1,7 @@
 /* ============================ HOME ============================ */
 import { t, L, icon, $, $$, go, renderHeader, openSheet, closeSheet, toast, stars, wireRoutes,
-         distLabel, cityChipLabel, mountAdRotator, esc } from '../ui.js';
+         distLabel, cityChipLabel, mountAdRotator, esc,
+         pickerBtn, setPickerValue, openDropdown } from '../ui.js';
 import { CATEGORIES, HOME_CATS, MINI_ADS, ARTICLES, ZIPS, CITY_SUGGESTIONS, AD_SLOTS,
          CITY_POINTS } from '../data.js';
 import * as S from '../store.js';
@@ -777,13 +778,18 @@ export function openLocationSheet() {
     ${S.state.geo ? `<button class="btn btn-ghost btn-block mt-8" id="geoRefresh">${icon('navigation', 17)} ${t('refreshMyLocation')}</button>` : ''}
     <div id="zipMsg" class="mt-8"></div>
 
+    <!-- Twenty-four city chips were a wall. The rule from the filter batch
+         — more than five options is a dropdown, five or fewer are chips —
+         had only ever been applied to the directory's top row, and this
+         was the biggest place it had not reached.
+
+         «استخدم موقعي الحالي» stays a full-width button above it on
+         purpose: it is the fastest route for nine readers in ten, and
+         burying it in a list to tidy the sheet would slow the majority for
+         the minority. -->
     <div class="label mt-16">${t('pickCity')}</div>
-    <div class="attr-pick" id="cityPick">
-      <button class="chip ${!cur ? 'active' : ''}" data-city="">${t('areaAll')}
-        <span class="chip-n">${S.allBusinesses().length}</span></button>
-      ${cities.map(c => `<button class="chip ${cur === c.city ? 'active' : ''}" data-city="${c.city}">
-        ${c.city} <span class="chip-n">${c.n}</span></button>`).join('')}
-    </div>
+    ${pickerBtn({ id: 'ctlCity', label: t('pickCity'), value: cur || t('regionName'), wide: true })}
+    <div id="cityDD"></div>
 
     <div class="label mt-16">${t('zipOrCity')}</div>
     <div class="field">
@@ -808,15 +814,26 @@ export function openLocationSheet() {
     const sugg = panel.querySelector('#sugg');
     let debounce = null;
 
-    const markCity = (city) => {
-      panel.querySelectorAll('#cityPick .chip')
-        .forEach(x => x.classList.toggle('active', (x.dataset.city || '') === (city || '')));
-    };
+    const markCity = (city) => setPickerValue('ctlCity', city || t('regionName'));
 
-    panel.querySelectorAll('#cityPick .chip').forEach(b => b.addEventListener('click', () => {
-      picked = { zip: '', city: b.dataset.city, state: 'TX' };
-      input.value = ''; sugg.innerHTML = ''; msg.innerHTML = '';
-      markCity(b.dataset.city);
+    /* «Houston والمنطقة» rather than «كل المنطقة»: the old label answered
+       no question — all of Texas? all of America? — while the app already
+       had the right words in `regionName` and used them everywhere else. */
+    const cityOptions = [{ id: '', label: t('regionName'), icon: 'globe', count: S.allBusinesses().length }]
+      .concat(cities.map(c => ({ id: c.city, label: c.city, icon: 'mapPin', count: c.n })));
+    const anchor = panel.querySelector('#ctlCity');
+    anchor.addEventListener('click', () => openDropdown({
+      host: panel.querySelector('#cityDD'),
+      anchor,
+      title: t('pickCity'),
+      options: cityOptions,
+      value: picked.city || '',
+      unit: 'ddCity',
+      onPick: (id) => {
+        picked = { zip: '', city: id, state: 'TX' };
+        input.value = ''; sugg.innerHTML = ''; msg.innerHTML = '';
+        markCity(id);
+      },
     }));
 
     input.addEventListener('input', () => {

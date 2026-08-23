@@ -209,7 +209,15 @@ export function closeDropdown(keepHistory) { if (openDD) openDD.close(keepHistor
  * @param value     the chosen id
  * @param onPick    (id) => void; the panel closes itself first
  */
-export function openDropdown({ host, anchor, title, options, value, unit, onPick }) {
+/**
+ * @param multi   true → several may be chosen and the panel STAYS OPEN.
+ *                `value` is then an array of ids and `onPick` is handed the
+ *                new array each time. Somebody narrowing by two or three
+ *                attributes should not have to reopen the list between
+ *                each one — the same reason the add-business form's
+ *                attribute boxes stay open.
+ */
+export function openDropdown({ host, anchor, title, options, value, unit, onPick, multi }) {
   if (openDD && openDD.anchor === anchor) { openDD.close(); return; }
   if (openDD) openDD.adopt();              // a switch, not a close-and-reopen
   if (!host || !anchor) return;
@@ -223,17 +231,21 @@ export function openDropdown({ host, anchor, title, options, value, unit, onPick
   const word = S.state.lang === 'en'
     ? t(total === 1 ? u + 'One' : u + 'Few')
     : t(total >= 3 && total <= 10 ? u + 'Few' : u + 'One');
+  const chosen = multi ? new Set(value || []) : null;
+  const isOn = (id) => (multi ? chosen.has(id) : id === value);
   host.innerHTML = `
-    <div class="dd-panel" role="listbox" aria-label="${title}">
+    <div class="dd-panel" role="listbox" aria-label="${title}" ${multi ? 'aria-multiselectable="true"' : ''}>
       <div class="dd-head"><span>${title}</span><span class="dd-total">${total} ${word}</span></div>
       <div class="dd-scroll">
         ${options.map(o => `
-          <button class="dd-row ${o.id === value ? 'selected' : ''}" type="button" role="option"
-                  aria-selected="${o.id === value}" data-v="${o.id}">
+          <button class="dd-row ${isOn(o.id) ? 'selected' : ''}" type="button" role="option"
+                  aria-selected="${isOn(o.id)}" data-v="${o.id}">
             ${o.icon ? icon(o.icon, 18) : '<span class="dd-nogap"></span>'}
             <span class="dd-name">${esc(o.label)}</span>
+            ${/* the count is the most useful thing in the sheet: it says
+                 what you will find BEFORE you press */''}
             ${o.count == null ? '' : `<span class="chip-n">${o.count}</span>`}
-            <span class="dd-tick">${o.id === value ? icon('check', 16) : ''}</span>
+            <span class="dd-tick">${isOn(o.id) ? icon('check', 16) : ''}</span>
           </button>`).join('')}
       </div>
     </div>`;
@@ -334,8 +346,18 @@ export function openDropdown({ host, anchor, title, options, value, unit, onPick
   document.addEventListener('keydown', onKey, true);
 
   rows.forEach(r => r.addEventListener('click', () => {
-    const v = r.dataset.v;
-    finish(false, () => onPick(v));
+    const id = r.dataset.v;
+    if (multi) {
+      // stays open: two or three choices are one gesture, not three visits
+      if (chosen.has(id)) chosen.delete(id); else chosen.add(id);
+      const on = chosen.has(id);
+      r.classList.toggle('selected', on);
+      r.setAttribute('aria-selected', String(on));
+      r.querySelector('.dd-tick').innerHTML = on ? icon('check', 16) : '';
+      onPick([...chosen]);
+      return;
+    }
+    finish(false, () => onPick(id));
   }));
 
   // the chosen row is brought into view inside the panel, never the page
@@ -1060,27 +1082,29 @@ export function openFilterSheet({ cat, cats, value, withPrice, withAttrs, withAr
      measure against. */
   const areaOptions = () => {
     const pool = S.allBusinesses().filter(b => v.cat === 'all' || b.cat === v.cat);
-    const opts = [{ id: 'all', label: t('areaAll') }];
+    /* «كل المنطقة» answered no question — all of Texas? all of America?
+       — and the app already had the right words in `regionName`, which
+       reads «Houston والمنطقة» since V.03.3 and is used everywhere else.
+       Two lines now explain the difference by themselves:
+         Houston            376
+         Houston والمنطقة   514 */
+    const opts = [{ id: 'all', label: t('regionName') }];
     if (S.hasLocation()) opts.push({ id: 'city', label: S.userCity() || t('areaCity') });
     if (S.radiusUsable()) [5, 10, 25, 50].forEach(r => opts.push({ id: String(r), label: `${r} ${t('miles')}` }));
     return opts.map(o => Object.assign(o, { n: pool.filter(b => S.inArea(b, o.id)).length }));
   };
 
+  const areaLabel = () => {
+    const o = areaOptions().find(x => x.id === String(v.area));
+    return o ? o.label : t('regionName');
+  };
   const areaHtml = () => `
-    <div class="row-between">
-      <span class="label" style="margin:0">${t('areaTitle')}</span>
-    </div>
-    <div class="attr-pick" id="fArea">
-      ${areaOptions().map(o => `<button class="chip ${String(v.area) === o.id ? 'active' : ''}" data-ar="${o.id}">
-        ${o.label} <span class="chip-n">${o.n}</span></button>`).join('')}
-    </div>
+    <div class="label mt-16">${t('areaTitle')}</div>
+    ${pickerBtn({ id: 'ctlArea', label: t('areaTitle'), value: areaLabel(), wide: true })}
+    <div id="ddArea"></div>
     ${S.hasLocation() ? '' : `<button class="btn btn-ghost btn-sm btn-block mt-8" id="fLoc">${icon('navigation', 16)} ${t('setLocation')}</button>`}`;
 
-  /** one option, with how many listings stand behind it */
-  const chip = (a, n) => `<button class="chip ${v.attrs.includes(a.id) ? 'active' : ''}" data-a="${a.id}">
-    ${icon(a.icon, 14)} ${t(a.key)} <span class="chip-n">${n}</span></button>`;
-
-  const attrHtml = () => {
+  const attrSets = () => {
     const c = counts();
     const pool = S.categorySize(catFor());
     const ceiling = Math.max(1, Math.floor(pool * S.CHIP_MAX_SHARE));
@@ -1108,16 +1132,36 @@ export function openFilterSheet({ cat, cats, value, withPrice, withAttrs, withAr
     const singles = rest.filter(g => g.attrs.length === 1).reduce((all, g) => all.concat(g.attrs), []);
     const named = rest.filter(g => g.attrs.length > 1);
 
+    /* Sixteen options across five headed groups was two screens of
+       scrolling. They collapse into two multi-select pickers — the
+       shortcut list, and everything else — each staying open while the
+       reader picks and each carrying the per-option count, which is the
+       most useful thing on the sheet. */
+    const rest2 = rest.reduce((all, g) => all.concat(g.attrs), []);
+    const opt = (a) => ({ id: a.id, label: t(a.key), icon: a.icon, count: c[a.id] || 0 });
+    return { top: top.map(opt), rest: rest2.map(opt) };
+  };
+
+  const attrCounts = () => attrSets();
+  let sets = { top: [], rest: [] };
+  const chosenLabel = (ids, pool) => {
+    const n = ids.filter(id => pool.some(o => o.id === id)).length;
+    if (!n) return t('attrPickNone');
+    if (n === 1) {
+      const one = pool.find(o => o.id === ids.find(i => pool.some(x => x.id === i)));
+      return one ? one.label : t('attrPickNone');
+    }
+    return t('attrPickN').replace('{n}', n);
+  };
+  const attrHtml = () => {
+    sets = attrCounts();
     return `
-      ${top.length ? `<div class="label mt-16">${t('mostUsed')}</div>
-        <div class="attr-pick">${top.map(a => chip(a, c[a.id] || 0)).join('')}</div>` : ''}
-      ${named.map(g => `
-        <div class="label mt-16">${t(g.group.key)}</div>
-        <div class="attr-pick" data-grp="${g.group.id}">
-          ${g.attrs.map(a => chip(a, c[a.id] || 0)).join('')}
-        </div>`).join('')}
-      ${singles.length ? `<div class="label mt-16">${t('moreFilters')}</div>
-        <div class="attr-pick">${singles.map(a => chip(a, c[a.id] || 0)).join('')}</div>` : ''}`;
+      ${sets.top.length ? `<div class="label mt-16">${t('mostUsed')}</div>
+        ${pickerBtn({ id: 'ctlTop', label: t('mostUsed'), value: chosenLabel(v.attrs, sets.top), wide: true })}
+        <div id="ddTop"></div>` : ''}
+      ${sets.rest.length ? `<div class="label mt-16">${t('moreFilters')}</div>
+        ${pickerBtn({ id: 'ctlRest', label: t('moreFilters'), value: chosenLabel(v.attrs, sets.rest), wide: true })}
+        <div id="ddRest"></div>` : ''}`;
   };
 
   openSheet(`
@@ -1126,9 +1170,9 @@ export function openFilterSheet({ cat, cats, value, withPrice, withAttrs, withAr
     ${withArea ? areaHtml() : ''}
 
     <div class="label mt-16">${t('sortBy')}</div>
-    <div class="attr-pick" id="fSort">
-      ${sorts.map(([id, lbl]) => `<button class="chip ${v.sort === id ? 'active' : ''}" data-s="${id}">${lbl}</button>`).join('')}
-    </div>
+    ${pickerBtn({ id: 'ctlSort', label: t('sortBy'),
+                  value: (sorts.find(x => x[0] === v.sort) || sorts[0])[1], wide: true })}
+    <div id="ddSort"></div>
 
     ${withPrice ? `
       <div class="label mt-16">${t('priceRange')}</div>
@@ -1165,10 +1209,12 @@ export function openFilterSheet({ cat, cats, value, withPrice, withAttrs, withAr
     };
 
     if (withArea) {
-      panel.querySelectorAll('#fArea .chip').forEach(b => b.addEventListener('click', () => {
-        v.area = b.dataset.ar;
-        panel.querySelectorAll('#fArea .chip').forEach(x => x.classList.toggle('active', x === b));
-        refresh();
+      const aBtn = panel.querySelector('#ctlArea');
+      aBtn.addEventListener('click', () => openDropdown({
+        host: panel.querySelector('#ddArea'), anchor: aBtn, title: t('areaTitle'),
+        options: areaOptions().map(o => ({ id: o.id, label: o.label, icon: 'mapPin', count: o.n })),
+        value: String(v.area), unit: 'ddCity',
+        onPick: (id) => { v.area = id; setPickerValue('ctlArea', areaLabel()); refresh(); },
       }));
       const loc = panel.querySelector('#fLoc');
       // no location yet: the way to get one is here, not a dead option
@@ -1178,23 +1224,29 @@ export function openFilterSheet({ cat, cats, value, withPrice, withAttrs, withAr
       });
     }
 
-    panel.querySelectorAll('#fSort .chip').forEach(b => b.addEventListener('click', () => {
-      /* "Nearest" is the moment the app actually needs a location, so that
-         is where it asks for one — not at launch, where iOS spends the one
-         question it allows on somebody who has not seen the app yet. */
-      if (b.dataset.s === 'nearest' && !S.state.geo) {
-        closeSheet();
-        import('./screens/home.js').then(m => m.askForLocation(() => {
-          // the sort they asked for is applied once the point arrives, so
-          // allowing does not leave them back where they started
-          if (withArea) S.setArea(v.area);
-          onApply(Object.assign({}, v, { sort: 'nearest' }));
-        }));
-        return;
-      }
-      v.sort = b.dataset.s;
-      panel.querySelectorAll('#fSort .chip').forEach(x => x.classList.toggle('active', x === b));
-      refresh();
+    const sBtn = panel.querySelector('#ctlSort');
+    sBtn.addEventListener('click', () => openDropdown({
+      host: panel.querySelector('#ddSort'), anchor: sBtn, title: t('sortBy'),
+      options: sorts.map(([id, lbl]) => ({ id, label: lbl, icon: 'filter' })),
+      value: v.sort, unit: 'dd',
+      onPick: (id) => {
+        /* "Nearest" is the moment the app actually needs a location, so that
+           is where it asks for one — not at launch, where iOS spends the one
+           question it allows on somebody who has not seen the app yet. */
+        if (id === 'nearest' && !S.state.geo) {
+          closeSheet();
+          import('./screens/home.js').then(m => m.askForLocation(() => {
+            // the sort they asked for is applied once the point arrives, so
+            // allowing does not leave them back where they started
+            if (withArea) S.setArea(v.area);
+            onApply(Object.assign({}, v, { sort: 'nearest' }));
+          }));
+          return;
+        }
+        v.sort = id;
+        setPickerValue('ctlSort', (sorts.find(x => x[0] === id) || sorts[0])[1]);
+        refresh();
+      },
     }));
 
     if (withAttrs) {
@@ -1212,14 +1264,26 @@ export function openFilterSheet({ cat, cats, value, withPrice, withAttrs, withAr
       });
 
       // attributes are multi-select and combine; picking two narrows the list
-      panel.querySelectorAll('#fAttrs .chip').forEach(b => b.addEventListener('click', () => {
-        const id = b.dataset.a;
-        const i = v.attrs.indexOf(id);
-        if (i >= 0) v.attrs.splice(i, 1); else v.attrs.push(id);
-        panel.querySelectorAll(`#fAttrs .chip[data-a="${id}"]`)
-          .forEach(x => x.classList.toggle('active', v.attrs.includes(id)));
-        refresh();
-      }));
+      /* Two multi-select pickers, each staying open while the reader
+         chooses — attributes combine, and picking three should be one
+         gesture rather than three visits to the same list. */
+      const wireAttr = (btnId, hostId, pool, titleKey) => {
+        const btn = panel.querySelector('#' + btnId);
+        if (!btn) return;
+        btn.addEventListener('click', () => openDropdown({
+          host: panel.querySelector('#' + hostId), anchor: btn, title: t(titleKey),
+          options: pool(), value: v.attrs.slice(), unit: 'ddAttr', multi: true,
+          onPick: (ids) => {
+            // keep whatever is chosen in the OTHER picker's pool untouched
+            const mine = new Set(pool().map(o => o.id));
+            v.attrs = v.attrs.filter(a => !mine.has(a)).concat(ids.filter(a => mine.has(a)));
+            setPickerValue(btnId, chosenLabel(v.attrs, pool()));
+            refresh();
+          },
+        }));
+      };
+      wireAttr('ctlTop', 'ddTop', () => sets.top, 'mostUsed');
+      wireAttr('ctlRest', 'ddRest', () => sets.rest, 'moreFilters');
     }
 
     refresh();

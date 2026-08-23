@@ -1,6 +1,7 @@
 /* ======================= MAGAZINE ======================= */
 import { t, L, icon, $, $$, go, back, renderHeader, toast, wireRoutes, emptyState, shareItem,
-         query, sectionNote, sectionSlider, sponsoredRows, historyKey, esc } from '../ui.js';
+         query, sectionNote, sectionSlider, sponsoredRows, historyKey, esc,
+         pickerBtn, setPickerValue, openDropdown } from '../ui.js';
 import { ARTICLES, MAG_CATS, MINI_ADS, AD_SLOTS, NEWCOMER_PARTS } from '../data.js';
 import * as S from '../store.js';
 import { catKeyOf, startSlider } from './home.js';
@@ -88,13 +89,15 @@ export function MagazineScreen(root) {
     ${/* Pinned above the chips, so it is never filtered away and never
          sinks under the newest article. */''}
     <div class="pad">${newcomerCardHtml()}</div>
-    <!-- six short chips: they wrap onto a second line rather than run off
-         the edge. Same rule as everywhere else — an option nobody can see
-         is an option nobody has. -->
-    <div class="chip-wrap" id="magChips">
-      <button class="chip ${cat === 'all' ? 'active' : ''}" data-cat="all">${t('catAll')}</button>
-      ${MAG_CATS.map(c => `<button class="chip ${cat === c.id ? 'active' : ''}" data-cat="${c.id}">${t(c.key)}</button>`).join('')}
+    <!-- Six options — «الكل» plus five — is over the line: more than five
+         is a dropdown, five or fewer are chips. Wrapping onto a second row
+         was better than running off the edge, but a picker that names the
+         chosen section in gold costs one line instead of two and inherits
+         the history entry, so the back button closes it. -->
+    <div class="ctl-row" id="magPick">
+      ${pickerBtn({ id: 'ctlMag', label: t('lblSection'), value: cat === 'all' ? t('catAll') : t((MAG_CATS.find(c => c.id === cat) || {}).key || 'catAll'), wide: true })}
     </div>
+    <div id="magDD"></div>
     <!-- slider · two sponsored · the articles -->
     <div id="secAds"></div>
     <div id="sponRows"></div>
@@ -151,10 +154,21 @@ export function MagazineScreen(root) {
   };
   paint();
 
-  $$('#magChips .chip').forEach(c => c.addEventListener('click', () => {
-    cat = c.dataset.cat;
-    $$('#magChips .chip').forEach(x => x.classList.toggle('active', x === c));
-    paint();
+  const magOptions = () => {
+    const all = allArticles();
+    return [{ id: 'all', label: t('catAll'), icon: 'newspaper', count: all.length }]
+      .concat(MAG_CATS.map(c => ({ id: c.id, label: t(c.key), icon: c.icon || 'newspaper',
+                                   count: all.filter(a => a.cat === c.id).length })));
+  };
+  const magBtn = $('#ctlMag');
+  magBtn.addEventListener('click', () => openDropdown({
+    host: $('#magDD'), anchor: magBtn, title: t('pickSection'),
+    options: magOptions(), value: cat, unit: 'ddSec',
+    onPick: (id) => {
+      cat = id;
+      setPickerValue('ctlMag', id === 'all' ? t('catAll') : t((MAG_CATS.find(c => c.id === id) || {}).key || 'catAll'));
+      paint();
+    },
   }));
   wireRoutes(root);
 }
