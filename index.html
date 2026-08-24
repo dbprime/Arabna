@@ -22,6 +22,38 @@
   <title>ARABNA · عربنا</title>
   <meta name="description" content="ARABNA · عربنا — دليل الأعمال العربية، السوق، والفعاليات، ومجلة المجتمع العربي في أمريكا." />
 
+  <!-- THE LINK WHEN IT IS SENT, and this matters more than the page it opens.
+       This community passes things along on WhatsApp, and a bare blue line
+       with no picture is passed along by nobody. The absolute URLs are
+       required: the scraper fetches them from its own server, where a
+       relative path means nothing.
+
+       ⚠️ THE CARD CANNOT KNOW THE READER'S CITY. It is read on WhatsApp's
+       server before anybody opens anything, so the image says «Houston» and
+       is replaced by hand the day the directory covers a second city worth
+       naming.
+
+       ⚠️ AND EVERY LINK PREVIEWS AS THE APP, NOT AS THE PAGE. Our routes
+       carry a `#`, and nothing after a `#` ever reaches the server — so
+       whoever shares «مطعم الشامي» gets the app's own card, not the shop's.
+       A card per page needs real paths with no `#`, which is the same thing
+       opening the native app from a link will need (Universal Links). Two
+       needs, one decision, and its place is the server batch where it costs
+       nothing. -->
+  <meta property="og:site_name"   content="ARABNA · عربنا" />
+  <meta property="og:title"       content="عربنا · ARABNA" />
+  <meta property="og:description" content="مطاعم وأسواق وأطبّاء ومساجد وكنائس، ومواقيت الصلاة، وسوق للبيع والشراء." />
+  <meta property="og:image"       content="https://arabna-db-prime.vercel.app/assets/share-1200x630.png" />
+  <meta property="og:image:width"  content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:url"         content="https://arabna-db-prime.vercel.app/" />
+  <meta property="og:type"        content="website" />
+  <meta property="og:locale"      content="ar_AR" />
+  <meta name="twitter:card"        content="summary_large_image" />
+  <meta name="twitter:title"       content="عربنا · ARABNA" />
+  <meta name="twitter:description" content="مطاعم وأسواق وأطبّاء ومساجد وكنائس، ومواقيت الصلاة، وسوق للبيع والشراء." />
+  <meta name="twitter:image"       content="https://arabna-db-prime.vercel.app/assets/share-1200x630.png" />
+
   <!-- installable on the home screen. No service worker yet (V.02) so the
        app never serves a stale build during heavy editing. -->
   <link rel="manifest" href="manifest.json" />

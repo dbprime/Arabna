@@ -116,6 +116,15 @@ export const STRINGS = {
     tradEast: 'شرقي',
     tradCopt: 'الأقباط',
     prLocating: 'جارٍ تحديد موقعك…',
+    searchFor: 'ابحث عن',
+    /* Measured against the widest covered city name (The Woodlands) in the
+       334px available at 390: this is 292. «كلّ ما يخصّ العرب في {c}» was
+       339 and overflowed by five. The city comes from `userCity()`, so
+       somebody in Richmond reads Richmond and somebody in Dallas tomorrow
+       reads Dallas — one line, never a second copy. */
+    homeHeadline: 'كلّ ما تحتاجه في {c}',
+    homeHeadlineNoCity: 'كلّ ما تحتاجه في أمريكا',
+    homeSubline: 'مطاعم وأسواق وأطبّاء ومساجد، ومواقيت الصلاة، وسوق',
     locNameUnknown: 'موقعك الحالي',
     geoFailNote: 'آخر محاولة تلقائيّة لم تنجح — {n} مرّات، آخرها قبل {m} دقيقة',
     geoAskMassTitle: 'لنعرض لك أقرب الكنائس إليك',
@@ -547,6 +556,11 @@ export const STRINGS = {
     clear: 'مسح',
     clearAll: 'مسح الكل',
     nearMiss: 'لم نجد «{q}» تماماً — هذه الأقرب',
+    /* the state is a place to go, not a list of results */
+    shareApp: 'ابعث عربنا لصديقك',
+    stateSuggest: 'اضبط موقعك على {s}',
+    stateSuggestSub: 'كلّ الدليل داخل {s}',
+    stateCodeNote: '{c} هو اختصار {s}، وهو في كلّ عنوان في الدليل — فاختر مدينة أو اكتب اسم المحلّ.',
     mostUsed: 'الأكثر استخداماً',
     moreFilters: 'خيارات إضافية',
     showNResults: 'عرض {c}',
@@ -1711,6 +1725,10 @@ export const STRINGS = {
     tradEast: 'Eastern',
     tradCopt: 'Coptic',
     prLocating: 'Finding your location…',
+    searchFor: 'Search for',
+    homeHeadline: 'All you need in {c}',
+    homeHeadlineNoCity: 'All you need in America',
+    homeSubline: 'Restaurants, groceries, doctors and masjids, prayer times, and a marketplace',
     locNameUnknown: 'Your current location',
     geoFailNote: 'The last automatic attempt did not succeed — {n} times, the last {m} minutes ago',
     geoAskMassTitle: 'So we can show you the closest churches',
@@ -2112,6 +2130,10 @@ export const STRINGS = {
     clear: 'Clear',
     clearAll: 'Clear all',
     nearMiss: 'No exact match for "{q}" — these are the closest',
+    shareApp: 'Send ARABNA to a friend',
+    stateSuggest: 'Set your location to {s}',
+    stateSuggestSub: 'The whole directory is inside {s}',
+    stateCodeNote: '{c} is short for {s}, and it is in every address in the directory — pick a city, or type a shop name.',
     mostUsed: 'Most used',
     moreFilters: 'More filters',
     showNResults: 'Show {c}',

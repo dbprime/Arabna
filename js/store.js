@@ -8,7 +8,7 @@ import { CLASSIFIEDS, BUSINESSES, NOTIFICATIONS, SLIDER_ADS, MINI_ADS, ARTICLES,
          MARKET_CATS, FREE_PRICE, EVENTS, VERIFY_BADGE_PRICE, blankEvent,
          ATTRIBUTES, ATTR_GROUPS, CATEGORIES, DAY_KEYS, CHIP_MIN, CHIP_MAX_SHARE, EVENT_TYPES,
          GENERIC_WORDS, NAME_SIM_MIN, STREET_WORDS, SUBSCRIPTION_PRICE, AD_CARD_COLOR,
-         CITY_POINTS, REGIONS, REGION_RADIUS_MI,
+         CITY_POINTS, REGIONS, REGION_RADIUS_MI, STATE_SUGGEST,
          AD_PRODUCTS, AD_SLOTS,
          attrById, attrInCat, isAllDay, week, nextOccurrence } from './data.js';
 import { expandQuery, hayMatches, catMatches, squash } from './synonyms.js';
@@ -1110,6 +1110,53 @@ export function businessesOfRegion(id) {
   const cities = new Set(CITY_POINTS.filter(c => c.region === id).map(c => c.city));
   return allBusinesses().filter(b => cities.has(cityOf(b)));
 }
+/* ---------------- the state ---------------- */
+/**
+ * How many states the directory actually covers. Today one, so the code
+ * is never printed beside a city: «Houston TX» five hundred times is
+ * noise. The field is in the data now and the display turns itself on the
+ * day a second state arrives — there is no later change to make.
+ */
+export function statesCovered() {
+  return new Set(REGIONS.map(r => r.state).filter(Boolean)).size;
+}
+/** the state code a city sits in, or '' */
+export function stateCodeFor(city) {
+  const c = CITY_POINTS.find(x => x.city === city);
+  const r = c && REGIONS.find(x => x.id === c.region);
+  return (r && r.state) || '';
+}
+/** a reader who picked the whole state rather than a city */
+export function userState() {
+  const l = state.location || {};
+  return (!l.city && !l.region && l.state) ? l.state : '';
+}
+/** press the suggestion: the whole state, which is every city in it */
+export function setUserState(code) {
+  state.location = { zip: '', city: '', state: code, region: '', manual: true };
+  state.geo = null;
+  save();
+}
+/**
+ * A whole query that names a state. NEVER a search term — see the note on
+ * `STATE_SUGGEST` in `data.js`: the code is in all 514 addresses, so
+ * matching it loosely returns the directory and answers nothing.
+ * `isCode` separates the two halves: a code carries no information and its
+ * results are suppressed; a name is in real shop names and its results
+ * stand, with the suggestion above them.
+ */
+export function stateSuggestion(term) {
+  const q = normalize(String(term || '').trim());
+  if (!q) return null;
+  for (const st of STATE_SUGGEST) {
+    if (normalize(st.code) === q) return { code: st.code, name: st.name, isCode: true };
+    if (normalize(st.name) === q || st.words.some(w => normalize(w) === q)) {
+      return { code: st.code, name: st.name, isCode: false };
+    }
+  }
+  return null;
+}
+
 /** the regions on offer, each with what stands behind it */
 export function regionsWithCounts() {
   return REGIONS.map(r => ({ id: r.id, name: r.name, n: businessesOfRegion(r.id).length }));

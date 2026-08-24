@@ -309,11 +309,12 @@ ul { margin: 0; padding: 0; list-style: none; }
   inset-inline-start: 50%;
   transform: translateX(-50%);
   inset-block-start: calc(var(--safe-top) + var(--header-h) / 2);
-  /* The stacked lockup: the mark on top, ARABNA under it, عربنا under that.
-     The horizontal one was a mistake — the wordmarks belong below the mark,
-     not beside it. Same two numbers the old logo used (65 / 54), no forced
-     width and no object-fit: at 1173×955 it takes 80px of width, narrower
-     than the 94px the old one took, so the 92px header does not move. */
+  /* THE MARK ALONE, at the bar's full height. The name is unreadable at
+     this size whatever the arrangement (see LOGO in ui.js), so the bar
+     shows the mark and the name lives where there is room for it. Same two
+     numbers as before — 65 and 54 — and at a ratio of 1.015 it takes 66px
+     of width where the lockup took 80, so the mark is 48% bigger AND the
+     header got narrower, not wider. */
   margin-block-start: -32px;           /* half of the 65px height */
   height: 65px; width: auto;
   pointer-events: none;
@@ -1194,6 +1195,13 @@ input[inputmode="tel"], input[type="email"], input[inputmode="decimal"], #zipIn 
 
 /* categories strip: five circles must fit a 390px screen without clipping */
 #cats { gap: 6px; }
+/* one line each, and the city name is Latin inside an Arabic sentence, so
+   it is isolated the way every other place name in the app is */
+.home-intro { padding: 2px 14px 10px; }
+.home-headline { font-family: var(--font-display); font-size: 1.2375rem; font-weight: 700;
+  color: var(--text); margin: 0; line-height: 1.35; unicode-bidi: plaintext; }
+.home-subline { font-size: .84375rem; color: var(--muted); margin: 4px 0 0; line-height: 1.5; }
+
 /* six across, ten between, and it fits 390 exactly: 6×52 + 5×10 = 362 */
 .cat-row { display: flex; gap: 10px; padding: 0 14px; }
 .cat-row .cat-item { flex: 1 1 0; min-width: 0; width: auto; }
@@ -1932,12 +1940,20 @@ input[inputmode="tel"], input[type="email"], input[inputmode="decimal"], #zipIn 
 .search-row.solo .loc-chip svg { flex: 0 0 17px; }
 .search-row.sub { padding: 8px 14px 0; gap: 8px; }
 .search-bar.big {
-  height: 52px;
+  /* 38, not 52. At 52 with a 22px lens there were fifteen pixels of air
+     above it and fifteen below; at 38 there are eight. (My reservation is
+     on the record once — search is the most important thing on the screen
+     and 42 was easier — and the decision is Rai's.) */
+  height: 38px;
   background: var(--surface-2);
   border: 1px solid var(--gold-wash-3);
 }
 .search-bar.big > svg { flex: 0 0 22px; width: 22px; height: 22px; color: var(--gold-bright); }
 .search-bar.big input { font-size: .9375rem; }
+/* the fade duration is written FROM `HINT_FADE_MS`, never typed here — one
+   value in data.js and no second copy that could drift from it */
+.search-bar.big input::placeholder { transition: opacity var(--hint-fade, 250ms) var(--ease); }
+.search-bar.big input.hint-out::placeholder { opacity: 0; }
 .search-clear {
   flex: 0 0 26px; width: 26px; height: 26px; border-radius: 50%;
   display: grid; place-items: center; color: var(--muted);
@@ -2162,6 +2178,62 @@ input[inputmode="tel"], input[type="email"], input[inputmode="decimal"], #zipIn 
   margin-inline-start: 6px;
 }
 .badge-bizverified svg { flex: 0 0 12px; }
+
+/* THE MARK ALONE, for every list. A gold shield the size of the personal
+   blue circle, so a name that fitted one line still fits one line — the
+   pill with its word measured 60px against 28 and turned every long name
+   into two. The shape is the difference from the personal badge, and it
+   is deliberately not a coloured circle: colour alone is not a signal. */
+/* the state suggestion: a place to press, standing where a result list
+   would be. It is a row and not a chip because it is an answer, and the
+   reader who typed «TX» is owed one. */
+/* THE SHARE MARK ON A PAID PLACEMENT. Small, in the corner, and never
+   competing with the advertiser's own call to action: the advertiser is
+   paying for the tap that opens them, and this one is for the shop owner
+   who wants to send their own ad to their family. */
+.ad-share {
+  position: absolute; inset-block-start: 8px; inset-inline-start: 8px;
+  display: inline-grid; place-items: center;
+  width: 30px; height: 30px; border-radius: 50%;
+  background: var(--ad-badge); color: var(--ad-cta);
+  border: none; padding: 0; cursor: pointer; z-index: 2;
+}
+.mini-ad .ad-share {
+  position: static; flex: 0 0 26px; width: 26px; height: 26px;
+  background: transparent; color: var(--muted);
+}
+.list-row.spon .ad-share {
+  position: static; flex: 0 0 30px;
+  background: transparent; color: var(--muted);
+}
+
+.state-suggest {
+  display: flex; align-items: center; gap: 10px;
+  margin: 10px 14px 0; width: calc(100% - 28px);
+  padding: 11px 13px; border-radius: 14px; text-align: start;
+  background: var(--surface); border: 1px solid var(--line); color: var(--text);
+  font: inherit; cursor: pointer;
+}
+.state-suggest svg { flex: 0 0 18px; color: var(--gold-bright); }
+.state-suggest > span { display: grid; gap: 2px; min-width: 0; }
+.state-suggest b { font-size: .9375rem; }
+.state-suggest > span > span { font-size: .8125rem; color: var(--muted); }
+
+.badge-shield {
+  display: inline-grid; place-items: center;
+  /* THE BOX IS THE GLYPH. An 18px box around a 12px shield spent six
+     pixels on nothing, and «مطبخ ومخبز سامي اللبناني» — the longest
+     Arabic name in the file — measured 242px of the 263 the row has, so
+     those six pixels were the whole difference between one line and two.
+     Measured after: 15px of 263 left over. */
+  width: 14px; height: 14px;
+  color: var(--gold-bright);
+  /* ⚠️ NO MARGIN. `.row-title` is a flex row with `gap: 6px`, so a margin
+     here is double spacing — and at 242px of the row's 263 for the longest
+     Arabic name in the file, those four pixels were the whole difference
+     between one line and two. */
+  vertical-align: middle; flex: 0 0 14px;
+}
 /* the mark alone, standing beside a line that already names it. The
    selector is specific enough to beat `.i-txt span`, which is grey. */
 .i-txt .badge-bizverified.mark { color: var(--on-gold); padding: 3px 6px; }

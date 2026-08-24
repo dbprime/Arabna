@@ -2,7 +2,7 @@
 import { t, arCount, L, icon, $, $$, go, renderHeader, toast, wireRoutes, emptyState, confirmSheet,
          openSheet, closeSheet,
          fmtMoney, priceLabel, statusBadgeHtml, stars, logoSrc, shareItem,
-         mapChoices, esc } from '../ui.js';
+         mapChoices, esc, bizBadgeHtml } from '../ui.js';
 import { SUBSCRIPTION_PRICE, CATEGORIES, APP_VERSION } from '../data.js';
 import * as S from '../store.js';
 import { catIcon } from './home.js';
@@ -533,7 +533,7 @@ export function MyBusinessScreen(root) {
           <span class="row-ico">${icon(catIcon(b.cat), 22)}</span>
           <div class="row-main">
             <div class="row-title">${esc(L(b.name))}
-              ${S.businessVerified(b) ? `<span class="badge badge-bizverified">${icon('checkCircle', 12)}${t('bizVerified')}</span>` : ''}</div>
+              ${bizBadgeHtml(b)}</div>
             <div class="row-sub">${icon('mapPin', 13)} <span class="ltr">${esc(b.address)}</span></div>
           </div>
         </div>

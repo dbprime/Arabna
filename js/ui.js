@@ -397,9 +397,20 @@ export function resolvedTheme() {
  * logo's own navy and the gold untouched (12.73 against 1.58).
  * Never `filter: invert` — that turns the gold blue.
  */
+/* A third kind: the MARK ALONE, for the header.
+   Measured inside the file — the word «عربنا» is 12.7% of the lockup's
+   height, so at 65px it renders at EIGHT PIXELS, and an Arabic letter needs
+   14–16 to be read because its dots need height a Latin letter does not.
+   The horizontal lockup gives it 8.8 and eats 175px of bar; to reach 14 the
+   logo would have to be 110px — taller than the 92px bar itself. So there
+   is no arrangement that makes the name readable in this bar, and carrying
+   it there costs 21px of the mark's height and returns nothing.
+   The name is not deleted, it moves to where it IS read: the splash, the
+   drawer, About, the sign-in and sign-up screens, and the app icon. */
 const LOGO = {
   stacked: { dark: 'assets/logo.png',    light: 'assets/logo-ink.png'    },
   wide:    { dark: 'assets/logo-sm.png', light: 'assets/logo-sm-ink.png' },
+  mark:    { dark: 'assets/mark.png',    light: 'assets/mark-ink.png'    },
 };
 export function logoSrc(kind = 'stacked') { return LOGO[kind][resolvedTheme()]; }
 
@@ -494,6 +505,7 @@ export function sectionSlider(ads, { product, sectionName }) {
           <div class="slide-sub">${L(a.tag)}</div>
           <div class="slide-cta">${L(a.cta)} ${icon(document.documentElement.dir === 'rtl' ? 'chevronL' : 'chevronR', 15)}</div>
           <div class="slide-icon">${icon(a.icon, 86)}</div>
+          ${adShareBtn(L(a.name), a.link)}
         </div>`).join('')}
       </div>
       <div class="slider-dots" id="secDots">${ads.map((_, i) =>
@@ -532,6 +544,7 @@ export function sponsoredRows(rows) {
              injection six months from now, by our own hand. */''}
         ${r.sub ? `<div class="row-sub">${r.subIcon ? icon(r.subIcon, 13) : ''} ${esc(r.sub)}</div>` : ''}
       </div>
+      ${adShareBtn(r.title, r.route)}
       <span class="chev">${icon(document.documentElement.dir === 'rtl' ? 'chevronL' : 'chevronR', 19)}</span>
     </div>`).join('')}</div>`;
 }
@@ -621,7 +634,7 @@ export function renderHeader(opts = {}) {
     const dark = resolvedTheme() === 'dark';
     head.innerHTML = `
       <button class="icon-btn" id="hMenu" aria-label="menu">${icon('menu', 24)}${S.isMember() && S.unreadCount() ? '<span class="dot"></span>' : ''}</button>
-      <img class="h-logo" data-logo="stacked" src="${logoSrc('stacked')}" alt="ARABNA عربنا" />
+      <img class="h-logo" data-logo="mark" src="${logoSrc('mark')}" alt="ARABNA عربنا" />
       <button class="icon-btn" id="hTheme" data-theme-icon
         aria-label="${t(dark ? 'themeLight' : 'themeDark')}">${icon(dark ? 'sun' : 'moon', 22)}</button>`;
     $('#hMenu').addEventListener('click', openDrawer);
@@ -853,7 +866,13 @@ export function openDrawer() {
     item('grid', t('allCategories'), '#/categories'),
   ].join('');
 
+  /* ⚠️ A LEAF, NOT A TOP-LEVEL ROW. The drawer's standing rule is that it
+     never scrolls, and it is already over at 882/844 with «تصنيفات عربنا»
+     open; an eighth row would break it for everybody instead of only for
+     an open group. It sits with «عن عربنا» because that is where somebody
+     goes when they want to tell a friend what this is. */
   const help = [
+    `<button class="dr-item" id="drShareApp">${icon('share', 22)}<span>${t('shareApp')}</span></button>`,
     item('help', t('help'), '#/help'),
     item('info', t('about'), '#/about'),
     item('shield', t('privacy'), '#/privacy'),
@@ -919,6 +938,11 @@ export function openDrawer() {
   $$('#drawer [data-route]').forEach(b => b.addEventListener('click', () => { hideDrawer(); go(b.dataset.route); }));
   // nobody wants Back to return them to a drawer after switching language
   const dl = $('#drLang'); if (dl) dl.addEventListener('click', () => { closeDrawer(); toggleLang(); });
+  /* the app itself, not the page somebody happens to be standing on —
+     `appLink()` with no hash is the only share in the app that means «this
+     application» rather than «this thing» */
+  const sa = $('#drShareApp');
+  if (sa) sa.addEventListener('click', () => { closeDrawer(); shareItem(t('appName'), appLink()); });
   const out = $('#drOut');
   if (out) out.addEventListener('click', () => {
     closeDrawer();
@@ -1565,7 +1589,16 @@ export function cityChipLabel() {
      — is internal: `askToMove` and `shouldRefreshGeo` read it, and it is
      not printed on a button in the header. `cityIsManual()` is untouched
      and still does its work; it simply no longer writes itself on screen. */
-  if (c) return c;
+  /* THE STATE CODE APPEARS BY ITSELF, the day the directory covers more
+     than one. There is a Richmond in Virginia and another in California,
+     and a newcomer does not know which one this is — but with every
+     listing in Texas, printing «TX» on the chip 514 times is noise in a
+     button whose width is capped at 44%. The field is in the data and
+     the rule reads it: no later change. */
+  if (c) return S.statesCovered() > 1 && S.stateCodeFor(c) ? `${c} ${S.stateCodeFor(c)}` : c;
+  /* somebody who pressed the state suggestion: the abbreviation, which is
+     what the chip has room for */
+  if (S.userState()) return S.userState();
   return S.state.geo ? t('locNameUnknown') : t('setLocation');
 }
 
@@ -1712,13 +1745,25 @@ export function openBadgeHtml(biz, now = new Date()) {
 /**
  * The gold "verified business" mark. Deliberately not the blue one on a
  * personal account: two different things, so two different names, shapes
- * and colours — one word for both and nobody could tell them apart.
+ * and colours — one word for both and nobody could tell them apart. The
+ * business is a SHIELD and the person a CIRCLE, because a difference that
+ * is only colour is no difference to a reader who cannot see the colour.
  * It reads `businessVerified`, which is an explicit decision and is never
  * inferred from whether the shop pays us.
+ *
+ * ⚠️ THE MARK ALONE IS THE DEFAULT, and the word is asked for. Measured:
+ * a name row carrying the pill is 60px against 28 without it — two lines
+ * where there was one — and the word takes 66 of the 265 pixels the name
+ * has. In a list the mark says it; on the business page there is room, and
+ * whoever stopped at one shop has earned the sentence.
  */
-export function bizBadgeHtml(b) {
+export function bizBadgeHtml(b, withWord = false) {
   if (!S.businessVerified(b)) return '';
-  return `<span class="badge badge-bizverified" title="${t('bizVerified')}">${icon('checkCircle', 12)}${t('bizVerified')}</span>`;
+  if (!withWord) {
+    return `<span class="badge-shield" title="${t('bizVerified')}"
+      aria-label="${t('bizVerified')}">${icon('shieldCheck', 14)}</span>`;
+  }
+  return `<span class="badge badge-bizverified" title="${t('bizVerified')}">${icon('shieldCheck', 12)}${t('bizVerified')}</span>`;
 }
 
 /** the attribute pills shown under a business description */
@@ -1840,6 +1885,51 @@ export function openMapSheet(address) {
  * The last resort is not an apology — it is the link, selected, so it can
  * be copied by hand. That is the project's rule about dead ends.
  */
+/**
+ * THE LINK TO A PLACE IN THE APP, built rather than read off the address
+ * bar. Five of the six share buttons passed `location.href`, which is only
+ * right while the reader is standing on the thing they are sharing — and
+ * an ad in a strip on Home is not the thing the reader is standing on.
+ * `profile.js` already built its own, and this is that one, in one place.
+ */
+export function appLink(hash = '') {
+  return location.origin + location.pathname + (hash || '');
+}
+
+/**
+ * The share mark on a paid placement. An advertiser pays and then wants to
+ * send their own ad to their family, and there was no button anywhere on
+ * any of the three surfaces we sell.
+ *
+ * ⚠️ IT SITS INSIDE A ROW THAT NAVIGATES, so the tap must not do both:
+ * `stopPropagation` before anything else, exactly as the dropdown's first
+ * outside tap only closes and does not also press the shop underneath.
+ */
+export function adShareBtn(title, link) {
+  return `<button class="ad-share" data-adshare="${esc(link || '')}"
+    data-adtitle="${esc(title || '')}" aria-label="${t('share')}"
+    title="${t('share')}">${icon('share', 15)}</button>`;
+}
+/**
+ * ONE listener at the root, in the CAPTURE phase, mounted once at boot.
+ * Not a wiring call per screen: the mark is drawn on three surfaces from
+ * seven call sites, and a wiring call is a thing somebody forgets — and a
+ * share button that silently opens the advertiser instead is worse than
+ * no button. Capture is what makes `stopPropagation` reach the row's own
+ * handler, which `wireRoutes` binds on the row itself.
+ */
+export function mountAdShare() {
+  const app = document.getElementById('app');
+  if (!app || app.dataset.adshareMounted) return;
+  app.dataset.adshareMounted = '1';
+  app.addEventListener('click', (e) => {
+    const b = e.target.closest && e.target.closest('[data-adshare]');
+    if (!b) return;
+    e.stopPropagation(); e.preventDefault();
+    shareItem(b.dataset.adtitle, appLink(b.dataset.adshare));
+  }, true);
+}
+
 export function shareItem(title, url) {
   if (navigator.share) { navigator.share({ title, url }).catch(() => {}); return; }
   if (!navigator.clipboard || !navigator.clipboard.writeText) { promptCopy(url); return; }

@@ -91,7 +91,7 @@ export const CLASSIFIED_CATS = MARKET_CATS;
    hand-typed «0.1» while the project had reached V.03.6 — two literals,
    both stale, and a reader reporting a fault could not tell us which build
    they were on. Raise it here when CLAUDE.md's version line moves. */
-export const APP_VERSION = '0.4.6';
+export const APP_VERSION = '0.4.7';
 
 export const FREE_PRICE = '__FREE__';
 
@@ -769,7 +769,22 @@ export const STREET_WORDS = {
    and not one condition is touched. A city written into an `if` is the
    city somebody forgets the day the coverage changes. */
 export const REGIONS = [
-  { id: 'hou', name: 'Houston' },
+  { id: 'hou', name: 'Houston', state: 'TX' },
+];
+
+/* THE STATE IS A SUGGESTION YOU PRESS, NEVER A SEARCH TERM.
+   Measured: «TX» returns all 514 listings, because every address in the
+   file ends «TX 77xxx» — the «عربية» and «لحوم» trap exactly, and the
+   reason neither of those is in the dictionary. So the state is matched
+   as a WHOLE query and answered with a place to go.
+
+   And the two halves are not the same word. The CODE is in every address
+   and carries no information at all, so it is answered with the
+   suggestion alone. The NAME is in some shop names — «Texas Halal
+   Market», 38 of them — so those results are real and are kept, with the
+   suggestion standing above them. */
+export const STATE_SUGGEST = [
+  { code: 'TX', name: 'Texas', words: ['texas', 'تكساس', 'تكساز'] },
 ];
 
 /* ONE HUE PER CATEGORY, and the rest is derived from it.
@@ -781,6 +796,33 @@ export const REGIONS = [
 
    And nothing lands in 35°–55° — that is the gold of the logo, and a
    category sitting there would look «featured» for no reason. */
+/* THE ROTATING HINT in the search box.
+   2000ms is how long ONE WORD STAYS READABLE, not the length of the cycle
+   — the common mistake is to count the fade inside it, which leaves the
+   word legible for 1.6s. The full cycle is 2000 + 250 = 2250, and the word
+   is perfectly still for 2000 of it.
+
+   ⚠️ ONE value, here. No derived number, no «about», and no separate
+   figure in CSS: if the animation needs a duration it is written from this
+   variable through a custom property, never typed a second time. */
+export const HINT_MS = 2000;
+export const HINT_FADE_MS = 250;
+
+/* «ابحث عن» stays put and only the word changes, so nothing jumps.
+   And the point is not to catch the eye — it is to TEACH. Somebody
+   opening the app for the first time does not know it has lawyers and
+   masjids and plumbers in it, and the search box is the cheapest place
+   to tell them.
+   Measured against the real search before being written:
+     مطعم 176 · مسجد 25 · صالون 24 · طبيب 15 · ميكانيكي 12
+     محامي 10 · سبّاك 3 · كهربائي 3          بنشر 0 ← left out
+   Plumber, electrician and mechanic are not categories but specialities
+   inside larger ones, which is exactly why they are here: nothing else in
+   the app tells anybody they are in it. */
+export const SEARCH_HINTS = [
+  'مطعم', 'سبّاك', 'طبيب', 'كهربائي', 'مسجد', 'ميكانيكي', 'صالون', 'محامي',
+];
+
 export const CAT_HUE = {
   // food and drink
   restaurants: 6,   grocery: 20,    cafe: 32,     sweets: 348,

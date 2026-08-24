@@ -7,7 +7,7 @@ ARABNA · عربنا — a mobile-first web app for the Arab community in the U.
 **business directory + marketplace + events + magazine**, Arabic-first with a full English toggle.
 ("Classifieds / الإعلانات الشخصية" is now "Marketplace / السوق" — the old `#/classifieds`
 routes still resolve so shared links keep working.)
-Current version: **V.04.6 (prototype)**. Owner: Rai Elby (@dbprime). Deploys to Vercel (team DB Prime).
+Current version: **V.04.7 (prototype)**. Owner: Rai Elby (@dbprime). Deploys to Vercel (team DB Prime).
 
 ## Hard rules (from the product brief)
 1. **One repository, one Vercel project.** No duplicates, no stray preview projects.
@@ -3311,11 +3311,221 @@ from V.04.0 — a city somebody chose is not changed behind their back —
 and reversing a decision nobody asked to reverse is not this batch's job.
 It is one line, in its own file, when Rai says so.
 
+## V.04.7 — batch nine (ج): the visual identity, and the link when it is sent
+
+Ten items, in two commits: `b886922` carried the first four, this one the
+rest.
+
+### Two faces, and every size in `rem`
+`--font-display` is **Noto Kufi Arabic**, on the headings and the numbers
+only: `.h-title` · `.section-title` · `.row-title` · `.pr-next-name` ·
+`.pr-next-at` · `.pr-row-name` · `.pr-row-at`. **`.cat-label` and
+`.nav-item` deliberately keep IBM Plex** — a display face on a 12px label
+under an icon is decoration, and the bottom bar is read a hundred times a
+day. Five sizes went up ×1.1.
+
+⚠️ **Every size is in `rem`, and this is not a style preference.**
+`html { font-size: 106.25% }`, so **the root is 17px and not 16** — a `px`
+number would be 6.25% wrong on arrival and would then refuse to grow for
+the first reader who enlarges their type. `.h-title` **1.2375rem** ·
+`.row-title` **1.1rem** · `.pr-next-at` **2.0625rem**.
+
+### Twenty-one categories, twenty-one hues
+`CAT_HUE` in `data.js` gives each category one hue and **everything else is
+derived from it** in `catTileHtml(catId, size, cls)` — the tile, the wash,
+the border and the khatam pattern, all `hsl()` off that one number. Twenty-
+one identical gold circles gave the eye nothing to aim at.
+
+- **No hue falls in 35–55**, the gold band: a tile the colour of the brand
+  accent reads as «selected».
+- ⚠️ **`--h` is written on the tile element itself, never on a parent.**
+  `var()` inside a custom property is substituted **at the element that
+  DECLARES it**, so a hue set on a wrapper resolves there and every child
+  gets the same colour. This cost an afternoon; it is written here so it
+  costs nobody another one.
+- Radii **18px** at the large size and **13px** at the small, the same
+  shape on Home, in the directory and in «كل التصنيفات» — and **not a
+  circle in any of the three**. Verified: zero tiles render with no
+  background and no border.
+
+### The light theme is sky, not ivory
+Page `#CFE4F2` · bar `#DFEEF8` · surface `#F3F9FD` / `#E9F3FB` · text
+`#0C1424` · `--text-2` `#1E2942` · `--muted` `#454B5C`. **The card is
+lighter than the page**, which the ivory theme had backwards.
+
+Measured: dim text on a card **5.90 → 8.19**, body text **16.38 → 17.33**.
+The values are written in **three** places and all three must agree — the
+explicit `[data-theme="light"]` block, the `prefers-color-scheme` copy that
+makes the first paint right before any script runs, and the Settings
+preview swatch.
+
+### One row of six on Home
+Six tiles across at 390px: **6×52 + 5×10 = 362**, no sideways scroll, and
+the sixth is a computed **«+16»** into `#/categories` — the number is read
+off `CATEGORIES`, never typed. The word «التصنيفات» and the «عرض الكل» link
+are both gone: the row is what they named.
+
+**This is the item that decides the screen.** Measured at 390×844: the
+slider starts at **393px** and «مميّز هذا الأسبوع» at **695px** — both above
+the fold, which is what the first prototype failed.
+
+
+### The mark alone in the header
+`assets/mark.png` and `assets/mark-ink.png` are cropped from `logo.png` and
+`logo-ink.png` at rows 0–651 and trimmed to the alpha box: **659×649,
+ratio 1.015, so 66px wide at 65px tall** — the same 65px (54 installed) the
+stacked lockup had, and 80px of width becomes 66. `LOGO.mark` joins
+`stacked` and `wide`, the header carries `data-logo="mark"`, and
+`applyTheme()` swaps the two files exactly as it does the other pair.
+**The name leaves the bar and stays on every other logo** — the drawer
+head, the sign-in screens and About are unchanged.
+
+### A word that rotates in the search box
+`SEARCH_HINTS` (8 words) and `HINT_MS` / `HINT_FADE_MS` in `data.js`, with
+`mountSearchHint` in `home.js`. Measured over eight changes: **2250ms mean,
+exactly** — `HINT_MS` plus the fade, and the number lives in one place with
+no second copy in the CSS.
+
+- **A word in the box is a promise**, and a promise that opens on «no
+  results» is the same fault as a filter that returns nothing. The list is
+  sieved against the real search at boot and anything returning zero never
+  enters the rotation. (`بنشر` was the test case and is correctly absent.)
+- **THE RULE IS NOT «no new timer» BUT «no timer running for no reason».**
+  It stops on focus, on `document.hidden`, and when Home is left — and the
+  earlier claim that this app has one timer was wrong: it has four (the
+  minute tick, the ad rotator, and the two resend counters in `auth.js`).
+- **`prefers-reduced-motion` gets one still word**, not a slower rotation.
+
+### A line for the visitor, and nothing for the member
+«كلّ ما تحتاجه في {c}» over «مطاعم وأسواق وأطبّاء ومساجد، ومواقيت الصلاة،
+وسوق», gated on `isMember()`. Somebody with an account has opened the app
+twenty times and knows what it is; the line would be stealing the space
+they came for.
+
+- **Measured on `The Woodlands`**, the longest city the directory covers:
+  **one line at 390px**. The English was two — «Everything you need in The
+  Woodlands» measured **393px in a 362px box** — so it reads **«All you
+  need in {c}»** and measures 311. The Arabic was never touched.
+- With no city it is «كلّ ما تحتاجه في أمريكا», never a guessed city.
+
+### The link when it is sent, which matters more than the page it opens
+`index.html` had one `description` and **zero share tags**, so a link
+passed on WhatsApp arrived bare — and that is how things travel in this
+community.
+
+- The full `og:` set plus `twitter:card`, and **`assets/share-1200x630.png`**:
+  ground `#0E1829`, the stacked lockup, and «كلّ ما تحتاجه في Houston — في
+  مكان واحد» in the display face. **The URLs are absolute** — the scraper
+  fetches them from its own server, where a relative path resolves to
+  nothing.
+- ⚠️ **The card cannot know the reader's city.** It is read before anybody
+  opens anything, so the image says Houston and is replaced by hand.
+- ⚠️ **And every link previews as the app, not as the page.** Our routes
+  carry a `#`, and nothing after a `#` reaches the server, so whoever
+  shares «مطعم الشامي» gets the app's own card. A card per page needs real
+  paths — **the same thing Universal Links will need** — and two needs
+  pointing at one decision put it in the server batch, where it costs
+  nothing.
+
+**And two share buttons that did not exist.** `adShareBtn()` draws the mark
+and **`mountAdShare()` wires it once at the root, in the CAPTURE phase** —
+not a wiring call per screen, because the mark is drawn on three surfaces
+from seven call sites and a wiring call is a thing somebody forgets. ⚠️ **It
+sits inside a row that navigates**, so capture is what lets
+`stopPropagation` reach the row's own handler, which `wireRoutes` binds on
+the row itself. Measured: the tap shares and **the hash does not move**.
+
+- The slider, the mini banner and the sponsored rows carry it. **The house
+  slide does not** — an unsold slot has no advertiser and nothing to send.
+- **«ابعث عربنا لصديقك» is a LEAF in the help group, not a top-level row.**
+  The drawer's standing rule is that it never scrolls and it is already
+  over at 882/844 with «تصنيفات عربنا» open; an eighth row would break it
+  for everybody instead of only for an open group. Measured with the help
+  group open: **866 against 844.** That is a third group over the line, and
+  which row to drop is still the owner's call.
+- **`appLink(hash)` in `ui.js`** builds the link instead of reading
+  `location.href`. Five of the six share buttons passed the address bar,
+  which is only right while the reader is standing on the thing they are
+  sharing — and an ad in a strip on Home is not. `profile.js` already built
+  its own; this is that one, in one place. The drawer's is `appLink()` with
+  no hash: the one share in the app that means «this application».
+
+### The badge: a mark in lists, a word on the page
+**The measurement:** a name row carrying the pill was **60px against 28** —
+two lines where there was one — and the word alone took **66 of the 265
+pixels** the name has.
+
+- `bizBadgeHtml(b)` returns **the mark alone** and `bizBadgeHtml(b, true)`
+  the mark and the word. One call site passes `true`: the business page.
+- ⚠️ **TWO SHAPES, NOT TWO COLOURS.** Both badges were a circle with a
+  check and differed only in colour, which is no difference at all to a
+  reader who cannot see colour. The business is a **shield**
+  (`shieldCheck`, new in `icons.js`), the person stays a **circle**
+  (`.badge-check`). Contrast measured on the mark as a graphical object:
+  **8.53 dark · 8.70 light**, against a bar of 3.
+- ⚠️ **`.row-title` IS A FLEX ROW WITH `gap: 6px`**, so a margin on the
+  mark is double spacing — and «مطبخ ومخبز سامي اللبناني», the longest
+  Arabic name in the file, measures **242px of the row's 263**. Those four
+  pixels were the whole difference: with the margin the row was 50px, and
+  with the gap alone it is **30px, identical to the same row unmarked**.
+  The box is the glyph at 14px for the same reason; an 18px box around a
+  12px shield spent six pixels on nothing.
+- A fifty-character name is three lines with no badge at all, so the test
+  asserts the row against **itself unmarked**, never an absolute height.
+
+### And one thing the harness had to learn
+⚠️ **The single-file build inlines every image as a data URI**, so an
+assertion on a logo's filename passes on one build and fails on the other
+— which is what `s v40` failed on first. What is true of both is that the
+two themes must resolve to **different bytes**, so that is what `test_v40`
+asserts, with the filenames checked as well wherever they survive.
+Measured: 443,758 against 450,138 characters. This sits beside the
+importmap rule already recorded above — both are the same lesson, that the
+second build is a different environment and not a copy.
+
+### The state is pressed, never searched
+`Texas` and `TX` were missing, and adding them to the dictionary would have
+been the **«عربية» and «لحوم» trap exactly**: every address in the file ends
+`TX 77xxx`, so **`TX` measured 514 — the whole directory.**
+
+- **`STATE_SUGGEST` in `data.js`** is matched as a **whole query** and
+  answered with a place to go. `stateSuggestion(term)` in `store.js`
+  separates the two halves, and the split is the point: **the CODE** is in
+  every address and carries no information, so its results are suppressed
+  and it gets the suggestion alone; **the NAME** is in 38 real shop names
+  («Texas Halal Market»), so those stand with the suggestion above them.
+  Measured: `TX` 514 → **0 + a suggestion** · `Texas` **38** · `تكساس`
+  **2** · `Houston` **378** and `شوجر لاند` **32**, both unmoved.
+- ⚠️ **And «ما وجدنا شيئاً باسم TX» is a lie** — there are 514 shops in
+  Texas and the suggestion two lines above says so. Both empty states are
+  suppressed for a code: the suggestion IS the answer, and a screen must
+  not contradict itself.
+- Pressing it: `setUserState()` → the chip reads **`TX`** and the whole
+  directory is inside it.
+
+**And the abbreviation turns itself on.** `REGIONS` carries `state: 'TX'`
+and `statesCovered()` counts the distinct ones; `cityChipLabel()` prints
+«Richmond TX» **only when there is more than one state**, because today
+every listing is in Texas and printing it 514 times is noise in a button
+capped at 44% of the row. **The field is in the data now and the display
+works by itself** — there is no later change to make.
+
+- The business page needed nothing: every address in `data.js` already
+  reads `…, Richmond, TX 77407`, which is the whole requirement.
+- **Bidi was already right, and was measured rather than assumed.** Fifteen
+  screens plus both Texas queries: **zero RTL lines carrying a Latin run
+  without an isolating ancestor**, and «أول الخطوات في Houston، خطوة خطوة»
+  measured run by run renders in the correct order. Nothing was changed;
+  the sweep is now assertion 5.1 in `test_v40.mjs` so it stays that way.
+
 ## Known open items
-- **The header logo is 818 KB for an 80×65 box** — 37% of a 2.1 MB first
-  load, and another 812 KB on a theme flip. Assigned to batch (ج), which
-  changes what the header shows; the mark wants generating at ~3× the
-  displayed size, never cropping the 1173px original.
+- **The header image is still far larger than its box.** V.04.7 replaced
+  the 831/837 KB lockups with the cropped marks at **333/338 KB** — 60% off
+  the header's own asset and off the theme flip — but 659×649 for a 66×65
+  box is still ten times the displayed size. The crop is what file `020`
+  specified and it is done; **generating the mark at ~3× (roughly 200px)
+  belongs to the performance batch**, along with the same question for
+  every other image in `assets/`.
 - **Nothing in the app is reachable by keyboard**: 515 directory rows with
   no `tabindex` and no Enter handler, Escape closes neither a sheet nor the
   drawer, and only three elements have a visible focus ring. Assigned to

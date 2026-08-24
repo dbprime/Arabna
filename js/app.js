@@ -5,7 +5,7 @@
 import { setLang, bothPacks } from './i18n.js';
 import { state, registerStrings, runReminders, runSubscriptionCycle } from './store.js';
 import { $, renderHeader, renderNav, hideNav, closeSheet, hideDrawer, drawerOwnsEntry, closeDropdown,
-         mountScrollMemory, restoreScroll, historyKey, markShown, startClock,
+         mountScrollMemory, restoreScroll, historyKey, markShown, startClock, mountAdShare,
          applyTheme, applyFontScale, mountThemeWatch } from './ui.js';
 
 import { OffersScreen, HomeScreen, mountGeoRefresh } from './screens/home.js';
@@ -162,6 +162,7 @@ function catchUp() {
   applyFontScale();      // …and the same for the size, for the same reason
   mountThemeWatch();
   mountScrollMemory();
+  mountAdShare();
   startClock();
   mountGeoRefresh();
 }

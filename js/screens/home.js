@@ -1,9 +1,10 @@
 /* ============================ HOME ============================ */
 import { t, L, icon, $, $$, go, renderHeader, openSheet, closeSheet, toast, stars, wireRoutes,
          distLabelHtml, distText, cityChipLabel, mountAdRotator, esc,
-         pickerBtn, setPickerValue, openDropdown, regionAllLabel, outsideBoxHtml, mountOutsideBox, catTileHtml } from '../ui.js';
+         pickerBtn, setPickerValue, openDropdown, regionAllLabel, outsideBoxHtml, mountOutsideBox, catTileHtml,
+         adShareBtn } from '../ui.js';
 import { CATEGORIES, HOME_CATS, MINI_ADS, ARTICLES, ZIPS, CITY_SUGGESTIONS, AD_SLOTS,
-         CITY_POINTS } from '../data.js';
+         CITY_POINTS, SEARCH_HINTS, HINT_MS, HINT_FADE_MS } from '../data.js';
 import * as S from '../store.js';
 import { prayerBarHtml, mountPrayerBar, mountPrayerAsk,
          ramadanBarHtml, mountRamadanBar } from './prayer.js';
@@ -93,10 +94,25 @@ export function HomeScreen(root) {
     <div class="search-row solo">
       <div class="search-bar big">
         ${icon('search', 22)}
-        <input id="homeSearch" placeholder="${t('searchExample')}" />
+        ${/* «ابحث عن» is fixed and only the word after it changes, so
+             nothing in the line jumps, and the slot is as wide as the
+             longest word so no width moves either. */''}
+        <input id="homeSearch" placeholder="${t('searchFor')} ${hintWords()[0] || ''}" />
       </div>
       <button class="loc-chip ${loc.city ? '' : 'unset'}" id="locBtn">${icon('mapPin', 17)}<span>${cityChipLabel()}</span></button>
     </div>
+
+    ${/* THE VISITOR ONLY. Somebody with an account has opened the app
+         twenty times and knows what it is; a line explaining it to them
+         every day steals the space they came for. `isMember()` already
+         does exactly this in the drawer. */''}
+    ${S.isMember() ? '' : `
+      <div class="home-intro">
+        <h1 class="home-headline">${S.userCity()
+          ? esc(t('homeHeadline').replace('{c}', S.userCity()))
+          : t('homeHeadlineNoCity')}</h1>
+        <p class="home-subline">${t('homeSubline')}</p>
+      </div>`}
 
     ${/* straight under the location chip, above the categories — the first
          thing a reader outside the covered areas needs to read, and
@@ -219,6 +235,7 @@ export function HomeScreen(root) {
   $('#homeSearch').addEventListener('keydown', e => {
     if (e.key === 'Enter') go('#/directory?q=' + encodeURIComponent(e.target.value));
   });
+  mountSearchHint(root);
   $('#locBtn').addEventListener('click', openLocationSheet);
   mountOutsideBox(root);
   $$('#cats .cat-item').forEach(b => b.addEventListener('click', () =>
@@ -240,7 +257,66 @@ function slideHtml(a, i) {
     <div class="slide-sub">${esc(L(a.tag))}</div>
     <div class="slide-cta">${esc(L(a.cta))} ${icon(document.documentElement.dir === 'rtl' ? 'chevronL' : 'chevronR', 15)}</div>
     <div class="slide-icon">${icon(a.icon, 86)}</div>
+    ${adShareBtn(L(a.name), a.link)}
   </div>`;
+}
+
+
+/* A word in the search box is a PROMISE, and a promise that opens on «no
+   results» is worse than promising nothing — the same rule the filters
+   follow. So the list is sieved against the real search at boot and
+   anything returning zero never enters the rotation. */
+let hintCache = null;
+function hintWords() {
+  if (hintCache) return hintCache;
+  hintCache = SEARCH_HINTS.filter(w => {
+    const r = S.searchBusinesses(S.allBusinesses(), w);
+    return ((r && r.list) || r || []).length > 0;
+  });
+  return hintCache;
+}
+
+/* THE RULE IS NOT «no new timer» BUT «no timer running for no reason».
+   (And the earlier claim that the app has one timer was wrong: there are
+   four — the minute tick, the ad rotator, and the two resend counters in
+   auth.js.) This one stops when the box is focused, when the page is
+   hidden, and when Home is left; and a reader who asked for less motion
+   gets one still word. */
+function mountSearchHint(root) {
+  const input = root.querySelector('#homeSearch');
+  if (!input) return;
+  const words = hintWords();
+  const still = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (words.length < 2 || still) return;
+
+  let i = 0, timer = null, stopped = false;
+  input.style.setProperty('--hint-fade', HINT_FADE_MS + 'ms');
+  const paint = () => {
+    input.classList.add('hint-out');
+    setTimeout(() => {
+      i = (i + 1) % words.length;
+      input.placeholder = `${t('searchFor')} ${words[i]}`;
+      input.classList.remove('hint-out');
+    }, HINT_FADE_MS);
+  };
+  const stop = () => { if (timer) { clearInterval(timer); timer = null; } };
+  const start = () => {
+    if (timer || stopped || document.hidden || document.activeElement === input) return;
+    timer = setInterval(paint, HINT_MS + HINT_FADE_MS);
+  };
+  input.addEventListener('focus', stop);
+  input.addEventListener('blur', start);
+  const vis = () => (document.hidden ? stop() : start());
+  document.addEventListener('visibilitychange', vis);
+  /* …and it really stops when Home is left, rather than only in name */
+  const off = () => {
+    if (root.isConnected && document.querySelector('#homeSearch') === input) return;
+    stopped = true; stop();
+    document.removeEventListener('visibilitychange', vis);
+    window.removeEventListener('hashchange', off);
+  };
+  window.addEventListener('hashchange', off);
+  start();
 }
 
 export function startSlider(ads, hostSel = '.slider', trackSel = '#track', dotsSel = '#dots') {
@@ -304,7 +380,7 @@ function startMiniAd() {
     paint: (a, i) => {
       el.innerHTML = `<span class="m-ico">${icon(a.icon, 19)}</span>
         <span class="m-body"><span class="m-name">${esc(L(a.name))}</span><br><span class="m-tag">${esc(L(a.tag))}</span></span>
-        <span class="ad-label">${t('adLabel')}</span>`;
+        <span class="ad-label">${t('adLabel')}</span>${adShareBtn(L(a.name), a.link)}`;
       el.dataset.link = a.link;
       if (dots) [...dots.children].forEach((d, n) => d.classList.toggle('active', n === i));
     },

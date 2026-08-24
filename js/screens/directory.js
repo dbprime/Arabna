@@ -338,10 +338,34 @@ export function DirectoryScreen(root) {
     list = pin.list;
     const sponsored = new Set(pin.ids);
 
+    /* THE STATE IS A PLACE TO GO, NOT A LIST. «TX» matches all 514
+       addresses by construction, so answering it with 514 rows answers
+       nothing — it is the «عربية» and «لحوم» trap, and the same rule
+       applies: the word leaves the search and becomes a suggestion.
+       The name «Texas» is different: it is in 38 real shop names, so
+       those results stand and the suggestion sits above them. */
+    const stSug = S.stateSuggestion(st.term);
+    if (stSug && stSug.isCode) list = [];
+
     const sec = CATEGORIES.find(c => c.id === st.cat);
     $('#dirNote').innerHTML = sectionNote(sec ? t(sec.key) : '', list.length)
-      + (found.mode === 'loose'
+      + (stSug ? `
+        <button class="state-suggest" id="stateGo" data-code="${esc(stSug.code)}">
+          ${icon('mapPin', 18)}
+          <span><b>${esc(stSug.name)}</b>
+            <span>${esc(t('stateSuggestSub').replace('{s}', stSug.name))}</span></span>
+        </button>` : '')
+      + (stSug && stSug.isCode ? `
+        <div class="near-miss">${icon('info', 15)} ${esc(t('stateCodeNote')
+          .replace('{c}', stSug.code).replace('{s}', stSug.name))}</div>` : '')
+      + (found.mode === 'loose' && !stSug
         ? `<div class="near-miss">${icon('info', 15)} ${t('nearMiss').replace('{q}', esc(st.term))}</div>` : '');
+    const goState = $('#stateGo');
+    if (goState) goState.addEventListener('click', () => {
+      S.setUserState(goState.dataset.code);
+      st.term = ''; const box = $('#dirSearch'); if (box) box.value = '';
+      writeUrl(); paint(); renderHeader();
+    });
     paintPills();
     paintCatSlider();
 
@@ -372,7 +396,11 @@ export function DirectoryScreen(root) {
     const filters = st.openNow || st.hasOffer || st.attrs.length || st.featured
       || (st.area && st.area !== 'all');
     const inSection = st.cat && st.cat !== 'all';
-    if (!list.length && (filters || st.term)) {
+    /* ⚠️ AND «ما وجدنا شيئاً باسم TX» IS A LIE — there are 514 shops in
+       Texas, and the suggestion two lines above says so. The state
+       suggestion is the answer to that query, so the dead end does not
+       also get to contradict it. */
+    if (!list.length && (filters || st.term) && !(stSug && stSug.isCode)) {
       const title = st.term
         ? (filters ? t('noSearchInFilters') : t('noSearchTitle')).replace('{q}', esc(st.term))
         : t('noFilterResults');
@@ -417,7 +445,10 @@ export function DirectoryScreen(root) {
     if (io) { io.disconnect(); io = null; }
     shown = 0; rowsAll = [];
     if (!list.length) {
-      el.innerHTML = emptyState('search', t('emptyDirTitle'), t('emptyDirSub'), t('setLocation'), '#/directory');
+      /* …and the same for the generic one: the suggestion above already
+         told the reader what «TX» is and what to press. */
+      el.innerHTML = (stSug && stSug.isCode) ? ''
+        : emptyState('search', t('emptyDirTitle'), t('emptyDirSub'), t('setLocation'), '#/directory');
     } else {
       // the subscription upsell sits after the first five results, not above them
       rowsAll = list.map(b => rowHtml(b, sponsored.has(b.id)));
@@ -961,7 +992,7 @@ export function ListingScreen(root, params) {
     <div class="detail-body">
       <div class="row-between">
         <div>
-          <div class="detail-title">${esc(L(b.name))}${bizBadgeHtml(b)}</div>
+          <div class="detail-title">${esc(L(b.name))}${bizBadgeHtml(b, true)}</div>
           <div class="row-sub">${rate.count
             ? stars(rate.avg) + `<span>· ${rate.count} ${t('reviews')}</span>`
             : `<span class="muted fs-12">${t('noReviewsYet')}</span>`}</div>
@@ -2028,7 +2059,7 @@ export function SubscribeScreen(root, params) {
       ].map(([ico, key, sub2]) => `
         <div class="info-row"><span class="i-ico">${icon(ico, 21)}</span>
           <div class="i-txt"><b>${t(key)}${key === 'planVerify'
-            ? `<span class="badge badge-bizverified mark" aria-hidden="true">${icon('checkCircle', 12)}</span>` : ''}</b>${
+            ? `<span class="badge badge-bizverified mark" aria-hidden="true">${icon('shieldCheck', 12)}</span>` : ''}</b>${
             sub2 ? `<span>${t(sub2)}</span>` : ''}</div></div>`).join('')}
       <div class="list-note" style="margin-inline:0">${icon('info', 18)}<span>${t('planFreeNote')}</span></div>
       ${!showsPrices()
