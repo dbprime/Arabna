@@ -1,5 +1,5 @@
 /* ======================= ALL CATEGORIES ======================= */
-import { t, icon, renderHeader, wireRoutes } from '../ui.js';
+import { t, icon, renderHeader, wireRoutes, catTileHtml } from '../ui.js';
 import { CATEGORIES, MARKET_CATS } from '../data.js';
 import * as S from '../store.js';
 
@@ -14,9 +14,12 @@ export function CategoriesScreen(root) {
   const businesses = S.allBusinesses();
   const listings = S.allClassifieds();
 
-  const cell = (ico, label, count, route) => `
+  /* `catId` where there is one — a directory category carries a hue and
+     the khatam; a marketplace section has neither and falls back to the
+     plain icon, which is what `catTileHtml` does with an unknown id. */
+  const cell = (ico, label, count, route, catId) => `
     <button class="cat-cell" data-route="${route}">
-      <span class="cc-ico">${icon(ico, 24)}</span>
+      ${catId ? catTileHtml(catId, 24, 'cc-ico') : `<span class="cc-ico">${icon(ico, 24)}</span>`}
       <span class="cc-label">${label}</span>
       <span class="cc-count">${count}</span>
     </button>`;
@@ -42,7 +45,8 @@ export function CategoriesScreen(root) {
         // a category that is really a section of its own (Events) counts and
         // opens that section, not an empty directory filter
         c.route === '#/events' ? S.upcomingEvents().length : businesses.filter(b => b.cat === c.id).length,
-        c.route || ('#/directory?cat=' + c.id)
+        c.route || ('#/directory?cat=' + c.id),
+        c.route ? '' : c.id
       )).join('')}
     </div>
     <div style="height:22px"></div>`;

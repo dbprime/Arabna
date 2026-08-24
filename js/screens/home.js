@@ -1,7 +1,7 @@
 /* ============================ HOME ============================ */
 import { t, L, icon, $, $$, go, renderHeader, openSheet, closeSheet, toast, stars, wireRoutes,
          distLabelHtml, distText, cityChipLabel, mountAdRotator, esc,
-         pickerBtn, setPickerValue, openDropdown, regionAllLabel, outsideBoxHtml, mountOutsideBox } from '../ui.js';
+         pickerBtn, setPickerValue, openDropdown, regionAllLabel, outsideBoxHtml, mountOutsideBox, catTileHtml } from '../ui.js';
 import { CATEGORIES, HOME_CATS, MINI_ADS, ARTICLES, ZIPS, CITY_SUGGESTIONS, AD_SLOTS,
          CITY_POINTS } from '../data.js';
 import * as S from '../store.js';
@@ -103,16 +103,25 @@ export function HomeScreen(root) {
          nothing at all for everybody else */''}
     ${outsideBoxHtml()}
 
-    <!-- categories — home is a summary: 5 max, the rest live on #/categories -->
+    ${/* ONE ROW OF SIX, and no heading over it. «التصنيفات» was a whole
+         line naming what the pictures already say, and «عرض الكل» was a
+         text button at the end of a row — so it became a square among its
+         brothers instead. No sideways scroll: an option that runs off the
+         edge is an option nobody has, and the end of that scroll is where
+         gyms (1), realestate (6) and homeservices (3) would sit — the
+         weakest sections, so burying them kills them. */''}
     <div class="section">
-      <div class="section-head"><div class="section-title">${t('categories')}</div>
-        <button class="link-gold" data-route="#/categories">${t('seeAll')}</button></div>
-      <div class="hscroll" id="cats">
+      <div class="cat-row" id="cats">
         ${HOME_CATS.map(id => CATEGORIES.find(c => c.id === id)).filter(Boolean).map(c => `
           <button class="cat-item" data-cat="${c.id}" ${c.route ? `data-dest="${c.route}"` : ''}>
-            <span class="cat-circle">${icon(c.icon, 24)}</span>
+            ${catTileHtml(c.id, 24)}
             <span class="cat-label">${t(c.shortKey || c.key)}</span>
           </button>`).join('')}
+        ${/* the count is COMPUTED, never typed */''}
+        <button class="cat-item" data-route="#/categories">
+          <span class="cat-tile more">+${CATEGORIES.filter(c => !c.route).length - HOME_CATS.filter(id => CATEGORIES.some(c => c.id === id && !c.route)).length}</span>
+          <span class="cat-label">${t('seeAll')}</span>
+        </button>
       </div>
     </div>
 

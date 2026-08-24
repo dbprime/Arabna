@@ -59,7 +59,11 @@ export const CATEGORIES = [
 ];
 
 /* The five circles on Home, in order. */
-export const HOME_CATS = ['restaurants', 'doctors', 'events', 'homeservices', 'shopping'];
+/* FIVE, and the sixth square is the door to the rest. One row of six is
+   362px at 390 — 6×52 and 5×10 between — and two rows measured 178px,
+   which pushed the slider and «featured this week» off the screen and
+   took Home's identity and its priciest advertising slot with them. */
+export const HOME_CATS = ['restaurants', 'grocery', 'doctors', 'worship', 'auto'];
 
 /* ---- Marketplace sections ----
    maxActive / days / freeOnly override the account-wide defaults
@@ -767,6 +771,30 @@ export const STREET_WORDS = {
 export const REGIONS = [
   { id: 'hou', name: 'Houston' },
 ];
+
+/* ONE HUE PER CATEGORY, and the rest is derived from it.
+   Twenty-one categories were twenty-one identical gold circles, so the eye
+   could not tell «restaurants» from «lawyers» without reading. Colour is
+   not decoration sprinkled about: EACH FAMILY SITS IN ONE RANGE, so the
+   eye learns that warm is food, blue is money and violet is community
+   without anybody reading anything.
+
+   And nothing lands in 35°–55° — that is the gold of the logo, and a
+   category sitting there would look «featured» for no reason. */
+export const CAT_HUE = {
+  // food and drink
+  restaurants: 6,   grocery: 20,    cafe: 32,     sweets: 348,
+  // health and care
+  doctors: 168,     beauty: 186,    gyms: 155,
+  // money and law
+  finance: 214,     lawyers: 232,   realestate: 202,
+  // community and worship
+  worship: 266,     community: 286, education: 250,
+  // home and shopping
+  shopping: 320,    homegoods: 334, homeservices: 304, electronics: 292,
+  // getting about, and days out
+  auto: 128,        travel: 112,    outings: 140, occasions: 100,
+};
 
 export const CITY_POINTS = [
   { city: 'Houston',       region: 'hou', lat: 29.7604, lng: -95.3698 },

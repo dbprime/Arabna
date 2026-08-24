@@ -4,7 +4,7 @@
 
 import { icon, iconFilled } from './icons.js';
 import { t, L, arCount, getLang, setLang } from './i18n.js';
-import { FREE_PRICE, APP_VERSION } from './data.js';
+import { FREE_PRICE, APP_VERSION, CAT_HUE, CATEGORIES } from './data.js';
 import * as S from './store.js';
 
 export const $ = (sel, root = document) => root.querySelector(sel);
@@ -1519,6 +1519,39 @@ export function openRegionSheet(after) {
       else window.dispatchEvent(new HashChangeEvent('hashchange'));
     }));
   });
+}
+
+/**
+ * The category tile — the hue, the icon and the khatam, in one place.
+ *
+ * ⚠️ `--h` goes on THIS element and on no ancestor: `var()` inside a
+ * custom property is substituted at the element that DECLARES it, so a
+ * hue set on a parent resolves to nothing here and the tile comes out
+ * with no background and no border at all.
+ */
+export function catTileHtml(catId, size = 24, cls = 'cat-tile') {
+  const h = CAT_HUE[catId];
+  const c = CATEGORIES.find(x => x.id === catId);
+  return `<span class="${cls}"${h == null ? '' : ` style="--h:${h}"`}>
+    ${h == null ? '' : khatamHtml()}${icon((c && c.icon) || 'store', size)}</span>`;
+}
+
+/* Drawn in the page, never a file to fetch. One `<svg>` per tile is
+   cheaper than a request, and it takes `currentColor` so it is always the
+   category's own hue without a second variable. */
+function khatamHtml() {
+  const id = 'khatam';
+  return `<svg class="cat-pat" viewBox="0 0 120 120" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+    <defs><pattern id="${id}" width="60" height="60" patternUnits="userSpaceOnUse">
+      <rect x="14" y="14" width="32" height="32" fill="none" stroke="currentColor" stroke-width="1.1"/>
+      <rect x="14" y="14" width="32" height="32" fill="none" stroke="currentColor" stroke-width="1.1" transform="rotate(45 30 30)"/>
+      <circle cx="0" cy="0" r="7" fill="none" stroke="currentColor" stroke-width="1.1"/>
+      <circle cx="60" cy="0" r="7" fill="none" stroke="currentColor" stroke-width="1.1"/>
+      <circle cx="0" cy="60" r="7" fill="none" stroke="currentColor" stroke-width="1.1"/>
+      <circle cx="60" cy="60" r="7" fill="none" stroke="currentColor" stroke-width="1.1"/>
+    </pattern></defs>
+    <rect width="120" height="120" fill="url(#${id})"/>
+  </svg>`;
 }
 
 /** «Houston والمنطقة» — built from the region, never typed with a city in it */

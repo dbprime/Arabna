@@ -46,7 +46,7 @@
   /* The previews in Settings show each theme as it really is, so their
      colours belong to no theme and never move. */
   --prev-d-bg: #0E1829;  --prev-d-bar: #263764;  --prev-d-gold: #E4C77E;
-  --prev-l-bg: #EFE8DA;  --prev-l-bar: #FFFDF8;  --prev-l-gold: #7A5D28;
+  --prev-l-bg: #DFEEF8;  --prev-l-bar: #F3F9FD;  --prev-l-gold: #7A5D28;
 }
 
 /* ---------------- dark: the default ---------------- */
@@ -98,13 +98,23 @@
 
 /* ---------------- light: warm ivory ---------------- */
 :root[data-theme="light"] {
-  --bg:          #EFE8DA;
-  --bar:         #FFFDF8;
-  --surface:     #FFFDF8;
-  --surface-2:   #F6EFE1;
-  --text:        #131E33;
-  --text-2:      #2B3752;
-  --muted:       #5C6376;
+  /* SKY. And the correction that had to come first: `--bg` never shows on
+     a phone at all — it is the space around the frame on a desktop. What
+     fills a phone screen is `--bar`, with main and the header transparent
+     over it. So the values that matter here are `--bar` and `--surface`,
+     not `--bg`.
+
+     And the card is LIGHTER than the page, deliberately: today they are
+     one colour separated only by a border line, while the dark theme
+     already does the opposite (page #0E1829, card #1C2A50). This makes
+     the two themes siblings in structure and not only in colour. */
+  --bg:          #CFE4F2;        /* around the frame, on a desktop only */
+  --bar:         #DFEEF8;        /* the page — what fills a phone */
+  --surface:     #F3F9FD;        /* the cards — lighter, so they lift off it */
+  --surface-2:   #E9F3FB;
+  --text:        #0C1424;
+  --text-2:      #1E2942;
+  --muted:       #454B5C;        /* was #5C6376 — the dim text was the pale one */
   --gold:        #7A5D28;
   --gold-bright: #5A4418;        /* measured: 4.17 on a gold wash over ivory */
   --on-gold:     #FFFDF8;
@@ -149,13 +159,16 @@
    still win, because they are set on the element itself. */
 @media (prefers-color-scheme: light) {
   :root:not([data-theme="dark"]):not([data-theme="light"]) {
-    --bg:          #EFE8DA;
-    --bar:         #FFFDF8;
-    --surface:     #FFFDF8;
-    --surface-2:   #F6EFE1;
-    --text:        #131E33;
-    --text-2:      #2B3752;
-    --muted:       #5C6376;
+    /* the same values as the explicit light block — this copy exists so
+       the FIRST PAINT is right before any script runs, and if the two
+       drift an «auto» reader gets a different theme from a light one */
+    --bg:          #CFE4F2;
+    --bar:         #DFEEF8;
+    --surface:     #F3F9FD;
+    --surface-2:   #E9F3FB;
+    --text:        #0C1424;
+    --text-2:      #1E2942;
+    --muted:       #454B5C;
     --gold:        #7A5D28;
     --gold-bright: #5A4418;
     --on-gold:     #FFFDF8;
@@ -220,6 +233,17 @@
    Only `html` carries it. Putting it on `body` as well would compound —
    body would take 106.25% of the root's 17px — which px never did. */
 html { font-size: 106.25%; }
+/* TWO TYPEFACES, AND WHERE EACH ONE STOPS. IBM Plex stays the reading
+   face; Noto Kufi is for what a reader picks out of a screen — the screen
+   title, a shop's name, a prayer and its time, a section head.
+   NOT the category labels (.78125rem) and NOT the bottom bar (.71875rem):
+   at those sizes a face with character is a burden, not a feature.
+
+   And every size below is in `rem` and not px, because the root here is
+   106.25% — SEVENTEEN pixels, not sixteen — and `applyFontScale()` writes
+   it too. A px number would be 6.25% wrong and would break for the first
+   reader who enlarges the type from Settings. */
+:root { --font-display: 'Noto Kufi Arabic', 'IBM Plex Sans Arabic', sans-serif; }
 
 
 html, body {
@@ -296,7 +320,7 @@ ul { margin: 0; padding: 0; list-style: none; }
 }
 /* RTL mirrors translateX, so the centring stays true in both directions */
 [dir="rtl"] .app-header .h-logo { transform: translateX(50%); }
-.app-header .h-title { flex: 1; text-align: center; font-weight: 700; font-size: 1.125rem; }
+.app-header .h-title { flex: 1; text-align: center; font-weight: 700; font-size: 1.2375rem; font-family: var(--font-display); }
 
 /* Installed, the reserved strip is added on top of the header, so the header
    itself shrinks: 72 + 59 = 131px is close to a native app bar, while
@@ -352,7 +376,7 @@ ul { margin: 0; padding: 0; list-style: none; }
   display: flex; align-items: center; justify-content: space-between;
   padding-inline: 14px; margin-bottom: 10px;
 }
-.section-title { font-weight: 700; font-size: 1.125rem; }
+.section-title { font-weight: 700; font-size: 1.2375rem; font-family: var(--font-display); }
 .section-title small { display:block; font-weight: 400; font-size: .8125rem; color: var(--muted); margin-top: 2px; }
 .link-gold { color: var(--gold-bright); font-size: .84375rem; font-weight: 700; display:flex; align-items:center; gap:3px; }
 
@@ -532,17 +556,52 @@ ul { margin: 0; padding: 0; list-style: none; }
 /* ---------- category circles ---------- */
 .cat-item { flex: 0 0 auto; width: 66px; text-align: center; scroll-snap-align: start;
   display: flex; flex-direction: column; align-items: center; }
-.cat-circle {
+/* ONE SHAPE, drawn one way. The all-categories grid already used a
+   rounded square and the home strip a full circle — the same thing drawn
+   twice on two screens — so the job was not a new shape but agreeing on
+   one. 18px at 52–56, 13px at 44.
+
+   ⚠️ `--h` IS WRITTEN ON THE ELEMENT ITSELF (`style="--h:6"`), never on a
+   parent. `var()` inside a custom property is substituted AT THE ELEMENT
+   THAT DECLARES IT, not the one that uses it — so putting these rules on
+   an ancestor resolves them with no hue and they come out EMPTY, leaving
+   a tile with no background and no border. */
+.cat-tile {
   width: 56px; height: 56px; margin: 0 auto 7px;
-  border-radius: 50%;
+  border-radius: 18px;
+  position: relative; overflow: hidden;
   display: grid; place-items: center;
-  background: linear-gradient(150deg, var(--surface-2), var(--surface));
-  border: 1px solid var(--line);
-  color: var(--gold-bright);
+  background: hsl(var(--h) 62% 58% / .18);
+  border: 1px solid hsl(var(--h) 60% 62% / .34);
+  color: hsl(var(--h) 66% 72%);
   transition: transform .16s var(--ease), box-shadow .16s var(--ease);
 }
-.cat-item:active .cat-circle { transform: scale(0.93); box-shadow: 0 0 0 3px var(--gold-wash-3); }
-.cat-item.active .cat-circle { background: linear-gradient(150deg, var(--gold-bright), var(--gold)); color: var(--on-gold); }
+.cat-tile svg { stroke-width: 1.75; position: relative; z-index: 1; }
+/* the khatam — drawn in the page, never a file to fetch */
+.cat-pat { position: absolute; inset: 0; width: 100%; height: 100%; opacity: .5; pointer-events: none; }
+/* A thin dark stroke dissolves on a light ground while a light stroke on a
+   dark ground shows, at almost identical numbers — which is why the weight
+   differs between the themes and not only the colour. */
+:root[data-theme="light"] .cat-tile {
+  background: hsl(var(--h) 58% 45% / .24);
+  border-color: hsl(var(--h) 52% 40% / .42);
+  color: hsl(var(--h) 66% 24%);
+}
+:root[data-theme="light"] .cat-tile svg { stroke-width: 2.15; }
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) .cat-tile {
+    background: hsl(var(--h) 58% 45% / .24);
+    border-color: hsl(var(--h) 52% 40% / .42);
+    color: hsl(var(--h) 66% 24%);
+  }
+  :root:not([data-theme="dark"]) .cat-tile svg { stroke-width: 2.15; }
+}
+.cat-item:active .cat-tile { transform: scale(0.93); box-shadow: 0 0 0 3px var(--gold-wash-3); }
+.cat-item.active .cat-tile { background: linear-gradient(150deg, var(--gold-bright), var(--gold)); color: var(--on-gold); }
+/* the door to the rest — a tile in shape, dashed so it reads as a door
+   rather than as one more category */
+.cat-tile.more { background: none; border-style: dashed; border-color: var(--line);
+  color: var(--muted); }
 .cat-label { font-size: .78125rem; color: var(--muted); font-weight: 600; line-height: 1.3; display: block; }
 .cat-item.active .cat-label { color: var(--gold-bright); }
 
@@ -698,7 +757,7 @@ ul { margin: 0; padding: 0; list-style: none; }
   border: 1px solid var(--line);
 }
 .row-main { flex: 1; min-width: 0; }
-.row-title { font-size: 1rem; font-weight: 700; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.row-title { font-size: 1.1rem; font-weight: 700; font-family: var(--font-display); display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
 .row-sub { font-size: .78125rem; color: var(--muted); margin-top: 2px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
 .row-actions { display: flex; gap: 7px; margin-top: 9px; }
 .mini-btn {
@@ -1007,10 +1066,27 @@ input[inputmode="tel"], input[type="email"], input[inputmode="decimal"], #zipIn 
   transition: transform .12s var(--ease), border-color .18s var(--ease);
 }
 .cat-cell:active { transform: scale(0.96); border-color: var(--gold-wash-4); }
+.cat-cell .cc-ico svg { stroke-width: 1.75; position: relative; z-index: 1; }
+:root[data-theme="light"] .cat-cell .cc-ico {
+  background: hsl(var(--h) 58% 45% / .24);
+  border-color: hsl(var(--h) 52% 40% / .42);
+  color: hsl(var(--h) 66% 24%);
+}
+:root[data-theme="light"] .cat-cell .cc-ico svg { stroke-width: 2.15; }
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) .cat-cell .cc-ico {
+    background: hsl(var(--h) 58% 45% / .24);
+    border-color: hsl(var(--h) 52% 40% / .42);
+    color: hsl(var(--h) 66% 24%);
+  }
+  :root:not([data-theme="dark"]) .cat-cell .cc-ico svg { stroke-width: 2.15; }
+}
 .cat-cell .cc-ico {
   width: 44px; height: 44px; border-radius: 13px;
+  position: relative; overflow: hidden;
   display: grid; place-items: center;
-  background: var(--gold-wash-2); color: var(--gold-bright);
+  background: hsl(var(--h) 62% 58% / .18); color: hsl(var(--h) 66% 72%);
+  border: 1px solid hsl(var(--h) 60% 62% / .34);
 }
 .cat-cell .cc-label { font-size: .8125rem; line-height: 1.35; text-align: center; }
 .cat-cell .cc-count { font-size: .6875rem; color: var(--muted); }
@@ -1118,7 +1194,11 @@ input[inputmode="tel"], input[type="email"], input[inputmode="decimal"], #zipIn 
 
 /* categories strip: five circles must fit a 390px screen without clipping */
 #cats { gap: 6px; }
-#cats .cat-item { width: calc((100% - 24px) / 5); min-width: 0; }
+/* six across, ten between, and it fits 390 exactly: 6×52 + 5×10 = 362 */
+.cat-row { display: flex; gap: 10px; padding: 0 14px; }
+.cat-row .cat-item { flex: 1 1 0; min-width: 0; width: auto; }
+.cat-row .cat-tile { width: 52px; height: 52px; }
+.cat-tile.more { display: grid; place-items: center; font-weight: 700; font-size: .9375rem; }
 
 /* one-row search: field takes the space, city chip stays compact */
 .search-row { display: flex; gap: 8px; align-items: center; padding: 12px 14px 0; }
@@ -1706,8 +1786,8 @@ input[inputmode="tel"], input[type="email"], input[inputmode="decimal"], #zipIn 
   border-radius: 16px; padding: 18px 16px; text-align: center;
 }
 .pr-next-label { font-size: .78125rem; color: var(--muted); }
-.pr-next-name { font-size: 1.375rem; font-weight: 700; margin-block-start: 4px; }
-.pr-next-at { font-size: 1.875rem; font-weight: 700; color: var(--gold-bright); line-height: 1.2; }
+.pr-next-name { font-size: 1.5125rem; font-weight: 700; font-family: var(--font-display); margin-block-start: 4px; }
+.pr-next-at { font-size: 2.0625rem; font-weight: 700; font-family: var(--font-display); color: var(--gold-bright); line-height: 1.2; }
 .pr-next-left { font-size: .84375rem; color: var(--text-2); margin-block-start: 4px; }
 
 .pr-list { margin-block-start: 14px; border: 1px solid var(--line-soft); border-radius: 14px; overflow: hidden; }
@@ -1717,8 +1797,8 @@ input[inputmode="tel"], input[type="email"], input[inputmode="decimal"], #zipIn 
   border-block-end: 1px solid var(--line-soft);
 }
 .pr-row:last-child { border-block-end: 0; }
-.pr-row-name { font-weight: 600; display: flex; align-items: center; gap: 8px; }
-.pr-row-at { font-weight: 700; color: var(--gold-bright); }
+.pr-row-name { font-family: var(--font-display); font-weight: 600; display: flex; align-items: center; gap: 8px; }
+.pr-row-at { font-family: var(--font-display); font-weight: 700; color: var(--gold-bright); }
 /* sunrise is not a prayer. It is printed among them because it is what a
    fasting person is actually asking about, and greyed so it is not one. */
 .pr-row.sun .pr-row-name, .pr-row.sun .pr-row-at { color: var(--muted); font-weight: 600; }
