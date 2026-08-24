@@ -524,14 +524,65 @@ corrected by hand, which is precisely the thing that forgets. **It is
 printed in the drawer and in «حسابي»**, so somebody filing a report reads a
 number that is not their build's, and the report cannot be placed.
 
+## Testing: what is run, and when
+
+There are three gates, and **the session goes into the work, not into the
+tests**. The whole set is 37 suites × 2 builds and takes about twenty
+minutes; running it after every edit eats the session and leaves the work
+unfinished — four calls is an hour and a half of testing before a line is
+written. And more parallelism does not help: the machine has two cores and
+`run.sh` already has both busy with the two builds, so the way out is
+**fewer suites, not faster ones**.
+
+| when | what | measured |
+|---|---|---|
+| **after every change** | `tools/audit/quick.sh` | **~100s** — the static pass and all 41 screens in both languages |
+| **while working on one area** | `SUITES="33 37" tools/e2e/run.sh` | seconds to a minute — only what your change touches |
+| **once, at the end of a session** | `tools/audit/daily.sh` | **~20 min** — the second build, the four roles, the admin panel, everything |
+
+`quick.sh` is `index.html` only, on purpose: the single-file build comes
+from the same source, and a fault in it alone is rare and of a known kind
+(`esc()` and CSP), which `daily.sh` catches at the end. **Doubling the gate's
+time for a rare case removes the point of having a gate.** What it does not
+check: the second build · the four roles · the admin panel · the calendar ·
+the deep cases in the other thirty-six suites.
+
+**Which suites touch what**, for the middle row:
+
+```
+the city chip and location   33 · 37        the calendar and feasts   36
+the directory list/filters   37 · 38        the admin panel           38
+prayer and mass              read each file's own header — it says what it covers
+```
+
+**If you do not know which one covers your change, run three, not
+thirty-seven** — and the full set at the end catches what you missed.
+
+### Never wait on a file with a loop
+No `until grep … do sleep`, and no waiting for a marker to appear in a
+file. **Run the command in the foreground and read its output**, or run it
+and read the file **once, after the command itself has finished**.
+
+**Measured, and it cost most of a session:** two watcher loops on
+`/tmp/daily.txt` spun for forty minutes in the `015`/`025` batch waiting
+for a marker a killed run was never going to write — **and the work was
+finished and sitting behind them.**
+
+⚠️ **And what looks stuck is usually waiting, not working.**
+`build_single.py` finishes in **under one and a half seconds** — measured
+three times: 1.24s, 0.73s, 0.23s. If something has "been running" for forty
+minutes, it is waiting on something else, and killing it is more correct
+than waiting for it.
+
 ## Testing before you ship a change
 ```
 python3 -m http.server 8099        # from the repo root
 node tools/e2e/chk_i18n.mjs        # both packs, every derived key, seconds
-tools/e2e/run.sh                   # 30 suites × 2 builds, ~35 minutes
+tools/audit/quick.sh               # the fast gate — ~100 seconds
+tools/audit/daily.sh               # everything, once at the end — ~20 minutes
 python3 tools/build_single.py > index-single-file.html
 ```
-1. `tools/e2e/` holds every suite, v3 to v32, one per batch, and `run.sh`
+1. `tools/e2e/` holds every suite, v3 to v39, one per batch, and `run.sh`
    runs all of them against **both** `index.html` and the generated
    `index-single-file.html`. A change is not finished until both are green.
 2. Check **both** languages (the AR/EN button in the header) and **both**
