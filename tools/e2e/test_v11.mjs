@@ -43,6 +43,26 @@ const go = async (h) => {
   await page.evaluate(x => { location.hash = x; }, h);
   await page.waitForTimeout(380);
 };
+/* V.04.4: the directory paints forty rows and grows as the reader
+   scrolls. Where a check asks HOW MANY results there are, it reads
+   `#dirList` `data-total`, which the screen publishes. Where it asks
+   WHICH — is Hermann Park in the list — the rows have to be painted, so
+   this drives the real mechanism rather than going around it. */
+const drawAll = async (page) => {
+  let last = -1;
+  for (let i = 0; i < 60; i++) {
+    const n = await page.evaluate(() => {
+      const s = document.querySelector('#dirEnd');
+      if (s) s.scrollIntoView();
+      return document.querySelectorAll('#dirList .list-row').length;
+    });
+    if (n === last) break;
+    last = n;
+    await page.waitForTimeout(140);
+  }
+  await page.evaluate(() => { const a = document.querySelector('#app'); if (a) a.scrollTop = 0; });
+  await page.waitForTimeout(120);
+};
 /* V.04.0 reversed the SHEET'S SHAPE, not its contents. Five headed groups
    and sixteen options were two screens of scrolling; they collapsed into
    two multi-select pickers — «الأكثر استخداماً» and «خيارات إضافية» — so
@@ -154,6 +174,7 @@ ok('the outings cell carries an icon', !!(outCell && outCell.svg));
 ok('the outings cell counts its places', outCell && +outCell.count >= 70, outCell && outCell.count);
 
 await go('#/directory?cat=outings');
+await drawAll(page);
 const outRows = await page.evaluate(() => Array.from(
   document.querySelectorAll('#dirList .list-row[data-route^="#/directory/"]'))
   .map(r => r.querySelector('.row-title').textContent.trim()));
@@ -183,6 +204,7 @@ ok('the sheet never offers a speciality with nothing behind it',
 // apply one and see it bite
 ok('«يوجد مكان للشواء» is pickable', await pickAttr('outBbq'));
 await page.click('#fApply'); await page.waitForTimeout(500);
+await drawAll(page);
 const bbqRows = await page.evaluate(() => Array.from(
   document.querySelectorAll('#dirList .list-row[data-route^="#/directory/"]'))
   .map(r => r.querySelector('.row-title').textContent.trim()));
@@ -387,7 +409,8 @@ ok('the entry price survived the edit', body.includes('$9 / person'));
 
 /* the new place raised the count */
 await go('#/directory?cat=outings');
-const nowRows = await page.evaluate(() => document.querySelectorAll('#dirList .list-row[data-route^="#/directory/"]').length);
+// V.04.4: a count, so the published total rather than the painted rows
+const nowRows = await page.evaluate(() => +document.querySelector('#dirList').dataset.total || 0);
 ok('the category holds one more place than it did', nowRows === outRows.length + 1,
    outRows.length + ' → ' + nowRows);
 

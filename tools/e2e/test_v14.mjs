@@ -74,7 +74,11 @@ const go = async (h) => {
 };
 const txt = () => page.textContent('#app');
 const hash = () => page.evaluate(() => location.hash);
-const rows = () => page.evaluate(() => document.querySelectorAll('#dirList .list-row[data-route^="#/directory/"]').length);
+/* V.04.4: the directory paints forty rows and grows as you scroll, so
+   counting `.list-row` answers "how many are drawn" — and every question
+   here is "how many results are there". The screen publishes that on
+   `#dirList` as `data-total`, which is the number it already had. */
+const rows = () => page.evaluate(() => +(document.querySelector('#dirList')||{dataset:{}}).dataset.total || 0);
 const ls = () => page.evaluate(() => JSON.parse(localStorage.getItem('arabna.v1') || '{}'));
 const adminLogin = async () => {
   await go('#/admin');

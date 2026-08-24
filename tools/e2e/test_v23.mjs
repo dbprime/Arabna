@@ -34,7 +34,11 @@ const go = async (h) => {
   await page.evaluate(x => { location.hash = x; }, h);
   await page.waitForTimeout(520);
 };
-const rows = () => page.evaluate(() => document.querySelectorAll('#dirList .list-row[data-route^="#/directory/"]').length);
+/* V.04.4: the directory paints forty rows and grows as you scroll, so
+   counting `.list-row` answers "how many are drawn" — and every question
+   here is "how many results are there". The screen publishes that on
+   `#dirList` as `data-total`, which is the number it already had. */
+const rows = () => page.evaluate(() => +(document.querySelector('#dirList')||{dataset:{}}).dataset.total || 0);
 const txt = () => page.textContent('#app');
 
 /* V.03.0 — batch seven: the search says what it means

@@ -179,10 +179,14 @@ ok('4.5 …but the pin at the top never repeats one of them', await page.evaluat
     .filter(r => r.querySelector('.badge-sponsored')).map(r => r.dataset.route);
   return !pinned.some(r => ids.includes(r));
 }, spon.ids));
+/* V.04.4: the window paints forty, so this reads the count the screen
+   publishes rather than the DOM's length. The question is unchanged —
+   lifting two into the sponsored band must not remove them from the
+   directory, and the total must still add up. */
 ok('4.6 …and the directory still holds every listing', await page.evaluate(async () => {
   const S = await import('/js/store.js');
-  const rows = document.querySelectorAll('#dirList .list-row[data-route^="#/directory/"]').length;
-  return rows === S.allBusinesses().length;
+  const total = +(document.querySelector('#dirList') || { dataset: {} }).dataset.total || 0;
+  return total === S.allBusinesses().length;
 }));
 
 /* a chosen category narrows them to that category */

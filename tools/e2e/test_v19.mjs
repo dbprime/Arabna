@@ -31,7 +31,10 @@ async function search(term) {
     const rows = [...document.querySelectorAll('#dirList .list-row')]
       .filter(r => r.getAttribute('data-route') !== '#/subscribe');
     return {
-      n: rows.length,
+      /* V.04.4: `n` is how many results there ARE — the screen publishes
+         it — not how many the window has painted. `names` stays the
+         painted rows, which is what it always was: the first few. */
+      n: +(document.querySelector('#dirList') || { dataset: {} }).dataset.total || 0,
       names: rows.map(r => (r.querySelector('.row-main b, .row-main .row-name, .row-main') || r).textContent.trim().split('\n')[0]).slice(0, 8),
     };
   });

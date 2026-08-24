@@ -73,10 +73,33 @@ const go = async (h) => {
   await page.evaluate(x => { location.hash = x; }, h);
   await page.waitForTimeout(360);
 };
+/* V.04.4: the directory paints forty rows and grows as the reader
+   scrolls. Where a check asks HOW MANY results there are, it reads
+   `#dirList` `data-total`, which the screen publishes. Where it asks
+   WHICH — is Hermann Park in the list — the rows have to be painted, so
+   this drives the real mechanism rather than going around it. */
+const drawAll = async (page) => {
+  let last = -1;
+  for (let i = 0; i < 60; i++) {
+    const n = await page.evaluate(() => {
+      const s = document.querySelector('#dirEnd');
+      if (s) s.scrollIntoView();
+      return document.querySelectorAll('#dirList .list-row').length;
+    });
+    if (n === last) break;
+    last = n;
+    await page.waitForTimeout(140);
+  }
+  await page.evaluate(() => { const a = document.querySelector('#app'); if (a) a.scrollTop = 0; });
+  await page.waitForTimeout(120);
+};
 const txt = () => page.textContent('#app');
-const rows = () => page.evaluate(() =>
-  Array.from(document.querySelectorAll('#dirList .list-row[data-route^="#/directory/"]'))
-    .map(r => r.querySelector('.row-title').textContent.trim()));
+const rows = async () => {
+  await drawAll(page);
+  return page.evaluate(() =>
+    Array.from(document.querySelectorAll('#dirList .list-row[data-route^="#/directory/"]'))
+      .map(r => r.querySelector('.row-title').textContent.trim()));
+};
 
 await page.goto(BASE); await page.waitForTimeout(900);
 await page.evaluate(() => {
@@ -174,6 +197,7 @@ ok('the admin panel lists the public places — 28 outings and 35 places of wors
 
 /* a ticketed place in the same category is an ordinary business */
 await go('#/directory?cat=outings');
+await drawAll(page);
 const zoo = await page.evaluate(() => {
   const r = Array.from(document.querySelectorAll('#dirList .list-row'))
     .find(x => x.textContent.includes('Houston Zoo'));
@@ -194,6 +218,7 @@ ok('…and prints an entry price under its own label',
    ====================================================================== */
 console.log('--- the phoneless eleven ---');
 await go('#/directory?cat=outings');
+await drawAll(page);
 const noCall = await page.evaluate(() =>
   Array.from(document.querySelectorAll('#dirList .list-row[data-route^="#/directory/"]'))
     .filter(r => !r.querySelector('[data-call]'))

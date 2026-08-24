@@ -192,10 +192,14 @@ ok('after the break it is open again', (await txt()).includes('مفتوح الآ
 console.log('--- open now ---');
 await atTime('2026-08-19T09:00:00');   // Wednesday 09:00
 await go('#/directory');
-const all9 = (await rows()).length;
+/* V.04.4: `data-total` is the number of RESULTS; `.list-row` counts what
+   the window has painted, which is forty until you scroll. */
+const total = () => page.evaluate(() => +(document.querySelector('#dirList') || { dataset: {} }).dataset.total || 0);
+const all9 = await total();
 await toggleOpenNow(page);
 const open9 = await rows();
-ok('the "open now" chip narrows the list', open9.length < all9, open9.length + ' of ' + all9);
+const open9n = await total();
+ok('the "open now" chip narrows the list', open9n < all9, open9n + ' of ' + all9);
 ok('every remaining row shows an open pill', await page.evaluate((sel) =>
   Array.from(document.querySelectorAll(sel))
     .every(r => !!r.querySelector('.open-pill.open, .open-pill.soon')), rowEls));
@@ -203,7 +207,7 @@ ok('Al Sham (opens 11:00) is filtered out at 09:00', !open9.some(x => x.includes
 ok('the 24-hour business survives', open9.some(x => x.includes('أبو خالد')));
 
 await toggleOpenNow(page);
-ok('turning the chip off restores the list', (await rows()).length === all9);
+ok('turning the chip off restores the list', (await total()) === all9, `${await total()} vs ${all9}`);
 
 /* sort: open first */
 await page.click('#dirFilter'); await page.waitForTimeout(450);

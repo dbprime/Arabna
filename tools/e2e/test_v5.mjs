@@ -200,9 +200,11 @@ let cs = { label: await pickerValue('#ctlCat .ctl-v') };
 ok('directory: arriving filtered names the section on the picker', cs.label === 'مطاعم', cs.label);
 ok('directory: a note names the current section', await page.locator('#dirNote .sec-note').count() === 1,
    (await page.textContent('#dirNote')).trim());
-const dirAll = await page.evaluate(() => document.querySelectorAll('#dirList .list-row').length);
+/* V.04.4: `data-total` is how many results there are; `.list-row` is how
+   many are painted, and the window paints forty. */
+const dirAll = await page.evaluate(() => +document.querySelector('#dirList').dataset.total);
 await go('#/directory');
-const dirNone = await page.evaluate(() => document.querySelectorAll('#dirList .list-row').length);
+const dirNone = await page.evaluate(() => +document.querySelector('#dirList').dataset.total);
 ok('directory: the filter really filters', dirAll < dirNone, dirAll + ' vs ' + dirNone);
 ok('directory: unfiltered view shows no section note', await page.locator('#dirNote .sec-note').count() === 0);
 

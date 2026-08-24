@@ -332,6 +332,18 @@ export function DirectoryScreen(root) {
     paintCatSlider();
 
     const el = $('#dirList');
+    /* HOW MANY RESULTS THERE ARE, as against how many are drawn. Since the
+       window arrived, counting `.list-row` answers the second question
+       while every question that matters — did the filter narrow it, is the
+       whole directory here — asks the first. The screen already had the
+       number and printed it in the section note only when a category was
+       chosen; now it is always readable.
+
+       SET BEFORE THE BRANCHES, because two of them return early. Written
+       after the happy path it stayed stale on an empty search, which read
+       as 514 results behind a screen saying there were none. */
+    el.dataset.total = String(list.length);
+
     /* A SEARCH IS NOT A FILTER, and merging the two was the whole fault.
        Typing «sushi» with nothing else set produced «لا توجد نتائج بهذه
        الفلاتر · جرّب إزالة خيار أو اثنين» and a «امسح التصفية» button —

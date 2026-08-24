@@ -225,7 +225,8 @@ ok('4.13 Enter picks what is focused', (await hash()).includes('cat=restaurants'
 const picked = await page.evaluate(() => ({
   closed: document.querySelectorAll('.dd-panel').length === 0,
   label: document.querySelector('#ctlCat .ctl-v').textContent.trim(),
-  rows: document.querySelectorAll('#dirList .list-row[data-route^="#/directory/"]').length,
+  // V.04.4: the results count, not the painted count
+  rows: +(document.querySelector('#dirList') || { dataset: {} }).dataset.total || 0,
   chips: document.querySelectorAll('#attrChips .chip').length,   // 0 since V.02.7
 }));
 ok('4.14 choosing closes the panel at once', picked.closed);
