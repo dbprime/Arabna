@@ -951,6 +951,21 @@ export function clearUserLocation() {
   state.geo = null;
   save();
 }
+/**
+ * The last failed location read — FOR DIAGNOSIS, and shown on no public
+ * screen. A fault that leaves no trace is not diagnosed, it is guessed at:
+ * the silent refresh failed silently for months and neither Rai could know
+ * it had nor could anybody prove it. The reader is not frightened with a
+ * fault they can do nothing about; we simply stop guessing.
+ */
+export function noteGeoFail(code) {
+  state.geoFail = { code: code || 0, at: now(), n: ((state.geoFail || {}).n || 0) + 1 };
+  save();
+}
+export function geoFail() { return state.geoFail || null; }
+/** cleared by the first success, so the note never outlives the fault */
+export function clearGeoFail() { if (state.geoFail) { delete state.geoFail; save(); } }
+
 /** did the reader choose this city by hand? */
 export function cityIsManual() { return !!(state.location && state.location.manual); }
 export function geoGranted() { return !!state.geoGranted; }

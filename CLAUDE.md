@@ -7,7 +7,7 @@ ARABNA · عربنا — a mobile-first web app for the Arab community in the U.
 **business directory + marketplace + events + magazine**, Arabic-first with a full English toggle.
 ("Classifieds / الإعلانات الشخصية" is now "Marketplace / السوق" — the old `#/classifieds`
 routes still resolve so shared links keep working.)
-Current version: **V.04.5 (prototype)**. Owner: Rai Elby (@dbprime). Deploys to Vercel (team DB Prime).
+Current version: **V.04.6 (prototype)**. Owner: Rai Elby (@dbprime). Deploys to Vercel (team DB Prime).
 
 ## Hard rules (from the product brief)
 1. **One repository, one Vercel project.** No duplicates, no stray preview projects.
@@ -3254,6 +3254,62 @@ from both sort surfaces — the row picker and the filter sheet. Ordering by
 nearest between two shops 449 and 451 miles away is an ordering that means
 nothing. A reader who picked a region by hand has no point at all
 (`setUserRegion` clears it), so it never reaches them either.
+
+## V.04.6 — the silent refresh failed silently, and locked itself out
+
+### «It works when it feels like it» is the signature of a throttle
+Rai's chip said `Beebe, AR` while he was in `Romeoville, IL` — six hundred
+miles — and «حدّث موقعي» corrected it at once. So the permission was
+granted, the read worked and the naming worked: **only the automatic
+refresh was failing.**
+
+Three lines did it. `lastQuietTry = S.now()` was written **before** the
+attempt, and `GEO_STALE_MS` governed both success and failure — so **a
+failure was stamped exactly like a success and shut the door for thirty
+minutes.** With an eight-second timeout, short for a device in motion:
+
+```
+open  → 8s → fail → silence → locked 30 min
+open  → locked, no attempt at all
+open an hour later → works → "it worked this time"
+```
+
+- **A failure gets its own throttle**: `GEO_RETRY_MS = 90 * 1000`. A read
+  that did not answer says nothing about whether the next one will.
+- **The timestamp is written after the answer, not before it.**
+- **`quietInFlight`** stops `visibilitychange` opening an attempt on top of
+  one that has not answered — without it every one counts as a failure and
+  the throttle grows, making the fault worse.
+- **`enableHighAccuracy: false`, timeout 20s.** We want a CITY NAME, not a
+  car's position in a street: coarse arrives faster, succeeds where precise
+  fails, and spares the battery of a device on the road. Twenty seconds
+  costs somebody sitting at home nothing — they answer in under a second.
+
+### The failure throttle is the stored trace, not a variable
+The file specified `lastQuietFail` in module state, and **measured, that
+does not hold**: module state dies with the page, so **five opens inside a
+minute made five failed reads** — and closing and reopening the app is
+exactly what somebody does while it is failing. `geoFail.at` is already
+saved, so it is the one definition; a second copy in memory could only
+disagree with it. **Measured after: 5 opens, one attempt.**
+
+### A fault that leaves no trace is guessed at, not diagnosed
+The failure handler was empty — no message, no retry, **not a line written
+anywhere**. So Rai could not know it had failed and nobody could prove it.
+`noteGeoFail(code)` records the code, the time and a count.
+
+- **It is shown in the location sheet and nowhere else** — not on Home, not
+  on the chip, not on any public screen. It is for us. **A reader is not
+  frightened with a fault they can do nothing about.**
+- **The first success clears it**, so the note never outlives the fault.
+
+### And one door that is left open on purpose
+`setUserRegion` writes `manual: true`, so **anybody who once pressed
+«اختر منطقة» has a hand-picked city for good** and moves onto the
+ask-first path instead of the silent refresh. That is `askToMove`'s design
+from V.04.0 — a city somebody chose is not changed behind their back —
+and reversing a decision nobody asked to reverse is not this batch's job.
+It is one line, in its own file, when Rai says so.
 
 ## Known open items
 - **The header logo is 818 KB for an 80×65 box** — 37% of a 2.1 MB first

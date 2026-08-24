@@ -628,13 +628,31 @@ export function requestGeo({ onStep, onOk, onFail }) {
    Then one quiet `getCurrentPosition`, with no sheet, no prompt and no
    question. A failure is swallowed and the stored point stands.
    --------------------------------------------------------------- */
-const GEO_STALE_MS = 30 * 60 * 1000;
+const GEO_STALE_MS = 30 * 60 * 1000;   // it succeeded: do not read again for half an hour
+/* IT FAILED: try again in a minute and a half. The two were one number,
+   and that is the whole fault — a failed attempt was stamped exactly like
+   a successful one and shut the door for thirty minutes. Eight seconds is
+   short for a device in motion, so the sequence ran: open, eight seconds,
+   fail, silence, locked for half an hour · open again, locked, no attempt
+   at all · open an hour later, works. That is «it works when it feels
+   like it», precisely. */
+const GEO_RETRY_MS = 90 * 1000;
 /* How far the reader has to have travelled before the stored CITY NAME is
    treated as a claim rather than a fact. Under three miles you are almost
    certainly still in your own town, so a correct name is never wiped;
    above it the old name is an assertion about somewhere the reader is not. */
 const NAME_STALE_MI = 3;
-let lastQuietTry = 0;
+let lastQuietOk = 0;
+/* Without this, `visibilitychange` opens an attempt on top of one that has
+   not answered yet, every one of them counts as a failure, and the throttle
+   grows — making the fault worse rather than better. */
+let quietInFlight = false;
+/* The FAILURE throttle is read from the stored trace, not from a variable.
+   Module state dies with the page, so five opens inside a minute made five
+   failed reads — measured — and the reader is closing and reopening the app
+   precisely when it is failing. `geoFail.at` is already saved, so it is the
+   one definition; a second copy in memory could only disagree with it. */
+const lastFailAt = () => (S.geoFail() || {}).at || 0;
 
 /** repaint the city chips in place — the new name is the whole signal */
 /* The chip has FOUR states and only `cityChipLabel()` knows all of them:
@@ -663,8 +681,9 @@ function repaintCityChips() {
  * The three conditions, in one named place so they can be read and tested
  * rather than inferred from the middle of a function: the permission was
  * granted before and not refused, the stored point is older than
- * GEO_STALE_MS, and a failed attempt is throttled the same way (a failure
- * leaves `at` untouched, so without this it would retry on every switch).
+ * GEO_STALE_MS, and no attempt is already in flight. A FAILURE HAS ITS OWN
+ * THROTTLE — ninety seconds, not thirty minutes — because a read that did
+ * not answer tells us nothing about whether the next one will.
  */
 export function shouldRefreshGeo(force = false) {
   if (document.visibilityState !== 'visible') return false;
@@ -675,10 +694,12 @@ export function shouldRefreshGeo(force = false) {
      a point right now, and the two were the same line. */
   if (!S.geoGranted() || S.state.geoDenied) return false;   // never granted, or refused
   if (force) return true;
+  if (quietInFlight) return false;
   const g = S.state.geo;
   const t0 = S.now();
   if (g && g.at && t0 - g.at < GEO_STALE_MS) return false;
-  if (t0 - lastQuietTry < GEO_STALE_MS) return false;
+  if (t0 - lastQuietOk < GEO_STALE_MS) return false;
+  if (t0 - lastFailAt() < GEO_RETRY_MS) return false;
   return true;
 }
 
@@ -703,9 +724,14 @@ export function cityNameFor(r, near) {
 export function refreshLocationQuietly(force = false) {
   if (!navigator.geolocation) return;
   if (!shouldRefreshGeo(force)) return;
-  lastQuietTry = S.now();
+  /* NO TIMESTAMP HERE. Stamping before the answer is what treated a
+     failure exactly like a success. */
+  quietInFlight = true;
   navigator.geolocation.getCurrentPosition(
     async (pos) => {
+      quietInFlight = false;
+      lastQuietOk = S.now();
+      S.clearGeoFail();          // the note never outlives the fault
       const { latitude, longitude } = pos.coords;
       const pt = { lat: latitude, lng: longitude };
 
@@ -765,8 +791,20 @@ export function refreshLocationQuietly(force = false) {
       S.setUserLocation({ zip: r.zip || '', city, state: r.state }, pt);
       if (S.userCity() !== before) repaintCityChips();
     },
-    () => { /* silent: no toast, no prompt, no second attempt */ },
-    { maximumAge: 300000, timeout: 8000 }
+    (err) => {
+      /* Still silent to the reader — but no longer silent to us. A fault
+         that leaves no trace cannot be diagnosed, only guessed at, and
+         that is what made this one take three reports to find. */
+      quietInFlight = false;
+      S.noteGeoFail(err && err.code);      // …and this is the throttle too
+    },
+    /* Coarse accuracy on purpose: we want a CITY NAME, not a car's
+       position in a street. It arrives faster, it succeeds where the
+       precise one fails, and it spares the battery of a device on the
+       road. And twenty seconds rather than eight — somebody moving needs
+       them, and somebody sitting at home answers in under a second
+       anyway, so the number costs them nothing. */
+    { enableHighAccuracy: false, timeout: 20000, maximumAge: 300000 }
   );
 }
 
@@ -844,6 +882,15 @@ export function askForLocation(after, why) {
   }, why);
 }
 
+/** the quiet trace, in the location sheet alone — and only while it is true */
+function geoFailNoteHtml() {
+  const f = S.geoFail();
+  if (!f) return '';
+  const mins = Math.max(1, Math.round((S.now() - f.at) / 60000));
+  return `<div class="hint mt-8" style="opacity:.7">${t('geoFailNote')
+    .replace('{n}', String(f.n)).replace('{m}', String(mins))}</div>`;
+}
+
 export function openLocationSheet() {
   const cities = S.directoryCities();
   const cur = S.userCity();
@@ -853,6 +900,10 @@ export function openLocationSheet() {
 
     <button class="btn btn-gold btn-block" id="geoBtn">${icon('navigation', 19)} ${t('useMyLocation')}</button>
     ${S.state.geo ? `<button class="btn btn-ghost btn-block mt-8" id="geoRefresh">${icon('navigation', 17)} ${t('refreshMyLocation')}</button>` : ''}
+    ${/* IN THIS SHEET AND NOWHERE ELSE. Not on Home, not on the chip, not
+         on any public screen: it is for us, not for the reader, and it is
+         cleared by the first success. */''}
+    ${geoFailNoteHtml()}
     <div id="zipMsg" class="mt-8"></div>
 
     <!-- Twenty-four city chips were a wall. The rule from the filter batch
