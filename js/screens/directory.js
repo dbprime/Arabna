@@ -19,6 +19,27 @@ import { openTimeFix } from './prayer.js';
    somewhere else — the list can be a different length than it was. */
 let lastOpened = '';
 
+/* THE WINDOW THAT GROWS. Measured on a 4x-throttled processor — a mid
+   range Android — `#/directory` painted in 4,327ms against 22ms for Home
+   and under 200ms for the other six screens: twenty-four times the
+   heaviest of them. One line did it, `el.innerHTML = rows.join('')`, and
+   the page it built was 80,582px — about 107 screens drawn so a reader
+   could look at one.
+
+   Forty rows first, forty more each time the reader reaches the end. No
+   library, no virtual scroll, and not one change to the shape of a row.
+
+   And deliberately NOT a virtual scroll that measures row heights and
+   paints the viewport: that shape assumes the whole list is already in
+   hand, which is exactly what stops being true once the directory lives
+   on a server. `growList` is the seam the server arrives through — the
+   slice becomes a fetch and nothing else moves. */
+const PAGE = 40;
+let rowsAll = [];        // every row's HTML, built once per paint
+let shown = 0;           // how many are on screen now
+let io = null;           // the end-of-list watcher
+let resume = 0;          // how many were drawn when a listing was opened
+
 export function DirectoryScreen(root) {
   renderHeader({});
 
@@ -367,23 +388,76 @@ export function DirectoryScreen(root) {
       paintFilterCount();
       return;
     }
+    if (io) { io.disconnect(); io = null; }
+    shown = 0; rowsAll = [];
     if (!list.length) {
       el.innerHTML = emptyState('search', t('emptyDirTitle'), t('emptyDirSub'), t('setLocation'), '#/directory');
     } else {
       // the subscription upsell sits after the first five results, not above them
-      const rows = list.map(b => rowHtml(b, sponsored.has(b.id)));
-      if (rows.length > 5) rows.splice(5, 0, upsellHtml());
-      else rows.push(upsellHtml());
-      el.innerHTML = rows.join('');
+      rowsAll = list.map(b => rowHtml(b, sponsored.has(b.id)));
+      if (rowsAll.length > 5) rowsAll.splice(5, 0, upsellHtml());
+      else rowsAll.push(upsellHtml());
+
+      el.innerHTML = '<div id="dirEnd" style="height:1px"></div>';
+      /* 600px of margin so the next batch is drawn BEFORE the reader
+         reaches the end — no gap and no wait. And a browser without
+         IntersectionObserver draws the lot: slower, but working. Never
+         half a screen because a feature is missing. */
+      io = ('IntersectionObserver' in window)
+        ? new IntersectionObserver(es => { if (es.some(e => e.isIntersecting)) growList(); },
+                                   { root: $('#app'), rootMargin: '600px' })
+        : null;
+      /* The upsell card is not a result, so it does not eat one of the
+         forty. Forty listings and the card: forty-one children. */
+      const extra = rowsAll.length > list.length ? 1 : 0;
+      growList(Math.max(PAGE + extra, resume));
+      resume = 0;
+      if (io) io.observe($('#dirEnd')); else growList(rowsAll.length);
     }
     wireRoutes(el);
-    $$('#dirList [data-call]').forEach(b => b.addEventListener('click', e => { e.stopPropagation(); location.href = 'tel:' + b.dataset.call; }));
-    $$('#dirList .list-row[data-route^="#/directory/"]').forEach(r =>
-      r.addEventListener('click', () => { lastOpened = r.dataset.route.split('/').pop(); }));
+    /* The per-row listeners live in `wireRows` now. Leaving the old sweeps
+       here would give every row in the first batch a second one. */
     if (!list.length) $$('#dirList .empty .btn').forEach(b => b.addEventListener('click', () => import('./home.js').then(m => m.openLocationSheet())));
 
     paintFilterCount();
     flashReturn();
+  };
+
+  /* Only the NEW rows are wired; the old ones already are. Without the
+     `rowWired` guard every batch hands each existing row another
+     listener, and one tap opens the screen twice — a worse fault than the
+     slowness this came to fix. */
+  const wireRows = (nodes) => {
+    nodes.forEach(n => {
+      if (n.dataset.rowWired) return;
+      n.dataset.rowWired = '1';
+      n.querySelectorAll('[data-call]').forEach(b =>
+        b.addEventListener('click', e => {
+          e.stopPropagation();
+          location.href = 'tel:' + b.dataset.call;
+        }));
+      const route = n.dataset.route || '';
+      if (route.startsWith('#/directory/'))
+        n.addEventListener('click', () => { lastOpened = route.split('/').pop(); resume = shown; });
+    });
+    wireRoutes($('#dirList'));      // guards itself with dataset.wired
+  };
+
+  /* Adds the next batch and returns how many it added — zero means the
+     list is finished, which is what stops `flashReturn`'s loop. */
+  const growList = (n = PAGE) => {
+    const el = $('#dirList');
+    if (!el || shown >= rowsAll.length) return 0;
+    const to = Math.min(shown + n, rowsAll.length);
+    const before = el.children.length;
+    el.insertAdjacentHTML('beforeend', rowsAll.slice(shown, to).join(''));
+    const added = Array.prototype.slice.call(el.children, before);
+    wireRows(added);
+    const grew = to - shown;
+    shown = to;
+    if (shown >= rowsAll.length && io) { io.disconnect(); io = null; }
+    else if (io) { const sen = $('#dirEnd'); if (sen) el.appendChild(sen); }
+    return grew;
   };
 
   const paintFilterCount = () => {
@@ -400,7 +474,15 @@ export function DirectoryScreen(root) {
      length; the card is right either way. */
   const flashReturn = () => {
     if (!lastOpened) return;
-    const row = $(`#dirList .list-row[data-route="#/directory/${lastOpened}"]`);
+    /* A forty-row window would otherwise break both halves of coming back:
+       somebody who opened the 300th listing returns to a list that does
+       not contain their row. So draw on until it does — `growList` returns
+       zero when the list is finished, so this stops by itself even if the
+       listing was deleted underneath us. */
+    let row = $(`#dirList .list-row[data-route="#/directory/${lastOpened}"]`);
+    while (!row && growList()) {
+      row = $(`#dirList .list-row[data-route="#/directory/${lastOpened}"]`);
+    }
     lastOpened = '';
     if (!row) return;
     requestAnimationFrame(() => {

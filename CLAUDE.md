@@ -7,7 +7,7 @@ ARABNA · عربنا — a mobile-first web app for the Arab community in the U.
 **business directory + marketplace + events + magazine**, Arabic-first with a full English toggle.
 ("Classifieds / الإعلانات الشخصية" is now "Marketplace / السوق" — the old `#/classifieds`
 routes still resolve so shared links keep working.)
-Current version: **V.04.3 (prototype)**. Owner: Rai Elby (@dbprime). Deploys to Vercel (team DB Prime).
+Current version: **V.04.4 (prototype)**. Owner: Rai Elby (@dbprime). Deploys to Vercel (team DB Prime).
 
 ## Hard rules (from the product brief)
 1. **One repository, one Vercel project.** No duplicates, no stray preview projects.
@@ -502,6 +502,11 @@ takes a number already in use, and reopens a settled argument.
 >
 > **And no batch file is closed while its number is still under «ما ينتظر
 > الإرسال».**
+>
+> **And the waiting list is never emptied by a session because that
+> session received nothing.** A session deletes from it what it landed
+> itself, **and never writes «لا شيء»** — somebody who has not been sent a
+> file does not know that a file exists to be sent.
 
 **Written in the file itself, not in anybody's head.** State that lives in
 one person's memory falls over on the first day they are not there — and
@@ -3042,6 +3047,89 @@ the Arabic date reads Arabic and the English one English, one class and no
 condition. **Two places had it and only two**: this row and
 `adminLogHtml()`. Every other `.ltr` in the app wraps a phone, an address
 or a price, all pure Latin, and is correct.
+
+## V.04.4 — the directory drew all five hundred at once
+
+### One line, one screen, twenty-four times the next heaviest
+Measured on a 4x-throttled processor — a mid-range Android:
+
+```
+#/home            22 ms       421 elements
+#/directory    4,327 ms    11,828 elements    517 rows    1,027 listeners
+#/marketplace    175 ms       284
+…the other six all under 200 ms
+```
+
+**The directory alone**, and the cause was one line —
+`el.innerHTML = rows.join('')`. The page it built measured **80,282px:
+about 107 screens drawn so a reader could look at one.**
+
+The wall is between 1,500 and 2,000 listings and there are 514 today, so
+there is room — **which is the reason to do it now, before it becomes a
+fault somebody reports.** Memory and scrolling were never the problem;
+measured at 10,283 listings the scroll stayed smooth. **The whole cost is
+in the first paint.**
+
+### Forty rows, then forty more
+`PAGE = 40`, an `IntersectionObserver` on a one-pixel sentinel, and
+`growList()` appending the next slice. Measured after:
+
+```
+elements   11,760 → 1,086      (a 91% cut)
+height     80,282px → 6,834px
+rows        515 → 41 at first paint, 515 after scrolling to the end
+```
+
+- **`rootMargin: '600px'`** so the next batch is drawn *before* the reader
+  reaches the end — no gap and no wait.
+- **A browser without `IntersectionObserver` draws the lot.** Slower, but
+  working; never half a screen because a feature is missing. Measured with
+  it deleted: all 515.
+- **`dataset.rowWired` is not decoration.** Without it every batch hands
+  each existing row another listener and one tap opens the screen twice —
+  a worse fault than the slowness. The two old sweeps
+  (`$$('#dirList [data-call]')` and the route one) are **deleted**, not
+  left beside `wireRows`.
+- **The upsell card is not a result**, so it does not consume one of the
+  forty: forty listings and the card, forty-one children.
+
+### Coming back had to be rebuilt with it
+A forty-row window breaks both halves of returning: somebody who opened
+the 300th listing comes back to a list that does not contain their row,
+and the saved pixel points past the end of a shorter page. So `resume`
+records **how many rows were drawn**, not only where the scroll was, and
+`flashReturn` draws on until the row exists:
+
+```js
+while (!row && growList()) row = $(`…[data-route="#/directory/${lastOpened}"]`);
+```
+
+**`growList` returns zero when the list is finished**, so the loop ends by
+itself even if the listing was deleted underneath us. Measured against the
+old build on the same interaction: row at 401px vs 400px, 515 rows both —
+**identical.**
+
+### And the shape is chosen for the server, not for today
+`growList` is the seam the server arrives through: the slice becomes a
+fetch and **nothing else moves** — not `rowHtml`, not the observer, not
+`flashReturn`, not the filters. **That is why this is not a virtual scroll
+that measures row heights and paints the viewport.** That shape assumes
+the whole list is already in hand, which is exactly what stops being true
+once the directory is on a server: the growing window works in both worlds
+and the other one gets thrown away and rewritten.
+
+### The state file said «nothing is waiting» while twelve files were
+`docs/الحالة.md` was written in the session that received 005 and 006, so
+it recorded what it could see: two files arrived, both shipped, nothing
+waiting. **True from where it stood and false about the project** — and it
+is the exact fault the file exists to prevent, since a session reading
+«nothing waiting» concludes the project is finished and numbers its next
+file `010`, which is taken.
+
+Section 4 is now the real queue, eighteen rows, `165` marked **sent last**.
+And a line in `CLAUDE.md`: **the waiting list is never emptied by a session
+because that session received nothing** — somebody who has not been sent a
+file does not know that a file exists to be sent.
 
 ## Known open items
 - **The header logo is 818 KB for an 80×65 box** — 37% of a 2.1 MB first
