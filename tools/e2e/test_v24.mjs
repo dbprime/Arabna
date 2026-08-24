@@ -245,8 +245,16 @@ await go('#/prayer');
 ok('4.8 out of coverage the times still work', await page.locator('.pr-row').count() >= 6);
 ok('4.9 …«mosques near you» is hidden, never empty',
    await page.locator('.pr-mosques .list-row').count() === 0);
-ok('4.10 …and one honest line says what is covered',
-   /هيوستن|Houston/.test(await txt()));
+/* V.04.5 REVERSED the wording deliberately. The line used to name
+   Houston; it says «مناطق محدَّدة» now, because a sentence that lists the
+   covered areas grows every time one opens — it reads with one, nags with
+   three and is skipped with six. The names live in a sheet that opens.
+   What this check was really guarding is unchanged and is what it asserts
+   now: the reader out of coverage is TOLD, in a line, rather than left to
+   wonder. */
+ok('4.10 …and one honest line says the coverage is limited',
+   /مناطق محدَّدة|certain areas/.test(await txt()),
+   ((await txt()).match(/.{0,20}(مناطق محدَّدة|certain areas).{0,20}/) || [''])[0]);
 
 /* ---- 5. the mosque's own times ---- */
 console.log('--- jumuah and iqama ---');

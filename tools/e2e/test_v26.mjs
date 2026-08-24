@@ -125,8 +125,22 @@ ok('2.4 b281 reads «بـHouston الكبرى»', await page.evaluate(() => {
   const b = window.__m.D.BUSINESSES.find(x => x.id === 'b281');
   return /Houston/.test(b.name.ar) && !/هيوستن/.test(b.name.ar);
 }));
-ok('2.5 regionName is «Houston والمنطقة»', await page.evaluate(() =>
-  window.__m.I.bothPacks().ar.regionName === 'Houston والمنطقة'));
+/* V.04.5 REVERSED the KEY, not the rule. Rai's rule is that the city name
+   is written in English inside the Arabic sentence, and it still is — but
+   `regionName` had «Houston» TYPED INTO IT, so it could only ever name one
+   place. It is `regionAll: '{r} والمنطقة'` now, with the name substituted
+   from `REGIONS`, and it reads «Dallas والمنطقة» the day Dallas opens by
+   the same string. So the check is: the words are still Arabic, the place
+   is still English, and the place is no longer hard-coded. */
+ok('2.5 the area label puts an English name in an Arabic sentence, from the data',
+   await page.evaluate(() => {
+     const p = window.__m.I.bothPacks();
+     return p.ar.regionAll === '{r} والمنطقة' && p.ar.regionName === undefined;
+   }));
+ok('2.5b …and rendered it still reads «Houston والمنطقة»', await page.evaluate(async () => {
+  const U = await (import('arabna/js/ui.js').catch(() => import('./js/ui.js')));
+  return U.regionAllLabel() === 'Houston والمنطقة';
+}));
 
 /* the other half of Rai's rule: search in Arabic, result in English */
 console.log('--- and Arabic still finds them ---');
