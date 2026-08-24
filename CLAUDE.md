@@ -7,7 +7,7 @@ ARABNA · عربنا — a mobile-first web app for the Arab community in the U.
 **business directory + marketplace + events + magazine**, Arabic-first with a full English toggle.
 ("Classifieds / الإعلانات الشخصية" is now "Marketplace / السوق" — the old `#/classifieds`
 routes still resolve so shared links keep working.)
-Current version: **V.04.4 (prototype)**. Owner: Rai Elby (@dbprime). Deploys to Vercel (team DB Prime).
+Current version: **V.04.5 (prototype)**. Owner: Rai Elby (@dbprime). Deploys to Vercel (team DB Prime).
 
 ## Hard rules (from the product brief)
 1. **One repository, one Vercel project.** No duplicates, no stray preview projects.
@@ -3130,6 +3130,79 @@ Section 4 is now the real queue, eighteen rows, `165` marked **sent last**.
 And a line in `CLAUDE.md`: **the waiting list is never emptied by a session
 because that session received nothing** — somebody who has not been sent a
 file does not know that a file exists to be sent.
+
+## V.04.5 — the word «تلقائي», and the reader who is 450 miles away
+
+### The chip says the city and nothing about how it got there
+V.04.0 put «· تلقائي» on a device-found city so the two states would not
+read alike. Rai asked for the word gone, and he is right that a chip in
+the header is not where an internal distinction belongs.
+
+**`cityIsManual()` is untouched and still does its work** — it is what
+stops a hand-picked city being changed behind its owner and what decides
+whether `askToMove` appears. It simply no longer writes itself on screen.
+`locAuto` is deleted from both packs: a key nobody uses is debt.
+
+**The two checks that asserted the word are inverted, not deleted** —
+v33's 2.5 and v15's 6.30, each with a comment naming the reversal. A check
+that disappears with no reason takes its behaviour back two batches later.
+
+### Somebody opened the app from Beebe, Arkansas
+Measured with the point 450 miles out, before writing anything:
+
+```
+#/prayer      says so in a line     ✓
+#/mass        says so in a line     ✓
+#/home        nothing at all        ✗
+#/directory   514 listings, nothing ✗
+```
+
+So the reader saw their own town on the chip and a directory entirely of
+somewhere else, **with no sentence saying why** — and it gets worse the
+day coordinates land, when «450 ميلاً» sits under every name: a true
+number and a meaningless one.
+
+- **The box names no area.** With one region the sentence would read; with
+  three it nags; with six nobody reads it — **and a message that grows
+  every time the project succeeds is wrong from the start.** Its length
+  never changes. The names live in a sheet that opens.
+- **It explains, it does not block.** The listings stay exactly where they
+  are: somebody in Dallas visiting Houston next month has every right to
+  read them.
+- **No city in the region sheet, and no arrow.** Somebody outside Houston
+  does not know Katy from Sugar Land, and twenty-five suburbs mean nothing
+  to them. The existing city sheet is untouched for readers inside the
+  coverage — **two sheets with two purposes**: that one picks a city, this
+  one picks a whole area.
+
+### `setUserRegion` writes no city, and that is the whole item
+```js
+state.location = { zip: '', city: '', state: 'TX', region: id, manual: true };
+```
+Writing `city: 'Houston'` would show the businesses of the city of Houston
+alone and **drop half the directory**, because half the shops are in the
+suburbs. So the region id is stored, `baseList` reads it, and the reader
+who picked one name gets **Katy · Sugar Land · Spring** and the rest —
+measured: 514 listings, all three suburbs present.
+
+### The name comes out of the text
+`REGIONS` in `data.js`, a `region` field on all 24 `CITY_POINTS`, and
+`regionName` — which had «Houston» typed into it — replaced by
+**`regionAll: '{r} والمنطقة'`** with the name substituted. **No `if` on a
+city name anywhere**: a city written into a condition is the city somebody
+forgets the day the coverage changes.
+
+**And nothing is written when a new area opens.** Measured by adding
+`{ id:'dal', name:'Dallas' }` and one city: two rows in the sheet, the
+box's text identical to the character, and a point inside that city makes
+the box disappear on its own. Then reverted.
+
+### Distances are not shown to somebody outside
+`distanceTo` returns null outside the coverage and «الأقرب» is dropped
+from both sort surfaces — the row picker and the filter sheet. Ordering by
+nearest between two shops 449 and 451 miles away is an ordering that means
+nothing. A reader who picked a region by hand has no point at all
+(`setUserRegion` clears it), so it never reaches them either.
 
 ## Known open items
 - **The header logo is 818 KB for an 80×65 box** — 37% of a 2.1 MB first

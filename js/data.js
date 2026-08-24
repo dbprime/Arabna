@@ -87,7 +87,7 @@ export const CLASSIFIED_CATS = MARKET_CATS;
    hand-typed «0.1» while the project had reached V.03.6 — two literals,
    both stale, and a reader reporting a fault could not tell us which build
    they were on. Raise it here when CLAUDE.md's version line moves. */
-export const APP_VERSION = '0.4.4';
+export const APP_VERSION = '0.4.5';
 
 export const FREE_PRICE = '__FREE__';
 
@@ -760,31 +760,39 @@ export const STREET_WORDS = {
  * in Katy exactly as far away as every other, which is a number that
  * looks real and is not.
  */
+/* THE COVERAGE REGIONS. The day Dallas opens, its row is added here and
+   its cities go into CITY_POINTS with `region: 'dal'` — and not one string
+   and not one condition is touched. A city written into an `if` is the
+   city somebody forgets the day the coverage changes. */
+export const REGIONS = [
+  { id: 'hou', name: 'Houston' },
+];
+
 export const CITY_POINTS = [
-  { city: 'Houston',       lat: 29.7604, lng: -95.3698 },
-  { city: 'Katy',          lat: 29.7858, lng: -95.8245 },
-  { city: 'Sugar Land',    lat: 29.6197, lng: -95.6349 },
-  { city: 'Spring',        lat: 30.0799, lng: -95.4172 },
-  { city: 'Richmond',      lat: 29.5822, lng: -95.7607 },
-  { city: 'Cypress',       lat: 29.9691, lng: -95.6972 },
-  { city: 'Pearland',      lat: 29.5636, lng: -95.2860 },
-  { city: 'Humble',        lat: 29.9988, lng: -95.2622 },
-  { city: 'Webster',       lat: 29.5377, lng: -95.1183 },
-  { city: 'Galveston',     lat: 29.3013, lng: -94.7977 },
-  { city: 'Rosharon',      lat: 29.3555, lng: -95.4483 },
-  { city: 'Stafford',      lat: 29.6161, lng: -95.5577 },
-  { city: 'Tomball',       lat: 30.0972, lng: -95.6161 },
-  { city: 'Bellaire',      lat: 29.7058, lng: -95.4588 },
-  { city: 'Conroe',        lat: 30.3119, lng: -95.4561 },
-  { city: 'Kemah',         lat: 29.5388, lng: -95.0202 },
-  { city: 'La Porte',      lat: 29.6658, lng: -95.0191 },
-  { city: 'League City',   lat: 29.5075, lng: -95.0949 },
-  { city: 'Magnolia',      lat: 30.2094, lng: -95.7508 },
-  { city: 'Missouri City', lat: 29.6186, lng: -95.5377 },
-  { city: 'Needville',     lat: 29.3944, lng: -95.8386 },
-  { city: 'New Caney',     lat: 30.1516, lng: -95.2113 },
-  { city: 'Shenandoah',    lat: 30.1852, lng: -95.4541 },
-  { city: 'The Woodlands', lat: 30.1658, lng: -95.4613 },
+  { city: 'Houston',       region: 'hou', lat: 29.7604, lng: -95.3698 },
+  { city: 'Katy',          region: 'hou', lat: 29.7858, lng: -95.8245 },
+  { city: 'Sugar Land',    region: 'hou', lat: 29.6197, lng: -95.6349 },
+  { city: 'Spring',        region: 'hou', lat: 30.0799, lng: -95.4172 },
+  { city: 'Richmond',      region: 'hou', lat: 29.5822, lng: -95.7607 },
+  { city: 'Cypress',       region: 'hou', lat: 29.9691, lng: -95.6972 },
+  { city: 'Pearland',      region: 'hou', lat: 29.5636, lng: -95.2860 },
+  { city: 'Humble',        region: 'hou', lat: 29.9988, lng: -95.2622 },
+  { city: 'Webster',       region: 'hou', lat: 29.5377, lng: -95.1183 },
+  { city: 'Galveston',     region: 'hou', lat: 29.3013, lng: -94.7977 },
+  { city: 'Rosharon',      region: 'hou', lat: 29.3555, lng: -95.4483 },
+  { city: 'Stafford',      region: 'hou', lat: 29.6161, lng: -95.5577 },
+  { city: 'Tomball',       region: 'hou', lat: 30.0972, lng: -95.6161 },
+  { city: 'Bellaire',      region: 'hou', lat: 29.7058, lng: -95.4588 },
+  { city: 'Conroe',        region: 'hou', lat: 30.3119, lng: -95.4561 },
+  { city: 'Kemah',         region: 'hou', lat: 29.5388, lng: -95.0202 },
+  { city: 'La Porte',      region: 'hou', lat: 29.6658, lng: -95.0191 },
+  { city: 'League City',   region: 'hou', lat: 29.5075, lng: -95.0949 },
+  { city: 'Magnolia',      region: 'hou', lat: 30.2094, lng: -95.7508 },
+  { city: 'Missouri City', region: 'hou', lat: 29.6186, lng: -95.5377 },
+  { city: 'Needville',     region: 'hou', lat: 29.3944, lng: -95.8386 },
+  { city: 'New Caney',     region: 'hou', lat: 30.1516, lng: -95.2113 },
+  { city: 'Shenandoah',    region: 'hou', lat: 30.1852, lng: -95.4541 },
+  { city: 'The Woodlands', region: 'hou', lat: 30.1658, lng: -95.4613 },
 ];
 
 /** How far outside the covered cities we stop claiming to serve someone. */

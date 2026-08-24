@@ -117,9 +117,19 @@ await page.evaluate(() => {
 });
 await go('#/directory'); await go('#/home');
 ok('2.4 a GPS city is not manual', await page.evaluate(() => window.__m.S.cityIsManual() === false));
-ok('2.5 …and the chip reads «· تلقائي»',
-   /تلقائي/.test(await page.evaluate(() => document.querySelector('#locBtn').textContent)),
-   await page.evaluate(() => document.querySelector('#locBtn').textContent.trim()));
+/* V.04.5 REVERSED this deliberately, and it is inverted rather than
+   deleted: a check that disappears with no reason takes its behaviour
+   back two batches later. V.04.0 put «· تلقائي» on the chip so the two
+   states would not read alike; Rai asked for the word gone. The
+   DISTINCTION stays where it belongs — in the data, where `cityIsManual`
+   still stops a hand-picked city being changed behind its owner — it is
+   simply no longer written on a button in the header. */
+ok('2.5 …and the chip reads the city name alone, with no word about its source',
+   await page.evaluate(() => {
+     const s = document.querySelector('#locBtn').textContent.replace(/\s+/g, ' ').trim();
+     return /Houston/.test(s) && !/تلقائي|auto/i.test(s);
+   }),
+   await page.evaluate(() => document.querySelector('#locBtn').textContent.replace(/\s+/g, ' ').trim()));
 /* the ask itself: manual city + a device point somewhere else */
 await page.evaluate(() => {
   const S = window.__m.S;

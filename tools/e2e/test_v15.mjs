@@ -266,12 +266,12 @@ ok('6.27 "allow" is what reaches the browser', await page.evaluate(() => window.
 const st2 = await ls();
 ok('6.28 the point is kept', st2.geo && Math.abs(st2.geo.lat - 29.7604) < 0.01, JSON.stringify(st2.geo));
 ok('6.29 it is snapped to a city the directory covers', st2.location.city === 'Houston', st2.location.city);
-/* V.04.0 reversed this one too: one word in both states told the reader
-   nothing, so a city the device found now reads «Houston · تلقائي» and a
-   city picked by hand reads «Houston» alone. This branch granted the
-   permission, so it is the live one. */
-ok('6.30 the chip names it, and says it is following the device',
-   /^Houston · /.test((await page.textContent('[data-loc]')).trim()),
+/* V.04.0 put «· تلقائي» on a device-found city so the two states would
+   not read alike; V.04.5 took the word off again at Rai's request. The
+   chip prints the city and nothing else, whichever way it arrived — the
+   distinction lives in the data, not on the button. */
+ok('6.30 the chip names the city, and says nothing about where it came from',
+   /^Houston$/.test((await page.textContent('[data-loc]')).trim()),
    (await page.textContent('[data-loc]')).trim());
 
 /* a listing given coordinates, the way geocoding will deliver them */

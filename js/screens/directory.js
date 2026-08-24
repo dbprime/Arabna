@@ -5,7 +5,7 @@ import { t, L, icon, $, $$, go, back, renderHeader, openSheet, closeSheet, confi
          pickerBtn, setPickerValue, openDropdown, closeDropdown,
          showsPrices, priceGate, wirePriceGates,
          openBadgeHtml, openBadgeSlotHtml, onMinute, distLabelHtml, distText, cityChipLabel, fmtMiles, attrChipsHtml, fmtDay, fmtTime, bizBadgeHtml,
-         sponsoredRows, historyKey, esc } from '../ui.js';
+         sponsoredRows, historyKey, esc, outsideBoxHtml, mountOutsideBox } from '../ui.js';
 import { CATEGORIES, SUBSCRIPTION_PRICE, DAY_KEYS } from '../data.js';
 import * as S from '../store.js';
 import { catIcon, startSlider } from './home.js';
@@ -110,6 +110,10 @@ export function DirectoryScreen(root) {
     <div id="catSlider"></div>
     <div id="sponRows"></div>
     <div id="dirNote"></div>
+    ${/* above the first row, and the listings stay exactly where they are:
+         somebody in Dallas visiting next month has every right to read
+         them. The message explains, it does not block. */''}
+    <div class="pad" id="outHost">${outsideBoxHtml()}</div>
     <div class="pad mt-12" id="dirList"></div>
 
     <div class="list-note" style="margin-bottom:18px">${icon('info', 18)}
@@ -141,7 +145,12 @@ export function DirectoryScreen(root) {
 
   const openSortDD = () => openDropdown({
     host: $('#ddHost'), anchor: $('#ctlSort'), title: t('pickSort'), unit: 'dd',
-    options: ['newest', 'nearest', 'rated', 'open'].map(id => ({ id, label: t(sortKey(id)) })),
+    /* «الأقرب» is dropped outside the covered areas: there is no distance
+       to sort by that would mean anything. The standing rule — never
+       offer an option that leads nowhere. */
+    options: ['newest', 'nearest', 'rated', 'open']
+      .filter(id => id !== 'nearest' || S.inCoverage())
+      .map(id => ({ id, label: t(sortKey(id)) })),
     value: st.sort,
     onPick: (v) => {
       if (v === 'nearest' && !S.state.geo) {
@@ -248,7 +257,12 @@ export function DirectoryScreen(root) {
   /** the list before the search is applied — the sheet counts against this */
   const baseList = () => {
     const now = new Date();
-    return S.allBusinesses()
+    /* A reader who chose a REGION gets that region's cities — all of them.
+       They picked one name and got the suburbs behind it, which is the
+       point: half the shops are not in the city proper. With no region
+       chosen this is the whole directory, as before. */
+    const region = S.userRegion();
+    return (region ? S.businessesOfRegion(region) : S.allBusinesses())
       .filter(b => !st.featured || S.isPaid(b))
       .filter(b => st.cat === 'all' || b.cat === st.cat)
       .filter(b => S.inArea(b, st.area))
@@ -506,6 +520,7 @@ export function DirectoryScreen(root) {
 
   paint();
 
+  mountOutsideBox(root, () => { const h = $('#outHost'); if (h) h.innerHTML = outsideBoxHtml(); mountOutsideBox(root); paint(); });
   $('#ctlCat').addEventListener('click', openCatDD);
   $('#ctlSort').addEventListener('click', openSortDD);
 

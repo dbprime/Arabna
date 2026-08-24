@@ -1074,7 +1074,9 @@ export function openFilterSheet({ cat, cats, value, withPrice, withAttrs, withAr
                             priceMin: '', priceMax: '', openNow: false,
                             hasOffer: false, attrs: [] }, value);
   v.attrs = (v.attrs || []).slice();
-  const sorts = [['newest', t('sortNewest')], ['nearest', t('sortNearest')], ['rated', t('sortTopRated')]]
+  const sorts = [['newest', t('sortNewest')]]
+    .concat(S.inCoverage() ? [['nearest', t('sortNearest')]] : [])
+    .concat([['rated', t('sortTopRated')]])
     .concat(withAttrs ? [['open', t('sortOpen')]] : []);
   const catFor = () => (v.cat === 'all' ? '*' : v.cat);
 
@@ -1093,12 +1095,12 @@ export function openFilterSheet({ cat, cats, value, withPrice, withAttrs, withAr
   const areaOptions = () => {
     const pool = S.allBusinesses().filter(b => v.cat === 'all' || b.cat === v.cat);
     /* «كل المنطقة» answered no question — all of Texas? all of America?
-       — and the app already had the right words in `regionName`, which
+       — and the app already had the right words, which
        reads «Houston والمنطقة» since V.03.3 and is used everywhere else.
        Two lines now explain the difference by themselves:
          Houston            376
          Houston والمنطقة   514 */
-    const opts = [{ id: 'all', label: t('regionName') }];
+    const opts = [{ id: 'all', label: regionAllLabel() }];
     if (S.hasLocation()) opts.push({ id: 'city', label: S.userCity() || t('areaCity') });
     if (S.radiusUsable()) [5, 10, 25, 50].forEach(r => opts.push({ id: String(r), label: `${r} ${t('miles')}` }));
     return opts.map(o => Object.assign(o, { n: pool.filter(b => S.inArea(b, o.id)).length }));
@@ -1106,7 +1108,7 @@ export function openFilterSheet({ cat, cats, value, withPrice, withAttrs, withAr
 
   const areaLabel = () => {
     const o = areaOptions().find(x => x.id === String(v.area));
-    return o ? o.label : t('regionName');
+    return o ? o.label : regionAllLabel();
   };
   const areaHtml = () => `
     <div class="label mt-16">${t('areaTitle')}</div>
@@ -1451,9 +1453,86 @@ export function fmtMiles(d) {
  * one is live and which is pinned — and a pinned city is precisely the
  * one that will not follow you. «Houston · تلقائي» says it follows.
  */
+/**
+ * FOR SOMEBODY WHO OPENED THE APP FROM OUTSIDE THE COVERED AREAS.
+ *
+ * Measured with the point in Beebe, Arkansas — about 450 miles out:
+ * `#/prayer` and `#/mass` each said so in a line, and Home and the
+ * directory said nothing at all. So the reader saw their own town on the
+ * chip and a directory entirely of somewhere else, with no sentence
+ * saying why. It gets worse the day coordinates land: «450 ميلاً» under
+ * every name is a true number and a meaningless one.
+ *
+ * NOT ONE AREA IS NAMED IN THIS TEXT. With one region the sentence would
+ * read; with three it nags; with six nobody reads it — and a message that
+ * grows every time the project succeeds is wrong from the start. The
+ * names live in a sheet that opens, never in the sentence. Its length
+ * never changes.
+ *
+ * And it never hides or empties the directory. Somebody in Dallas
+ * visiting Houston next month has every right to read it. THE MESSAGE
+ * EXPLAINS; IT DOES NOT BLOCK.
+ */
+export function outsideBoxHtml() {
+  if (S.inCoverage()) return '';
+  return `<div class="outside-box" id="outBox">
+    <div class="outside-head">${icon('mapPin', 18)}<b>${t('outsideTitle')}</b></div>
+    <div class="outside-body">${t('outsideBody')}</div>
+    <button class="outside-btn" id="outPick">${t('pickRegion')}
+      ${icon(document.documentElement.dir === 'rtl' ? 'chevronL' : 'chevronR', 16)}</button>
+  </div>`;
+}
+
+export function mountOutsideBox(root, after) {
+  const btn = (root || document).querySelector('#outPick');
+  if (btn) btn.addEventListener('click', () => openRegionSheet(after));
+}
+
+/**
+ * The areas, and nothing else.
+ *
+ * NO CITY IN THIS SHEET, no arrow, no list beneath a name — Rai's second
+ * correction, and the reason is exact: somebody outside Houston does not
+ * know Katy from Sugar Land, and twenty-five suburbs mean nothing to them.
+ * The existing city sheet stays exactly as it is for readers inside the
+ * coverage; this is a second sheet with a second purpose. That one picks a
+ * city, this one picks a whole area.
+ */
+export function openRegionSheet(after) {
+  const regions = S.regionsWithCounts();
+  openSheet(`
+    <div class="sheet-title">${t('regionsTitle')}</div>
+    <div class="sheet-sub">${t('regionsSub')}</div>
+    <div class="list mt-12">
+      ${regions.map(r => `
+        <button class="list-row" data-region="${esc(r.id)}">
+          <span class="row-ico">${icon('mapPin', 20)}</span>
+          <span class="row-main"><span class="row-title">${esc(r.name)}</span></span>
+          <span class="chip-n">${arCount(r.n, t('plBiz'))}</span>
+        </button>`).join('')}
+    </div>
+  `, (panel) => {
+    panel.querySelectorAll('[data-region]').forEach(b => b.addEventListener('click', () => {
+      S.setUserRegion(b.dataset.region);
+      closeSheet();
+      if (typeof after === 'function') after();
+      else window.dispatchEvent(new HashChangeEvent('hashchange'));
+    }));
+  });
+}
+
+/** «Houston والمنطقة» — built from the region, never typed with a city in it */
+export function regionAllLabel() {
+  return t('regionAll').replace('{r}', S.regionNameOf(S.currentRegion()));
+}
+
 export function cityChipLabel() {
   const c = S.userCity();
-  if (c) return S.cityIsManual() ? c : `${c} · ${t('locAuto')}`;
+  /* THE CITY NAME ALONE. How we arrived at it — by hand or from the device
+     — is internal: `askToMove` and `shouldRefreshGeo` read it, and it is
+     not printed on a button in the header. `cityIsManual()` is untouched
+     and still does its work; it simply no longer writes itself on screen. */
+  if (c) return c;
   return S.state.geo ? t('locNameUnknown') : t('setLocation');
 }
 

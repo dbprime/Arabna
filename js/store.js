@@ -8,7 +8,7 @@ import { CLASSIFIEDS, BUSINESSES, NOTIFICATIONS, SLIDER_ADS, MINI_ADS, ARTICLES,
          MARKET_CATS, FREE_PRICE, EVENTS, VERIFY_BADGE_PRICE, blankEvent,
          ATTRIBUTES, ATTR_GROUPS, CATEGORIES, DAY_KEYS, CHIP_MIN, CHIP_MAX_SHARE, EVENT_TYPES,
          GENERIC_WORDS, NAME_SIM_MIN, STREET_WORDS, SUBSCRIPTION_PRICE, AD_CARD_COLOR,
-         CITY_POINTS, REGION_RADIUS_MI,
+         CITY_POINTS, REGIONS, REGION_RADIUS_MI,
          AD_PRODUCTS, AD_SLOTS,
          attrById, attrInCat, isAllDay, week, nextOccurrence } from './data.js';
 import { expandQuery, hayMatches, catMatches, squash } from './synonyms.js';
@@ -911,7 +911,14 @@ export function directoryCities() {
 }
 
 /** the user's chosen or detected city, '' when we do not know yet */
-export function userCity() { return (state.location && state.location.city) || ''; }
+/* The name the reader is standing under. A hand-picked REGION has no city
+   of its own — that is deliberate, so the directory keeps the suburbs —
+   but the chip still has to say something true, and the region's name is
+   exactly what they chose. */
+export function userCity() {
+  const l = state.location || {};
+  return l.city || (l.region ? regionNameOf(l.region) : '');
+}
 export function hasLocation() { return !!userCity(); }
 
 /**
@@ -979,6 +986,13 @@ export function hasCoords(biz) {
  */
 export function distanceTo(biz) {
   if (!state.geo || !hasCoords(biz)) return null;
+  /* «450 ميلاً» under every name is not information, it is noise — and
+     ordering by nearest between two shops 449 and 451 miles away is an
+     ordering that means nothing. Somebody outside the covered areas gets
+     the area name instead, which is what `distLabel` already does with a
+     null. (A reader who picked a region by hand has no point at all —
+     `setUserRegion` clears it — so this never reaches them.) */
+  if (!inCoverage()) return null;
   return haversine(state.geo, { lat: biz.lat, lng: biz.lng });
 }
 
@@ -1049,9 +1063,63 @@ export function byNearest(list) {
  */
 export function inCoverage() {
   if (state.geo) return !!nearestCity(state.geo);
+  /* A region chosen by hand IS coverage — that is the whole point of
+     choosing one, and it carries no point of its own to snap. */
+  if (state.location && state.location.region) return true;
   const c = userCity();
   if (!c) return true;
   return CITY_POINTS.some(p => p.city === c) || directoryCities().some(x => x.city === c);
+}
+
+/**
+ * A WHOLE REGION, not a city.
+ *
+ * And `city` is deliberately NOT written here — that difference is what
+ * makes the whole thing work. Writing `city: 'Houston'` would show the
+ * reader the businesses of the city of Houston alone and drop half the
+ * directory on the floor, because half the shops are in the suburbs and
+ * not in the city. So the region id is stored, the filter reads it, and
+ * everything else follows behind.
+ */
+export function setUserRegion(id) {
+  state.location = { zip: '', city: '', state: 'TX', region: id, manual: true };
+  state.geo = null;                 // chosen by hand, so there is no point with it
+  save();
+}
+/** the region the reader picked by hand, or '' */
+export function userRegion() {
+  return (state.location && state.location.region) || '';
+}
+/** every listing of one region — all of its cities */
+export function businessesOfRegion(id) {
+  const cities = new Set(CITY_POINTS.filter(c => c.region === id).map(c => c.city));
+  return allBusinesses().filter(b => cities.has(cityOf(b)));
+}
+/** the regions on offer, each with what stands behind it */
+export function regionsWithCounts() {
+  return REGIONS.map(r => ({ id: r.id, name: r.name, n: businessesOfRegion(r.id).length }));
+}
+/**
+ * WHICH region the reader belongs to — their own choice, else the region
+ * of the city they are in, else the first one, which is right while there
+ * is only one and stays honest when there are several. The WORDS are
+ * built in `ui.js`, because the store does not read i18n.
+ */
+export function currentRegion() {
+  const l = state.location || {};
+  if (l.region) return l.region;
+  const byCity = CITY_POINTS.find(c => c.city === l.city);
+  if (byCity) return byCity.region;
+  const near = state.geo && nearestCity(state.geo);
+  const byGeo = near && CITY_POINTS.find(c => c.city === near.city);
+  if (byGeo) return byGeo.region;
+  return (REGIONS[0] && REGIONS[0].id) || '';
+}
+
+/** the name of a region id — never translated, it is a place */
+export function regionNameOf(id) {
+  const r = REGIONS.find(x => x.id === id);
+  return r ? r.name : '';
 }
 
 /**

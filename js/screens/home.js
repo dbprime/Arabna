@@ -1,7 +1,7 @@
 /* ============================ HOME ============================ */
 import { t, L, icon, $, $$, go, renderHeader, openSheet, closeSheet, toast, stars, wireRoutes,
          distLabelHtml, distText, cityChipLabel, mountAdRotator, esc,
-         pickerBtn, setPickerValue, openDropdown } from '../ui.js';
+         pickerBtn, setPickerValue, openDropdown, regionAllLabel, outsideBoxHtml, mountOutsideBox } from '../ui.js';
 import { CATEGORIES, HOME_CATS, MINI_ADS, ARTICLES, ZIPS, CITY_SUGGESTIONS, AD_SLOTS,
          CITY_POINTS } from '../data.js';
 import * as S from '../store.js';
@@ -97,6 +97,11 @@ export function HomeScreen(root) {
       </div>
       <button class="loc-chip ${loc.city ? '' : 'unset'}" id="locBtn">${icon('mapPin', 17)}<span>${cityChipLabel()}</span></button>
     </div>
+
+    ${/* straight under the location chip, above the categories — the first
+         thing a reader outside the covered areas needs to read, and
+         nothing at all for everybody else */''}
+    ${outsideBoxHtml()}
 
     <!-- categories — home is a summary: 5 max, the rest live on #/categories -->
     <div class="section">
@@ -206,6 +211,7 @@ export function HomeScreen(root) {
     if (e.key === 'Enter') go('#/directory?q=' + encodeURIComponent(e.target.value));
   });
   $('#locBtn').addEventListener('click', openLocationSheet);
+  mountOutsideBox(root);
   $$('#cats .cat-item').forEach(b => b.addEventListener('click', () =>
     go(b.dataset.dest || ('#/directory?cat=' + b.dataset.cat))));
 }
@@ -823,7 +829,7 @@ export function askForLocation(after, why) {
          does that before it asks anybody anything — so this only decides
          what to say and when to repaint. Nothing is announced twice. */
       onOk: (r) => {
-        if (!r.naming) toast(`${t('locSetTo')}: ${r.city || t('regionName')}`, 'ok');
+        if (!r.naming) toast(`${t('locSetTo')}: ${r.city || regionAllLabel()}`, 'ok');
         if (after) after(); else window.dispatchEvent(new HashChangeEvent('hashchange'));
       },
       /* A refusal is not a dead end: the city list is one tap behind it.
@@ -859,7 +865,7 @@ export function openLocationSheet() {
          burying it in a list to tidy the sheet would slow the majority for
          the minority. -->
     <div class="label mt-16">${t('pickCity')}</div>
-    ${pickerBtn({ id: 'ctlCity', label: t('pickCity'), value: cur || t('regionName'), wide: true })}
+    ${pickerBtn({ id: 'ctlCity', label: t('pickCity'), value: cur || regionAllLabel(), wide: true })}
     <div id="cityDD"></div>
 
     <div class="label mt-16">${t('zipOrCity')}</div>
@@ -885,12 +891,12 @@ export function openLocationSheet() {
     const sugg = panel.querySelector('#sugg');
     let debounce = null;
 
-    const markCity = (city) => setPickerValue('ctlCity', city || t('regionName'));
+    const markCity = (city) => setPickerValue('ctlCity', city || regionAllLabel());
 
     /* «Houston والمنطقة» rather than «كل المنطقة»: the old label answered
        no question — all of Texas? all of America? — while the app already
-       had the right words in `regionName` and used them everywhere else. */
-    const cityOptions = [{ id: '', label: t('regionName'), icon: 'globe', count: S.allBusinesses().length }]
+       had the right words and used them everywhere else. */
+    const cityOptions = [{ id: '', label: regionAllLabel(), icon: 'globe', count: S.allBusinesses().length }]
       .concat(cities.map(c => ({ id: c.city, label: c.city, icon: 'mapPin', count: c.n })));
     const anchor = panel.querySelector('#ctlCity');
     anchor.addEventListener('click', () => openDropdown({
@@ -970,7 +976,7 @@ export function openLocationSheet() {
     panel.querySelector('#applyLoc').addEventListener('click', () => {
       S.setUserLocation(picked);
       closeSheet();
-      toast(`${t('locSetTo')}: ${picked.city || t('regionName')}`, 'ok');
+      toast(`${t('locSetTo')}: ${picked.city || regionAllLabel()}`, 'ok');
       window.dispatchEvent(new HashChangeEvent('hashchange'));
     });
   });
