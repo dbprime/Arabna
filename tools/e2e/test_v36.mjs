@@ -26,7 +26,12 @@ const ctx = await browser.newContext({ colorScheme: 'dark', viewport: { width: 3
 const page = await ctx.newPage();
 const errors = [];
 let reqs = 0;
-page.on('request', r => { if (/^https?:/.test(r.url()) && !/localhost:8099|fonts\.(googleapis|gstatic)/.test(r.url())) reqs++; });
+/* The origin comes from BASE, never a literal port: this filter once read
+   `localhost:8099` while BASE honoured HOST, so a run on any other port
+   counted our OWN files as outside requests and printed a red FAIL on a
+   clean build. A check that lies about a green build is worse than no check. */
+const ORIGIN = new URL(BASE).origin;
+page.on('request', r => { if (/^https?:/.test(r.url()) && !r.url().startsWith(ORIGIN) && !/fonts\.(googleapis|gstatic)/.test(r.url())) reqs++; });
 page.on('console', m => { if (m.type() === 'error' && !/ERR_CONNECTION|ERR_CERT|ERR_TUNNEL|ERR_NAME|ERR_FAILED|fonts\.googleapis/.test(m.text())) errors.push(m.text().slice(0, 130)); });
 page.on('pageerror', e => errors.push('PAGEERROR ' + e.message.slice(0, 130)));
 

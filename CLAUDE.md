@@ -7,7 +7,7 @@ ARABNA · عربنا — a mobile-first web app for the Arab community in the U.
 **business directory + marketplace + events + magazine**, Arabic-first with a full English toggle.
 ("Classifieds / الإعلانات الشخصية" is now "Marketplace / السوق" — the old `#/classifieds`
 routes still resolve so shared links keep working.)
-Current version: **V.04.9 (prototype)**. Owner: Rai Elby (@dbprime). Deploys to Vercel (team DB Prime).
+Current version: **V.05.0 (prototype)**. Owner: Rai Elby (@dbprime). Deploys to Vercel (team DB Prime).
 
 ## Hard rules (from the product brief)
 1. **One repository, one Vercel project.** No duplicates, no stray preview projects.
@@ -3747,6 +3747,95 @@ beside it. Admin → settings carries «المناسبات فوق المساجد
   build under pressure — but **no operating decision may rest on it before
   then**, and it is written into `docs/الحالة.md` as a deferred gap rather
   than left to be rediscovered.
+
+## V.05.0 — the hue is the subject, the shape is the section
+
+### Two faults, one line between them
+Rai: the marketplace section icons have no colour, as if they were still
+the old shape. Measured on `#/categories` before touching anything:
+
+```
+marketplace sections   8 tiles  ·  8 with no hue
+directory categories  22 tiles  ·  1 with no hue — «فعاليات», white among 21 coloured
+```
+
+Both came out of the same argument in `cell()`, `c.route ? '' : c.id`:
+the marketplace was called with no `catId` at all, and Events is the only
+`CATEGORIES` entry carrying a `route`, so it reached the same branch.
+
+- **The marketplace's colourlessness was a decision**, written into the
+  file's own comment: «a marketplace section has neither». So it is a
+  decision reversed, not a bug fixed.
+- ⚠️ **«فعاليات» was a bug.** Nobody decided it should be white — it fell
+  out of a condition written for something else. `route` means «this is
+  not a directory filter» and says nothing about colour, and it was
+  guarding nothing else: no other category carries one.
+
+### Filled is a place, outlined is a listing that passes
+Rai's decision after the mockups: **outline, not fill.**
+
+```
+filled + khatam    a place in the directory
+outline, no fill   a listing passing through the marketplace
+```
+
+⚠️ **So a marketplace section may share the hue of its directory twin** —
+Cars above and Cars below are one hue, and only the shape says which. That
+is what «ميّزهم عن أيقونات الرئيسيّة» asked for, and it is why the hue is
+the subject and the shape is the section.
+
+- `MARKET_HUE` in `data.js` beside `CAT_HUE`: four sections take their
+  twin's hue (`cars`=auto 128 · `furniture`=homegoods 334 ·
+  `realestate` 202 · `handyman`=homeservices 304), and the four with no
+  twin take **56/68/80/92 — the only band the twenty-one leave free with
+  12 degrees between them.** They are visually close and that is accepted:
+  what separates them for the reader is the icon — briefcase · paw · gift
+  · bag. ⚠️ **And nothing goes near the gold band (~39°)**: gold is the
+  colour of the button and the action, and a gold tile reads «tap me».
+- `events: 276` joins `CAT_HUE`. Measured against its own fill in dark:
+  **3.76**, inside the twenty-one's range of 3.41→5.56, not under it; 8.22
+  in light. It sits 10 degrees from `worship` 266 and `community` 286, and
+  that is accepted **only because the three never stand together** — rows
+  one, three and eight, with three different icons. ⚠️ **No fourth hue in
+  that band.**
+- ⚠️ **`--h` is written on the pill itself, never on a parent** — the
+  V.04.7 rule, because a custom property carrying `var()` is substituted
+  where it is declared.
+
+### The rule repeated three times, and why that is not a slip
+```css
+.cat-cell .cc-ico.mk                                    /* (0,3,0) */
+:root[data-theme="light"] .cat-cell .cc-ico.mk          /* (0,4,0) */
+@media (prefers-color-scheme: light) … .cc-ico.mk       /* (0,4,0) */
+```
+The light-theme fill rules above are **(0,4,0)** and a single `(0,3,0)`
+rule loses to them — **the fill would come back in light mode alone**,
+which is the mode Rai uses. And `border-color: currentColor` means the
+outline can never drift from the icon: measured worst case **6.67 dark
+(أثاث 334) and 5.28 light (حيوانات 68)** against the page ground, both far
+over 3. ⚠️ **The width stays 1px on purpose** — the browser floors
+`1.5px` to 1px at every pixel density, so writing 1.5 would say one thing
+and render another.
+
+### Measured after
+```
+marketplace tiles with no hue   8 → 0      both themes, both builds
+directory tiles with no hue     1 → 0      («فعاليات», and it keeps its khatam)
+marketplace fill                transparent · border == icon colour · 1px
+khatam on a marketplace tile    none
+cars hue == auto hue            yes, and the shapes differ
+the flip repaints in place      rgb(136,231,149) → rgb(21,102,32), fill still none
+Home's row of six               unchanged — five hues and the hueless «+16» tile
+the directory chip row          still without «فعاليات» (`!c.route`, another file)
+console errors                  0
+```
+
+### A check that lies about a green build is worse than no check
+`test_v36` counted outside requests with `localhost:8099` **written as a
+literal** while `BASE` honours `HOST`. Proven on port 8123: the old line
+counted **29 of our own files** as outside requests and printed a red FAIL
+on a clean build; reading the origin off `BASE` reports 0. It was the only
+hardcode of its kind — every other suite was searched.
 
 ## Known open items
 - **The header image is still far larger than its box.** V.04.7 replaced

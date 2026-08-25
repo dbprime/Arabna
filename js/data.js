@@ -91,7 +91,7 @@ export const CLASSIFIED_CATS = MARKET_CATS;
    hand-typed «0.1» while the project had reached V.03.6 — two literals,
    both stale, and a reader reporting a fault could not tell us which build
    they were on. Raise it here when CLAUDE.md's version line moves. */
-export const APP_VERSION = '0.4.9';
+export const APP_VERSION = '0.5.0';
 
 export const FREE_PRICE = '__FREE__';
 
@@ -836,6 +836,24 @@ export const CAT_HUE = {
   shopping: 320,    homegoods: 334, homeservices: 304, electronics: 292,
   // getting about, and days out
   auto: 128,        travel: 112,    outings: 140, occasions: 100,
+  // a shortcut, not a business category — but it is drawn in the same
+  // grid as the twenty-one, and a colourless tile among coloured ones
+  // reads as broken, not as different.
+  events: 276,
+};
+
+/* Marketplace sections carry a hue too, but they are drawn as an OUTLINE
+   (see `.cc-ico.mk`): filled = a place in the directory, outlined = a
+   listing that passes. So a section may share the hue of its directory
+   twin — the hue is the subject, the shape says which section. */
+export const MARKET_HUE = {
+  cars: 128,        // = auto
+  furniture: 334,   // = homegoods
+  realestate: 202,  // = realestate
+  handyman: 304,    // = homeservices
+  // no directory twin — and 56/68/80/92 is the only band the
+  // twenty-one leave free with 12 degrees between them
+  jobs: 56,         pets: 68,       free: 80,     other: 92,
 };
 
 export const CITY_POINTS = [

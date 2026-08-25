@@ -1089,6 +1089,21 @@ input[inputmode="tel"], input[type="email"], input[inputmode="decimal"], #zipIn 
   background: hsl(var(--h) 62% 58% / .18); color: hsl(var(--h) 66% 72%);
   border: 1px solid hsl(var(--h) 60% 62% / .34);
 }
+/* A marketplace section is not a place — it is a listing that passes. So it
+   keeps the hue (the subject) and loses the fill and the khatam (the
+   section): filled = a place in the directory, outlined = a listing.
+   The border is `currentColor`, so it can never drift from the icon —
+   measured worst case 4.72 dark and 5.57 light, both over 3.
+   The width is left at the 1px above ON PURPOSE: a border-width of 1.5px is
+   floored to 1px by the browser, so writing 1.5 would say one thing and
+   render another.
+   Repeated under each theme because the theme blocks above are (0,4,0) and
+   would otherwise paint the fill back over this one. */
+.cat-cell .cc-ico.mk { background: none; border-color: currentColor; }
+:root[data-theme="light"] .cat-cell .cc-ico.mk { background: none; border-color: currentColor; }
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) .cat-cell .cc-ico.mk { background: none; border-color: currentColor; }
+}
 .cat-cell .cc-label { font-size: .8125rem; line-height: 1.35; text-align: center; }
 .cat-cell .cc-count { font-size: .6875rem; color: var(--muted); }
 
