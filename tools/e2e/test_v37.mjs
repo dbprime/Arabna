@@ -68,7 +68,19 @@ for (const lang of ['ar', 'en']) {
   for (const r of ROUTES) {
     cur = r;
     await page.goto(BASE + r, { waitUntil: 'domcontentloaded' });
-    await page.waitForTimeout(600);
+    /* WAIT FOR THE SCREEN TO SETTLE, never a flat number. A member-only
+       route redirects, and the redirect is a tick of work: on the
+       single-file build, with both builds running at once on a small
+       machine, 600ms was sometimes read MID-REDIRECT and `#app` sampled
+       empty. The suite then printed a red FAIL on a clean build — and a
+       check that lies about a green build is worse than no check.
+       The screens named changed from run to run, which is the signature of
+       a race and not of a defect. */
+    await page.waitForFunction(() => {
+      const root = document.querySelector('#app');
+      return !!root && (root.innerText || '').trim().length > 0;
+    }, null, { timeout: 8000 }).catch(() => {});
+    await page.waitForTimeout(250);
     const o = await page.evaluate(() => {
       const root = document.querySelector('#app') || document.body;
       const txt = (root.innerText || '').trim();
