@@ -513,6 +513,37 @@ one person's memory falls over on the first day they are not there — and
 it did: the record said batch nine (ب) had not shipped **while it was
 live in V.04.0**, and Rai found it from the colour of a dot on his phone.
 
+## `docs/سجل-القرارات.md` and `docs/تقارير/` — what was already settled, and what was already found
+
+`docs/الحالة.md` says where the project **is**. These two say what has
+already been **decided**, and what has already been **seen** — and a
+session that skips them spends itself twice on the same ground.
+
+> **Read `docs/سجل-القرارات.md` at the start of every session, with
+> `docs/الحالة.md`.** Its **second table** is the one that saves the
+> session: things proposed and **refused, with the reason**. Proposing one
+> of them again is not a new idea — it is a settled argument reopened.
+>
+> **And read every file under `docs/تقارير/` whose first line reads
+> `الحالة: جديد`.** Those are the scheduled-check reports. They run in a
+> separate session that never reaches this repository, so what they found
+> is invisible here until somebody reads them.
+
+**A report is not an order.** It is read so the session does not
+re-report what was already reported, and does not fix what already has a
+file waiting. **No code changes because a report asked for it** — a change
+arrives in a numbered file like everything else, and the report's author
+could not see what shipped after it.
+
+**And neither file is written by a session.** A session that lands a
+decision does **not** mark it landed in `سجل-القرارات.md` — that is
+precisely the line that goes stale, and `docs/الحالة.md` is where state
+belongs. It said batch nine (ب) had not shipped **while it was live in
+V.04.0**.
+
+**Reports keep their status line and are never deleted.** The read report
+is what proves the item was seen, and when.
+
 ## The version number is part of the batch, not a step after it
 > **`APP_VERSION` in `js/data.js` is raised inside the batch that changes
 > the app, and a batch is not closed while that number disagrees with the
