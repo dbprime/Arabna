@@ -194,13 +194,19 @@ ok('home goods holds the rug shop', (await rows()).some(x => x.includes('الس�
 await go('#/home');
 const homeCats = await page.evaluate(() => Array.from(document.querySelectorAll('#cats .cat-item'))
   .map(c => c.dataset.cat));
-ok('Home still shows five circles', homeCats.length === 5, homeCats.join(' '));
-ok('…pointing at restaurants, doctors, events, home services and shopping',
-   JSON.stringify(homeCats) === JSON.stringify(['restaurants','doctors','events','homeservices','shopping']),
+/* ⚠️ V.04.7 REVERSED BOTH OF THESE. The row is six tiles now — five
+   categories and the computed rest — and `HOME_CATS` was rechosen to the
+   five people actually open: restaurants · grocery · doctors · worship ·
+   auto. Home services left the row, so the tap that proves a tile arrives
+   pre-filtered is made on one that is still there; the home-services
+   filter itself is covered above and by v37. */
+ok('Home shows five tiles and the rest', homeCats.filter(Boolean).length === 5, homeCats.join(' '));
+ok('…pointing at restaurants, grocery, doctors, worship and auto',
+   JSON.stringify(homeCats.filter(Boolean)) === JSON.stringify(['restaurants','grocery','doctors','worship','auto']),
    homeCats.join(' '));
-await page.evaluate(() => document.querySelector('.cat-item[data-cat="homeservices"]').click());
+await page.evaluate(() => document.querySelector('.cat-item[data-cat="doctors"]').click());
 await page.waitForTimeout(420);
-ok('the "repairs" circle opens home services', (await hash()) === '#/directory?cat=homeservices', await hash());
+ok('a tile opens its category, pre-filtered', (await hash()) === '#/directory?cat=doctors', await hash());
 
 /* ======================================================================
    PART 2 — the speciality tree

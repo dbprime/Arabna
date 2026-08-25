@@ -34,13 +34,18 @@ const logo = await page.evaluate(() => {
 });
 /* the single-file build inlines the same file as a data: URI, so the
    dimensions are what identify it in both builds */
-/* the stacked lockup — the mark on top, the two wordmarks under it.
-   The horizontal one was a wrong turn and is not in the header any more. */
-ok('1.1 the header carries the stacked lockup',
-   (logo.src.includes('logo.png') || logo.src.includes('logo-ink.png') || logo.src.startsWith('data:image'))
-   && logo.nw === 1173 && logo.nh === 955,
+/* ⚠️ V.04.7 REPLACED THE LOCKUP WITH THE MARK ALONE, measured: «عربنا»
+   in the stacked lockup at 65px comes out 8.2px tall and an Arabic letter
+   needs 14–16 to be read, so the name was carried into the bar and gave
+   nothing. It is not deleted — it is on every other logo in the app. The
+   two numbers it kept are 65 and 54; at a ratio of 1.015 the width is 66
+   where the lockup took 80, so the mark is bigger AND the header
+   narrower. */
+ok('1.1 the header carries the mark alone',
+   (logo.src.includes('mark.png') || logo.src.includes('mark-ink.png') || logo.src.startsWith('data:image'))
+   && logo.nw === 659 && logo.nh === 649,
    `${logo.nw}×${logo.nh}`);
-ok('1.2 it is 65px tall and takes its own width', logo.h === 65 && logo.w === 80, `${logo.w}×${logo.h}`);
+ok('1.2 it is 65px tall and takes its own width', logo.h === 65 && logo.w === 66, `${logo.w}×${logo.h}`);
 /* the rule itself sets neither: the global img { max-width: 100% } is a
    ceiling the 80px lockup never reaches, and 'fill' is object-fit unset */
 ok('1.3 the header rule forces neither width nor object-fit',
@@ -107,8 +112,14 @@ ok('3.2 a dark device gets the dark app', (await state()).attr === 'dark', (awai
 await page.evaluate(async () => (await import('/js/ui.js')).setTheme('light'));
 await page.waitForTimeout(300);
 let st = await state();
-ok('3.3 light applies with no reload', st.attr === 'light' && st.bg === 'rgb(239, 232, 218)', st.bg);
-ok('3.4 the browser bar colour follows', st.meta === '#FFFDF8', st.meta);
+/* ⚠️ V.04.7 TURNED THE LIGHT THEME FROM IVORY TO SKY: page #CFE4F2, bar
+   #DFEEF8, card #F3F9FD — and the card is now LIGHTER than the page,
+   which the ivory theme had backwards. The check is the same check; only
+   the values moved. And 3.4 caught a real one: `BAR_COLOR` in `ui.js` had
+   been left at the old ivory, so the phone painted a strip of the
+   previous theme above a bar of the new one. */
+ok('3.3 light applies with no reload', st.attr === 'light' && st.bg === 'rgb(207, 228, 242)', st.bg);
+ok('3.4 the browser bar colour follows', st.meta === '#DFEEF8', st.meta);
 ok('3.5 the iPhone status bar style follows', st.status === 'default', st.status);
 ok('3.6 the choice is saved', st.saved === 'light');
 await page.reload(); await page.waitForTimeout(700);
@@ -180,7 +191,17 @@ const drRows = await page.evaluate(() => ({
   rows: [...document.querySelectorAll('.drawer-panel > *')]
     .filter(el => el.classList.contains('dr-item') || el.classList.contains('dr-group')).length,
 }));
-ok('4.9 …and the drawer still costs seven rows', drRows.rows === 7, drRows.rows + ' rows');
+/* ⚠️ V.04.8 ADDED AN EIGHTH ROW ON PURPOSE: «الإعدادات», standalone and
+   for everybody. It had been a leaf inside «حسابي» — a group that is not
+   drawn for a visitor at all — so a visitor who wanted larger text was
+   sent to a sign-up form. The language is already a standalone device
+   preference; settings is of its kind. THE COST IS REAL AND IS NOT
+   HIDDEN: the drawer's no-scroll rule was already missed by more than two
+   rows with a group open, and this makes it worse. Which row goes is the
+   owner's decision, open since V.03.2. */
+ok('4.9 …and the drawer costs eight rows, the eighth being settings',
+   drRows.rows === 8 && await page.locator('.drawer-panel > [data-route="#/settings"]').count() === 1,
+   drRows.rows + ' rows');
 await page.evaluate(() => { const sc = document.querySelector('.drawer-scrim, #drawer .scrim'); if (sc) sc.click();
   document.querySelector('#drawer').classList.remove('open'); });
 await page.waitForTimeout(500);
@@ -202,7 +223,8 @@ ok('4.11 …and no bar appears over the logo to announce it',
 
 /* ============ 5 — the same app, both ways ============ */
 console.log('--- both ways ---');
-for (const [theme, bg] of [['dark', 'rgb(14, 24, 41)'], ['light', 'rgb(239, 232, 218)']]) {
+/* ⚠️ the light page is SKY since V.04.7 — #CFE4F2, not the ivory #EFE8DA */
+for (const [theme, bg] of [['dark', 'rgb(14, 24, 41)'], ['light', 'rgb(207, 228, 242)']]) {
   await page.evaluate(async (t) => (await import('/js/ui.js')).setTheme(t), theme);
   for (const h of ['#/home', '#/directory', '#/directory/b1', '#/marketplace', '#/events', '#/magazine', '#/profile']) {
     await page.evaluate(x => { location.hash = x; }, h); await page.waitForTimeout(400);
@@ -212,9 +234,15 @@ for (const [theme, bg] of [['dark', 'rgb(14, 24, 41)'], ['light', 'rgb(239, 232,
 }
 /* the verified badge is the first place a theme goes wrong: a gold
    surface whose text must flip from near-black to ivory */
+/* ⚠️ V.04.7 TOOK THE PILL OUT OF THE LISTS — measured, a name row
+   carrying it was 60px against 28 — so the word now lives on the BUSINESS
+   PAGE and the lists carry the mark alone. The check is unchanged in what
+   it is for: the gold surface whose ink must flip from near-black to
+   ivory is the first place a theme goes wrong. It is simply looked for
+   where it now is. */
 const badgeIn = async (theme) => {
   await page.evaluate(async (t) => (await import('/js/ui.js')).setTheme(t), theme);
-  await page.evaluate(() => { location.hash = '#/directory'; }); await page.waitForTimeout(600);
+  await page.evaluate(() => { location.hash = '#/directory/b1'; }); await page.waitForTimeout(600);
   return page.evaluate(() => {
     const b = document.querySelector('.badge-bizverified');
     if (!b) return null;

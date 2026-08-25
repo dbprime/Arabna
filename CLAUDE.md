@@ -7,7 +7,7 @@ ARABNA · عربنا — a mobile-first web app for the Arab community in the U.
 **business directory + marketplace + events + magazine**, Arabic-first with a full English toggle.
 ("Classifieds / الإعلانات الشخصية" is now "Marketplace / السوق" — the old `#/classifieds`
 routes still resolve so shared links keep working.)
-Current version: **V.04.7 (prototype)**. Owner: Rai Elby (@dbprime). Deploys to Vercel (team DB Prime).
+Current version: **V.04.8 (prototype)**. Owner: Rai Elby (@dbprime). Deploys to Vercel (team DB Prime).
 
 ## Hard rules (from the product brief)
 1. **One repository, one Vercel project.** No duplicates, no stray preview projects.
@@ -3517,6 +3517,141 @@ works by itself** — there is no later change to make.
   without an isolating ancestor**, and «أول الخطوات في Houston، خطوة خطوة»
   measured run by run renders in the correct order. Nothing was changed;
   the sweep is now assertion 5.1 in `test_v40.mjs` so it stays that way.
+
+## V.04.8 — device preferences are not account property
+
+Two reports from the phone, and one cause under both.
+
+### «My phone is on light and the app opens dark»
+Not a fault — it was written that way. The header button's two outcomes
+were `light` and `dark`, and **«تلقائي» was not one of them.** So one tap
+on the plainest control on the screen took the reader out of following
+their own device **for good**: no word, no change in the icon, and no way
+back except a settings screen most people never open.
+
+```js
+const want   = resolvedTheme() === 'dark' ? 'light' : 'dark';
+const device = matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+setTheme(want === device ? 'auto' : want);
+```
+
+**When the direction of the tap is the one the device already says, the
+choice is not pinned — following resumes.** Measured on a light device:
+`auto` → tap → `dark` pinned → tap → **`auto`, not `light`**; and the
+mirror on a dark one. So the reader is never more than one tap from
+«تلقائي» however often they flip.
+
+- **Nothing new is drawn**, and that is deliberate: no third icon state, no
+  extra button, no screen. The sun stays a sun and the moon a moon —
+  **what changed is what gets saved, not what is seen.**
+- **An explicit «فاتح» or «غامق» chosen in Settings is not overruled.** It
+  survives a device on the opposite setting; the reader taps, it flips, and
+  when it lands on what their device says the automatic comes back — which
+  is what tapping the button asks for.
+
+### The settings screen was behind a sign-up form
+`memberOnly('#/settings')` sent a visitor to `#/auth/signup`, and the
+drawer had no settings row for them at all: it was a leaf inside «حسابي»,
+**a group that is not drawn for a visitor at all** — which is why this was
+the fault itself and not merely where the row sat.
+
+```
+a visitor who wants «تلقائي» back  →  create an account
+a visitor who wants larger text    →  create an account
+```
+
+⚠️ **And the second is not cosmetic.** Our oldest readers need the large
+text first and sign up last. Somebody who cannot read the screen is not
+persuaded to register in order to make it bigger — **they close the app.**
+
+> **THE RULE: the language, the appearance, the text size and the maps app
+> are DEVICE preferences, not account property.** Nothing about them
+> reaches a server, nothing follows the reader to another phone, and there
+> is no identity to ask for in exchange.
+
+- The guard is deleted and the screen splits in two. Everything an account
+  really owns — notifications, payment, the subscription, receipts, the
+  block list, deletion — is wrapped in `isLoggedIn()`, and **the maps app
+  moved up out of that block**, because it is the fourth device preference
+  and belongs with the other three.
+- **A visitor is told, never shown a blank** where six sections used to be:
+  `settingsGuestNote` says what an account adds and what already works
+  without one, over a sign-up button.
+- ⚠️ **The wiring is guarded by the same condition that drew it.**
+  `$('#addCard')` and `$('#delAcc')` on a screen that never rendered them
+  throw on `null` and take the whole screen down. Measured: five entries
+  and exits, **zero console errors**.
+- **The drawer row is standalone, for everybody, directly under «اللغة».**
+  Not taste: the language is a device preference and is already a
+  standalone row for everybody, so settings is of its kind, and the two
+  together make device preferences one block at the top — before anything
+  belonging to an account. **Not inside «الأقسام»**: those are destinations
+  a reader browses to, and settings is not somewhere you go, it is
+  something you go back to. Measured: **exactly one settings row** for both
+  roles, and a member loses nothing from «حسابي».
+- Measured for a visitor: the text really enlarges (17 → 21px) and **is
+  still there after the app is closed and reopened**.
+
+**And the eighth row's cost, measured rather than waved past.** V.02.5
+rejected an eighth drawer row because it made the panel scroll; this one
+is added anyway, and the numbers are: **folded, the panel is exactly 844
+and still does not scroll** — the rule holds where it is most often read.
+With a group open it is over, as it already was: visitor **1021** with
+«تصنيفات عربنا» and **921** with «المساعدة»; member **941 / 991 / 891**.
+So this makes an existing overflow worse and does not create a new one,
+and **which row goes is still the owner's decision, open since V.03.2.**
+
+### Three faults the net caught in V.04.7, and the suites that assert what changed
+The twenty-minute gate exists for exactly this, and it earned itself three
+times over.
+
+- ⚠️ **The «+16» tile opened `#/directory?cat=undefined`** — an empty
+  directory reached by tapping the one tile that promises the whole list.
+  Home's category handler read `data-cat` off every `.cat-item`, and the
+  sixth has none: it carries `data-route`, so it is skipped there and
+  `wireRoutes` takes it.
+- ⚠️ **`BAR_COLOR` in `ui.js` is the ONE place `--bar` is duplicated** —
+  the browser's own chrome cannot read a custom property — and V.04.7 moved
+  the light bar to sky and left this at the old ivory, so the phone painted
+  a strip of the previous theme above a bar of the new one. Change one,
+  change the other.
+- ⚠️ **`state: 'TX'` is a DEFAULT written by all four location writers**,
+  so reading it as «this reader chose a state» made the chip say «TX» to
+  somebody whose point had simply not been named yet — **the V.03.8 rule
+  inverted**, since a point with no name says «موقعك الحالي» and never an
+  invented place. `setUserState` marks its own work with `stateOnly` now.
+  And the chip did not repaint after the press either: **`paint()` redraws
+  the results, not the search row**, so it went on saying «حدّد موقعك» over
+  a directory that had just been set to the whole state. `repaintCityChips`
+  is exported and is the one definition all three screens share.
+- **`HOME_CATS` gained two members with no one-word short label**, so
+  «أسواق وملاحم» and «أماكن عبادة» sat under 52px tiles against the row's
+  own rule. `catShortGrocery` / `catShortWorship` — «أسواق» and «عبادة»,
+  the second naming neither a mosque nor a church, which is the standing
+  rule too.
+
+**Nine suites asserted what these two batches deliberately reversed.** Each
+was rewritten rather than relaxed, and each carries a comment naming the
+reversal — never a deleted check:
+
+| suite | asserted | now |
+|---|---|---|
+| v3 | Home shows five categories, Events among them | six tiles, Events is not one; the events screen is reached directly so its own coverage survives |
+| v4 | categories first under the search row · circles at 56px | the visitor's headline stands between; **tiles** at 52px, and every tile must have a ground |
+| v5 · v7 | a visitor has no settings row and `#/settings` redirects · seven drawer rows | the row is there and the screen opens · eight rows |
+| v10 | the five are restaurants · doctors · events · homeservices · shopping | restaurants · grocery · doctors · worship · auto |
+| v16 | «home keeps its circle row» | its tile row — and the point of the check, that Home shows and does not filter, is asserted harder than before |
+| v17 · v18 | the stacked lockup at 80×65 · light is ivory · seven rows · the gold pill in the directory list | the mark at 66×65 · light is sky · eight rows · the pill is on the business page, where the word moved |
+| v20 | search and chip share a top edge · the drawer is ≤130px over | they share a **centre** — the box is 38px and the chip 52 — · ≤185px, and folded it must not scroll at all |
+| v27 | a dialect guard with no start boundary | «اختصار» ends in «صار » and is the ordinary word for an abbreviation — **the V.02.6 boundary lesson inside a test** |
+
+⚠️ **AND THE LESSON THE SESSION ITSELF PAID FOR: a batch is not finished
+when its own suite is green.** V.04.7 shipped with `test_v40` at 48/48 and
+`33/37/38` clean, and left **nine older suites red** — three of them
+hiding real faults (the «+16» tile, the browser bar colour, the state
+chip). The touching-suites shortcut in the testing rules is for *while you
+work*; the full gate at the end is what makes «never break a working
+feature» true, and skipping it does not save the time, it moves it.
 
 ## Known open items
 - **The header image is still far larger than its box.** V.04.7 replaced

@@ -238,8 +238,15 @@ export function HomeScreen(root) {
   mountSearchHint(root);
   $('#locBtn').addEventListener('click', openLocationSheet);
   mountOutsideBox(root);
-  $$('#cats .cat-item').forEach(b => b.addEventListener('click', () =>
-    go(b.dataset.dest || ('#/directory?cat=' + b.dataset.cat))));
+  /* ⚠️ THE SIXTH TILE IS NOT A CATEGORY. «+16» carries `data-route` and no
+     `data-cat`, so the category handler sent it to
+     `#/directory?cat=undefined` — an empty directory reached by tapping
+     the one tile that promises the whole list. It is skipped here and
+     `wireRoutes` takes it, which is what its `data-route` is for. */
+  $$('#cats .cat-item').forEach(b => b.addEventListener('click', () => {
+    if (b.dataset.route) return;
+    go(b.dataset.dest || ('#/directory?cat=' + b.dataset.cat));
+  }));
 }
 
 function slideHtml(a, i) {
@@ -748,9 +755,12 @@ const lastFailAt = () => (S.geoFail() || {}).at || 0;
    have drawn — and the honest «موقعك الحالي», which is exactly what a
    reader who has just moved and cannot be named should see, was the
    state it could not express. One definition, three screens. */
-function repaintCityChips() {
+export function repaintCityChips() {
   const label = cityChipLabel();
-  const known = !!(S.userCity() || S.state.geo);
+  /* A reader who pressed the state suggestion HAS a location — «TX» is an
+     answer, not a blank — so the chip must not keep the dashed «unset»
+     look that means «we do not know where you are». */
+  const known = !!(S.userCity() || S.userState() || S.state.geo);
   $$('.loc-chip').forEach(el => {
     const span = el.querySelector('span');
     if (span) span.textContent = label;

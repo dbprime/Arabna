@@ -79,7 +79,12 @@ ok('1.2 «مراجع» survives only where the actor is named',
    withWord(/مراجع/).every(k => ['claimFormNote', 'verifyStep3', 'reviewOrder', 'bizHeldForReview'].includes(k)),
    withWord(/مراجع/).join(' '));
 ok('1.3 «كلمة السر» is gone', withWord(/كلمة السر|كلمتا السر/).length === 0, withWord(/كلمة السر|كلمتا السر/).join(' '));
-const DIALECT = /صار |يصير|يقدر |تقدر |قبل ما |مرة ثانية|بزنس|ماركت بليس|سلايدر|بانر|فلترة|طابور|مزوّد|الجوال|موبايل| رح |هلق|بكرة/;
+/* ⚠️ THE START BOUNDARY IS REQUIRED, and «اختصار» is why: it ends in
+   «صار » and is the ordinary word for an abbreviation, not the dialect
+   verb the guard is hunting. This is the V.02.6 boundary lesson in a test
+   — Arabic glues prefixes on, so the boundary is demanded at the START of
+   these words and never at the end. */
+const DIALECT = /(?<![\u0621-\u064A])(صار |يصير|يقدر |تقدر |قبل ما |مرة ثانية|بزنس|ماركت بليس|سلايدر|بانر|فلترة|طابور|مزوّد|الجوال|موبايل| رح |هلق|بكرة)/;
 ok('1.4 no dialect or jargon left in the pack', withWord(DIALECT).length === 0, withWord(DIALECT).join(' '));
 
 ok('1.5 the subscription stops counting the same thing twice',

@@ -374,7 +374,13 @@ export function openDropdown({ host, anchor, title, options, value, unit, onPick
    reload and no re-render.
    ============================================================ */
 
-const BAR_COLOR = { dark: '#131F39', light: '#FFFDF8' };
+/* ⚠️ THESE TWO MUST TRACK `--bar` IN `app.css` AND ARE THE ONE PLACE THE
+   VALUE IS DUPLICATED — the browser's own chrome cannot read a custom
+   property, so it is written here. V.04.7 turned the light bar sky
+   (#DFEEF8) and left this at the old ivory, so the phone painted a strip
+   of the previous theme above a bar of the new one. Change one, change
+   the other; v17's 3.4 measures that they agree. */
+const BAR_COLOR = { dark: '#131F39', light: '#DFEEF8' };
 
 /** what is actually on screen right now, after resolving 'auto' */
 export function resolvedTheme() {
@@ -644,8 +650,24 @@ export function renderHeader(opts = {}) {
        without a word. The bar also stood over the logo, hiding ARABNA
        every single time somebody switched. What still earns a toast is
        what leaves no mark: «تم حفظ ملفك», «تم نسخ الرابط». */
+    /* ⚠️ AND «تلقائي» WAS NOT ONE OF THIS BUTTON'S TWO OUTCOMES. One tap on
+       the plainest control on the screen took the reader out of following
+       their own device FOR GOOD — with no word, no change in the icon, and
+       no way back except a settings screen most of them never open. So
+       when the direction of the tap is the one the device already says,
+       the choice is not pinned: following resumes, and the reader stays
+       one tap away from «تلقائي» however often they flip.
+
+       Nothing new is drawn. The sun stays a sun and the moon a moon —
+       what changed is what gets SAVED, not what is seen. And somebody who
+       chose «فاتح» or «غامق» in Settings is not overruled here: they tap,
+       it flips, and when it lands on what their device says the automatic
+       comes back, which is what tapping the button asks for. */
     $('#hTheme').addEventListener('click', () => {
-      setTheme(resolvedTheme() === 'dark' ? 'light' : 'dark');
+      const want = resolvedTheme() === 'dark' ? 'light' : 'dark';
+      const device = (window.matchMedia
+        && window.matchMedia('(prefers-color-scheme: light)').matches) ? 'light' : 'dark';
+      setTheme(want === device ? 'auto' : want);
     });
   }
 }
@@ -835,7 +857,6 @@ export function openDrawer() {
     item('message', t('myMessages'), '#/messages'),
     item('heart', t('savedFav'), '#/saved'),
     item('crown', t('subscription'), '#/subscribe'),
-    item('settings', t('settings'), '#/settings'),
   ].join('');
 
   // Home is deliberately absent: the app opens on it and it holds a permanent
@@ -909,6 +930,18 @@ export function openDrawer() {
     <aside class="drawer-panel">
       ${head}
       ${langRow}
+      ${/* ⚠️ A STANDALONE ROW, FOR EVERYBODY, AND DIRECTLY UNDER «اللغة».
+           It is not taste: the language is a DEVICE preference and is
+           already a standalone row for everybody, so settings is of its
+           kind — and the two together make device preferences one block at
+           the top of the drawer, before anything belonging to an account.
+           It is deliberately NOT in «الأقسام»: those are destinations a
+           reader browses to — prayer times, the directory, the magazine —
+           and settings is not somewhere you go, it is something you go
+           back to. And it does not stay in «حسابي», because that group is
+           NOT DRAWN AT ALL for a visitor — which was the fault itself,
+           not merely where it sat. */''}
+      ${item('settings', t('settings'), '#/settings')}
       ${member ? item('bell', t('notifications'), '#/notifications', unread) : ''}
       ${member ? group('account', t('grpMyAccount'), account) : ''}
       ${group('sections', t('grpSections'), sections)}

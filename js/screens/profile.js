@@ -551,8 +551,21 @@ export function MyBusinessScreen(root) {
 }
 
 /* ------------------------------ SETTINGS ------------------------------ */
+/**
+ * ⚠️ NO `memberOnly` HERE, AND THAT IS THE ITEM.
+ * The language, the appearance, the text size and the maps app are DEVICE
+ * preferences, not account property: nothing about them reaches a server,
+ * nothing follows the reader to another phone, and there is no identity to
+ * ask for in exchange. Sending a visitor to `#/auth/signup` for them was
+ * telling somebody who cannot read the screen to register in order to make
+ * it bigger — and our oldest readers need the large text first and sign up
+ * last. They do not register. They close the app.
+ *
+ * What genuinely belongs to an account — notifications, payment, the
+ * subscription, receipts, the block list, deletion — is wrapped in
+ * `isLoggedIn()` below and is not drawn at all for a visitor.
+ */
 export function SettingsScreen(root) {
-  if (!memberOnly('#/settings')) return;
   renderHeader({ simple: true, title: t('settings') });
   const p = S.state.notifPrefs;
 
@@ -590,6 +603,19 @@ export function SettingsScreen(root) {
       <div class="font-sample" id="fontSample">${t('fontSample')}</div>
       <div class="hint" style="padding:0 16px 4px">${t('fontNote')}</div>
 
+      ${/* A DEVICE PREFERENCE, so it stands with the other three and above
+           the account block. «افتح فيه دائماً» is stored, so it has to be
+           changeable — a preference you cannot undo is a trap, not a
+           convenience. */''}
+      <div class="dr-group-label">${t('mapsApp')}</div>
+      <div class="setting-row">
+        <span class="s-txt"><b>${t('mapsApp')}</b><span>${
+          S.mapsApp() ? t('maps' + S.mapsApp()[0].toUpperCase() + S.mapsApp().slice(1)) : t('mapsAsk')
+        }</span></span>
+        <button class="mini-btn" id="mapsPref">${icon('navigation', 15)}</button>
+      </div>
+
+      ${S.isLoggedIn() ? `
       <div class="dr-group-label">${t('notifPrefs')}</div>
       ${sw('messages', t('notifMessages'), p.messages)}
       ${sw('expiry', t('notifExpiry'), p.expiry)}
@@ -613,15 +639,6 @@ export function SettingsScreen(root) {
           <button class="mini-btn" data-route="${sub ? '#/my-subscription' : '#/subscribe'}">${icon(document.documentElement.dir === 'rtl' ? 'chevronL' : 'chevronR', 15)}</button></div>`;
       })()}
 
-      ${/* «افتح فيه دائماً» is stored, so it has to be changeable — a
-           preference you cannot undo is a trap, not a convenience. */''}
-      <div class="setting-row">
-        <span class="s-txt"><b>${t('mapsApp')}</b><span>${
-          S.mapsApp() ? t('maps' + S.mapsApp()[0].toUpperCase() + S.mapsApp().slice(1)) : t('mapsAsk')
-        }</span></span>
-        <button class="mini-btn" id="mapsPref">${icon('navigation', 15)}</button>
-      </div>
-
       ${/* Receipts sit here rather than in the drawer: they belong to
            anybody who has paid for anything, not only to a subscriber,
            and the «حسابي» group is already over the drawer's height. */''}
@@ -642,6 +659,14 @@ export function SettingsScreen(root) {
         <span class="s-txt"><b>${t('deleteAccount')}</b><span>${t('deleteAccountSub')}</span></span>
         <button class="mini-btn ink-danger" id="delAcc">${icon('trash', 15)}</button>
       </div>
+      ` : `
+      ${/* The visitor is told what an account adds and what already works
+           without one — never a blank where six sections used to be. */''}
+      <div class="dr-group-label">${t('grpMyAccount')}</div>
+      <div class="hint" style="padding:0 16px 12px">${t('settingsGuestNote')}</div>
+      <button class="btn btn-gold btn-block" data-route="#/auth/signup"
+        style="margin:0 16px 16px">${t('createAccount')}</button>
+      `}
       <div style="height:20px"></div>
     </div>`;
 
@@ -678,7 +703,12 @@ export function SettingsScreen(root) {
     s.classList.toggle('on', S.state.notifPrefs[k]);
   }));
   $('#langBtn').addEventListener('click', () => import('../ui.js').then(m => m.toggleLang()));
-  $('#addCard').addEventListener('click', () => { S.state.cardOnFile = 'VISA •••• 4242'; S.save(); toast(t('done'), 'ok'); go('#/settings'); });
+  /* ⚠️ THE ACCOUNT BLOCK IS NOT DRAWN FOR A VISITOR, so nothing may reach
+     for it unguarded — `$('#addCard')` on a screen that never rendered one
+     throws on `null` and takes the whole screen down. The guard is the same
+     condition that drew them. */
+  const card = $('#addCard');
+  if (card) card.addEventListener('click', () => { S.state.cardOnFile = 'VISA •••• 4242'; S.save(); toast(t('done'), 'ok'); go('#/settings'); });
   /* Deletion says what it takes with it and then actually takes it —
      signing out and calling it deleted would be a lie the stores ask
      about directly. */
@@ -698,7 +728,8 @@ export function SettingsScreen(root) {
     }));
   }));
 
-  $('#delAcc').addEventListener('click', () => {
+  const del = $('#delAcc');
+  if (del) del.addEventListener('click', () => {
     const d = S.deletionSummary();
     const lines = [
       [d.listings, t('myAds')], [d.reviews, t('myReviews')], [d.saved, t('saved')],

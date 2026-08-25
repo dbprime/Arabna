@@ -152,7 +152,14 @@ for (const w of [390, 360]) {
     const chip = document.querySelector('#locBtn').getBoundingClientRect();
     const svg = document.querySelector('.search-bar.big > svg').getBoundingClientRect();
     const app = document.querySelector('#app');
-    return { same: Math.abs(bar.top - chip.top) < 2, mag: Math.round(svg.width),
+    /* ⚠️ MEASURED ON THE CENTRE LINE, not the top. V.04.7 shrank the
+       search box to 38px while the chip stayed 52, so two controls that
+       share a row perfectly no longer share a top edge — the row is
+       `align-items: center`. Comparing tops was only ever right while the
+       two happened to be the same height; the centre is what «one row»
+       actually means. */
+    return { same: Math.abs((bar.top + bar.height / 2) - (chip.top + chip.height / 2)) < 2,
+             mag: Math.round(svg.width),
              rows: document.querySelectorAll('.search-row').length,
              over: app.scrollWidth - app.clientWidth };
   });
@@ -219,9 +226,25 @@ ok('6.3 «إعلانات مميّزة» took their place', dr.featured && dr.rou
    V.03.9 raised it from 80 to 130, because «مواعيد القداس» was asked for
    and a row costs 50px: 46 over at base 16, 72 at 17, 122 with this row.
    The ceiling exists to stop the gap growing UNNOTICED — it did its job
-   here, and the number is written down rather than the check softened. */
+   here, and the number is written down rather than the check softened.
+
+   V.04.8 raises it again, to 185, for «الإعدادات» — a row that had to
+   leave «حسابي», because that group is not drawn for a visitor at all and
+   a visitor who wanted larger text was being sent to a sign-up form.
+   Measured with a group open: **1021 against 844 for a visitor** (921 with
+   «المساعدة»), 941 / 991 / 891 for a member. And the half worth keeping in
+   view: **folded, the panel is exactly 844 and still does not scroll.**
+   The ceiling did its job a third time. */
 ok('6.4 the drawer overflow with a group open does not grow past the known gap',
-   dr.height - dr.box <= 130, (dr.height - dr.box) + 'px over, one row is ' + dr.row);
+   dr.height - dr.box <= 185, (dr.height - dr.box) + 'px over, one row is ' + dr.row);
+/* …and the rule still holds where it is most often read */
+await page.evaluate(() => { const g = document.querySelector('.dr-group.open');
+  if (g) g.querySelector('.dr-head').click(); });
+await page.waitForTimeout(400);
+ok('6.4b …and folded it does not scroll at all', await page.evaluate(() => {
+  const pn = document.querySelector('.drawer-panel');
+  return pn.scrollHeight <= pn.getBoundingClientRect().height + 1;
+}));
 await page.evaluate(() => { const f = [...document.querySelectorAll('.dr-item')].find(x => /مميّزة/.test(x.textContent)); f && f.click(); });
 await page.waitForTimeout(700);
 ok('6.5 …and it really filters to the subscribers', await page.evaluate(() => {

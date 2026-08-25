@@ -29,8 +29,8 @@ export const CATEGORIES = [
   // 'events' is not a business category: it is a shortcut that opens the
   // Events screen. Every other entry filters the directory.
   { id: "restaurants",  key: "catRestaurants",      icon: "utensils",    shortKey: "catShortRestaurants" },
-  { id: "grocery",      key: "catGrocery",          icon: "bag" },
-  { id: "worship",      key: "catWorship",          icon: "landmark" },
+  { id: "grocery",      key: "catGrocery",          icon: "bag",         shortKey: "catShortGrocery" },
+  { id: "worship",      key: "catWorship",          icon: "landmark",    shortKey: "catShortWorship" },
   { id: "cafe",         key: "catCafe",             icon: "coffee" },
   { id: "beauty",       key: "catBeauty",           icon: "sparkles" },
   { id: "shopping",     key: "catShopping",         icon: "shirt",       shortKey: "catShortBeauty" },
@@ -91,7 +91,7 @@ export const CLASSIFIED_CATS = MARKET_CATS;
    hand-typed «0.1» while the project had reached V.03.6 — two literals,
    both stale, and a reader reporting a fault could not tell us which build
    they were on. Raise it here when CLAUDE.md's version line moves. */
-export const APP_VERSION = '0.4.7';
+export const APP_VERSION = '0.4.8';
 
 export const FREE_PRICE = '__FREE__';
 

@@ -155,10 +155,22 @@ ok('featured comes before the mini banner', order.feat < order.mini);
 ok('mini banner comes before the magazine', order.mini < order.mag);
 ok('all five home blocks still present',
    [order.cats, order.slider, order.feat, order.mini, order.mag].every(v => v < 1e9));
+/* ⚠️ V.04.7 PUT A LINE BETWEEN THEM, deliberately: the visitor's headline
+   («كلّ ما تحتاجه في …») stands under the search row, so the categories
+   are no longer the very first thing. What the assertion was protecting is
+   that the top of the screen is not wasted — so it now measures what the
+   batch itself promised and measured: the slider and «مميّز هذا الأسبوع»
+   both above the fold on 390×844. */
 const catsTop = await offsetIn('#cats');
-ok('categories are the first thing under the search row', catsTop < 200, catsTop + 'px');
+ok('the categories still start high', catsTop < 300, catsTop + 'px');
+ok('the slider and «مميّز» are both above the fold',
+   order.slider < 844 && order.feat < 844,
+   `slider ${Math.round(order.slider)}px, featured ${Math.round(order.feat)}px`);
 
-/* ============ 4. category circles ============ */
+/* ============ 4. category tiles ============
+   ⚠️ AND THEY ARE TILES NOW, NOT CIRCLES — one hue each, 18px radius, and
+   SIX across where there were five plus an «عرض الكل» link. The sixth is
+   the computed rest and carries no `data-cat`. */
 const cats = await page.evaluate(() => {
   const strip = document.querySelector('#cats');
   const items = Array.from(strip.querySelectorAll('.cat-item'));
@@ -166,15 +178,26 @@ const cats = await page.evaluate(() => {
   return {
     count: items.length,
     fully: items.filter(i => { const r = i.getBoundingClientRect(); return r.left >= sr.left - 1 && r.right <= sr.right + 1; }).length,
-    circle: Math.round(items[0].querySelector('.cat-circle').getBoundingClientRect().width),
+    tile: Math.round(items[0].querySelector('.cat-tile').getBoundingClientRect().width),
+    radius: getComputedStyle(items[0].querySelector('.cat-tile')).borderRadius,
     wrapped: items.filter(i => i.querySelector('.cat-label').getBoundingClientRect().height > 24).length,
     labels: items.map(i => i.querySelector('.cat-label').textContent.trim()),
+    /* every tile must have a ground: this is the `var()` trap — a hue set
+       on a parent resolves there, and every tile comes out the same */
+    bare: items.filter(i => {
+      const cs = getComputedStyle(i.querySelector('.cat-tile'));
+      return cs.backgroundColor === 'rgba(0, 0, 0, 0)' && cs.borderStyle === 'none';
+    }).length,
   };
 });
-ok('all five circles fit without clipping', cats.fully === 5 && cats.count === 5, `${cats.fully}/${cats.count} visible`);
-ok('circle diameter is 56px', cats.circle === 56, cats.circle + 'px');
+ok('all six tiles fit without clipping', cats.fully === 6 && cats.count === 6, `${cats.fully}/${cats.count} visible`);
+ok('tiles are 52px and rounded, not circles', cats.tile === 52 && cats.radius !== '50%',
+   `${cats.tile}px, radius ${cats.radius}`);
+ok('no tile is left with no ground', cats.bare === 0, String(cats.bare));
 ok('no label wraps to two lines', cats.wrapped === 0);
-ok('labels are single words', cats.labels.every(l => l.split(/\s+/).length === 1), cats.labels.join(' · '));
+/* the sixth is «عرض الكل», the computed rest, and is not a category */
+ok('the five category labels are single words',
+   cats.labels.slice(0, 5).every(l => l.split(/\s+/).length === 1), cats.labels.join(' · '));
 
 /* ============ 5. directory: duplication removed ============ */
 await go('#/directory');
@@ -511,7 +534,9 @@ ok('EN: directory renders', ((await txt()) || '').length > 60);
 ok('EN: short category labels', await page.evaluate(async () => {
   location.hash = '#/home';
   await new Promise(r => setTimeout(r, 400));
-  return Array.from(document.querySelectorAll('#cats .cat-label')).every(l => l.textContent.trim().split(/\s+/).length === 1);
+  /* the first five — the sixth is «See all», the computed rest */
+  return Array.from(document.querySelectorAll('#cats .cat-label')).slice(0, 5)
+    .every(l => l.textContent.trim().split(/\s+/).length === 1);
 }));
 await openDrawer();
 ok('EN: drawer groups translated', (await drawerTxt()).includes('ARABNA categories'));

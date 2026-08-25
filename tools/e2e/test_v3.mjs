@@ -115,15 +115,26 @@ const mega = await page.evaluate(() => {
 });
 ok('megaphone icon redrawn as a bullhorn', mega > 200, mega + ' path chars');
 
-/* ============ 17. Events replaces Lawyers on Home ============ */
+/* ============ 17. the home category row ============
+   ⚠️ V.04.7 REVERSED TWO OF THESE DELIBERATELY. The row is now SIX tiles
+   — five categories and a computed «+16» into `#/categories` — where it
+   was five plus an «عرض الكل» link, and `HOME_CATS` no longer carries
+   Events (it is restaurants · grocery · doctors · worship · auto).
+   «Lawyers is not in the home five» is unchanged and still asserted; the
+   events screen is reached directly, because it is no longer reachable
+   from this row and the coverage below has to survive that. */
 await go('#/home');
 const homeCats = await page.locator('#cats .cat-label').allTextContents();
-ok('home strip has 5 categories', homeCats.length === 5, homeCats.map(s => s.trim()).join(', '));
-ok('Events is in the home five', homeCats.join('|').includes('فعاليات'));
-ok('Lawyers is no longer in the home five', !homeCats.join('|').includes('محامون'));
-await page.locator('#cats .cat-item').nth(2).click();
-await page.waitForTimeout(320);
-ok('tapping Events opens the events screen', (await page.evaluate(() => location.hash)) === '#/events');
+ok('home strip is one row of six', homeCats.length === 6, homeCats.map(s => s.trim()).join(', '));
+/* the count is on the TILE and is computed from `CATEGORIES`, never typed */
+const moreTile = await page.locator('#cats .cat-tile.more').textContent();
+ok('…and the sixth is the computed rest', /^\+\s*\d+$/.test((moreTile || '').trim()), (moreTile || '').trim());
+ok('Lawyers is not in the home five', !homeCats.slice(0, 5).join('|').includes('محامون'));
+await page.locator('#cats [data-route="#/categories"]').click();
+await page.waitForTimeout(500);
+ok('tapping it opens all the categories', (await page.evaluate(() => location.hash)) === '#/categories',
+   await page.evaluate(() => location.hash));
+await go('#/events');
 
 /* events list: soonest first, featured pinned, past hidden */
 const evTitles = await page.locator('.ev-title').allTextContents();

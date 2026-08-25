@@ -1126,14 +1126,23 @@ export function stateCodeFor(city) {
   const r = c && REGIONS.find(x => x.id === c.region);
   return (r && r.state) || '';
 }
-/** a reader who picked the whole state rather than a city */
+/**
+ * A reader who pressed the state suggestion — and it is `stateOnly` that
+ * says so, never `location.state`.
+ *
+ * ⚠️ `state: 'TX'` IS A DEFAULT WRITTEN BY EVERY LOCATION WRITER (four of
+ * them), so reading it as «this reader chose a state» made the chip say
+ * «TX» to somebody whose point had simply not been named yet — and that
+ * is the V.03.8 rule inverted: a point with no name says «موقعك الحالي»,
+ * never an invented place. v31 caught it.
+ */
 export function userState() {
   const l = state.location || {};
-  return (!l.city && !l.region && l.state) ? l.state : '';
+  return (l.stateOnly && !l.city && !l.region && l.state) ? l.state : '';
 }
 /** press the suggestion: the whole state, which is every city in it */
 export function setUserState(code) {
-  state.location = { zip: '', city: '', state: code, region: '', manual: true };
+  state.location = { zip: '', city: '', state: code, region: '', manual: true, stateOnly: true };
   state.geo = null;
   save();
 }

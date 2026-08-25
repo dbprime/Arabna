@@ -327,6 +327,10 @@ export const STRINGS = {
     adminPassChanged: 'تم تغيير كلمة سر الإدارة',
     // --- short one-word labels for the home category circles
     catShortRestaurants: 'مطاعم', catShortDoctors: 'أطباء', catShortEvents: 'فعاليات',
+    /* ⚠️ ONE WORD, and it is the rule the row is built on: a 52px tile
+       carries one word under it and «أسواق وملاحم» is two. «عبادة» names
+       neither a mosque nor a church, which is the standing rule too. */
+    catShortGrocery: 'أسواق', catShortWorship: 'عبادة',
     catShortHome: 'صيانة', catShortBeauty: 'تسوّق',
     // --- unified filter sheet
     filters: 'تصفية', applyFilters: 'تطبيق', clearFilters: 'مسح الكل',
@@ -556,6 +560,7 @@ export const STRINGS = {
     clear: 'مسح',
     clearAll: 'مسح الكل',
     nearMiss: 'لم نجد «{q}» تماماً — هذه الأقرب',
+    settingsGuestNote: 'الإشعارات والدفع والاشتراك تحتاج حساباً. واللغة والمظهر وحجم الخطّ محفوظة على جهازك، وتعمل بلا تسجيل.',
     /* the state is a place to go, not a list of results */
     shareApp: 'ابعث عربنا لصديقك',
     stateSuggest: 'اضبط موقعك على {s}',
@@ -1912,6 +1917,7 @@ export const STRINGS = {
     contactAttemptReport: 'Attempts to share off-app contact details',
     adminPassChanged: 'Admin password changed',
     catShortRestaurants: 'Food', catShortDoctors: 'Doctors', catShortEvents: 'Events',
+    catShortGrocery: 'Markets', catShortWorship: 'Worship',
     catShortHome: 'Repairs', catShortBeauty: 'Shops',
     filters: 'Filters', applyFilters: 'Apply', clearFilters: 'Clear all',
     sortBy: 'Sort by', sortNewest: 'Newest', sortNearest: 'Nearest', sortTopRated: 'Top rated',
@@ -2130,6 +2136,7 @@ export const STRINGS = {
     clear: 'Clear',
     clearAll: 'Clear all',
     nearMiss: 'No exact match for "{q}" — these are the closest',
+    settingsGuestNote: 'Notifications, payment and subscription need an account. Language, appearance and text size are saved on your device and work without signing in.',
     shareApp: 'Send ARABNA to a friend',
     stateSuggest: 'Set your location to {s}',
     stateSuggestSub: 'The whole directory is inside {s}',

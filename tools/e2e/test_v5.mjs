@@ -52,7 +52,13 @@ ok('guest: invite card is shown', d.invite);
 ok('guest: sign-up button in the invite card', d.routes.includes('#/auth/signup'));
 ok('guest: sign-in link in the invite card', d.routes.includes('#/auth/signin'));
 ok('guest: no notifications row', !d.routes.includes('#/notifications'));
-ok('guest: no settings row', !d.routes.includes('#/settings'));
+/* ⚠️ V.04.8 REVERSED THIS, and it is the item. The language, the
+   appearance, the text size and the maps app are DEVICE preferences —
+   nothing about them reaches a server and there is no identity to ask for
+   in exchange — so a visitor asking for larger text was being sent to a
+   sign-up form. Our oldest readers need that first and register last.
+   The row is there for them now; what needs an account still is not. */
+ok('guest: a settings row, for the device preferences', d.routes.includes('#/settings'));
 ok('guest: no sign-out row', !d.logout);
 ok('guest: no "my account" group', !d.topLevel.includes('group:account'));
 for (const r of ['#/my-ads', '#/my-reviews', '#/messages', '#/saved', '#/my-business', '#/subscribe']) {
@@ -76,11 +82,20 @@ ok('guest profile: offers sign up', (await txt()).includes('إنشاء حساب'
 /* personal routes redirect a guest instead of painting empty data */
 for (const [route, expect] of [['#/saved', '#/auth/signup'], ['#/my-ads', '#/auth/signup'],
                                ['#/my-reviews', '#/auth/signup'], ['#/my-business', '#/auth/signup'],
-                               ['#/settings', '#/auth/signup'], ['#/notifications', '#/auth/signup'],
+                               ['#/notifications', '#/auth/signup'],
                                ['#/messages', '#/auth/signup']]) {
   await go(route);
   ok('guest: ' + route + ' redirects', (await hash()).startsWith(expect), await hash());
 }
+/* ⚠️ …AND `#/settings` IS OUT OF THAT LIST ON PURPOSE (V.04.8): it opens,
+   and it shows the four device preferences and none of the six sections
+   that really belong to an account. */
+await go('#/settings');
+ok('guest: #/settings opens instead of redirecting', (await hash()) === '#/settings', await hash());
+ok('guest: …with the device preferences and nothing of the account',
+   await page.evaluate(() => !!document.querySelector('#langBtn')
+     && document.querySelectorAll('[data-font]').length === 4
+     && !document.querySelector('#addCard') && !document.querySelector('#delAcc')));
 
 /* ======================================================================
    PART 2 — sign up, become a member
@@ -121,7 +136,13 @@ ok('member: notifications is a standalone row',
 /* seven visible top-level rows, no scrolling */
 const visibleRows = await page.evaluate(() => Array.from(document.querySelectorAll('.drawer-panel > *'))
   .filter(el => el.classList.contains('dr-item') || el.classList.contains('dr-group')).length);
-ok('member: seven top-level rows', visibleRows === 7, visibleRows + ' rows');
+/* ⚠️ EIGHT SINCE V.04.8 — «الإعدادات» is a standalone row, directly under
+   «اللغة», because the group it used to sit in is not drawn for a visitor
+   at all. The cost is measured and not hidden: folded the panel is still
+   exactly the viewport and does not scroll; with a group open it is over,
+   as it already was. */
+ok('member: eight top-level rows, the eighth being settings',
+   visibleRows === 8, visibleRows + ' rows');
 ok('member: drawer needs no scrolling', d.panelScroll <= d.panelBox + 2, d.panelScroll + ' / ' + d.panelBox);
 
 /* badge on the notifications row */
@@ -164,7 +185,8 @@ console.log('--- leaf destinations ---');
 for (const r of wanted) {
   await go('#/home');
   await openDrawer();
-  const grp = ['#/my-business', '#/my-ads', '#/my-reviews', '#/messages', '#/saved', '#/subscribe', '#/settings'].includes(r) ? 'account'
+  /* settings is a top-level row now, so it is NOT opened through a group */
+  const grp = ['#/my-business', '#/my-ads', '#/my-reviews', '#/messages', '#/saved', '#/subscribe'].includes(r) ? 'account'
             : ['#/directory', '#/marketplace', '#/events', '#/magazine', '#/categories'].includes(r) ? 'sections'
             : ['#/help', '#/about', '#/privacy', '#/terms'].includes(r) ? 'help' : null;
   if (grp) { await page.click(`#drawer [data-toggle="${grp}"]`); await page.waitForTimeout(300); }
@@ -359,9 +381,9 @@ ok('EN drawer: "My account" group', enTxt.includes('My account'));
 ok('EN drawer: "ARABNA categories" group (renamed in V.02.7)', enTxt.includes('ARABNA categories'));
 ok('EN drawer: no Arabic left in the drawer chrome', !enTxt.includes('حسابي'));
 d = await drawerMap();
-ok('EN member drawer still 7 rows',
+ok('EN member drawer is 8 rows too',
    (await page.evaluate(() => Array.from(document.querySelectorAll('.drawer-panel > *'))
-     .filter(el => el.classList.contains('dr-item') || el.classList.contains('dr-group')).length)) === 7);
+     .filter(el => el.classList.contains('dr-item') || el.classList.contains('dr-group')).length)) === 8);
 ok('EN drawer still needs no scrolling', d.panelScroll <= d.panelBox + 2, d.panelScroll + ' / ' + d.panelBox);
 await closeDrawer();
 

@@ -158,9 +158,15 @@ const geom = async p => p.evaluate(() => {
            loaded: i.complete && i.naturalWidth > 0, src: i.getAttribute('src') };
 });
 let g = await geom(page);
-ok('2.1 the file is the stacked lockup, not the horizontal one',
-   g.nw === 1173 && g.nh === 955, `${g.nw}×${g.nh}`);
-ok('2.2 65px tall, 80px wide — the old numbers', g.h === 65 && g.w === 80, `${g.w}×${g.h}`);
+/* ⚠️ V.04.7: THE BAR CARRIES THE MARK ALONE. Measured inside the file,
+   «عربنا» is 12.7% of the stacked lockup's height — 8.2px at 65 — and an
+   Arabic letter needs 14–16 to be read, because its dots need height a
+   Latin letter does not. There is no arrangement that makes the name
+   legible in this bar, so it was moved to where it is read and the mark
+   took the full height. The two numbers survive: 65 tall, 54 installed. */
+ok('2.1 the file is the mark, not a lockup',
+   g.nw === 659 && g.nh === 649, `${g.nw}×${g.nh}`);
+ok('2.2 65px tall, 66px wide — bigger mark, narrower box', g.h === 65 && g.w === 66, `${g.w}×${g.h}`);
 ok('2.3 it keeps the file ratio', Math.abs(g.w / g.h - g.nw / g.nh) < 0.02);
 ok('2.4 it loads', g.loaded);
 ok('2.5 centred in Arabic', Math.abs(g.centre) <= 1, g.centre + 'px');
@@ -202,12 +208,16 @@ const srcDark = await page.evaluate(() => document.querySelector('.h-logo').getA
 await setTheme(page, 'light');
 const srcLight = await page.evaluate(() => document.querySelector('.h-logo').getAttribute('src'));
 ok('3.1 the light theme uses a different file', srcDark !== srcLight);
+/* the ink copy of the MARK since V.04.7 — the pair is the same idea and
+   the same reason: the silver family is a dark-background mark and 72% of
+   it measured under 2:1 on the light bar, so the light theme gets the
+   navy-inked copy. Only the file changed. */
 ok('3.2 …and it is the ink copy',
-   srcLight.includes('logo-ink.png') || srcLight.startsWith('data:image'),
+   srcLight.includes('mark-ink.png') || srcLight.startsWith('data:image'),
    srcLight.slice(0, 40));
-ok('3.3 the ink copy is the same lockup, same size', await page.evaluate(() => {
+ok('3.3 the ink copy is the same mark, same size', await page.evaluate(() => {
   const i = document.querySelector('.h-logo');
-  return i.naturalWidth === 1173 && i.naturalHeight === 955 && i.complete;
+  return i.naturalWidth === 659 && i.naturalHeight === 649 && i.complete;
 }));
 ok('3.4 no filter is used on it', await page.evaluate(() =>
   getComputedStyle(document.querySelector('.h-logo')).filter === 'none'));

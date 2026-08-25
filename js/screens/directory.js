@@ -8,7 +8,7 @@ import { t, L, icon, $, $$, go, back, renderHeader, openSheet, closeSheet, confi
          sponsoredRows, historyKey, esc, outsideBoxHtml, mountOutsideBox } from '../ui.js';
 import { CATEGORIES, SUBSCRIPTION_PRICE, DAY_KEYS } from '../data.js';
 import * as S from '../store.js';
-import { catIcon, startSlider } from './home.js';
+import { catIcon, startSlider, repaintCityChips } from './home.js';
 import { mountPhotoPicker } from './marketplace.js';
 import { prayerTimes, fmtPrayer } from '../prayer.js';
 import { openTimeFix } from './prayer.js';
@@ -364,7 +364,12 @@ export function DirectoryScreen(root) {
     if (goState) goState.addEventListener('click', () => {
       S.setUserState(goState.dataset.code);
       st.term = ''; const box = $('#dirSearch'); if (box) box.value = '';
-      writeUrl(); paint(); renderHeader();
+      /* ⚠️ `paint()` REDRAWS THE RESULTS, NOT THE SEARCH ROW. The chip is
+         part of the screen's own markup and is written once, so without
+         this it went on saying «حدّد موقعك» over a directory that had just
+         been set to the whole state. `repaintCityChips` is the single
+         definition all three screens share. */
+      writeUrl(); paint(); repaintCityChips(); renderHeader();
     });
     paintPills();
     paintCatSlider();

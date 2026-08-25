@@ -303,8 +303,13 @@ ok('5.8 the magazine is a picker, and nothing scrolls sideways', await page.eval
 }));
 
 await go('#/home');
-ok('5.9 home keeps its circle row — it shows, it does not filter',
-   await page.locator('#cats .cat-item').count() === 5);
+/* ⚠️ V.04.7: THEY ARE TILES NOW, AND THERE ARE SIX — five categories and
+   the computed rest. The point of the check is unchanged and is the only
+   thing that matters here: Home SHOWS, it does not filter, so the row is
+   not a picker and every tile navigates. */
+ok('5.9 home keeps its tile row — it shows, it does not filter',
+   await page.locator('#cats .cat-item').count() === 6
+   && await page.locator('#cats [data-picker], #cats .picker-btn').count() === 0);
 ok('5.10 …with one tap to every category', await page.locator('[data-route="#/categories"]').count() >= 1);
 
 /* ============ 6 — it costs less height than the rows it replaced ============ */
