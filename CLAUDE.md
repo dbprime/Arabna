@@ -605,6 +605,32 @@ three times: 1.24s, 0.73s, 0.23s. If something has "been running" for forty
 minutes, it is waiting on something else, and killing it is more correct
 than waiting for it.
 
+## The newcomer guide is generated — `tools/nc/` holds its source
+
+`js/newcomer-content.js` is **built**, not written. Its source is
+`tools/nc/nc-ar.json` and `tools/nc/nc-en.json`, and the three commands
+that rebuild it are in `tools/nc/اقرأني.md`.
+
+> **Never edit `js/newcomer-content.js` by hand.** The edit is lost on the
+> next build, silently — no error, no diff in size.
+
+**And the guide text is Rai's, approved word by word.** It is not
+reworded, shortened, or added to — not in the JSON and not in the
+generated file. A change to it arrives in a numbered file after he
+approves it, like everything else.
+
+**One file per language, and no second copy under any name.** The source
+was once kept as two byte-identical files. One was edited, the tool built
+from the other, and the output came out unchanged — same size, no error.
+It was found by accident, not by a check. `git` is the backup; a second
+copy is a second source on the first day somebody forgets which is which.
+
+**And `docs/إعادة-البناء.md` is the answer to "if everything fell, how
+does it come back".** Vercel is the front, not the store — it publishes
+from this repository, so losing it loses nothing. Keep that file true:
+when the server batch lands and real data exists, its section 1 stops
+being correct and has to be rewritten in the same batch.
+
 ## Testing before you ship a change
 ```
 python3 -m http.server 8099        # from the repo root

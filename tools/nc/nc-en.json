@@ -1,0 +1,1893 @@
+[
+  {
+    "n": "1",
+    "t": "Social Security (SSN)",
+    "blocks": [
+      {
+        "p": "**What it is:** a nine-digit number you need in order to work, to open accounts, and for taxes. **It is free** — nobody takes money from you for it."
+      },
+      {
+        "warn": "**Read this first — it may save you a whole trip.** If you have an immigration application pending, or you are about to file one — work permit (I-765), residency (I-485), family reunification, or naturalization (N-400) — **ask for the Social Security number from inside the application itself.** Every one of these forms has a Social Security box. Check it, and the number comes to you in the mail after approval — no visit, no appointment, no line."
+      },
+      {
+        "h": "If that is not your situation"
+      },
+      {
+        "ul": [
+          "**Wait ten days** after you arrive, so your records reach the system",
+          "Start the application at [ssa.gov/number-card](https://www.ssa.gov/number-card), then go to the nearest office with your documents",
+          "The form: [Form SS-5](https://www.ssa.gov/forms/ss-5.pdf) — **and the application is free**, which is written on the form itself",
+          "Nearest office: [ssa.gov/locator](https://secure.ssa.gov/ICON/main.jsp) · or an appointment at [1-800-772-1213](tel:+18007721213)"
+        ]
+      },
+      {
+        "do": "At `ssa.gov/locator`: type your ZIP code, and the result is the nearest office address and its hours."
+      },
+      {
+        "h": "What to bring — originals, not copies"
+      },
+      {
+        "ul": [
+          "A valid passport for identity",
+          "A valid status document: the green card (I-551), or I-94, or the work permit (I-766)",
+          "And proof of age — a birth certificate if you have one"
+        ]
+      },
+      {
+        "alert": "**The original, or a certified copy from the agency that issued the paper — nothing else.** Photocopies are not accepted. **A copy notarized by a notary is not accepted either** — back home \"certification\" means the notary, but at Social Security it means **the agency that issued the paper itself**. This is why many people are turned away at the door."
+      },
+      {
+        "warn": "**And a free interpreter on the phone.** The agency says it provides interpreter services free of charge: you call [1-800-772-1213](tel:+18007721213) and stay on the line until a representative reaches you, and they connect an interpreter. If you need to come to the office, they book you an appointment and bring an interpreter. [Details](https://www.ssa.gov/multilanguage/interpreter.html)"
+      },
+      {
+        "p": "**The agency's Arabic page** has about twenty publications on it, including the instructions for Form SS-5: [ssa.gov/multilanguage/arabic](https://www.ssa.gov/multilanguage/arabic.html)"
+      },
+      {
+        "p": "**Time:** the card arrives in the mail within **5 to 10 business days**. If three weeks pass, call the number above."
+      },
+      {
+        "p": "**And if you are not eligible:** there is an alternative for taxes called **ITIN** — see the banking section."
+      },
+      {
+        "ad": {
+          "name": "مركز الجالية العربية",
+          "area": "Hillcroft",
+          "cat": "مجتمع وخدمات",
+          "tier": "مشترك"
+        }
+      }
+    ]
+  },
+  {
+    "n": "2",
+    "t": "Where to Live — Choosing Your Area",
+    "blocks": [
+      {
+        "p": "**You can change the house; you cannot change the area.** A lease is one year and then you move — **but the school, the drive to work, and the flooding live with you the whole year.**"
+      },
+      {
+        "p": "**These standards work for any city**, and the tools under them are for the Houston area."
+      },
+      {
+        "h": "1) Safety — and start here"
+      },
+      {
+        "p": "**Three official sites, and no fourth.** ⚠️ **Avoid sites that give a neighborhood a safety score out of 100** — how they calculate it is not public, and they mix crime with income and who lives there, **so they brand whole neighborhoods with a number you cannot trace.**"
+      },
+      {
+        "rows": [
+          [
+            "Inside the city of Houston",
+            "[Houston Police crime map](https://communitycrimemap.com) — opened from the [official police page](https://www.houstontx.gov/police/cs/Community_Crime_Map_hosted_by_LexisNexis.htm)"
+          ],
+          [
+            "By street and by month",
+            "[Police data by street](https://www.houstontx.gov/police/cs/Monthly_Crime_Data_by_Street_and_Police_Beat.htm) — free monthly files going back to 2009"
+          ],
+          [
+            "In Sugar Land",
+            "[City map](https://data.sugarlandtx.gov/showcase/community-crime-map)"
+          ],
+          [
+            "In Pearland",
+            "[Police map](https://www.pearlandtx.gov/departments/police/annual-reports/crime-mapping)"
+          ],
+          [
+            "In Missouri City",
+            "[Police map](https://www.missouricitytx.gov/FAQ.aspx?QID=144)"
+          ]
+        ]
+      },
+      {
+        "do": "And in every one of these maps: type the address or the street name, then read **the last year**, not the last week — the result is dots on a map, each one carrying the type of report and its date. **And compare your street to the street next to it, not a city to a city.**"
+      },
+      {
+        "alert": "⚠️ **Outside the city limits there is no map.** I searched the Harris County Sheriff's Office site and found no public crime map — **so if you live in an area that is not part of a city, you will find no data about your street.** **That is one more reason to go see the street yourself.**"
+      },
+      {
+        "h": "How to read the map — in the police's own words"
+      },
+      {
+        "warn": "**Houston Police write on their site:** the map **\"does not reflect or certify 'safe' or 'unsafe' areas\"**, and \"areas with a high volume of foot traffic, vehicle traffic, and if densely populated **may have more reported crimes than other areas. This does not necessarily mean more crime occurs there, but that more crime is reported there.**\""
+      },
+      {
+        "p": "⚠️ **This is the most important sentence in this section:** a street with restaurants and shops fills up with dots, **and an empty lot looks clean** — and whoever compares the two runs away from the better one."
+      },
+      {
+        "ul": [
+          "**Compare a street to the street next to it**, not a city to a city",
+          "**Look at the type of crime, not the number** — a car theft is not a home break-in",
+          "**Take the last year**, not the last week",
+          "**Then visit the street in the evening**, not at midday only — **no map tells you what you feel while you are standing in it.**"
+        ]
+      },
+      {
+        "alert": "⚠️ **No official source anywhere gives crime counts by ZIP code** — not federal, not the state, not the police. **Houston Police say it in their own words: \"ZIP code boundaries and police beat boundaries do not correspond... ZIP codes are provided only as a reference.\"** **So the number you see on a site that asks for your ZIP code is not a count — it is an estimate produced by a model.** And the Census Bureau says a ZIP Code is a mail delivery route, not a place on a map."
+      },
+      {
+        "h": "The state registry — by address"
+      },
+      {
+        "p": "The State of Texas publishes a public registry **you can search by address or by ZIP code, free**: [state registry](https://publicsite.dps.texas.gov/SexOffenderRegistry) — and the Department of Public Safety says: **\"State law specifically makes most information in this database freely available to the public.\"**"
+      },
+      {
+        "do": "Type the address or the ZIP code, and the result is a list of who is registered in that range, with an approximate address for each name."
+      },
+      {
+        "alert": "⚠️ **Their warning is written on the site, and it is passed on as it stands:** **\"Anyone who uses any information on this website to injure, harass, or for any other unlawful purpose may be subject to criminal prosecution or civil liability.\"**"
+      },
+      {
+        "h": "2) Flooding — and here the law is on your side"
+      },
+      {
+        "alert": "**A house that is two hundred dollars cheaper than its neighbors may be cheaper because it flooded.** ⚠️ **It never crosses a newcomer's mind that Houston has areas that flood every two years** — this one point alone can save a family its savings."
+      },
+      {
+        "tool": "flood",
+        "alt": "**Find the flood zone for your address:** [the official FEMA map](https://msc.fema.gov/portal/search) — type the address, and the result is the zone letter."
+      },
+      {
+        "h": "Start with the federal map"
+      },
+      {
+        "ul": [
+          "Open the [federal flood map center](https://msc.fema.gov/portal/search) **and type in the address** — free, and it takes minutes",
+          "**Zones that start with the letter A or V are high risk** (Special Flood Hazard Area), **X is moderate or low**, and D means the risk has not been studied",
+          "And for Harris County alone: [Flood Education Mapping Tool](https://www.harriscountyfemt.org/) — search by address, and it shows the flood zone boundaries"
+        ]
+      },
+      {
+        "do": "At `msc.fema.gov`: the address goes in the field labelled `Enter an address, place, or coordinates` — and the result is a map with the zone letter on it. At `harriscountyfemt.org`: the field itself shows you the shape of the address it wants — `9900 Northwest Fwy., Houston, TX 77092`."
+      },
+      {
+        "ul": [
+          "**har.com is where you will browse the listings — and it tells you nothing about flooding.** The association removed that from listings in February 2026, **so do not assume a listing's silence means the house never flooded** — its [har.com/flood](https://www.har.com/flood) page is a list of links pointing you to the same sources",
+          "**Buyers Aware** — a free tool from an institute at Texas A&M, funded by the state emergency management division. You type the address and it gives you a flood and fire risk assessment **for that property**: [buyersaware.org](https://buyersaware.org) — **it covers the areas Hurricane Harvey hit**"
+        ]
+      },
+      {
+        "do": "At `buyersaware.org`: type the address, and the result is a risk assessment **for the property itself**, not for the neighborhood. **And `har.com/flood` is a page of links, not a tool — there is nothing to type in it.**"
+      },
+      {
+        "alert": "⚠️ **The FEMA map remains the legal reference** — insurance and the seller's disclosure both rest on it. **Everything else is an estimate that helps you; none of it replaces the map.**"
+      },
+      {
+        "h": "And the law requires the landlord to tell you"
+      },
+      {
+        "warn": "**Texas law — Property Code §92.0135:** the landlord must give you a notice that says **whether the unit is inside the 100-year floodplain**, and **whether any part of it has flooded at least once in the last five years**."
+      },
+      {
+        "p": "**And the text of the notice itself tells you:** **\"Most tenant insurance policies do not cover damages or loss incurred in a flood. You should seek insurance coverage that would cover losses caused by a flood.\"**"
+      },
+      {
+        "rows": [
+          [
+            "When it is given",
+            "At the signing of the lease or before it — **and both parties sign it together**"
+          ],
+          [
+            "Where it goes",
+            "A clause in the lease, an addendum, or a separate sheet"
+          ],
+          [
+            "When it is not required",
+            "A lease shorter than 30 days"
+          ],
+          [
+            "The official form",
+            "[TREC Form 54-1](https://www.trec.texas.gov/forms/landlords-floodplain-and-flood-notice-0)"
+          ]
+        ]
+      },
+      {
+        "alert": "⚠️ **The rule changed on September 1, 2025** — before that the notice had to be **a separate sheet**; now it may be a clause in the lease. **Signatures from both parties are required either way.**"
+      },
+      {
+        "h": "And if the landlord breaks the rule"
+      },
+      {
+        "p": "**If he did not give you the notice and then your belongings suffered a substantial loss in a flood, you can end the lease** with written notice **within 30 days** of the damage, **and the landlord returns to you all the rent you paid in advance** within 30 days of the termination."
+      },
+      {
+        "p": "⚠️ **And substantial loss is defined in the law:** the cost to repair or replace reaches **50% or more** of the value of your belongings on the day of the flood."
+      },
+      {
+        "alert": "⚠️ **And there is no website that tells you whether this particular house flooded.** I searched and did not find a single official tool that does it. **The only way is to ask the landlord — and the law requires him to answer in writing.** **So do not accept a spoken answer.**"
+      },
+      {
+        "h": "Insurance — and thirty days"
+      },
+      {
+        "ul": [
+          "**Ordinary renter's insurance does not cover flooding** — the coverage is a separate policy: [National Flood Insurance Program](https://www.floodsmart.gov/get-insured/buy-a-policy)",
+          "⚠️ **And the coverage starts 30 days after you buy it** — **so whoever buys it with the storm already coming bought it too late**",
+          "**And a renter buys contents coverage only** — up to 100,000 dollars for belongings"
+        ]
+      },
+      {
+        "h": "3) The road to work — by time, not by miles"
+      },
+      {
+        "p": "**Twenty miles in Houston can be an hour.** Try the road **at work hours, not at midday**, and add it up: gas + toll roads + two hours of your day, every day."
+      },
+      {
+        "ul": [
+          "By public transit: [METRO Trip Planner](https://planyourtrip.ridemetro.org/) — point to point, by hour and by day",
+          "**Toll roads:** [hctra.org](https://www.hctra.org) — **and there is no official calculator for the trip**, so work out your trip and multiply it by 44 trips a month"
+        ]
+      },
+      {
+        "do": "In the METRO planner: type your starting point and your destination, **then set the time to 7 in the morning on a weekday** — and the result is the trip length and the number of transfers. **And `hctra.org` has no calculator: you read the price of each segment and add them up yourself.**"
+      },
+      {
+        "alert": "⚠️ **And there are two official sites, no more:** [hctra.org](https://www.hctra.org) and [txtag.org](https://www.txtag.org). **Around them are copycat sites with similar names** — and the agency never sends a payment link by text message."
+      },
+      {
+        "h": "4) The school — the campus, not the district"
+      },
+      {
+        "p": "**Two schools in one school district can be very different.** So search for **the school by name**, not for the district."
+      },
+      {
+        "ul": [
+          "The official rating: [txschools.gov](https://txschools.gov/) — **search by address or by school name**",
+          "**And the 2026 ratings came out on August 14, 2026**, along with earlier years — **so the data is available and current**"
+        ]
+      },
+      {
+        "do": "At `txschools.gov`: type the address or the school name, and the result is a grade from `A` to `F`. **The grade is for that school alone — not for the neighborhood, and not for the whole district.**"
+      },
+      {
+        "h": "And which school will my child be enrolled in"
+      },
+      {
+        "p": "⚠️ **And there is no single tool for the whole state** — each school district publishes its own:"
+      },
+      {
+        "rows": [
+          [
+            "HISD",
+            "[School lookup tool](https://houstonisd.maps.arcgis.com/apps/instant/lookup/index.html?appid=efb37a68614f4c119503b43c920e3d1d)"
+          ],
+          [
+            "Katy ISD",
+            "[SARA — by address](https://gis.katyisd.org/?page=District-Map)"
+          ],
+          [
+            "Fort Bend ISD",
+            "[2026-2027 tool](https://www.fortbendisd.gov/departments/collaborative-communities/long-range-boundry-planning-and-enrollment-management/2026-2027-school-locator)"
+          ]
+        ]
+      },
+      {
+        "do": "All three district tools work from the address: you type the address of the house and it gives you **the name of the school assigned to it** — elementary, middle, and high. **Then you take that name to `txschools.gov` to read its grade.**"
+      },
+      {
+        "h": "5) Property tax and MUD — and it reaches you in the rent"
+      },
+      {
+        "p": "**Two neighboring suburbs can be thousands of dollars a year apart.** The reason is that one of them is inside a **utility district (MUD)** that collects its tax **on top of the county and school tax**."
+      },
+      {
+        "p": "**And the Texas Commission on Environmental Quality defines it:** a district created to provide **water, sewer, and drainage** inside its boundaries — **and its taxes are levied \"on all property in the district based on appraised value—regardless of the services received by each landowner.\"**"
+      },
+      {
+        "h": "And the difference is not small — the adopted 2025 rates"
+      },
+      {
+        "rows": [
+          [
+            "Harris County itself",
+            "0.38096 per 100 dollars"
+          ],
+          [
+            "Bissonnet MUD",
+            "0.4850"
+          ],
+          [
+            "Barker-Cypress MUD",
+            "0.6740"
+          ],
+          [
+            "Forest Hills MUD",
+            "0.8800"
+          ],
+          [
+            "Baybrook MUD 1",
+            "1.1100 — **about three times the county tax by itself**"
+          ]
+        ]
+      },
+      {
+        "ul": [
+          "Search by address: [Harris County tax database](https://harris.trueprodigy-taxtransparency.com/taxTransparency/propertySearch) — **it shows every entity that taxes the property and how much**",
+          "And the table of rates: [Harris County Tax Office](https://www.hctax.net/property/jurisdictiontaxrates) — the MUDs are in it too",
+          "And in Fort Bend: [esearch.fbcad.org](https://esearch.fbcad.org/) for the value, [texas.gov/PropertyTaxes](https://www.texas.gov/PropertyTaxes) for the rates"
+        ]
+      },
+      {
+        "do": "In the tax database: type the address, and the result is a list of every entity that taxes this property and the rate of each. **And every line with `MUD` in it is a charge on top of the county and school taxes, not instead of them.**"
+      },
+      {
+        "alert": "⚠️ **You are a renter, so why does this concern you?** Because the landlord pays it **and counts it into the rent**. **And two similar apartments with two different rents may differ by tax, not by size.**"
+      },
+      {
+        "h": "6) And Houston has no zoning — and this shocks every newcomer"
+      },
+      {
+        "warn": "**The City of Houston writes on its official site:** **\"The City of Houston does not have zoning, but development is governed by ordinance codes that address how property can be subdivided.\"**"
+      },
+      {
+        "p": "⚠️ **And what it means in practice:** a shop or a warehouse can be built next to your house. **And the city itself says:** \"In Houston, where property is not governed by deed restrictions, **a property owner may be free to operate a commercial business in the neighborhood.**\""
+      },
+      {
+        "h": "And the alternative: deed restrictions"
+      },
+      {
+        "ul": [
+          "**Ask: does this neighborhood have deed restrictions?** — they are written agreements that limit what may be done with the property",
+          "**And you get a copy of them from the county clerk** — Harris County Clerk, [713.755.6405](tel:+17137556405) — and bring the property description, the lot, and the block",
+          "⚠️ **And the city itself helps enforce them** — this is unusual, and it is what makes up for the absence of zoning"
+        ]
+      },
+      {
+        "h": "7) And how close you are to your community"
+      },
+      {
+        "p": "**A mosque or a church · a halal market · a doctor who speaks Arabic · an Arabic school.** ⚠️ **And the Arabna directory answers these itself** — open the directory and type in the address; you do not need an outside site."
+      },
+      {
+        "h": "8) And if you are buying, not renting"
+      },
+      {
+        "p": "**Three things are added, and all of them come before signing:**"
+      },
+      {
+        "rows": [
+          [
+            "Seller's disclosure",
+            "Property Code §5.008 — **requires him to disclose past flooding, insurance claims, FEMA assistance, and where the property stands in relation to the flood zone**"
+          ],
+          [
+            "And your window",
+            "**Seven days to end the contract for any reason** if the disclosure reaches you after signing"
+          ],
+          [
+            "And HOA fees",
+            "Ask for the yearly figure, not just whether they exist"
+          ]
+        ]
+      },
+      {
+        "alert": "⚠️ **And the disclosure is not required in every case:** a new house never lived in before, foreclosure homes, and transfers of ownership between relatives — **all are exempt.** **So whoever buys a new house gets no disclosure, and has to check for himself.**"
+      },
+      {
+        "h": "And a list to walk through while you stand in front of the house"
+      },
+      {
+        "p": "**Ten questions, in order — and next to each question, where to find its answer.**"
+      },
+      {
+        "rows": [
+          [
+            "1 · Is the address in a flood zone?",
+            "[msc.fema.gov](https://msc.fema.gov/portal/search)"
+          ],
+          [
+            "2 · Has the house flooded in the last five years?",
+            "**Ask the landlord — and the law requires a signed answer**"
+          ],
+          [
+            "3 · What is the crime situation on this street?",
+            "[Police map](https://communitycrimemap.com)"
+          ],
+          [
+            "4 · And what is in the state registry at this address?",
+            "[Texas registry](https://publicsite.dps.texas.gov/SexOffenderRegistry)"
+          ],
+          [
+            "5 · How long does the road take at work hours?",
+            "[METRO planner](https://planyourtrip.ridemetro.org/) — **try it at 7 in the morning**"
+          ],
+          [
+            "6 · And how much do the toll roads cost per month?",
+            "Work out the trip × 44"
+          ],
+          [
+            "7 · What is my child's school called and what is its rating?",
+            "[txschools.gov](https://txschools.gov/)"
+          ],
+          [
+            "8 · Is the address inside a MUD?",
+            "[Tax database](https://harris.trueprodigy-taxtransparency.com/taxTransparency/propertySearch)"
+          ],
+          [
+            "9 · Does the neighborhood have deed restrictions?",
+            "County clerk · [713.755.6405](tel:+17137556405)"
+          ],
+          [
+            "10 · And how far is the nearest mosque or church and halal market?",
+            "**The Arabna directory**"
+          ]
+        ]
+      },
+      {
+        "alert": "⚠️ **And one of the ten is worth leaving the house over: the second.** **And its answer is your right by the text of the law, not a favor you ask for.**"
+      },
+      {
+        "p": "**Then visit the street in the evening before you sign.** ⚠️ **And no site on this list tells you what ten minutes standing there will tell you.**"
+      },
+      {
+        "ad": {
+          "name": "مكتب عقارات الجالية",
+          "area": "Westheimer",
+          "cat": "عقارات",
+          "tier": "مشترك"
+        }
+      }
+    ]
+  },
+  {
+    "n": "3",
+    "t": "Renting a Home",
+    "blocks": [
+      {
+        "warn": "**The Fair Housing Act makes it illegal to turn you down because of:** your country of origin · your religion · your race · your sex · having children · disability. Anyone who tells you \"we don't rent to Arabs\" or \"we don't rent to women in hijab\" has broken a federal law — **it is not a matter of taste**."
+      },
+      {
+        "h": "The deadline — know it before you think about filing"
+      },
+      {
+        "rows": [
+          [
+            "Complaint to HUD",
+            "**One year** from the incident — after that it is not accepted"
+          ],
+          [
+            "Lawsuit in federal court",
+            "**Two years** from the last incident — even if the HUD deadline has passed"
+          ],
+          [
+            "Complaint to the state of Texas",
+            "**One year**"
+          ]
+        ]
+      },
+      {
+        "p": "**And if the wrong is ongoing** — a standing policy, not a single incident — **the year counts from the last time it happened**, and that opens a door for many people who thought it was closed."
+      },
+      {
+        "ul": [
+          "Filing: [hud.gov/reporthousingdiscrimination](https://www.hud.gov/reporthousingdiscrimination) · [1-800-669-9777](tel:+18006699777)",
+          "**You do not need a lawyer to file a complaint**, and the complaint is free",
+          "**HUD publishes the complaint form and its instructions in Arabic**, and says that if you call and do not speak English **they will bring an interpreter in your language onto the call**: [Forms in other languages](https://www.hud.gov/stat/fheo/complaint-filing-nonenglish)"
+        ]
+      },
+      {
+        "do": "The complaint is filed on the site or by phone, and it needs three things: **the date of what happened, the address of the property, and the name of the landlord or the company.** Have them ready before you start."
+      },
+      {
+        "h": "Section 8 — and the question itself is different"
+      },
+      {
+        "alert": "**There is no paper form, and there is no application that is always open.** The waiting list **opens for short periods and then closes** — the public housing list opened in the summer of 2026 by lottery and closed after about 56,000 applications. **Anyone who was not registered on the day it opened misses the whole round.**"
+      },
+      {
+        "rows": [
+          [
+            "Inside the city of Houston",
+            "Houston Housing Authority — its new name is Housing Alliance HTX · [(713) 260-0500](tel:+17132600500)"
+          ],
+          [
+            "Applying when it opens",
+            "[RentCafe portal](https://www.alliancehtx.org/rent-cafe-access) — online only"
+          ],
+          [
+            "Outside the city",
+            "Harris County Housing Authority · [hchatexas.org/waitlist](https://hchatexas.org/waitlist/)"
+          ]
+        ]
+      },
+      {
+        "do": "Both lists open on announced dates and then close — **open the link to find out whether it is open today**, and no paper application is accepted."
+      },
+      {
+        "p": "**Watch the name:** the older printed material says Houston Housing Authority, the newer says Housing Alliance HTX — **they are one and the same agency**."
+      },
+      {
+        "p": "**And a right you have:** both agencies receive federal funding, **so you have the right to ask them for language help**."
+      },
+      {
+        "h": "What the landlord usually asks for"
+      },
+      {
+        "ul": [
+          "A credit check and a rental history report — it has your addresses, your income, and any eviction cases",
+          "Proof of income: a pay stub or a letter from work",
+          "A deposit — and it can go up if your record is weak"
+        ]
+      },
+      {
+        "h": "And if you have no credit history"
+      },
+      {
+        "p": "**Be honest with yourself: no law requires a landlord to accept any substitute.** Here is what renters offer, and some landlords accept:"
+      },
+      {
+        "ul": [
+          "A co-signer who signs with you",
+          "A bigger deposit, or paying some months up front",
+          "A letter from your employer with your salary, and bank statements that show your income is steady"
+        ]
+      },
+      {
+        "warn": "**And a federal right nobody knows about:** if your application is denied because of a report, the landlord **is required** to tell you and give you the company's name, address, and phone number. **You get a free copy of the report within 60 days**, and the company has **30 days** to investigate your dispute. **Errors in these reports are common, and they do get corrected.** And your credit report is free once a year: [AnnualCreditReport.com](https://www.annualcreditreport.com) · [877-322-8228](tel:+18773228228)"
+      },
+      {
+        "do": "At `AnnualCreditReport.com`: it asks for your name, your address, and your Social Security number, then questions about your financial history to verify you. **It never asks for a bank card — if you are asked for one, you are on a different site.**"
+      },
+      {
+        "h": "The deposit and keeping up the home"
+      },
+      {
+        "ul": [
+          "The owner has **thirty days** to return the deposit after you move out, **and a penalty of three times the amount** if it is held back in bad faith",
+          "**Ask for a written receipt, and photograph the home the day you move in** — the photos are your proof the day you move out",
+          "**And if you end up in a dispute with him: move fast and do not wait years**, and talk to a lawyer or a free legal aid service"
+        ]
+      },
+      {
+        "p": "**And before you sign:** the signed lease is what governs, not talk. Write anything you were promised out loud **into the lease**, and ask for a copy before signing day so you can read it calmly."
+      },
+      {
+        "ad": {
+          "name": "الديار العقارية",
+          "area": "Sugar Land",
+          "cat": "عقارات",
+          "tier": "مشترك"
+        }
+      }
+    ]
+  },
+  {
+    "n": "4",
+    "t": "Driver's License",
+    "blocks": [
+      {
+        "p": "**Know this first:** the license comes **from the state, not from the federal government**. This section is about **Texas**."
+      },
+      {
+        "h": "What Texas accepts today"
+      },
+      {
+        "p": "**A valid passport + a visa + a valid I-94.** This is written at the Department of Public Safety: [Lawful presence page](https://www.dps.texas.gov/section/driver-license/us-citizenship-or-lawful-presence-requirement)"
+      },
+      {
+        "alert": "**And a warning:** the department **has proposed a change** requiring **the visa itself to be valid**, rather than expired with a valid I-94. **It has not been adopted yet**, and the official page still carries the old wording. **So check the page before you rely on an expired visa.**"
+      },
+      {
+        "h": "The forms"
+      },
+      {
+        "rows": [
+          [
+            "17 years and 10 months or older",
+            "[Form DL-14A](https://www.dps.texas.gov/internetforms/Forms/DL-14A.pdf)"
+          ],
+          [
+            "Younger than that (a minor)",
+            "[Form DL-14B](https://www.dps.texas.gov/internetforms/Forms/DL-14B.pdf)"
+          ],
+          [
+            "Proof of school attendance",
+            "Form VOE — for a minor"
+          ],
+          [
+            "The accepted documents",
+            "[Booklet DL-57](https://www.dps.texas.gov/internetforms/Forms/DL-57.pdf)"
+          ]
+        ]
+      },
+      {
+        "p": "**And the youngest age for a learner license is 15**, and the parent or guardian must be present, or send an application signed by him before a notary."
+      },
+      {
+        "h": "And the appointment is required"
+      },
+      {
+        "p": "The department says: **all license services are by appointment only.** Booking: [public.txdpsscheduler.com](https://public.txdpsscheduler.com/)"
+      },
+      {
+        "do": "Before you book, have three things ready: **the type of service, the office, and a phone number the confirmation can reach you on.** **Appointments get cancelled and slots open up — so check the site more than once a day.**"
+      },
+      {
+        "h": "The steps"
+      },
+      {
+        "ul": [
+          "Proof of identity and status, and **two documents** that prove your address in Texas",
+          "Vision test · written test · learner license · road test",
+          "**And your foreign license** is fine for a visit, **but the time it is accepted once you become a resident is short** — check right away, not a month from now"
+        ]
+      },
+      {
+        "h": "And a driving school cuts two steps short for you — for a fee"
+      },
+      {
+        "p": "**This saves weeks of waiting, and few people know it:**"
+      },
+      {
+        "ul": [
+          "**The road test at the school itself.** The department approves driving schools to give the driving test for a Class C license — **so you do not wait for a department appointment**. ⚠️ **And the fee here is set by the school, not the department**, and in the department's words: \"Fees charged by a driving school for the driving test are not regulated by the Department\" — **so ask about the price before you book, and compare two schools**. [Third-party skills testing program](https://www.dps.texas.gov/section/driver-license/third-party-skills-testing-program)",
+          "**And the written test is waived for you if you take it inside the course.** In the department's words: **\"The written test is waived for anyone who took it during a driver education course\"**. ⚠️ **And ask the school directly: is the written test inside the course?** — because not all courses are like that. [Choosing a driver education course](https://www.dps.texas.gov/section/driver-license/choosing-driver-education-course)"
+        ]
+      },
+      {
+        "warn": "**And who has to take the course in the first place:** • **Ages 18 to 24** getting a first license in Texas — **the six-hour adult course is required** • **And 25 and older** — **no course required**, but you can take one so you can do both tests at the school • **And under 18** — the full driver education course"
+      },
+      {
+        "h": "As for the other states"
+      },
+      {
+        "p": "**Some states issue a license regardless of immigration status, and Texas is not one of them.**"
+      },
+      {
+        "alert": "**And do not rely on a list people pass around.** The rules change from year to year, **and some of what is issued is a \"driving card\" rather than a full license**, and it does not work as federal ID. **So read the motor vehicle department website of that state itself before you travel there for a license.**"
+      },
+      {
+        "h": "The federal license (REAL ID)"
+      },
+      {
+        "ul": [
+          "The compliant one has **a star in the top corner**",
+          "You need it to fly inside the country and to enter federal buildings",
+          "**And you can travel with your passport instead of it**"
+        ]
+      },
+      {
+        "h": "And two deadlines that start the day you arrive"
+      },
+      {
+        "rows": [
+          [
+            "90 days",
+            "To get a Texas license after you move"
+          ],
+          [
+            "30 days",
+            "To register your car — after that, fines"
+          ]
+        ]
+      },
+      {
+        "alert": "**And the order matters:** the department requires the **car to be registered in Texas before** you apply for the license."
+      },
+      {
+        "h": "Don't drive? You can get an ID card"
+      },
+      {
+        "p": "**You still need official ID** — for the bank, the hospital, and the school. The department issues an **ID card for non-drivers**, and it accepts **the same lawful presence documents** accepted for the license."
+      },
+      {
+        "rows": [
+          [
+            "16 dollars",
+            "For anyone under 60 — valid six years"
+          ],
+          [
+            "6 dollars",
+            "For anyone 60 and older"
+          ],
+          [
+            "And two documents to prove where you live",
+            "And the \"thirty days in Texas\" requirement does not apply to anyone who surrenders a valid license from another state"
+          ]
+        ]
+      },
+      {
+        "ad": {
+          "name": "مدرسة النهضة العربية",
+          "area": "Katy",
+          "cat": "تعليم ومدارس",
+          "tier": "مميّز"
+        }
+      }
+    ]
+  },
+  {
+    "n": "5",
+    "t": "Enrolling your children in school",
+    "blocks": [
+      {
+        "warn": "**Every child in America has the right to a public school education, whatever the family's immigration status.** The Supreme Court ruling (Plyler v. Doe) is still in force."
+      },
+      {
+        "h": "What the school is not allowed to do"
+      },
+      {
+        "ul": [
+          "✕ Ask you about your immigration status as a condition of enrollment",
+          "✕ Refuse a foreign birth certificate",
+          "✕ Block enrollment because you would not give a Social Security number — **giving it is optional**, and the school has to tell you so"
+        ]
+      },
+      {
+        "h": "What it really does ask for"
+      },
+      {
+        "ul": [
+          "**Proof of residence** — a lease or a bill, to set which school",
+          "**Proof of the child's age** — the birth certificate",
+          "**Immunization record**"
+        ]
+      },
+      {
+        "h": "Your right to an interpreter — the most important part of this section"
+      },
+      {
+        "p": "**Your right stands.** Federal guidance papers were withdrawn in 2025 and 2026, **and in July 2026 a regulation was struck out** — one that allowed a complaint about the **outcome** of a policy without proving intent to discriminate. **The two laws that carry your right were not touched** — and they stand on their own:"
+      },
+      {
+        "rows": [
+          [
+            "1974 law",
+            "The Equal Educational Opportunities Act — **an act of Congress**, and a parent can sue under it directly · **this is the strongest thing you hold**"
+          ],
+          [
+            "Texas law",
+            "Education Code Section 29.056(d): notice **in English and in the parent's first language** · and **your written consent** before your child enters a language program or leaves it"
+          ],
+          [
+            "Title VI",
+            "The Civil Rights Act of 1964 — bars discrimination by national origin · **and its path is harder since July 2026**"
+          ]
+        ]
+      },
+      {
+        "alert": "**The interpreting is free, and from a competent person.** **Your son, your brother, or your friend may not be asked to interpret for you** — and neither may an untrained staff member. A child who interprets for his parents in a meeting about his own grades or behavior **is put in a place he cannot carry**."
+      },
+      {
+        "p": "**Ask for it in writing, and keep a dated copy.** If you are refused, start with the nearest office: the **Bilingual/ESL department in your school district**, then the district administration — **and your written request is what becomes your evidence if you escalate**. The federal complaint stays open: the Office for Civil Rights at the Department of Education — [1-800-872-5327](tel:+18008725327) · [File a complaint](https://www.ed.gov/laws-and-policy/civil-rights-laws/file-complaint) — **and it has been harder since July 2026: you must prove intent to discriminate, not show its outcome.**"
+      },
+      {
+        "h": "English language support"
+      },
+      {
+        "ul": [
+          "**A right, not an extra service**, and the school must tell you where your child stands within **30 days**",
+          "**School meals:** the application **does not require citizenship**, and the form has a box to say you have no Social Security number. Many schools serve them free to everyone — **ask first**"
+        ]
+      },
+      {
+        "h": "Immunizations — and where to get them free"
+      },
+      {
+        "rows": [
+          [
+            "TVFC program",
+            "Birth to 18 years · for the uninsured · [888-777-5320](tel:+18887775320)"
+          ],
+          [
+            "",
+            "**Immigration status is not one of the eligibility conditions**"
+          ],
+          [
+            "Houston Health Department",
+            "By appointment · [832-393-5427](tel:+18323935427)"
+          ],
+          [
+            "",
+            "Northside — 8504 Schuller Rd"
+          ],
+          [
+            "",
+            "Sharpstown — 6201 Bonhomme Rd"
+          ],
+          [
+            "",
+            "Sunnyside — 4410 Reed Rd"
+          ],
+          [
+            "",
+            "No one is denied service for being unable to pay"
+          ],
+          [
+            "Harris County Public Health",
+            "[(832) 927-7350](tel:+18329277350) — and it posts immunization schedules in Arabic"
+          ]
+        ]
+      },
+      {
+        "p": "**The list of immunizations the school requires** changes every year: [Requirements page](https://www.dshs.texas.gov/immunizations/school/requirements)"
+      },
+      {
+        "p": "**Immunizations your child got in your home country are accepted** if the documentation is clear. **If the record is lost** — a new schedule is started, or **a blood test that proves immunity** instead of repeating the shots."
+      },
+      {
+        "h": "Public pre-K — free for a child who does not speak English"
+      },
+      {
+        "warn": "**Is your four-year-old still not speaking English? Public pre-K is free for him.** Inability to speak English **is an eligibility category on its own** in the Education Code — **with no income condition**. The school checks it **with a language test for the child**, not with a paper from you."
+      },
+      {
+        "p": "**Enrollment starts in the spring for the fall year** — so ask your school district early. **Private pre-K in Houston costs thousands of dollars a year.**"
+      },
+      {
+        "h": "Staying with family or friends? Your children start school right away"
+      },
+      {
+        "warn": "**If you are living temporarily with your brother or your friend because you lost your housing or cannot afford the rent — your children are enrolled right away.** **No lease, no bill, no immunization record.** Federal law tells the school to **enroll the child immediately, even if the child cannot produce the records normally required — school records, immunizations, and proof of residence.**"
+      },
+      {
+        "ul": [
+          "**And with it school transportation** to his first school, **and free meals automatically**, with no application",
+          "Ask the school for a form called the **Student Residency Questionnaire**",
+          "And if they refuse: the Texas Education Agency — [complaintsmanagement@tea.texas.gov](mailto:complaintsmanagement@tea.texas.gov) · [(512) 463-3544](tel:+15124633544)"
+        ]
+      },
+      {
+        "alert": "**The condition is that the shared housing is because of lost housing or hard times** — not for someone who chose to live with family while able to live elsewhere."
+      },
+      {
+        "h": "A Social Security number is not required to enroll"
+      },
+      {
+        "p": "**Did the school ask you for the Social Security card? Giving it is optional.** The Texas Education Agency says that **the district gives the student an alternative identification number when no Social Security number is provided.**"
+      },
+      {
+        "rows": [
+          [
+            "The records required by law are three",
+            "Birth certificate or proof of identity · previous school records · immunization record"
+          ],
+          [
+            "And the federal Department of Education",
+            "A student may not be denied enrollment if the student or the parent chooses not to provide a Social Security number"
+          ]
+        ]
+      },
+      {
+        "alert": "**And he is not refused for having no birth certificate, or because his papers point to a foreign place of birth.**"
+      },
+      {
+        "h": "School meals"
+      },
+      {
+        "p": "**Breakfast is free for every HISD student.** Lunch **is free for everyone in most schools but not all** — and in certain schools you have to submit an application. **Check your own child's school, and apply even if you think you do not qualify.**"
+      },
+      {
+        "ad": {
+          "name": "مدرسة النهضة العربية",
+          "area": "Katy",
+          "cat": "تعليم ومدارس",
+          "tier": "مشترك"
+        }
+      }
+    ]
+  },
+  {
+    "n": "6",
+    "t": "A bank account with no Social Security number",
+    "blocks": [
+      {
+        "p": "**The good news: this is allowed.** Federal law lets the bank open an account with any one of these: a tax number (**ITIN**) · **a passport number** and the country that issued it · a foreign ID card · or any government document with a photo."
+      },
+      {
+        "p": "**But the law allows it; it does not require it.** Every bank sets its own policy — **so call and ask before you go**: “Do you open an account with a passport or an ITIN?”"
+      },
+      {
+        "h": "The ITIN — what it is"
+      },
+      {
+        "ul": [
+          "A number from the tax agency for someone who needs to file a return and is not eligible for a Social Security number",
+          "**It is given regardless of immigration status**",
+          "**And it does not grant work permission and does not change your status** — it is for taxes only",
+          "To apply: [Form W-7](https://www.irs.gov/pub/irs-pdf/fw7.pdf) · [Instructions](https://www.irs.gov/pub/irs-pdf/iw7.pdf)",
+          "**Time: about seven weeks** — and nine to eleven in tax season"
+        ]
+      },
+      {
+        "alert": "**Do not mail your original passport.** Go to an IRS Taxpayer Assistance Center (IRS TAC) with an appointment, or use an authorized agent who hands your papers back to you on the spot."
+      },
+      {
+        "warn": "**And there is no Arabic version of the form or of its instructions.** The tax agency publishes in eight languages, **and Arabic is not one of them** — so do not waste your time looking for it."
+      },
+      {
+        "p": "**And watch out:** with no tax number the bank may open only **a non-interest account** for you — because interest with no number has 24% tax taken out of it."
+      },
+      {
+        "h": "Stay away from"
+      },
+      {
+        "ul": [
+          "**Check cashing stores** — their fees eat your pay month after month",
+          "**Prepaid cards** — their protection if you lose them is **weaker** than a bank account's",
+          "**And carrying cash** — it gets lost and does not come back"
+        ]
+      },
+      {
+        "p": "**And ask for a Bank On certified account** — opens with $25 or less, monthly fee $5 or less, **and zero overdraft fees**. [joinbankon.org](https://joinbankon.org)"
+      },
+      {
+        "do": "The list is of certified **accounts**, not of banks — **so ask at the branch by the name of the account itself**, not \"do you have Bank On?\""
+      },
+      {
+        "ad": {
+          "name": "مكتب الأمين للضرائب",
+          "area": "Westheimer",
+          "cat": "خدمات مالية",
+          "tier": "مشترك"
+        }
+      }
+    ]
+  },
+  {
+    "n": "7",
+    "t": "Health insurance",
+    "blocks": [
+      {
+        "warn": "**This is the section that changes the most.** The rules changed in 2025 and 2026. What is here is **the road**; who qualifies is what changes — check [healthcare.gov](https://www.healthcare.gov) or ask a free navigator."
+      },
+      {
+        "h": "Four ways to get coverage"
+      },
+      {
+        "ul": [
+          "**Through work** — this is how most people get it. Ask your employer on the first day",
+          "**The insurance Marketplace** — [healthcare.gov](https://www.healthcare.gov) · [1-800-318-2596](tel:+18003182596)",
+          "**Medicaid and CHIP** — for people with low income and for children",
+          "**Buying directly** from an insurance company"
+        ]
+      },
+      {
+        "do": "At `healthcare.gov`: type your ZIP code, your household size, and your expected income for the year — **and the price you see is the price after the subsidy, not the full price.**"
+      },
+      {
+        "h": "And the enrollment date matters"
+      },
+      {
+        "ul": [
+          "Open enrollment **starts November 1** every year",
+          "**And the final deadline changes** — check the website, and do not rely on a date you heard",
+          "**And Medicaid and CHIP have no deadline** — apply any time"
+        ]
+      },
+      {
+        "warn": "**And this one is about you in particular:** moving to America from another country opens a **Special Enrollment Period** for you — you can enroll outside open enrollment. **It lasts 60 days. Do not miss it.**"
+      },
+      {
+        "h": "And even if you do not qualify — you are not without care"
+      },
+      {
+        "ul": [
+          "**Community health centers:** their fees go **by your income**, **and no patient is turned away for being unable to pay**. [findahealthcenter.hrsa.gov](https://findahealthcenter.hrsa.gov) · [877-464-4772](tel:+18774644772)",
+          "**And emergency care is everyone's right:** the EMTALA law requires any hospital to examine you and stabilize you, **and it has no right to turn you away** because you have no insurance or cannot pay **or are not a citizen**",
+          "**And Emergency Medicaid** covers the emergency — childbirth included — for anyone who meets the state's conditions, **regardless of immigration status**"
+        ]
+      },
+      {
+        "do": "Type the address or the ZIP code, and the result is the centers near you. **And when you book, ask for the \"sliding fee\" by name** — that is what makes the price match your income."
+      },
+      {
+        "alert": "**And a right that is in force today:** the interpreter at the hospital and the clinic is **free** — under a rule that became enforceable in **July 2025**: language assistance services are provided free of charge, and **a patient may not be required to bring their own interpreter or pay for one**, **and a child is not used as an interpreter** except in a narrow emergency. **And this did not change with what changed in 2025 and 2026.**"
+      },
+      {
+        "h": "And the help with choosing is free"
+      },
+      {
+        "p": "**The Navigator** is trained **and required to be neutral**, **and the service is completely free** — do not pay anyone to enroll you. [localhelp.healthcare.gov](https://localhelp.healthcare.gov)"
+      },
+      {
+        "do": "Type the ZIP code to see who can help you face to face. **The help is free — and anyone who asks you for a fee is not one of them.**"
+      },
+      {
+        "p": "**And the insurance agent** explains and enrolls you **and stays your contact after that** — and if a bill is denied you call him instead of fighting with the company yourself. **And ask him on the first call: “Do I owe you any fees?”** — his commission usually comes from the company, not from you."
+      },
+      {
+        "h": "And with no insurance in Harris County — this is the door"
+      },
+      {
+        "p": "**It is called the Harris Health Financial Assistance Program**, and it used to be known as the **Gold Card**. **Eligibility in their policy is two conditions:** living in the county, and income."
+      },
+      {
+        "rows": [
+          [
+            "Clinic visit",
+            "$3"
+          ],
+          [
+            "30-day medication",
+            "$8"
+          ],
+          [
+            "Emergency",
+            "$25"
+          ],
+          [
+            "Overnight stay in the hospital",
+            "$50"
+          ],
+          [
+            "Phone",
+            "[713-566-6509](tel:+17135666509) · and language service [1-877-612-3004](tel:+18776123004)"
+          ],
+          [
+            "Applying",
+            "[ola.veritysource.com/harris](https://ola.veritysource.com/harris)"
+          ]
+        ]
+      },
+      {
+        "p": "**And the form accepts a foreign consulate card** as proof of identity, **and it has an Undocumented box among the status choices.**"
+      },
+      {
+        "p": "**And outside Harris County:** every county has a similar program — Fort Bend · [281-341-6624](tel:+12813416624) — **but it is much narrower:** income at 21% of the poverty line, and savings under $2,000."
+      },
+      {
+        "h": "And the emergency room is not urgent care"
+      },
+      {
+        "p": "**The emergency room costs two to three times the clinic** for the same treatment. **And urgent care is the middle ground** for what is not life threatening."
+      },
+      {
+        "alert": "**But for what threatens life — chest pain, trouble breathing, a serious injury — it is the emergency room or 911, and do not think about the cost in that moment.**"
+      },
+      {
+        "h": "And two numbers to save before you need them"
+      },
+      {
+        "rows": [
+          [
+            "Poison Control Center",
+            "[1-800-222-1222](tel:+18002221222) — free and confidential · and in 161 languages · a doctor or a pharmacist answers"
+          ],
+          [
+            "Crisis line",
+            "[988](tel:+1988) — and say the word “Arabic” in English when they answer, and an interpreter reaches you in about twenty seconds"
+          ]
+        ]
+      },
+      {
+        "ad": {
+          "name": "عيادة النور الطبية",
+          "area": "Sharpstown",
+          "cat": "صحة وعيادات",
+          "tier": "مشترك"
+        }
+      }
+    ]
+  },
+  {
+    "n": "8",
+    "t": "A doctor who speaks Arabic",
+    "blocks": [
+      {
+        "p": "**Why it matters:** explaining your pain in your own language is not a luxury. **A mistake in describing a symptom changes the diagnosis.**"
+      },
+      {
+        "ul": [
+          "**At the clinic and the hospital, interpreting is your right and it is free** — ask for it, **and do not rely on your son to interpret your illness**",
+          "And in our Arabna directory, the businesses whose staff speak Arabic **are marked with a tag** — use the filter",
+          "And ask before the appointment: **Do you take my insurance?**"
+        ]
+      },
+      {
+        "warn": "**And if you have no insurance, ask this question word for word:** “Are your fees based on income?” Many clinics lower the fee for people with low income, **and some take nothing at all** — **and this is not offered to you; you are the one who has to ask.**"
+      },
+      {
+        "ad": {
+          "name": "عيادة النور الطبية",
+          "area": "Sharpstown",
+          "cat": "صحة وعيادات",
+          "tier": "مشترك"
+        }
+      }
+    ]
+  },
+  {
+    "n": "9",
+    "t": "Where to buy halal meat",
+    "blocks": [
+      {
+        "ul": [
+          "In the directory, halal butchers and markets **are marked with a tag** — use the filter",
+          "And ask at the store: **fully halal, or a halal section inside a general store?**",
+          "And many Arabic markets sell **meat, produce, and Arabic bread together** — so one trip is enough"
+        ]
+      },
+      {
+        "ad": {
+          "name": "سوبرماركت البركة",
+          "area": "Hillcroft",
+          "cat": "أسواق وملاحم",
+          "tier": "مجّانيّ"
+        }
+      }
+    ]
+  },
+  {
+    "n": "10",
+    "t": "Home utilities: electricity, gas, water, and internet",
+    "blocks": [
+      {
+        "p": "**The first question to ask before you sign the lease:** **which utilities are on my account, and which ones are inside the rent?** — **The answer is different from one home to the next.**"
+      },
+      {
+        "warn": "**If you are in an apartment complex, this one is about you:** many complexes **put water, sewer, and trash inside the rent** or split them among the residents as a fixed monthly amount, **and some include gas as well**. **Electricity is usually on you.** **So ask before you sign, and ask for it in writing in the lease** — nobody is held to what was only said out loud."
+      },
+      {
+        "h": "1) Electricity — the first thing you do"
+      },
+      {
+        "ul": [
+          "**Start on it before moving day.** In Texas **electricity does not come with the home** — you open the account in your own name. **People who moved in before doing that spent the night with no power**",
+          "**It is an open market** — you compare companies, choose one, and switch if you want",
+          "**Read the contract length** — leaving early carries a penalty",
+          "You may be asked for a **deposit** because you have no credit history, **and it is returned to you** after a stretch of paying on time",
+          "**Ask what the alternative is** if they ask you for a Social Security number — do not assume the answer is no"
+        ]
+      },
+      {
+        "h": "2) Gas"
+      },
+      {
+        "ul": [
+          "**Not an open market like electricity** — usually one company serves your area",
+          "**And many apartments have no gas at all** — all electric, so there is no third account on you",
+          "**Ask: is there gas in this place? And who pays for it?**"
+        ]
+      },
+      {
+        "h": "3) Water, sewer, and trash"
+      },
+      {
+        "ul": [
+          "**In a single-family house:** an account in your name with the city",
+          "**In a complex:** usually **inside the rent or split among the residents** — **ask roughly how much it runs a month**, because the split amount surprises a lot of people"
+        ]
+      },
+      {
+        "h": "4) Internet — because you don't get much choice"
+      },
+      {
+        "ul": [
+          "**One or two providers serve your address**, and you may have only one in front of you. **Search by your address first**",
+          "**Ask the company directly: \"Do you have a plan for low-income households?\"** — many of them do and don't advertise it",
+          "**In some complexes the internet is inside the rent** with one particular provider — **ask before you sign up on your own account**",
+          "**And the ACP program has ended** — don't look for it, and don't believe anyone who offers it to you"
+        ]
+      },
+      {
+        "h": "Help with energy bills — LIHEAP"
+      },
+      {
+        "ul": [
+          "It helps with heating and cooling bills, **and it stops your service from being cut off**",
+          "[Program information](https://www.acf.hhs.gov/ocs/programs/liheap) · [1-866-674-6327](tel:+18666746327) (business days)",
+          "**Careful: this program does require a particular legal status** — unlike school meals"
+        ]
+      },
+      {
+        "warn": "Assistance programs can touch the \"public charge\" rules. **Talk to an immigration lawyer if you have an application pending.**"
+      },
+      {
+        "ad": {
+          "name": "تكييف وتبريد أبو خالد",
+          "area": "Sharpstown",
+          "cat": "صيانة وخدمات المنزل",
+          "tier": "مشترك"
+        }
+      }
+    ]
+  },
+  {
+    "n": "11",
+    "t": "Your car and insurance",
+    "blocks": [
+      {
+        "p": "**Insurance is required in Texas.** The minimum is `30,000 / 60,000 / 25,000` (injury to one person / injuries per crash / property damage)."
+      },
+      {
+        "h": "Inspection — this changed, so read it even if you have been here for years"
+      },
+      {
+        "alert": "**The annual safety inspection was ended in Texas as of January 1, 2025** for non-commercial vehicles, **and a fee paid with your registration took its place: $7.50 a year** ($16.75 for a new vehicle with a two-year registration)."
+      },
+      {
+        "p": "**But the emissions test is still required in `Harris County`** — along with `Fort Bend`, `Montgomery`, `Galveston`, and `Brazoria`. It is done **once a year** for vehicles from two to 24 years old, **and within 90 days before you register**."
+      },
+      {
+        "p": "**So the short of it:** in `Harris County` you go to an inspection station once a year — **but it is an emissions test only, not a safety inspection** — then **you renew your registration online** once it passes."
+      },
+      {
+        "rows": [
+          [
+            "Inspection stations",
+            "[Station locator](https://www.dps.texas.gov/apps/rsd/vi/VIactiveStationLocator/)"
+          ],
+          [
+            "Renew online",
+            "[renew.txdmv.gov](https://renew.txdmv.gov/Renew/RegistrationRenewalServlet)"
+          ],
+          [
+            "Title transfer",
+            "[Form 130-U](https://www.txdmv.gov/sites/default/files/form_files/Form-130-U.pdf)"
+          ]
+        ]
+      },
+      {
+        "do": "Inspection stations are searched by ZIP code. **And renewing online needs your license plate number and the last four digits of the `VIN`** — both are on the registration paper you already have."
+      },
+      {
+        "p": "**The transfer is filed at the county tax assessor-collector's office within thirty days of the purchase.** **The renewal window** runs from 90 days before it expires until 12 months after, **and you may drive for five business days past the expiration without a ticket**, and after that the fine reaches up to 200 dollars."
+      },
+      {
+        "h": "A gap in your insurance — the most dangerous paragraph in this whole guide"
+      },
+      {
+        "alert": "**If you fall behind on a payment and your policy is cancelled:** • **Coverage ends as of the cancellation date** • You can ask to have it reinstated within **sixty days** — **but reinstating is the company's choice, not its duty** • **The policy is not in force again until the day the company receives the money** • **And the days in between are not covered** — even if the policy is reinstated afterward"
+      },
+      {
+        "p": "**What this means in a word: one single day with no insurance is enough.** Anyone who has a crash during those days **is treated as a driver with no insurance** — even if he holds a valid policy today. **So pay before the cancellation date, not after, and do not lean on the sixty-day window.**"
+      },
+      {
+        "p": "**You are asked for proof of insurance in two places:** when you register the car — **and without proof it is not registered** — **and any time a patrol pulls you over.**"
+      },
+      {
+        "p": "**If you have a dispute with your insurance company:** the Texas Department of Insurance — [1-800-252-3439](tel:+18002523439) · [File a complaint](https://www.tdi.texas.gov/consumer/complfrm.html)"
+      },
+      {
+        "do": "An insurance complaint needs: **the policy number, the company name, and what happened with its date.** Have them ready before you open the form."
+      },
+      {
+        "h": "And a practical question"
+      },
+      {
+        "p": "Will a company sell you insurance without a Social Security number, or with a foreign license? **It differs from company to company** — no law prevents it, but the company may refuse. **Call more than one company, and don't assume the first refusal is the rule.**"
+      },
+      {
+        "h": "Buying from a person instead of a dealership — five rules"
+      },
+      {
+        "ul": [
+          "**Never buy without the Title in your hand on the day you pay**",
+          "**The name on the Title must be the seller's name** — otherwise he is an unlicensed dealer",
+          "**30 days to transfer it** — then 25 dollars + 25 for every month you are late, **and no waiver**",
+          "**Insurance before registration** — and without proof of insurance the car is not registered",
+          "**Check the Title's history officially for two dollars** — TxDMV Title Check"
+        ]
+      },
+      {
+        "h": "Toll roads — no cash at all"
+      },
+      {
+        "warn": "**The toll road system in Harris County does not take cash.** No booth, no coin basket. **And the managed lanes on I-10 say it outright on the sign: cash is not accepted.**"
+      },
+      {
+        "p": "**Anyone who drives on them without an EZ TAG — and plenty of people do without knowing —** gets a bill in the mail **at a higher rate plus administrative fees**, **and the owner of the car is responsible no matter who was driving**. Then comes a violation notice. **And whoever lets them pile up** is blocked from renewing the registration, is barred from the roads, **and his car can be impounded.**"
+      },
+      {
+        "ul": [
+          "**Open an EZ TAG account before you drive** — [hctra.org](https://hctra.org) · [281-875-3279](tel:+12818753279)",
+          "**And one tag works on every toll road in Texas**",
+          "**And you have 90 days to dispute** a violation"
+        ]
+      },
+      {
+        "h": "If the police stop you while you are driving"
+      },
+      {
+        "p": "**The law requires two things:** show your license, and show proof of insurance, when asked."
+      },
+      {
+        "ul": [
+          "Pull over to the far right · Stay in the car · Hands on the wheel",
+          "**Tell the officer where your papers are before you reach for them**",
+          "**And signing a ticket is not an admission of guilt** — that is what the Department of Public Safety itself says"
+        ]
+      },
+      {
+        "ad": {
+          "name": "الأمانة للسيارات",
+          "area": "Bellaire",
+          "cat": "سيارات",
+          "tier": "مشترك"
+        }
+      }
+    ]
+  },
+  {
+    "n": "12",
+    "t": "Translation and interpreters",
+    "blocks": [
+      {
+        "warn": "**This section changed a lot in 2025 and 2026.** Some federal guidance documents were withdrawn, **but the laws were not touched**. What follows is **only what still stands and is confirmed**."
+      },
+      {
+        "h": "At the hospital and the clinic — the strongest right left to you"
+      },
+      {
+        "p": "**Interpreting is free and required** at every health care provider that receives federal funding, **and they have no right to ask you to bring your own interpreter or to pay for one**."
+      },
+      {
+        "ul": [
+          "**A child is not allowed to interpret for you** — except in a life-threatening emergency, and only for the moment",
+          "**Nor an adult companion who is not qualified** — except in an emergency, or if you ask for it yourself **in writing**",
+          "**Nor a staff member passing by** who happens to know Arabic"
+        ]
+      },
+      {
+        "p": "To complain: [Complaint portal](https://ocrportal.hhs.gov/ocr/portal/lobby.jsf) · [1-877-696-6775](tel:+18776966775) — **and you have 180 days**"
+      },
+      {
+        "h": "At school"
+      },
+      {
+        "p": "Your right stands — see section five. **And start with the Bilingual/ESL department in your school district.** The federal complaint is **within 180 days and you do not need a lawyer** — **and it has been harder since July 2026.**"
+      },
+      {
+        "h": "In court"
+      },
+      {
+        "ul": [
+          "**Immigration court:** the interpreter is **at the government's expense** — **ask for one thirty days before the hearing**",
+          "**Federal court:** free in cases the government brings — **not in private lawsuits between individuals**",
+          "**And state courts differ** — ask the court clerk early"
+        ]
+      },
+      {
+        "p": "**Careful:** the interpreter is free in immigration court — **the lawyer is not**."
+      },
+      {
+        "h": "\"Certified translation\" for official papers"
+      },
+      {
+        "p": "What the immigration service asks for: **a complete translation into English**, along with **a signed statement from the translator** saying the translation is complete and accurate and that he is qualified."
+      },
+      {
+        "ul": [
+          "✕ **No government translation license** — no such thing exists",
+          "✕ **And no notarized certification** — it is not required",
+          "✕ **And no list of certified translators** to choose from"
+        ]
+      },
+      {
+        "p": "**So anyone who tells you \"I am the only certified translator\" is selling you an illusion.**"
+      },
+      {
+        "h": "And if you have no right to an interpreter — you hire one"
+      },
+      {
+        "ul": [
+          "**Agree on the price before the appointment** — usually by the hour and with a minimum",
+          "**And ask him: have you handled situations like mine?** A medical interpreter is not a contracts interpreter",
+          "**And ask him to interpret your words as they are** — not to answer for you and not to trim what you think",
+          "**And do not give your original papers to anyone**"
+        ]
+      },
+      {
+        "ad": {
+          "name": "مركز الجالية العربية",
+          "area": "Hillcroft",
+          "cat": "مجتمع وخدمات",
+          "tier": "مجّانيّ"
+        }
+      }
+    ]
+  },
+  {
+    "n": "13",
+    "t": "Immigration — Who Is Allowed to Advise You",
+    "blocks": [
+      {
+        "warn": "**Arabna does not give immigration advice, and it never will.** This section does not tell you what to file or whether you qualify — **it tells you how to find someone who is allowed to say that, and how not to get robbed on the way.**"
+      },
+      {
+        "p": "**Why this limit:** giving immigration advice without a license is **a crime**, and wrong advice can cost a person their right to stay. **And no general guide fits your own case.**"
+      },
+      {
+        "h": "Who Is Legally Allowed — Only Two"
+      },
+      {
+        "ul": [
+          "**A licensed attorney** — a member in good standing of the bar of their state",
+          "**An accredited representative** — not a lawyer, but authorized by the DOJ, working at a recognized nonprofit organization"
+        ]
+      },
+      {
+        "p": "**Other than these two — nobody.** An \"immigration consultant,\" a \"paperwork expert,\" **or a \"notario\"** — not one of them is authorized to represent you."
+      },
+      {
+        "alert": "**This particular trick is aimed at us:** back home, a \"notario\" is an official with legal standing. **In America, a notary public is only allowed to witness a signature** — they know nothing about immigration, **and they have no right to advise you on a single form**. The DOJ has recorded cases where **asylum applications were filed in people's names without their knowledge** — and that alone can destroy a person's case forever."
+      },
+      {
+        "h": "Six Signs: Walk Away the Moment You See One"
+      },
+      {
+        "ul": [
+          "✕ He asks you to **sign a blank page** or one with wrong information on it",
+          "✕ He **takes your original documents** and keeps them",
+          "✕ He asks to be paid in **gift cards**, by **wire transfer**, or in **cryptocurrency**",
+          "✕ He **sells you forms** the government gives out free",
+          "✕ His website **does not end in .gov** and he claims to be an official agency",
+          "✕ He **guarantees you the result** — nobody can do that"
+        ]
+      },
+      {
+        "h": "How to Check Before You Pay a Dollar — Three Minutes"
+      },
+      {
+        "ul": [
+          "**The DOJ roster** by state and city: [The official roster](https://www.justice.gov/eoir/recognized-organizations-and-accredited-representatives-roster-state-and-city) · [703-305-0289](tel:+17033050289)",
+          "**For an attorney:** the bar of the **state** where he says he is licensed — **there is no single national registry**"
+        ]
+      },
+      {
+        "do": "The roster is ordered by state and then by city: **open Texas and read your city.** **And anyone not on this list who is not a lawyer has no right to represent you — whatever their office looks like.**"
+      },
+      {
+        "p": "**Ask for his full name and license number, and tell him you are going to check.** A real one will not mind. **If he minds, he has answered you.**"
+      },
+      {
+        "h": "Free or Low-Cost Help — It Really Exists"
+      },
+      {
+        "ul": [
+          "**The DOJ list of free legal service providers**: [The list](https://www.justice.gov/eoir/list-pro-bono-legal-service-providers)",
+          "**Recognized organizations** may charge a fee, but they are **required to serve low-income people**",
+          "**Legal aid** [lawhelp.org](https://www.lawhelp.org) — **careful:** federally funded programs are **limited to certain immigration statuses**"
+        ]
+      },
+      {
+        "do": "The pro bono list is ordered by state as well — **read it before you pay anyone, not after.**"
+      },
+      {
+        "h": "Three Scams That Target Immigration Only"
+      },
+      {
+        "ul": [
+          "**Immigration fees paid a strange way:** USCIS **does not accept** Western Union, MoneyGram, PayPal, or gift cards, **and it never asks for payment over the phone**",
+          "**The visa lottery:** entering is **free and random**, **and nobody can raise your odds**",
+          "**A tax preparer who refuses to sign your return** — **a clear red flag**, and people who file with an ITIN run into it most"
+        ]
+      },
+      {
+        "p": "**To report:** [uscis.gov/avoid-scams](https://www.uscis.gov/avoid-scams) · [800-375-5283](tel:+18003755283) · and the DOJ at [EOIR.Fraud.Program@usdoj.gov](mailto:EOIR.Fraud.Program@usdoj.gov)"
+      },
+      {
+        "h": "Reporting a Change of Address — Ten Days"
+      },
+      {
+        "warn": "**Every non-citizen must report a change of address to USCIS within 10 days of moving.**"
+      },
+      {
+        "p": "**The trap is not the reporting, it is your pending applications:** reporting online satisfies the law, **but it does not update your pending case unless you enter the receipt number for each application** — forget that, and the decision notice goes to your old address."
+      },
+      {
+        "p": "**Who is exempt:** A and G visa holders, and visitors on the visa waiver."
+      },
+      {
+        "ad": {
+          "name": "مكتب الهدى للمحاماة",
+          "area": "Downtown",
+          "cat": "محاماة",
+          "tier": "مشترك"
+        }
+      }
+    ]
+  },
+  {
+    "n": "14",
+    "t": "Scams — Mail and Phone Calls",
+    "blocks": [
+      {
+        "p": "**The newcomer is targeted on purpose** — because he does not know the system, and because he has something to lose. **And most scams do not come through immigration. They come through the mail and the phone.**"
+      },
+      {
+        "h": "Four Rules That Save You from Memorizing Every Scam"
+      },
+      {
+        "rows": [
+          [
+            "1",
+            "A government agency **does not call you first to ask for money** — it starts with mail"
+          ],
+          [
+            "2",
+            "**Never pay any official agency with a gift card, a wire transfer, or cryptocurrency**"
+          ],
+          [
+            "3",
+            "**The rush itself is the scam** — \"today or you get fined\" is a scammer's line"
+          ],
+          [
+            "4",
+            "**Do not call the number printed in the letter** — call the number from the official website"
+          ]
+        ]
+      },
+      {
+        "p": "**Rule four is the most useful in practice**, because it works even if the letter is real. **You do not need to know whether it is fake** — you only need to not call the number in it."
+      },
+      {
+        "h": "\"How Did They Get My Number and My Home Address?\""
+      },
+      {
+        "p": "**Nobody hacked anything. The information is public by law:**"
+      },
+      {
+        "ul": [
+          "**Vehicle registration records** — your name, your address, your car's make and year",
+          "**Home ownership records** at the county — completely public",
+          "**Business filings** — the owner's name and the mailing address",
+          "**Data brokers** collect all of it and sell it as lists"
+        ]
+      },
+      {
+        "warn": "**That is why you get a letter saying your car warranty is about to expire with your exact make and year in it** — not because they know you, but because your registration is public. **Their knowing the detail is the trick itself:** you assume anyone who knows your car must be your dealer. Same the hour you register a business — **your name and your shop's address go into a public record that same day**, which is why the \"labor law poster\" mail arrives **after** you open, not before."
+      },
+      {
+        "p": "**What cuts the volume down — it does not end it:**"
+      },
+      {
+        "rows": [
+          [
+            "Do Not Call list",
+            "[donotcall.gov](https://www.donotcall.gov) · [1-888-382-1222](tel:+18883821222)"
+          ],
+          [
+            "Stop prescreened mail offers",
+            "[optoutprescreen.com](https://www.optoutprescreen.com) · [1-888-567-8688](tel:+18885678688)"
+          ]
+        ]
+      },
+      {
+        "do": "At `donotcall.gov`: type your phone number and your email, **and a confirmation link comes to you by email — the registration does not take effect until you click it.** At `optoutprescreen.com`: you choose five years or permanent, **and the permanent one needs a form you sign and mail.**"
+      },
+      {
+        "p": "**The list stops the legitimate seller, not the scammer** — so whoever calls you after you sign up is **more likely to be a scammer, not less**. That is its real value: **the call itself becomes the signal**."
+      },
+      {
+        "h": "1) \"Your Car Warranty Is About to Expire\" — and You Never Had One"
+      },
+      {
+        "ul": [
+          "**You are not signed up for anything that could expire** — so there is nothing to \"renew\"",
+          "**The sender is not the dealer or the manufacturer** — read the small name at the bottom of the page",
+          "**What they sell is a \"service contract,\" not a warranty** — and the difference is not just wording: all the terms and exclusions are in it",
+          "**Do not press \"press 1 to be removed\"** — pressing proves the number is live, so it sells for more"
+        ]
+      },
+      {
+        "p": "**If you really want to buy one:** sellers of vehicle service contracts in Texas **must be registered** with the Department of Licensing and Regulation — [1-800-803-9202](tel:+18008039202) · [tdlr.texas.gov](https://www.tdlr.texas.gov). **If you cannot find them in the registry, do not pay them.**"
+      },
+      {
+        "do": "Type the company name or its license number to see whether it is current. **And if someone refuses to give you their license number, that is where the matter ends.**"
+      },
+      {
+        "h": "2) \"You Owe Money, and If You Don't Pay We'll Send It to Collections\" — a Debt That Does Not Exist"
+      },
+      {
+        "alert": "**Anyone collecting a debt from you must send you a written notice with the details.** **You have thirty days from receiving it to ask for proof in writing** — **and until they prove it, they must stop coming after you.**"
+      },
+      {
+        "ul": [
+          "**Do not pay anything over the phone**, no matter how hard they push",
+          "**Ask for the proof in writing** — not by voice",
+          "**Do not give an account number or a card** \"to verify your identity\"",
+          "**Keep a copy of what you sent and when**"
+        ]
+      },
+      {
+        "p": "**Ready-made letter templates** you fill in and send: [the federal consumer protection agency](https://www.consumerfinance.gov/consumer-tools/debt-collection/)"
+      },
+      {
+        "p": "**Threatening you with arrest over a civil debt is a flat lie** — whoever says it has just told you who they are."
+      },
+      {
+        "h": "3) \"Buy the Labor Law Poster or You'll Be Fined\" — This One Is the Clearest"
+      },
+      {
+        "alert": "**Two facts end the matter:** • **The posters are free** — you print them from the Department of Labor and from the Texas Workforce Commission without paying a dollar • **And if you have no employees, you do not need a poster at all** — the posters are addressed to employees, **so if you are the only worker in your shop, you do not need them, free or paid.**"
+      },
+      {
+        "rows": [
+          [
+            "Department of Labor",
+            "[dol.gov/whd/posters](https://www.dol.gov/agencies/whd/posters)"
+          ],
+          [
+            "Texas Workforce Commission",
+            "[twc.texas.gov/posters](https://www.twc.texas.gov/programs/posters)"
+          ]
+        ]
+      },
+      {
+        "do": "The posters are downloaded and printed free from both sites. **Anyone who sold them to you sold you something that is free.**"
+      },
+      {
+        "p": "**From the same family — mail asking for a fee for a \"certificate of standing\" or an \"annual report\":**"
+      },
+      {
+        "ul": [
+          "**The Certificate of Existence** really costs **$15** from the Secretary of State — anyone asking 80 or 120 is **a middleman selling you a paper you can request yourself**",
+          "**And there is no \"annual report\" for the Secretary of State in Texas** — an LLC files its report with the **Comptroller's office**. **So mail from a private company asking for an \"annual report\" is the scam itself.**"
+        ]
+      },
+      {
+        "h": "4) The Tax Call — Its Season Starts in January"
+      },
+      {
+        "p": "**\"You owe the IRS money, we are trying to resolve it, give us your Social Security number.\"**"
+      },
+      {
+        "ul": [
+          "**The IRS always starts with mail** — not a call, not a text message, not an email",
+          "**It does not ask for your Social Security number on a call**",
+          "**It does not threaten arrest, or taking your license, or deportation**",
+          "**It does not take gift cards or wire transfers**"
+        ]
+      },
+      {
+        "alert": "**And the new part that has to be said:** the IRS put **impersonation using AI-generated voices** at **number two** on its list of the worst scams of 2026. **A voice no longer proves anything** — and neither does the number showing on your screen, **which is faked with one click**."
+      },
+      {
+        "p": "**If you really think you might owe something:** open your account on [IRS.gov](https://www.irs.gov) yourself, **or call the number from the website yourself** — not the number that called you."
+      },
+      {
+        "h": "5) Health Insurance Calls — They Spike When Open Enrollment Starts"
+      },
+      {
+        "ul": [
+          "The only official place to enroll: [healthcare.gov](https://www.healthcare.gov) · [1-800-318-2596](tel:+18003182596)",
+          "**What these calls sell is usually not insurance** but a \"discount card\" or a limited plan — **and the difference shows up at the hospital, not on the day of the sale**",
+          "**Do not give your Social Security number or your Medicare number to someone who called you** — **the real agency already has your number**"
+        ]
+      },
+      {
+        "h": "One Rule Worth Saying Out Loud"
+      },
+      {
+        "warn": "**What stops most people from reporting is fear about their status.** **Reporting a scam is not reporting yourself. It does not require a legal status, and nobody asks about it.**"
+      },
+      {
+        "h": "Where to Report"
+      },
+      {
+        "rows": [
+          [
+            "**It came in the mail**",
+            "Postal Inspectors · [uspis.gov/report](https://www.uspis.gov/report) · [1-877-876-2455](tel:+18778762455)"
+          ],
+          [
+            "Consumer fraud",
+            "Texas Attorney General · [1-800-621-0508](tel:+18006210508)"
+          ],
+          [
+            "Insurance — auto or health",
+            "Department of Insurance · [1-800-252-3439](tel:+18002523439)"
+          ],
+          [
+            "Vehicle service contracts",
+            "Department of Licensing · [1-800-803-9202](tel:+18008039202)"
+          ],
+          [
+            "IRS impersonation",
+            "[tigta.gov/hotline](https://www.tigta.gov/hotline) · [800-366-4484](tel:+18003664484)"
+          ],
+          [
+            "Fake tax email",
+            "[phishing@irs.gov](mailto:phishing@irs.gov)"
+          ],
+          [
+            "Immigration services",
+            "[uscis.gov/avoid-scams](https://www.uscis.gov/avoid-scams) · [800-375-5283](tel:+18003755283)"
+          ],
+          [
+            "Locally",
+            "Harris County · [cao.harriscountytx.gov/ScamFree](https://cao.harriscountytx.gov/ScamFree)"
+          ],
+          [
+            "Money actually lost",
+            "Local police, and a written report"
+          ]
+        ]
+      },
+      {
+        "do": "Every one of these reports needs: **the date, the number or the email it came from, and a copy of the message exactly as it reached you — not a description of it.**"
+      },
+      {
+        "warn": "**The first line is the most important:** everything that reached you **by mail** — the car warranty, the labor poster, the fake debt — is **a federal mail crime**, and it goes to the **Postal Inspectors**, nobody else. **Keep the envelope itself** — the postmark and the address are evidence."
+      },
+      {
+        "h": "Websites Imitating the Toll Road Authority"
+      },
+      {
+        "alert": "**There are copycat sites around hctra.org** — eztag.us.com · eztaghouston.com · hctra.com.co — **and HCTRA itself published a warning about them.** **There are three official sites and no fourth:** [hctra.org](https://hctra.org) · [txtag.org](https://txtag.org) · [txdot.gov](https://txdot.gov)"
+      },
+      {
+        "ad": {
+          "name": "مكتب الأمين للضرائب",
+          "area": "Westheimer",
+          "cat": "خدمات مالية",
+          "tier": "مميّز"
+        }
+      }
+    ]
+  },
+  {
+    "n": "15",
+    "t": "Work and Your Rights as a Worker",
+    "blocks": [
+      {
+        "p": "**A newcomer starts working before they drive and before they rent.** This section is about the job itself — not about finding one."
+      },
+      {
+        "rows": [
+          [
+            "Minimum wage in Texas",
+            "$7.25 an hour"
+          ],
+          [
+            "Anything over 40 hours in a week",
+            "Paid at one and a half times — counted by the week, not by the month"
+          ]
+        ]
+      },
+      {
+        "h": "Wages that were not paid"
+      },
+      {
+        "p": "File a complaint with the Texas Workforce Commission **within 180 days** of the day the wages were due, **and file it online** — [twc.texas.gov](https://twc.texas.gov) · [800-832-9243](tel:+18008329243)"
+      },
+      {
+        "warn": "**The federal Department of Labor:** it enforces the law **regardless of a worker's immigration status**. **There is no fee to file a complaint and no fee for the investigation.** **It talks with callers in more than 200 languages.** — [1-866-487-9243](tel:+18664879243)"
+      },
+      {
+        "h": "Safety at work"
+      },
+      {
+        "p": "**The Occupational Safety and Health Administration (OSHA):** a complaint **can be filed in any language**, **it can be filed without your name**, and its website is **in Arabic** — [1-800-321-6742](tel:+18003216742)"
+      },
+      {
+        "alert": "**The strongest rule in this section:** OSHA treats **reporting a worker to the police or to immigration authorities** as retaliation, banned by the text of the law. **The deadline for a retaliation complaint is only 30 days.**"
+      },
+      {
+        "h": "The 1099 trap"
+      },
+      {
+        "p": "**Someone who works under the employer's orders, with the employer's tools, on the employer's hours is an employee, not a contractor.** **The difference costs you:** no overtime pay · **and the full 15.3% self-employment tax falls on you** instead of half of it."
+      },
+      {
+        "rows": [
+          [
+            "A W-4 form on your hiring day",
+            "means employee"
+          ],
+          [
+            "A W-9 form",
+            "means contractor"
+          ]
+        ]
+      },
+      {
+        "alert": "**A practical rule:** in Texas **most employers are not required to give you a pay stub.** **So write down your own hours day by day** — that paper of yours is your only proof on the day you file a complaint."
+      },
+      {
+        "ad": {
+          "name": "مكتب المحاسبة العربي",
+          "area": "Westheimer",
+          "cat": "خدمات مالية ومحاسبة",
+          "tier": "مميّز"
+        }
+      }
+    ]
+  },
+  {
+    "n": "16",
+    "t": "Getting Around",
+    "blocks": [
+      {
+        "p": "**For anyone with no car in their first months here.**"
+      },
+      {
+        "rows": [
+          [
+            "One ride",
+            "$1.25 — 60 cents at the reduced fare"
+          ],
+          [
+            "Day pass",
+            "$3 — until 2 in the morning"
+          ],
+          [
+            "Transfers are free",
+            "Three hours between METRO lines"
+          ]
+        ]
+      },
+      {
+        "h": "Who pays half fare and who pays nothing"
+      },
+      {
+        "ul": [
+          "**Half fare:** students · people 65 to 69 · and people with disabilities",
+          "**Free:** people 70 and older · veterans · children under five · **and anyone with a jury summons**"
+        ]
+      },
+      {
+        "alert": "**The old METRO Q card ended in April 2026** — the new system is RideMETRO, with a card or an app."
+      },
+      {
+        "ul": [
+          "**The METRO website shows Arabic through machine translation** — not Arabic written by a person, so you will find broken phrases in it — [ridemetro.org](https://ridemetro.org) · [713-635-4000](tel:+17136354000)",
+          "**For people with disabilities:** METROLift door-to-door service after an evaluation — [713-225-0119](tel:+17132250119)"
+        ]
+      },
+      {
+        "ad": {
+          "name": "مركز الجالية العربية",
+          "area": "Hillcroft",
+          "cat": "مجتمع وخدمات",
+          "tier": "مشترك"
+        }
+      }
+    ]
+  },
+  {
+    "n": "17",
+    "t": "Taxes and the Free Help With Them",
+    "blocks": [
+      {
+        "warn": "**The VITA program prepares your tax return for free**, and one of the eligibility conditions — **and this one is literally about us** — is **taxpayers with limited English**, along with people whose income is under a yearly limit and people with a disability."
+      },
+      {
+        "rows": [
+          [
+            "To find the nearest site",
+            "[800-906-9887](tel:+18009069887) — locations are updated from February to April"
+          ]
+        ]
+      },
+      {
+        "h": "If you need an ITIN with it"
+      },
+      {
+        "p": "**Not every site offers it** — only sites with a **Certifying Acceptance Agent** who fills out the **W-7** form **and hands your original documents back to you on the spot** instead of mailing them. **So ask for that by name when you call.**"
+      },
+      {
+        "alert": "**A red flag:** a tax preparer who **refuses to sign your return** — the law requires them to sign it and to write in their professional number."
+      },
+      {
+        "ad": {
+          "name": "مكتب المحاسبة العربي",
+          "area": "Westheimer",
+          "cat": "خدمات مالية ومحاسبة",
+          "tier": "مميّز"
+        }
+      }
+    ]
+  }
+]
