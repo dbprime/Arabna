@@ -134,9 +134,11 @@ export function MassScreen(root) {
   const covered = S.inCoverage();
   const churches = S.nearbyChurches(5);
 
-  root.innerHTML = `
+  const head = `
     <div class="pad mt-16">
-      <div class="section-title">${t('massTitle')}<small>${t('massSub')}</small></div>
+      <div class="section-title">${t('massTitle')}<small>${t('massSub')}</small></div>`;
+
+  const churchBlock = `
 
       ${!S.prayerPoint() ? `
         <div class="empty mt-12">
@@ -162,11 +164,18 @@ export function MassScreen(root) {
         </div>
         <div class="hint mt-12">${icon('info', 15)} ${t('massCalcNote')}</div>`
       : `<div class="hint mt-16">${icon('info', 15)} ${t('massOutside')}</div>`}
+      ${suggestWorshipHtml('church')}`;
 
-      ${suggestWorshipHtml('church')}
+  /* ⚠️ I RECOMMENDED THE OPPOSITE HERE, and said why: the mass times are
+     written inside the church cards, so pushing them down buries the
+     point of the screen. Rai decided the uniform order, and it comes with
+     a switch that reverses it (admin → settings) — so the decision is
+     reversible without a batch. Nothing inside either block changes. */
+  const occasions = feastsBlockHtml('christian');
 
-      ${feastsBlockHtml('christian')}
-    </div>
+  root.innerHTML = head
+    + (S.occFirst('mass') ? occasions + churchBlock : churchBlock + occasions)
+    + `</div>
     <div style="height:20px"></div>`;
 
   const loc = $('#msLoc');

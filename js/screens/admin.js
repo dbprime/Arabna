@@ -312,6 +312,19 @@ function panelView(root) {
       toast(t('done'), 'ok');
     });
 
+    /* the two order switches, on the Ramadan switch's own pattern */
+    const occ = (id, key) => {
+      const b = $('#' + id);
+      if (!b) return;
+      b.addEventListener('click', () => {
+        S.setOccFirst(key, !S.occFirst(key));
+        b.classList.toggle('on', S.occFirst(key));
+        toast(t('done'), 'ok');
+      });
+    };
+    occ('occPr', 'prayer');
+    occ('occMs', 'mass');
+
     /* ---- bulk import: read, show exactly what is wrong, then emit a file ---- */
     const sampleBtn = $('#csvSample');
     if (sampleBtn) sampleBtn.addEventListener('click', () =>
@@ -776,6 +789,22 @@ function setHtml() {
         <input class="input ltr" id="ramEid" type="date" value="${esc(S.ramadanDates().eid)}" /></div>
     </div>
     <button class="btn btn-ghost btn-sm" id="ramSave">${t('save')}</button>
+
+    ${/* TWO SWITCHES, NOT ONE, and the reason is that the two reasons are
+          different: the mass times are the only ones that will change,
+          when the churches send them. One switch would force both screens
+          to move together in order to fix one of them. */''}
+    <div class="section-title mt-20">${t('admOrderTitle')}</div>
+    <div class="hint" style="margin-bottom:10px">${t('admOrderSub')}</div>
+
+    <div class="setting-row" style="padding-inline:0">
+      <span class="s-txt"><b>${t('admOrderPrayer')}</b><span>${t('admOrderPrayerSub')}</span></span>
+      <button class="switch ${S.occFirst('prayer') ? 'on' : ''}" id="occPr"></button>
+    </div>
+    <div class="setting-row" style="padding-inline:0">
+      <span class="s-txt"><b>${t('admOrderMass')}</b><span>${t('admOrderMassSub')}</span></span>
+      <button class="switch ${S.occFirst('mass') ? 'on' : ''}" id="occMs"></button>
+    </div>
 
     <div class="section-title mt-20">${t('demoTitle')}</div>
     <div class="hint" style="margin-bottom:10px">${t('demoWhy')}</div>

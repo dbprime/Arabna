@@ -579,6 +579,29 @@ export function setSeason(season, on) {
   save();
 }
 
+/* ---------------- the order of the two blocks on #/prayer and #/mass ----
+ * Occasions first is Rai's decision after the `pm.html` walkthrough, and
+ * it is deliberately reversible from the panel: mass times will arrive
+ * from the churches themselves, and when they do the answer changes — so
+ * the order flips with a tap rather than a batch and a session and a wait.
+ *
+ * TWO SWITCHES, NOT ONE, because the two reasons are different: the mass
+ * is the only one that will change. One switch would force both screens
+ * to move together to fix one of them.
+ *
+ * ⚠️ `=== undefined`, NEVER `!v`. A switch turned off on purpose holds
+ * `false`, and reading it with `!v` sends it back to the default on every
+ * open — a switch that is turned off and will not stay off.
+ */
+export function occFirst(screen) {
+  const v = state.occFirst && state.occFirst[screen];
+  return v === undefined ? true : !!v;
+}
+export function setOccFirst(screen, on) {
+  state.occFirst = Object.assign({}, state.occFirst, { [screen]: !!on });
+  save();
+}
+
 /* ------------------------------------------------------------
    Three layers, one rule: an attribute is offered where it has
    enough content to be worth offering. Nothing is hand-listed, so

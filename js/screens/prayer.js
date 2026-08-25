@@ -250,6 +250,32 @@ function draw(root) {
   }
 
   const nx = nextPrayer(times, minutesNow());
+
+  /* the mosques, and the door that adds one — they travel together: the
+     door is «add a mosque», and it belongs beside the list it adds to */
+  const mosqueBlock = `
+      ${covered ? `
+        <div class="section-title mt-20">${t('prNearbyMosques')}</div>
+        <div class="list">
+          ${mosques.map(m => `
+            <button class="list-row" data-route="#/directory/${m.id}">
+              <span class="row-ico">${icon('moon', 20)}</span>
+              <span class="row-main">
+                <span class="row-title">${S.state.lang === 'en' ? (m.name.en || m.name.ar) : (m.name.ar || m.name.en)}</span>
+                <span class="row-sub">${jumuahLine(m)}</span>
+              </span>
+            </button>`).join('')}
+        </div>`
+        : `<div class="hint mt-16">${icon('info', 15)} ${t('prOutside')}</div>`}
+
+      ${/* the same door as #/mass, and the same rule: a stranger adds the
+           place, never its times */''}
+      ${suggestWorshipHtml('mosque')}`;
+
+  /* the same block as #/mass, imported rather than copied: the calendar
+     belongs to both screens and is hidden from neither */
+  const occasions = feastsBlockHtml('islam');
+
   root.innerHTML = `
     <div class="pad mt-16">
       <div class="pr-next" id="prNext">${nextCardHtml(nx)}</div>
@@ -270,31 +296,27 @@ function draw(root) {
       <div class="hint mt-12">${icon('info', 15)} ${t('prCalcNote')}</div>
       <button class="btn btn-ghost btn-block mt-12" id="prSet">${icon('settings', 18)} ${t('prSettings')}</button>
 
-      ${covered ? `
-        <div class="section-title mt-20">${t('prNearbyMosques')}</div>
-        <div class="list">
-          ${mosques.map(m => `
-            <button class="list-row" data-route="#/directory/${m.id}">
-              <span class="row-ico">${icon('moon', 20)}</span>
-              <span class="row-main">
-                <span class="row-title">${S.state.lang === 'en' ? (m.name.en || m.name.ar) : (m.name.ar || m.name.en)}</span>
-                <span class="row-sub">${jumuahLine(m)}</span>
-              </span>
-            </button>`).join('')}
-        </div>`
-        : `<div class="hint mt-16">${icon('info', 15)} ${t('prOutside')}</div>`}
-
-      ${/* the same door as #/mass, and the same rule: a stranger adds the
-           place, never its times */''}
-      ${suggestWorshipHtml('mosque')}
-
-      ${/* the same block as #/mass, imported rather than copied: the
-           calendar belongs to both screens and is hidden from neither */''}
-      ${feastsBlockHtml('islam')}
+      ${/* ⚠️ THE TIMES STAY FIRST, ALWAYS. They are the answer this screen
+           exists to give, and they never go under anything — the two
+           blocks BELOW them are the ones that trade places, and nothing
+           inside either block changes: not a heading, not a card, not the
+           seven-day grace. Only the order they are joined in. */''}
+      ${S.occFirst('prayer') ? occasions + mosqueBlock : mosqueBlock + occasions}
     </div>`;
 
   $('#prSet').addEventListener('click', () => openPrayerSettings(() => draw(root)));
   mountSuggestWorship(root, 'mosque');
+  /* ⚠️ AND THIS LINE, WHICH WAS MISSING. The mosque rows carry
+     `data-route="#/directory/{id}"` exactly as the church rows on `#/mass`
+     do, but nothing here ever wired them: `wireRoutes(bar)` above belongs
+     to the prayer BAR, drawn somewhere else at another time, and
+     `mass.js` calls `wireRoutes(root)` after its own list while this
+     screen never did. Measured before the fix: five rows on `#/prayer`,
+     and tapping one left the hash at `#/prayer`; the same tap on `#/mass`
+     went to `#/directory/b12`. Two lines in two places, not one line
+     moved — and `wireRoutes` guards itself with `dataset.wired`, so the
+     second call cannot double a listener on anything already wired. */
+  wireRoutes(root);
   // one ticker, the app's own: the card counts down without a second timer
   const card = $('#prNext');
   onMinute(card, () => {

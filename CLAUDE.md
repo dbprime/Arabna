@@ -3653,6 +3653,70 @@ chip). The touching-suites shortcut in the testing rules is for *while you
 work*; the full gate at the end is what makes «never break a working
 feature» true, and skipping it does not save the time, it moves it.
 
+## V.04.9 — the mosque that would not open, and the order of the two blocks
+
+### One screen wired its list and the other did not
+Rai: «في المواقيت، المساجد ما بتتحوّل على صفحة المسجد.» Measured on both
+screens before touching anything, and the difference is the proof:
+
+```
+#/mass    tapped a church  →  #/directory/b12    ✓
+#/prayer  tapped a mosque  →  stayed #/prayer    ✗
+```
+
+The two lists are **identical in markup** — both draw
+`<button class="list-row" data-route="#/directory/…">`. The attribute was
+written on every row and nothing had ever wired it: `mass.js` calls
+`wireRoutes(root)` after `mountSuggestWorship`, and `prayer.js` calls
+`wireRoutes(bar)` — **the prayer bar, drawn somewhere else at another
+time** — and never `root`.
+
+- The fix is **one added line**, `wireRoutes(root)` after
+  `mountSuggestWorship(root, 'mosque')`. ⚠️ **`wireRoutes(bar)` is not
+  moved and not replaced**: it belongs to the bar, and two lines in two
+  places is the correct shape, not one line relocated. `wireRoutes` guards
+  itself with `dataset.wired`, so the second call cannot double a listener
+  on anything already wired.
+- After: `#/prayer` first row → `#/directory/b11`, last row →
+  `#/directory/b161`, back returns to the times screen intact, `#/mass`
+  unmoved at `#/directory/b12`, zero console errors on both builds.
+
+### Occasions above the lists, on both screens
+Rai's decision after the mockups. `#/prayer` reads times → prayer settings
+→ **occasions** → mosques; `#/mass` reads **occasions** → churches.
+
+⚠️ **The times stay the first thing on `#/prayer`** — they are the screen's
+answer and never sink under anything. Measured: card 108 → list 295 →
+settings 667 → the first section title at 739. **Only the two blocks under
+them trade places**, and not a line inside either changes — no heading, no
+card, no internal order, no seven-day grace logic.
+
+⚠️ **I recommended the opposite for `#/mass` and said why**: the mass times
+are printed inside the church cards, so pushing them down buries the
+screen's purpose. Rai chose the uniform order **and a switch that reverses
+it**, so the decision needs no deploy to undo. The comment recording that
+sits in `mass.js`.
+
+### Two switches, because the two reasons are different
+`occFirst(screen)` / `setOccFirst(screen, on)` in `store.js`, built on the
+`seasonOn` / `setSeason` pattern rather than a second pattern invented
+beside it. Admin → settings carries «المناسبات فوق المساجد» and «المناسبات
+فوق الكنائس».
+
+- **Two and not one**, because only the mass side is expected to change:
+  the day the churches send their times, that screen wants the churches
+  first again. One switch would force both screens to move to fix one.
+- ⚠️ **`v === undefined`, never `!v`.** A switch turned off deliberately
+  holds `false`, and reading it with `!v` sends it back to the default on
+  every open — a switch that is turned off and will not stay off. Verified
+  by closing and reopening with `occFirst:{mass:false}` stored.
+- ⚠️ **The switch changes the admin's own device and nothing else.** There
+  is no server; the whole state is in the `localStorage` of the phone that
+  was tapped. It is built now so the server batch is one call instead of a
+  build under pressure — but **no operating decision may rest on it before
+  then**, and it is written into `docs/الحالة.md` as a deferred gap rather
+  than left to be rediscovered.
+
 ## Known open items
 - **The header image is still far larger than its box.** V.04.7 replaced
   the 831/837 KB lockups with the cropped marks at **333/338 KB** — 60% off
