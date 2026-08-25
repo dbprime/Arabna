@@ -7,7 +7,7 @@ ARABNA · عربنا — a mobile-first web app for the Arab community in the U.
 **business directory + marketplace + events + magazine**, Arabic-first with a full English toggle.
 ("Classifieds / الإعلانات الشخصية" is now "Marketplace / السوق" — the old `#/classifieds`
 routes still resolve so shared links keep working.)
-Current version: **V.05.1 (prototype)**. Owner: Rai Elby (@dbprime). Deploys to Vercel (team DB Prime).
+Current version: **V.05.2 (prototype)**. Owner: Rai Elby (@dbprime). Deploys to Vercel (team DB Prime).
 
 ## Hard rules (from the product brief)
 1. **One repository, one Vercel project.** No duplicates, no stray preview projects.
@@ -3913,6 +3913,105 @@ Change what has no `style`.
   `logo.png ↔ logo-ink.png` on the module build, two different data URIs
   on the single-file one. `data-logo` is what `applyTheme` reads, and only
   its value changed.
+
+## V.05.2 — signing out did not end ownership on the device
+
+### The contradiction was one line wide
+Reported by the daily check and reproduced by pressing, not by reading. A
+reader signed out; the app was reopened on the same phone with no account:
+
+```
+isLoggedIn()  false      ownsBusiness('b1')  TRUE   ← the whole fault
+tier()        0
+
+#/receipts          the previous account's ARB-26-5UQQ4 · $29
+#/my-subscription   «فعّال · $29 شهرياً · مطعم الشام»
+#/business/edit/b1  the owner's edit form, opened
+```
+
+⚠️ **And worse than reading.** The «إلغاء الاشتراك» button was drawn for
+that visitor; pressing it and confirming set **`cancelAtPeriodEnd: false →
+true`** on somebody else's subscription. Measured, not inferred.
+
+Two functions between them: `signOut()` was `state.user = null; save();`
+— it erased the account and left everything the account owned — and
+`ownsBusiness()` never asked whether anyone was signed in at all.
+
+⚠️ **This is not a new rule.** It is the second half of the one V.04.8
+landed: **device preferences are not the account's, and what the account
+owns is not the device's.** The first half shipped and the second did not.
+
+### A route guard was the wrong answer, and the net said so
+`requireTier(1, …)` on `#/receipts` and `#/my-subscription` fails
+**`test_v38 · 1.1b`**, which carries the decision in writing: those two
+are deliberately **not** gated — a visitor has no subscription and no
+receipts, so what they meet is a designed empty state, and the first
+carries the door to buy. **A page that sells stays open and the gate
+stands at the payment.**
+
+- **So the leak was never a missing route guard — it was the data
+  answering to nobody.** The guard went into `receipts()`,
+  `receiptById()` and `subscription()` instead.
+- **And that is the stronger place.** It closes the leak on a phone that
+  still carries the old state **with no `signOut` ever having run** — a
+  route guard could not have reached that case at all. Asserted as its own
+  block in v42.
+
+### What survives, written as what STAYS
+`KEEPS_ON_SIGN_OUT` names **34 of the 59 `DEFAULTS` keys**; the other 25
+go back to their declared defaults.
+
+```
+10  the device's own          lang · theme · fontScale · location · geo … · mapsApp
+23  the admin's and operator's adminAuth · businessEdits · bizPhotos · seasons …
+ 1  an accounting record       receipts
+```
+
+- ⚠️ **The list names what stays, never what goes.** A key added tomorrow
+  is therefore cleared by default — **the safe direction to be wrong in.**
+  Being wrong the other way is what this batch exists for.
+- ⚠️ **Receipts are hidden, never erased** — `receipts()` returns `[]`
+  while signed out and the row is untouched on disk, which is why signing
+  back in gets every one of them back. They already survive
+  `deleteAccount` for the same reason.
+- ⚠️ **`JSON.parse(JSON.stringify(DEFAULTS))`** is the deep copy this file
+  already uses when resetting: without it the state's arrays *are*
+  `DEFAULTS`'s arrays and the first write poisons the defaults for the
+  rest of the session. And `boosted` goes back to what `DEFAULTS` says,
+  not to an empty array — the default is declared there, not decided here.
+- **Signing out resets keys and never removes them** (v42 · 3.5): a
+  missing key reads as `undefined` at every call site instead of as the
+  declared default, which is a second bug wearing the first one's clothes.
+
+### Measured after
+```
+after a real signOut, reopened as a visitor
+  isLoggedIn · ownsBusiness    false · false — they agree at last
+  myBusinessId · subscription · cardOnFile   back to default
+  saved · blocked · myAds      emptied
+  receipts on disk             1, untouched · receipts() → []
+  theme · fontScale            light · 21 — the 195 rule holds
+  city · geoGranted            Katy · true — nobody is asked twice
+  adminAuth · businessEdits · bizPhotos · seasons   all untouched
+  59 keys before, 59 after     reset, not removed
+screens
+  #/receipts          opens · «لا إيصالات بعد» · no amount, no number
+  #/my-subscription   opens · «لا يوجد اشتراك» + «اشترك الآن»
+                      and NO «إلغاء الاشتراك» button is drawn at all
+  #/business/edit/b1  → #/directory/b1
+  #/subscribe         open, and its button is «سجّل مجاناً واعرض السعر»
+                      → #/auth/signup, never the payment
+console errors        0
+```
+
+⚠️ **A visitor still sees no price on `#/subscribe`, and that is correct**
+— `showsPrices()`, the V.01.6 rule. The file's own test 9 expected the
+price to be visible; the standing rule wins, and what the visitor meets is
+the price gate, which is what it is for.
+
+**`test_v42` — 35 assertions, both builds.** Its number was taken from the
+repository at the moment of writing, not from a note, which is the rule
+`v36` was written to enforce.
 
 ## Known open items
 - **The header image is still far larger than its box.** V.04.7 replaced

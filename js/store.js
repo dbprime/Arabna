@@ -2320,8 +2320,11 @@ export function pendingBizPhotos() {
    Claiming used to hand the page over on a tap. It now raises a
    request the admin decides on, and the owner is told either way.
    ============================================================ */
+/* Ownership is an account's, not a device's. Without the login test this
+   returned true while `isLoggedIn()` returned false — and that single
+   disagreement opened the owner's edit form to somebody with no account. */
 export function ownsBusiness(bizId) {
-  return !!bizId && state.myBusinessId === bizId;
+  return isLoggedIn() && !!bizId && state.myBusinessId === bizId;
 }
 export function claimFor(bizId) {
   return (state.claims || []).find(c => c.bizId === bizId) || null;
@@ -2659,10 +2662,17 @@ export function addReceipt({ kind, description, amount, method = 'card',
 }
 
 /** newest first */
+/* Signed out, the record is not readable — but it is not erased either.
+   `#/receipts` and `#/my-subscription` stay OPEN on purpose (test v38,
+   1.1b): a page that sells is open and the gate stands at the payment, so
+   a visitor must meet a designed empty state. The leak was never a missing
+   route guard — it was the data answering to nobody. */
 export function receipts() {
+  if (!isLoggedIn()) return [];
   return (state.receipts || []).slice().sort((a, b) => b.at - a.at);
 }
 export function receiptById(id) {
+  if (!isLoggedIn()) return null;
   return (state.receipts || []).find(r => r.id === id) || null;
 }
 
@@ -2884,7 +2894,38 @@ export function confirmEmail() {
 export function confirmPhone(phone) {
   if (state.user) { state.user.phone = phone; state.user.phoneVerified = true; save(); }
 }
-export function signOut() { state.user = null; save(); }
+/* What survives signing out: the device's own preferences, the admin
+   panel's work (it is unlocked by a device password, not by an account),
+   and the receipts — an accounting record, which is why they already
+   survive `deleteAccount`.
+   EVERYTHING ELSE goes back to DEFAULTS. The list is what STAYS, never
+   what goes: a key added tomorrow then defaults to being cleared, and
+   that is the safe direction to be wrong in. Being wrong the other way is
+   what this file exists for. */
+const KEEPS_ON_SIGN_OUT = new Set([
+  // the device's own — 195 established these are not account property
+  'lang', 'theme', 'fontScale', 'location', 'geo', 'geoAsked', 'geoDenied',
+  'geoGranted', 'area', 'mapsApp',
+  // the admin panel's, and the operator's: not a reader's to lose
+  'adminAuth', 'adminLog', 'businessEdits', 'extraArticles', 'extraEvents',
+  'hiddenEvents', 'eventEdits', 'bizPhotos', 'bizVerify', 'mergedBusinesses',
+  'removedBusinesses', 'adWaitlist', 'adStats', 'bizStats', 'clockOffset',
+  'showDemo', 'demoPurged', 'seasons', 'ramadanDates', 'prayer',
+  'worshipFixes', 'offers', 'flags',
+  // an accounting record — unreadable while signed out, never erased
+  'receipts',
+]);
+
+/* `state.user = null` alone left every owned thing behind: a visitor on
+   the same phone read the previous account's receipts ($29 · ARB-26-5UQQ4)
+   and CANCELLED its subscription — measured on V.05.0, not supposed. */
+export function signOut() {
+  const fresh = JSON.parse(JSON.stringify(DEFAULTS));
+  for (const k of Object.keys(DEFAULTS)) {
+    if (!KEEPS_ON_SIGN_OUT.has(k)) state[k] = fresh[k];
+  }
+  save();
+}
 
 /** Editing the profile. Changing the phone number is the only thing that
     costs a re-verification — everything else keeps the verified state. */
@@ -3652,7 +3693,10 @@ export function runSubscriptionCycle() {
 function fmtAmount(n) { return '\u2066$' + n + '\u2069'; }
 
 /** the live record, rolled forward to today */
-export function subscription() { return runSubscriptionCycle(); }
+/* Same rule as `receipts()`: the screen stays open, the data does not
+   answer to somebody with no account. This is where the visitor's
+   «إلغاء الاشتراك» button was coming from. */
+export function subscription() { return isLoggedIn() ? runSubscriptionCycle() : null; }
 
 /** cancelling keeps the service to the end of what was paid for */
 export function cancelSubscription() {
