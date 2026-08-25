@@ -7,7 +7,7 @@ ARABNA · عربنا — a mobile-first web app for the Arab community in the U.
 **business directory + marketplace + events + magazine**, Arabic-first with a full English toggle.
 ("Classifieds / الإعلانات الشخصية" is now "Marketplace / السوق" — the old `#/classifieds`
 routes still resolve so shared links keep working.)
-Current version: **V.05.0 (prototype)**. Owner: Rai Elby (@dbprime). Deploys to Vercel (team DB Prime).
+Current version: **V.05.1 (prototype)**. Owner: Rai Elby (@dbprime). Deploys to Vercel (team DB Prime).
 
 ## Hard rules (from the product brief)
 1. **One repository, one Vercel project.** No duplicates, no stray preview projects.
@@ -3836,6 +3836,83 @@ literal** while `BASE` honours `HOST`. Proven on port 8123: the old line
 counted **29 of our own files** as outside requests and printed a red FAIL
 on a clean build; reading the origin off `BASE` reports 0. It was the only
 hardcode of its kind — every other suite was searched.
+
+## V.05.1 — the placeholder nobody had styled, and the drawer's stacked mark
+
+### The first of the three had already landed
+File `205` reported «+16 · عرض الكل» opening `#/directory?cat=undefined`.
+**It was fixed in V.04.8** — the file says itself that `195`, `200` and
+`210` shipped after it was written. Pressed and measured before touching
+anything: `+16` → `#/categories`, مطاعم → `#/directory?cat=restaurants`,
+عبادة → `#/directory?cat=worship`. The guard is already general — a card
+carrying `data-route` is `wireRoutes`'s and this listener leaves it alone
+— so nothing was rewritten to match the file's phrasing of the same fix.
+
+⚠️ **And test 3 of that item cannot run**: it asks for a card with
+`data-dest`, and no Home tile has one. `data-dest` is written only for a
+category carrying `route`, which is Events alone, and Events is not in
+`HOME_CATS`.
+
+### A colour identical in both themes is a colour nobody chose
+Rai: the rotating word in the search box is too faint in light mode.
+Measured, and it was the opposite of what he expected:
+
+```
+          colour     ground     ratio
+light     #757575    #E9F3FB    4.10    borderline
+dark      #757575    #263764    2.51    fails
+```
+
+⚠️ **The same `#757575` in both themes — that is the browser's default,
+and its being identical is the proof the field was never styled at all.**
+`.input::placeholder` exists and does not reach it: the search input's
+`className` is empty, it is not `.input`. The only rule that did reach it
+is V.04.7's fade, and that rule owns `opacity` and never mentions colour.
+
+- **Light was the better of the two, not the worse.** Dark failed by a
+  wide margin, and Rai noticed light because faint grey on white reads as
+  «empty», while the same grey on dark blue reads as «faint text» — seen,
+  and not complained about.
+- ⚠️ **Dark takes `--text-2`, not `--muted`.** The field's ground is
+  `--surface-2`, and «`--muted` is never put on `--surface-2`» is the
+  V.02.5 rule, measured 3.79 there. **This field was the case the rule had
+  missed, not an exception to it.**
+- After: **7.74 light · 7.81 dark** (the file predicted 8.45 for dark; the
+  colours and the ground are the ones it named, so the arithmetic is the
+  only difference — both are far over 4.5). The typed text is untouched at
+  16.37 and 10.26: the rule is on `::placeholder` alone.
+
+### The drawer kept the lockup the header had already rejected
+Rai: «الكلام جنبه مش تحته». Measured: the drawer drew
+`assets/logo-sm-ink.png` — **913×340, ratio 2.69** — at 124px wide, so
+«عربنا» was a few pixels beside the mark rather than under it.
+
+⚠️ **This exact fault was fixed in the header in V.02.5b and the drawer
+was left on the rejected shape** — that batch even listed the drawer among
+`wide`'s remaining users. Two words in two places:
+
+```
+js/ui.js        data-logo="wide"     2 → 0
+js/ui.js        data-logo="stacked"  0 → 2
+js/screens/auth.js  wide             2, before and after — untouched
+```
+
+**How the two are told apart from the two that stay**: the pair in `ui.js`
+carry no `style`, the pair in `auth.js` carry `style="height:56px"`.
+Change what has no `style`.
+
+- `alt` went with them, «ARABNA» → «ARABNA عربنا» — the stacked file
+  carries both names, and it is **what `profile.js` already writes for the
+  same image**, so the two agree instead of differing.
+- The mark is now **56.5 × 46** where it was 123.5 × 46: the height is
+  fixed in CSS and the ratio went 2.69 → 1.23, so the width follows and
+  **the drawer's own height does not move — still 844/844 folded.** Same
+  reasoning as the header's in V.02.5b.
+- Member and visitor drawers measured separately and are identical, and
+  the flip still swaps the file in place with the drawer open —
+  `logo.png ↔ logo-ink.png` on the module build, two different data URIs
+  on the single-file one. `data-logo` is what `applyTheme` reads, and only
+  its value changed.
 
 ## Known open items
 - **The header image is still far larger than its box.** V.04.7 replaced

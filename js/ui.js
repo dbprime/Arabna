@@ -905,12 +905,12 @@ export function openDrawer() {
      corner is plainer than a drawer you have to open. */
   const head = member ? `
       <div class="drawer-head">
-        <img data-logo="wide" src="${logoSrc('wide')}" alt="ARABNA" />
+        <img data-logo="stacked" src="${logoSrc('stacked')}" alt="ARABNA عربنا" />
         <div style="font-weight:700">${esc(u.name)}</div>
         <div class="drawer-user">${esc(u.email)} · ${tierLabel}</div>
       </div>` : `
       <div class="drawer-head">
-        <img data-logo="wide" src="${logoSrc('wide')}" alt="ARABNA" />
+        <img data-logo="stacked" src="${logoSrc('stacked')}" alt="ARABNA عربنا" />
         <div style="font-weight:700">${t('guest')}</div>
       </div>
       <div class="dr-invite">

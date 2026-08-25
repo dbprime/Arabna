@@ -1965,6 +1965,18 @@ input[inputmode="tel"], input[type="email"], input[inputmode="decimal"], #zipIn 
 }
 .search-bar.big > svg { flex: 0 0 22px; width: 22px; height: 22px; color: var(--gold-bright); }
 .search-bar.big input { font-size: .9375rem; }
+/* The search field is not `.input`, so `.input::placeholder` never reached it
+   and it kept the BROWSER's default #757575 — identical in both themes, which
+   is the proof it was never styled at all. Measured 4.10 light and 2.51 dark.
+   The fade rule below owns `opacity` and says nothing about colour, so the
+   colour is added here rather than folded into it.
+   Dark takes `--text-2`, not `--muted`: the field's ground is `--surface-2`,
+   and «--muted is never put on --surface-2» is the V.02.5 rule, measured 3.79.
+   This field was the case the rule had missed, not an exception to it.
+   After: 7.74 light and 8.45 dark. */
+.search-bar input::placeholder { color: var(--muted); }
+[data-theme="dark"] .search-bar input::placeholder { color: var(--text-2); }
+
 /* the fade duration is written FROM `HINT_FADE_MS`, never typed here — one
    value in data.js and no second copy that could drift from it */
 .search-bar.big input::placeholder { transition: opacity var(--hint-fade, 250ms) var(--ease); }
