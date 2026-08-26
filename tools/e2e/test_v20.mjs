@@ -235,15 +235,23 @@ ok('6.3 «إعلانات مميّزة» took their place', dr.featured && dr.rou
    «المساعدة»), 941 / 991 / 891 for a member. And the half worth keeping in
    view: **folded, the panel is exactly 844 and still does not scroll.**
    The ceiling did its job a third time. */
-/* V.05.3 raises it a FOURTH time, to 200, and by the smallest amount yet:
-   the drawer mark went 46px to 64px so the two names under it can be read.
-   Every group grew by exactly 18 — measured at both heights, visitor and
-   member alike — and nothing else moved. 1039/939 for a visitor, 959/1009/909
-   for a member. Folded it is still exactly 844 and still does not scroll.
-   The ceiling did its job a fourth time: the number is written down, and the
-   check is not softened past what was actually measured. */
+/* V.05.3 raises it a FOURTH time, 185 → 205, and this time NOT because a row
+   was added: the drawer mark went 46px to 64px so the two names under it can
+   be read, and every EXISTING overflow grew by exactly 18 while no new one
+   was born. Measured on both roles and both heights: a visitor 195 over with
+   «تصنيفات عربنا» and 95 with «المساعدة», a member 165 / 65 / 115.
+   205 and not 200: it keeps the same headroom V.04.8 itself left (185 over a
+   measured 177) instead of pinning the ceiling to the measurement, which
+   would turn the next honest pixel into a red build.
+   And the half worth keeping in view: folded, the panel is still exactly
+   844/844 and does not scroll at all.
+   ⚠️ This is the fourth raise, and it is worth saying plainly: the ceiling
+   exists to stop the gap growing unnoticed, and it has done that four times —
+   but the gap itself has never once been closed. ONE row removed from the
+   drawer fixes every measurement at once, and that question has stood in
+   Rai's name since V.03.2. A row is a product decision, not a code one. */
 ok('6.4 the drawer overflow with a group open does not grow past the known gap',
-   dr.height - dr.box <= 200, (dr.height - dr.box) + 'px over, one row is ' + dr.row);
+   dr.height - dr.box <= 205, (dr.height - dr.box) + 'px over, one row is ' + dr.row);
 /* …and the rule still holds where it is most often read */
 await page.evaluate(() => { const g = document.querySelector('.dr-group.open');
   if (g) g.querySelector('.dr-head').click(); });

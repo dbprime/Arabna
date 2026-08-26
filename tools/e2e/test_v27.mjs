@@ -359,11 +359,18 @@ const afterDelete = await page.evaluate(() => {
   S.deleteAccount();
   const kept = (S.state.receipts || []);
   const r = kept[0] || {};
-  return { user: S.state.user, kept: kept.length, viaAccessor: S.receipts().length,
+  return { user: S.state.user, kept: kept.length, hidden: S.receipts().length,
            name: r.buyer && r.buyer.name, anon: !!r.anonymized, amount: r.amount };
 });
 ok('5.16 deleting the account keeps the financial record',
    afterDelete.user === null && afterDelete.kept === 2, JSON.stringify(afterDelete));
+
+/* …and the other half of 225: kept on disk, shown to nobody.
+   ⚠️ This buys something that was NOT bought before: without it the suite
+   passes again the day `receipts()` starts showing a stranger's receipts to
+   somebody with no account — which is the exact fault 225 shipped for. */
+ok('5.16b …and shows it to nobody, since nobody is signed in',
+   afterDelete.hidden === 0, String(afterDelete.hidden));
 ok('5.17 …with the person stripped out of it',
    afterDelete.name === '' && afterDelete.anon === true);
 

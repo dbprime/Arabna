@@ -38,9 +38,21 @@ const patch = async (fn) => { await page.evaluate(fn); await page.reload(); awai
 await page.goto(BASE); await page.waitForTimeout(800);
 await patch(() => {
   const s = JSON.parse(localStorage.getItem('arabna.v1') || '{}');
-  /* REVERSED in V.05.4: `myBusinessId` became `myBusinessIds`, an array —
-     the singular field let a second approval shred the first. Every seed
-     here is the same seed, written in the plural. */
+  /* ⚠️ PLURAL since V.05.4, and the reason is subtler than a rename.
+     Writing the singular key still WORKS when granting — the boot migration
+     folds it into the list — but it does nothing when CLEARING: the
+     migration adds and never empties, which is its correct behaviour (a
+     migration that deletes a live ownership is a disaster, not a fix). So
+     `myBusinessId = null` wrote a dead key while `myBusinessIds` still held
+     ['b1'], the admin stayed the OWNER, and six items fell from that one
+     line: no «you are editing as the admin» banner (4.2), no refusal to buy
+     in somebody's name (4.3, 4.4), and no admin-log line at all because
+     `adminEditing()` correctly said the owner was doing the editing
+     (5.1, 5.2, 5.4).
+     ⚠️ And v14 · v25 · v38 still write the singular ON PURPOSE and are
+     green: they write it to GRANT, never to clear, so the migration folds
+     it correctly — which keeps the most dangerous path in V.05.4 covered by
+     five suites instead of one. */
   s.radius = 100; s.myBusinessIds = []; s.subscription = null; s.adminLog = [];
   s.user = { name: 'رامي', email: 'r@a.app', phone: '(713) 466-9182',
              phoneVerified: true, emailVerified: true, tier: 2, joined: Date.now() };
