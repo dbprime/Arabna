@@ -4220,6 +4220,35 @@ migration and is the most dangerous thing in the batch. **`test_v42 · 2.1`
 was reversed rather than deleted** — it checked the key by its old name,
 and the comment there names the reversal.
 
+### And the net's five — attributed, not assumed
+The full run after V.05.4 came back with ten red runs across five suites.
+Each was re-run **on the pre-batch commit** rather than guessed at:
+
+| suite | green at 43cf641? | from | asserted | now |
+|---|---|---|---|---|
+| v9 · v26 | **yes** — 126/0 and 56/0 | 240 | ownership by its singular name | the list, same checks |
+| v18 | no | 205 | the drawer's **wide** lockup | `stacked` — the fault the header fixed in V.02.5b |
+| v20 | no | 230 | the drawer gap ≤ 185 | ≤ 200, for the exactly-18px every group gained |
+| v27 | no (**crashed**) | 225 | `S.receipts()[0].buyer` | read off the record itself |
+
+- **v27 did not fail, it crashed** — `deleteAccount` ends the session and
+  V.05.2 made `receipts()` answer nobody, so the subscript was `undefined`
+  and reading `.buyer` took the whole suite down before it could report a
+  single item. What it tests is unchanged and still the important thing —
+  **the money record survives the person** — and reading it off
+  `state.receipts` is the truer test anyway, because that is where an
+  accounting record lives. It now runs to completion at **99 assertions**,
+  a number nobody had ever seen.
+- Every one carries a comment naming its reversal. **None was deleted and
+  none was softened past what was measured.**
+
+⚠️ **And the lesson repeats, so it is written again: a batch is not
+finished when its own suite is green.** `240` shipped with `v43` at 23/23
+and `38/41/42` clean, and left `v9` and `v26` red — and `230` before it
+left `v20` red the same way. Rai's own decision log had already recorded
+exactly this («الدفعة لا تنتهي بخُضرة سويتها وحدها»), which is why the log
+is read at the start of a session and not only written at the end.
+
 ## Known open items
 - **The header image is still far larger than its box.** V.04.7 replaced
   the 831/837 KB lockups with the cropped marks at **333/338 KB** — 60% off
