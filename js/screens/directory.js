@@ -8,7 +8,7 @@ import { t, L, icon, $, $$, go, back, renderHeader, openSheet, closeSheet, confi
          sponsoredRows, historyKey, esc, outsideBoxHtml, mountOutsideBox } from '../ui.js';
 import { CATEGORIES, SUBSCRIPTION_PRICE, DAY_KEYS } from '../data.js';
 import * as S from '../store.js';
-import { catIcon, startSlider, repaintCityChips } from './home.js';
+import { catIcon, startSlider, repaintCityChips, mountSearchHint } from './home.js';
 import { mountPhotoPicker } from './marketplace.js';
 import { prayerTimes, fmtPrayer } from '../prayer.js';
 import { openTimeFix } from './prayer.js';
@@ -569,6 +569,12 @@ export function DirectoryScreen(root) {
   const clear = $('#dirClear');
   const syncClear = () => { clear.hidden = !search.value; };
   syncClear();
+  /* The same rotating hint Home has: the directory searches the same 514
+     businesses with the same words, and a still box on the screen people
+     actually search from was the odd one out. ⚠️ Mounted here and not in
+     `paint()` — the search bar is drawn once and is not rebuilt by a
+     filter, so a call inside `paint` would start a new timer on every tap. */
+  mountSearchHint(root, '#dirSearch');
   /* What people look for is worth knowing, but not once per keystroke —
      that would record «م», «مط», «مطع» as three searches. It is recorded
      when the typing stops. */

@@ -7,7 +7,7 @@ ARABNA · عربنا — a mobile-first web app for the Arab community in the U.
 **business directory + marketplace + events + magazine**, Arabic-first with a full English toggle.
 ("Classifieds / الإعلانات الشخصية" is now "Marketplace / السوق" — the old `#/classifieds`
 routes still resolve so shared links keep working.)
-Current version: **V.05.2 (prototype)**. Owner: Rai Elby (@dbprime). Deploys to Vercel (team DB Prime).
+Current version: **V.05.3 (prototype)**. Owner: Rai Elby (@dbprime). Deploys to Vercel (team DB Prime).
 
 ## Hard rules (from the product brief)
 1. **One repository, one Vercel project.** No duplicates, no stray preview projects.
@@ -4038,6 +4038,102 @@ the price gate, which is what it is for.
 **`test_v42` — 35 assertions, both builds.** Its number was taken from the
 repository at the moment of writing, not from a note, which is the rule
 `v36` was written to enforce.
+
+## V.05.3 — colour that reads on ivory, and the word that only moved on Home
+
+### An outline carrying all the colour cannot also be dark
+Rai: «على الغامق مبيّنة وشكلها حلو، بس على الفاتح كأنّها أبيض وأسود.» He
+is right, and the cause is not a missing colour — it is the missing fill.
+
+```
+dark    a light saturated line on a dark ground   → reads as colour
+light   a line at 24% lightness on near-white     → reads as black
+```
+
+The directory's 22 tiles read as colour on ivory because they have a
+**fill**, and the hue rides the fill. V.05.0 gave the marketplace pill an
+outline and no fill by decision, so **all of its colour rides one thin
+line** — and a line dark enough to clear 4.5 has to lose its hue.
+
+- Light-mode ink goes to **32%**. Measured before and after on the same
+  eight hues: cars `#156620` → **`#188b28`**, furniture `#661538` →
+  **`#8b184a`** — the exact values the batch predicted.
+- ⚠️ **The contrast fell and it is written here, not hidden**: lowest
+  3.19 against the page ground where it was 5.28. **3:1 is the bar
+  non-text graphics answer to and 4.5 is the text bar**, and an icon is a
+  graphic — but the number did drop, and Rai chose 32% after seeing both.
+- ⚠️ **Dark is untouched** — «شكلها حلو», and the measurement agrees at
+  6.67. **The 22 directory tiles are untouched** — 24% on their own fill
+  is correct. **And the border stays `currentColor`**, so it followed the
+  new ink by itself with no second value written. That is what writing it
+  that way in V.05.0 bought.
+
+### The rotating word moved on Home alone
+`mountSearchHint` was private to `home.js` and wired to `#homeSearch` **as
+a literal**. Measured over ten seconds: Home 5 different words, the
+directory 1, the marketplace 1.
+
+- It is exported and takes its selector; the directory calls it with
+  `#dirSearch`. **Measured after: the directory shows 5 words too.**
+- ⚠️ **The teardown line had to take the selector as well.** It compared
+  against `'#homeSearch'` to decide whether the screen had been left — so
+  with the literal left in place **the directory's timer would have kept
+  running after the reader walked away**, and no timer in this app runs
+  without a reason. Measured: ten seconds after leaving the directory, its
+  input took **0 further repaints** and Home's kept moving.
+- ⚠️ **Mounted in the screen's mount, never in `paint()`.** The search bar
+  is drawn once and is not rebuilt by a filter; a call inside `paint`
+  would start a fresh timer on every filter tap.
+- ⚠️ **The marketplace is deliberately still.** `SEARCH_HINTS` are trades
+  — restaurant, plumber, doctor, electrician, masjid — and the
+  marketplace's sections are cars, furniture and jobs. Rai's decision; if
+  it ever wants one it needs its own words.
+
+### The drawer mark, and the eighteen pixels it costs
+`.drawer-head img` goes 46px → **64px**. The width is never written: the
+file is 1173×955, so it takes **78.6px** and keeps its proportions.
+Nothing crops it — no `overflow`, no `object-fit`, and the head is an
+ordinary block, so the height pushes what is below and cuts nothing above.
+Measured top and bottom on both roles: no clipping either side.
+
+⚠️ **And here the batch file's own summary was wrong, so it is corrected
+here.** It said the visitor never overflows. Measured at both heights,
+every group in the drawer overflows and always did:
+
+```
+                     46px        64px
+visitor  تصنيفات     +177   →    +195
+         المساعدة     +77   →     +95
+member   حسابي        +97   →    +115
+         تصنيفات     +147   →    +165
+         المساعدة     +47   →     +65
+```
+
+**Every group grew by exactly +18** — the file's arithmetic for the member
+was right to the pixel; only its claim about the visitor was not. The
+overflow is a standing gap awaiting Rai's decision on which row to drop,
+and `docs/الحالة.md` already carried the 46px figures — they are updated
+to the new ones and **the gap stays open**. Folded, the drawer is still
+844/844 and does not scroll.
+
+### A check that lies about a green build is worse than no check
+`test_v37` waited a flat 600ms and then read `#app`. `run.sh` runs both
+builds at once on a two-core machine, every screen it named is behind
+`memberOnly`, and a redirect is a tick of work — so it sampled
+mid-redirect and printed red on a clean build, naming different screens
+each run, which is the signature of a race and not of a defect. It now
+waits for `#app` to actually have text, capped at 8s.
+
+- ⚠️ **The `.catch(() => {})` is the point, not leniency.** Without it a
+  genuinely empty screen throws and takes the whole suite down instead of
+  recording one failed item.
+- **Proven both ways**: three consecutive `run.sh` passes, and with
+  `HelpScreen` deliberately emptied it still printed `FAIL AR 1 ->
+  #/help(0)` and the English twin. **We removed the lie, not the teeth.**
+- And it is **faster**: 100s → 76s on the single-file build, because the
+  flat wait paid 600ms for each of 41 screens even when one drew in 80.
+  This is the second check in one day found lying — after `test_v36`'s
+  hardcoded port.
 
 ## Known open items
 - **The header image is still far larger than its box.** V.04.7 replaced

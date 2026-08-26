@@ -289,8 +289,11 @@ function hintWords() {
    auth.js.) This one stops when the box is focused, when the page is
    hidden, and when Home is left; and a reader who asked for less motion
    gets one still word. */
-function mountSearchHint(root) {
-  const input = root.querySelector('#homeSearch');
+/* Exported for the directory, which searches the same 514 businesses with
+   the same words. NOT the marketplace: its sections are cars and furniture
+   and jobs, and `SEARCH_HINTS` are trades. Rai's decision. */
+export function mountSearchHint(root, sel = '#homeSearch') {
+  const input = root.querySelector(sel);
   if (!input) return;
   const words = hintWords();
   const still = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -317,7 +320,10 @@ function mountSearchHint(root) {
   document.addEventListener('visibilitychange', vis);
   /* …and it really stops when Home is left, rather than only in name */
   const off = () => {
-    if (root.isConnected && document.querySelector('#homeSearch') === input) return;
+    /* ⚠️ `sel`, never the literal: with '#homeSearch' hardcoded here the
+       directory's own timer would keep running after the screen was left —
+       and no timer runs without a reason. */
+    if (root.isConnected && document.querySelector(sel) === input) return;
     stopped = true; stop();
     document.removeEventListener('visibilitychange', vis);
     window.removeEventListener('hashchange', off);

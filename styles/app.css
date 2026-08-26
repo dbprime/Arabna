@@ -866,7 +866,13 @@ ul { margin: 0; padding: 0; list-style: none; }
 html[dir="rtl"] .drawer-panel { --drawer-off: 100%; }
 .drawer-root.open .drawer-panel { transform: translateX(0); }
 .drawer-head { padding: 20px 18px 16px; border-bottom: 1px solid var(--line-soft); text-align: center; }
-.drawer-head img { height: 46px; margin: 0 auto 10px; }
+/* 64 and not 46: at 46 the stacked lockup put the two names under a mark
+   too small to read them. The width is never written — the file is
+   1173x955, ratio 1.23, so 64 takes 79px and the image keeps its own
+   proportions. Nothing crops it: no overflow, no object-fit, and the head
+   is an ordinary block, so the extra height pushes what is below and cuts
+   nothing above. */
+.drawer-head img { height: 64px; margin: 0 auto 10px; }
 .drawer-user { font-size: .78125rem; color: var(--muted); }
 .dr-item {
   display: flex; align-items: center; gap: 14px;
@@ -1103,6 +1109,16 @@ input[inputmode="tel"], input[type="email"], input[inputmode="decimal"], #zipIn 
 :root[data-theme="light"] .cat-cell .cc-ico.mk { background: none; border-color: currentColor; }
 @media (prefers-color-scheme: light) {
   :root:not([data-theme="dark"]) .cat-cell .cc-ico.mk { background: none; border-color: currentColor; }
+}
+/* Light mode only: the outline carries ALL the colour here — there is no
+   fill to carry it — and ink at 24% reads black on a near-white ground.
+   Measured: 24% = 5.57 contrast but no colour; 32% = 3.37, over the 3:1
+   bar that non-text graphics answer to, and the hue reads.
+   The border stays `currentColor`, so it follows the new ink by itself and
+   can never drift from it — that is what writing it that way in 220 buys. */
+:root[data-theme="light"] .cat-cell .cc-ico.mk { color: hsl(var(--h) 70% 32%); }
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) .cat-cell .cc-ico.mk { color: hsl(var(--h) 70% 32%); }
 }
 .cat-cell .cc-label { font-size: .8125rem; line-height: 1.35; text-align: center; }
 .cat-cell .cc-count { font-size: .6875rem; color: var(--muted); }
