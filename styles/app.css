@@ -2535,3 +2535,31 @@ input[inputmode="tel"], input[type="email"], input[inputmode="decimal"], #zipIn 
 .outside-btn { margin-block-start: 10px; display: flex; align-items: center; gap: 6px;
   background: none; border: 0; padding: 0; cursor: pointer;
   color: var(--gold-bright); font-size: .875rem; font-weight: 700; font-family: inherit; }
+
+/* ============================================================
+   The drawer head's two buttons — V.05.5
+   Rai's decision: «حسابي» and sign-out sit UNDER THE NAME, so neither
+   depends on the panel not scrolling. They are 50% each of one row, so
+   the head grows by one row's height and no more.
+   ============================================================ */
+.dr-head-acts { display: flex; gap: 8px; margin-top: 12px; }
+.dr-act {
+  flex: 1 1 0; min-width: 0;
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+  padding: 9px 6px; border-radius: var(--r-sm);
+  background: var(--wash-2); border: 1px solid var(--line);
+  color: var(--text-2); font: inherit; font-size: .825rem; font-weight: 600;
+  cursor: pointer;
+}
+.dr-act:active { background: var(--wash-3); }
+.dr-act span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dr-act.ink-danger { color: var(--danger-ink); border-color: var(--danger-line); }
+
+/* the three avatar kinds share one box — V.05.5 */
+.av-wrap { display:grid; place-items:center; border-radius:50%; line-height:1; }
+.av-wrap svg { width:100%; height:100%; display:block; }
+.av-emoji { background: var(--surface-2); }
+.av-pick { display:grid; grid-template-columns:repeat(6,1fr); gap:8px; margin-top:8px; }
+.av-opt { padding:0; border:2px solid transparent; border-radius:50%; background:none; cursor:pointer; }
+.av-opt[aria-pressed="true"] { border-color: var(--gold-bright); }
+.av-opt .av-wrap { width:44px; height:44px; }

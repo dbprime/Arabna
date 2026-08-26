@@ -2,7 +2,7 @@
 import { t, arCount, L, icon, $, $$, go, renderHeader, toast, wireRoutes, emptyState, confirmSheet,
          openSheet, closeSheet,
          fmtMoney, priceLabel, statusBadgeHtml, stars, logoSrc, shareItem,
-         mapChoices, esc, bizBadgeHtml } from '../ui.js';
+         mapChoices, esc, bizBadgeHtml, avatarHtml } from '../ui.js';
 import { SUBSCRIPTION_PRICE, CATEGORIES, APP_VERSION } from '../data.js';
 import * as S from '../store.js';
 import { catIcon } from './home.js';
@@ -32,16 +32,13 @@ export function ProfileScreen(root) {
     return;
   }
 
-  const avatarUrl = S.visibleAvatar();
+  const av = S.avatarView();
   const joined = u.joined ? new Date(u.joined).toLocaleDateString(
     S.state.lang === 'en' ? 'en-US' : 'ar-EG-u-nu-latn', { month: 'long', year: 'numeric' }) : '—';
 
   root.innerHTML = `
     <div class="pad mt-16 center-col">
-      <div class="avatar" style="width:66px;height:66px;font-size:1.5rem;overflow:hidden">
-        ${avatarUrl ? `<img src="${esc(avatarUrl)}" alt="" style="width:100%;height:100%;object-fit:cover" />`
-                    : u.name[0].toUpperCase()}
-      </div>
+      ${av ? avatarHtml(av, 66) : `<div class="avatar" style="width:66px;height:66px;font-size:1.5rem">${esc(u.name[0].toUpperCase())}</div>`}
       <b style="font-size:1.125rem;margin-top:10px">${esc(u.name)}
         ${S.hasBadge() ? `<span class="badge-check" title="${t('verifiedBadge')}">${icon('check', 12)}</span>` : ''}</b>
       <span class="badge ${S.tier() === 2 ? 'badge-verified' : 'badge-free'} mt-8">${tierLabel}</span>
@@ -87,6 +84,19 @@ export function ProfileScreen(root) {
         <button class="btn btn-ghost btn-sm" data-route="#/profile/password">${icon('lock', 18)} ${t('changePassword')}</button>
       </div>
     </div>
+
+    ${/* THE HUB. The drawer's «حسابي» group is deleted and its six rows stand
+         here — Rai's decision: «بتشيل حسابي من تحت كامل ... وبعد الضغط على
+         حسابي اللي فوق تفتحله شاشة فيها كل الخيارات اللي كانت تحت». They are
+         read from ACCOUNT_LINKS so there is one list and not two menus. */''}
+    <div class="pad mt-20">
+      <div class="dr-group-label">${t('grpMyAccount')}</div>
+      ${S.ACCOUNT_LINKS.map(l => `
+        <button class="list-row" data-route="${l.route}">
+          <span class="row-ico">${icon(l.icon, 20)}</span>
+          <div class="row-main"><div class="row-title">${t(l.key)}</div></div>
+        </button>`).join('')}
+    </div>
     <div style="height:20px"></div>`;
 
   wireRoutes(root);
@@ -102,6 +112,22 @@ export function EditProfileScreen(root) {
   root.innerHTML = `
     <div class="pad mt-16">
       <div class="field"><label class="label">${t('profilePhoto')}</label>
+        ${/* THE READY-MADE MARKS COME FIRST, and that ordering is the item:
+             they are instant, weigh three characters, and — unlike an upload —
+             are never sent to the admin, because the picture is ours. */''}
+        <div class="av-pick" id="avPick">
+          ${S.AVATARS.map(a => `
+            <button type="button" class="av-opt" data-preset="${a[0]}"
+              aria-pressed="${u.avatar && u.avatar.kind === 'preset' && u.avatar.id === a[0]}"
+              aria-label="${a[0]}"><span class="av-wrap">${S.avatarSvg(a[0])}</span></button>`).join('')}
+        </div>
+        <div class="hint">${t('avatarPresetHint')}</div>
+
+        <div class="field mt-12"><label class="label">${t('avatarEmoji')}</label>
+          <input class="input" id="avEmoji" maxlength="4" style="text-align:center;font-size:1.4rem"
+            value="${u.avatar && u.avatar.kind === 'emoji' ? esc(u.avatar.ch) : ''}" placeholder="🌙" /></div>
+
+        <div class="dr-group-label mt-12">${t('avatarUpload')}</div>
         <div id="avHost"></div>
         <div class="hint">${t('photoOptional')} · ${t('photoPendingReview')}</div>
       </div>
@@ -128,7 +154,23 @@ export function EditProfileScreen(root) {
       </div>
     </div>`;
 
-  const pic = mountPhotoPicker($('#avHost'), u.avatar ? [u.avatar.url] : [], 0, 1);
+  const pic = mountPhotoPicker($('#avHost'), (u.avatar && !u.avatar.kind) ? [u.avatar.url] : [], 0, 1);
+
+  /* A pick takes effect at once and the three are exclusive: choosing one
+     replaces the others, so the reader never has two marks half-chosen. */
+  $$('#avPick .av-opt').forEach(btn => btn.addEventListener('click', () => {
+    S.setAvatarPreset(btn.dataset.preset);
+    $('#avEmoji').value = '';
+    $$('#avPick .av-opt').forEach(o => o.setAttribute('aria-pressed', String(o === btn)));
+    toast(t('profileSaved'), 'ok');
+  }));
+  const em = $('#avEmoji');
+  em.addEventListener('change', () => {
+    const v = em.value.trim();
+    if (!v) { S.clearAvatar(); }
+    else { S.setAvatarEmoji(v); em.value = [...v][0]; }
+    $$('#avPick .av-opt').forEach(o => o.setAttribute('aria-pressed', 'false'));
+  });
 
   $('#pSave').addEventListener('click', () => {
     const name = $('#pName').value.trim();
@@ -140,10 +182,14 @@ export function EditProfileScreen(root) {
     S.updateProfile({ name, email, phone });
 
     // photo: only re-queue it when it actually changed
+    /* ⚠️ Only the PHOTO half is touched here. Reading `u.avatar.url` on a
+       preset gives undefined, so the old line would have cleared a mark the
+       reader had just chosen the moment they pressed «حفظ». */
     const newPhoto = pic.photos[0] || '';
-    const hadPhoto = u.avatar ? u.avatar.url : '';
+    const cur = S.state.user.avatar;
+    const hadPhoto = cur && !cur.kind ? cur.url : '';
     if (newPhoto && newPhoto !== hadPhoto) S.setAvatar(newPhoto);
-    else if (!newPhoto && hadPhoto) { S.state.user.avatar = null; S.save(); }
+    else if (!newPhoto && hadPhoto) S.clearAvatar();
 
     if (!S.lastSaveOk) { toast(t('storageFull'), 'err'); return; }
     toast(phoneChanged ? t('phoneChangedReverify') : t('profileSaved'), phoneChanged ? 'err' : 'ok');

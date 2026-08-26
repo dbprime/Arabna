@@ -792,6 +792,18 @@ let openGroup = null;          // remembered while the drawer is on screen
    was left. */
 
 /** does history currently sit on a drawer entry? */
+/** ONE renderer for the three kinds, so no screen invents a fourth shape.
+    ⚠️ The preset's markup is OUR OWN svg from `avatars.js` — never a value a
+    reader typed — which is why it is the one thing here not wrapped in esc().
+    The emoji IS a reader's value and is escaped; the photo's URL likewise. */
+export function avatarHtml(view, px = 66) {
+  const box = `width:${px}px;height:${px}px;overflow:hidden`;
+  if (!view) return '';
+  if (view.kind === 'preset') return `<span class="av-wrap" style="${box}">${S.avatarSvg(view.id)}</span>`;
+  if (view.kind === 'emoji') return `<span class="av-wrap av-emoji" style="${box};font-size:${Math.round(px * 0.56)}px">${esc(view.ch)}</span>`;
+  return `<img src="${esc(view.url)}" alt="" style="${box};object-fit:cover;border-radius:50%" />`;
+}
+
 export function drawerOwnsEntry() {
   try { return !!(history.state && history.state.drawer); }
   catch (e) { return false; }        // file://
@@ -850,14 +862,9 @@ export function openDrawer() {
       <div class="dr-sub"><div class="dr-sub-inner">${rows}</div></div>
     </div>`;
 
-  const account = [
-    item('briefcase', t('myBusiness'), '#/my-business'),
-    item('bag', t('myAds'), '#/my-ads'),
-    item('star', t('myReviews'), '#/my-reviews'),
-    item('message', t('myMessages'), '#/messages'),
-    item('heart', t('savedFav'), '#/saved'),
-    item('crown', t('subscription'), '#/subscribe'),
-  ].join('');
+  /* The six that were «حسابي» live on #/profile now — one place, reached from
+     the head above. ACCOUNT_LINKS in store.js is the single list both the hub
+     and anything after it read, so they cannot drift into two menus. */
 
   // Home is deliberately absent: the app opens on it and it holds a permanent
   // tab in the bottom bar, so listing it here made the drawer read like a
@@ -908,6 +915,14 @@ export function openDrawer() {
         <img data-logo="stacked" src="${logoSrc('stacked')}" alt="ARABNA عربنا" />
         <div style="font-weight:700">${esc(u.name)}</div>
         <div class="drawer-user">${esc(u.email)} · ${tierLabel}</div>
+        ${/* Rai's decision: two buttons UNDER THE NAME. Sign-out was the last
+             row of a drawer that scrolls, so it was the first thing to fall off
+             the bottom — and «حسابي» was a GROUP whose six leaves are now the
+             account hub at #/profile. Both live where the account is named. */''}
+        <div class="dr-head-acts">
+          <button class="dr-act" data-route="#/profile">${icon('user', 17)}<span>${t('myAccount')}</span></button>
+          <button class="dr-act ink-danger" id="drOut">${icon('logout', 17)}<span>${t('signOut')}</span></button>
+        </div>
       </div>` : `
       <div class="drawer-head">
         <img data-logo="stacked" src="${logoSrc('stacked')}" alt="ARABNA عربنا" />
@@ -943,11 +958,9 @@ export function openDrawer() {
            not merely where it sat. */''}
       ${item('settings', t('settings'), '#/settings')}
       ${member ? item('bell', t('notifications'), '#/notifications', unread) : ''}
-      ${member ? group('account', t('grpMyAccount'), account) : ''}
       ${group('sections', t('grpSections'), sections)}
       ${item('megaphone', t('advertiseWithUs'), '#/advertise', 0, true)}
       ${group('help', t('grpHelp'), help)}
-      ${member ? `<button class="dr-item ink-danger" id="drOut">${icon('logout', 22)}<span>${t('signOut')}</span></button>` : ''}
       <div class="dr-version">ARABNA · عربنا — ${t('version')} ${APP_VERSION}</div>
     </aside>`;
 

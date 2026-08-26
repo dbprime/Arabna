@@ -199,8 +199,11 @@ const drRows = await page.evaluate(() => ({
    HIDDEN: the drawer's no-scroll rule was already missed by more than two
    rows with a group open, and this makes it worse. Which row goes is the
    owner's decision, open since V.03.2. */
-ok('4.9 …and the drawer costs eight rows, the eighth being settings',
-   drRows.rows === 8 && await page.locator('.drawer-panel > [data-route="#/settings"]').count() === 1,
+/* REVERSED in V.05.5: six, not eight — the «حسابي» group and the sign-out row
+   left for the head's two buttons. Settings is still a standalone row, which
+   is the half of this check that carries the 195 decision. */
+ok('4.9 …and the drawer costs six rows, settings still standalone',
+   drRows.rows === 6 && await page.locator('.drawer-panel > [data-route="#/settings"]').count() === 1,
    drRows.rows + ' rows');
 await page.evaluate(() => { const sc = document.querySelector('.drawer-scrim, #drawer .scrim'); if (sc) sc.click();
   document.querySelector('#drawer').classList.remove('open'); });

@@ -123,7 +123,13 @@ ok('signed up and email-verified', isMember);
 
 await openDrawer();
 d = await drawerMap();
-ok('member: drawer rebuilt with the account version', d.topLevel.includes('group:account'));
+/* REVERSED in V.05.5: what marks the member's drawer is no longer a «حسابي»
+   GROUP — it is the two buttons in the head, «حسابي» and sign-out. The check
+   is the same check: the drawer was rebuilt for somebody with an account. */
+ok('member: drawer rebuilt with the account version',
+   await page.locator('.dr-head-acts [data-route="#/profile"]').count() === 1 &&
+   await page.locator('.dr-head-acts #drOut').count() === 1 &&
+   !d.topLevel.includes('group:account'));
 ok('member: invite card gone', !d.invite);
 ok('member: sign-out row present', d.logout);
 ok('member: notifications is a standalone row',
@@ -141,8 +147,11 @@ const visibleRows = await page.evaluate(() => Array.from(document.querySelectorA
    at all. The cost is measured and not hidden: folded the panel is still
    exactly the viewport and does not scroll; with a group open it is over,
    as it already was. */
-ok('member: eight top-level rows, the eighth being settings',
-   visibleRows === 8, visibleRows + ' rows');
+/* SIX SINCE V.05.5: the «حسابي» group and the standalone sign-out row both
+   left for the head. Settings stays standalone — that is the 195 decision
+   and it is the half of this line that must not move. */
+ok('member: six top-level rows, settings still standalone',
+   visibleRows === 6, visibleRows + ' rows');
 ok('member: drawer needs no scrolling', d.panelScroll <= d.panelBox + 2, d.panelScroll + ' / ' + d.panelBox);
 
 /* badge on the notifications row */
@@ -153,30 +162,55 @@ const collapsed = await page.evaluate(() => document.querySelectorAll('#drawer .
 ok('all groups collapsed on open', collapsed === 0, collapsed + ' open');
 ok('no group head carries a route', !d.headsHaveRoute);
 
+/* REVERSED in V.05.5: the «حسابي» GROUP is deleted from the drawer — its six
+   rows are the account hub on #/profile now, reached from the two buttons
+   under the name. The accordion itself is unchanged and is asserted on the
+   two groups that remain, which is what the check was ever about. */
 const beforeHead = await hash();
-await page.click('#drawer [data-toggle="account"]'); await page.waitForTimeout(320);
-ok('head opens the group in place, does not navigate', (await hash()) === beforeHead);
-ok('the group actually opened', await page.evaluate(() => !!document.querySelector('.dr-group[data-group="account"].open')));
-ok('aria-expanded is true', await page.getAttribute('#drawer [data-toggle="account"]', 'aria-expanded') === 'true');
-
 await page.click('#drawer [data-toggle="sections"]'); await page.waitForTimeout(320);
+ok('head opens the group in place, does not navigate', (await hash()) === beforeHead);
+ok('the group actually opened', await page.evaluate(() => !!document.querySelector('.dr-group[data-group="sections"].open')));
+ok('aria-expanded is true', await page.getAttribute('#drawer [data-toggle="sections"]', 'aria-expanded') === 'true');
+
+await page.click('#drawer [data-toggle="help"]'); await page.waitForTimeout(320);
 ok('only one group open at a time',
    await page.evaluate(() => document.querySelectorAll('.dr-group.open').length) === 1);
 ok('previous head aria-expanded reset',
-   await page.getAttribute('#drawer [data-toggle="account"]', 'aria-expanded') === 'false');
+   await page.getAttribute('#drawer [data-toggle="sections"]', 'aria-expanded') === 'false');
+/* …and the two buttons that replaced the group are in the head */
+ok('the head carries «حسابي» and sign-out',
+   await page.locator('.dr-head-acts [data-route="#/profile"]').count() === 1 &&
+   await page.locator('.dr-head-acts #drOut').count() === 1);
 
 /* the full destination table */
 d = await drawerMap();
 /* V.02.7: الدليل and السوق left — they are permanent bottom-bar tabs, and
    «إعلانات مميّزة» took their place. */
-const wanted = ['#/my-business', '#/my-ads', '#/my-reviews', '#/messages', '#/saved', '#/subscribe',
+/* REVERSED in V.05.5: the six account destinations left the drawer for the
+   hub. They are asserted below, on #/profile, where they now live — moved,
+   never dropped, because a destination nobody checks is a destination that
+   quietly disappears. */
+const wanted = ['#/profile',
   '#/settings', '#/events', '#/magazine', '#/categories', '#/directory?featured=1',
   '#/advertise', '#/help', '#/about', '#/privacy', '#/terms', '#/notifications'];
+const HUB = ['#/my-business', '#/my-ads', '#/my-reviews', '#/messages', '#/saved', '#/subscribe'];
 for (const r of wanted) ok('drawer has a leaf for ' + r, d.routes.includes(r));
 ok('Home is deliberately absent (V.01.7)', !d.routes.includes('#/home'));
 /* V.02.7 takes it out again: a permanent bottom-bar tab does not need a
    drawer row, and «إعلانات مميّزة» took the space. */
 ok('Directory taken back out of app sections', !d.routes.includes('#/directory'));
+
+ok('and the six account rows are NOT in the drawer any more',
+   HUB.every(r => !d.routes.includes(r)));
+
+await closeDrawer();
+
+/* the hub holds every one of them */
+await page.evaluate(() => { location.hash = '#/profile'; }); await page.waitForTimeout(700);
+const hubRoutes = await page.evaluate(() =>
+  [...document.querySelectorAll('#app [data-route]')].map(e => e.dataset.route));
+for (const r of HUB) ok('the hub has a row for ' + r, hubRoutes.includes(r));
+await openDrawer();
 
 await closeDrawer();
 
@@ -377,13 +411,14 @@ ok('LTR applied', await page.evaluate(() => document.documentElement.dir === 'lt
 
 await openDrawer();
 const enTxt = await page.textContent('#drawer');
-ok('EN drawer: "My account" group', enTxt.includes('My account'));
+/* it is the head BUTTON now, not a group head — the words survive the move */
+ok('EN drawer: «My account» in the head', enTxt.includes('My account'));
 ok('EN drawer: "ARABNA categories" group (renamed in V.02.7)', enTxt.includes('ARABNA categories'));
 ok('EN drawer: no Arabic left in the drawer chrome', !enTxt.includes('حسابي'));
 d = await drawerMap();
-ok('EN member drawer is 8 rows too',
+ok('EN member drawer is 6 rows too',
    (await page.evaluate(() => Array.from(document.querySelectorAll('.drawer-panel > *'))
-     .filter(el => el.classList.contains('dr-item') || el.classList.contains('dr-group')).length)) === 8);
+     .filter(el => el.classList.contains('dr-item') || el.classList.contains('dr-group')).length)) === 6);
 ok('EN drawer still needs no scrolling', d.panelScroll <= d.panelBox + 2, d.panelScroll + ' / ' + d.panelBox);
 await closeDrawer();
 

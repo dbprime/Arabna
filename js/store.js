@@ -18,6 +18,9 @@ export { ATTRIBUTES, ATTR_GROUPS, DAY_KEYS, CHIP_MIN, CHIP_MAX_SHARE, EVENT_TYPE
 
 export { blankEvent };
 
+import { avatarSvg, AVATARS } from './avatars.js';
+export { AVATARS, avatarSvg };
+
 const KEY = 'arabna.v1';
 
 function load() {
@@ -2350,6 +2353,23 @@ export function pendingBizPhotos() {
 /* Ownership is an account's, not a device's. Without the login test this
    returned true while `isLoggedIn()` returned false — and that single
    disagreement opened the owner's edit form to somebody with no account. */
+/* ============================================================
+   The account hub
+   ------------------------------------------------------------
+   The six rows that used to be the drawer's «حسابي» group. They live in
+   ONE list so the hub and anything built on it later cannot drift into
+   two menus saying different things — the same reason ATTRIBUTES is a
+   registry and not a set of fields.
+   ============================================================ */
+export const ACCOUNT_LINKS = [
+  { icon: 'briefcase', key: 'myBusiness',   route: '#/my-business' },
+  { icon: 'bag',       key: 'myAds',        route: '#/my-ads' },
+  { icon: 'star',      key: 'myReviews',    route: '#/my-reviews' },
+  { icon: 'message',   key: 'myMessages',   route: '#/messages' },
+  { icon: 'heart',     key: 'savedFav',     route: '#/saved' },
+  { icon: 'crown',     key: 'subscription', route: '#/subscribe' },
+];
+
 export function ownsBusiness(bizId) {
   return isLoggedIn() && !!bizId && (state.myBusinessIds || []).includes(bizId);
 }
@@ -3019,10 +3039,46 @@ export function rejectAvatar() {
     body: { ar: 'الصورة خالفت شروط المحتوى وتم حذفها. تقدر ترفع صورة ثانية.',
             en: 'The photo broke the content rules and was removed. You can upload another.' } });
 }
-/** the avatar actually shown to other people */
+/* ---- the ready-made marks and the emoji ----
+   Rai's decision, reversing my recommendation: the pictures live in
+   `js/avatars.js` ONCE and the reader stores only the id. And the gain
+   neither of us saw during the discussion is the larger one — an
+   UPLOADED photo waits for the admin, and OUR OWN picture never does.
+   So the shape carries a `kind` and the review belongs to `photo` alone. */
+export function setAvatarPreset(id) {
+  if (!state.user || !avatarSvg(id)) return null;
+  state.user.avatar = { kind: 'preset', id };
+  save();
+  return state.user.avatar;
+}
+export function setAvatarEmoji(ch) {
+  if (!state.user) return null;
+  /* one grapheme, and never a long string somebody pasted. ⚠️ The spread,
+     not `ch[0]`: an emoji is two or more units in JavaScript and `[0]`
+     cuts it in half, which renders as an empty box. */
+  const one = [...String(ch || '')][0] || '';
+  if (!one) return null;
+  state.user.avatar = { kind: 'emoji', ch: one };
+  save();
+  return state.user.avatar;
+}
+export function clearAvatar() {
+  if (state.user) { state.user.avatar = null; save(); }
+}
+/** what the profile actually draws — never a URL for the two that are not one */
+export function avatarView() {
+  const a = state.user && state.user.avatar;
+  if (!a) return null;
+  if (a.kind === 'preset') return avatarSvg(a.id) ? { kind: 'preset', id: a.id } : null;
+  if (a.kind === 'emoji') return { kind: 'emoji', ch: a.ch };
+  return a.status === 'live' ? { kind: 'photo', url: a.url } : null;
+}
+/** the avatar actually shown to other people — the photo half, unchanged.
+    ⚠️ `!a.kind` is the line that matters: this is read from places that
+    expect a URL, and the id of a drawing is not one. */
 export function visibleAvatar() {
   const a = state.user && state.user.avatar;
-  return a && a.status === 'live' ? a.url : null;
+  return a && !a.kind && a.status === 'live' ? a.url : null;
 }
 
 /* ---- paid verification badge ---- */

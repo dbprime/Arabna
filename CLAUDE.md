@@ -7,7 +7,7 @@ ARABNA · عربنا — a mobile-first web app for the Arab community in the U.
 **business directory + marketplace + events + magazine**, Arabic-first with a full English toggle.
 ("Classifieds / الإعلانات الشخصية" is now "Marketplace / السوق" — the old `#/classifieds`
 routes still resolve so shared links keep working.)
-Current version: **V.05.4 (prototype)**. Owner: Rai Elby (@dbprime). Deploys to Vercel (team DB Prime).
+Current version: **V.05.5 (prototype)**. Owner: Rai Elby (@dbprime). Deploys to Vercel (team DB Prime).
 
 ## Hard rules (from the product brief)
 1. **One repository, one Vercel project.** No duplicates, no stray preview projects.
@@ -4248,6 +4248,91 @@ and `38/41/42` clean, and left `v9` and `v26` red — and `230` before it
 left `v20` red the same way. Rai's own decision log had already recorded
 exactly this («الدفعة لا تنتهي بخُضرة سويتها وحدها»), which is why the log
 is read at the start of a session and not only written at the end.
+
+## V.05.5 — the drawer empties, the profile fills, and the picture becomes a choice
+
+### «حسابي» was a group in a panel that scrolls
+Rai: «بتشيل حسابي من تحت كامل وتخلّي حسابي اللي فوق، وبعد الضغط على حسابي
+اللي فوق تفتحله شاشة فيها كلّ الخيارات اللي كانت تحت.» Two buttons under
+the name, and the six leaves become the account hub on `#/profile`.
+
+```
+                       before    after
+member, folded         844/844   844/844 · 8 blocks → 6
+member «حسابي» open    +115      the group is gone
+member «تصنيفات»       +165      +112
+member «المساعدة»       +65      +12
+visitor «تصنيفات»      +195      +195 — not one pixel
+```
+
+- ⚠️ **Removing the group is what paid, not the two buttons.** I had told
+  Rai the buttons would save about 3px, and that was true of the buttons
+  alone. The measured saving is **53px on the member's worst group**, and
+  «المساعدة» went from 65 over to 12. His decision was worth more than the
+  number I gave it.
+- ⚠️ **The visitor did not move, and that is correct** — the «حسابي» group
+  was never drawn for a visitor. **The visitor's 195 stays open**, which is
+  Rai's own answer to question 4: leave it, the drawer may scroll.
+- ⚠️ **The batch file's own baseline was 18px low across the board** (it
+  said 147 → 94 and 47 → 0). Its numbers predate V.05.3's taller drawer
+  mark, which adds exactly 18 to every group. **The saving it claimed —
+  53px — is exactly right**; only the starting line had moved under it.
+- **`ACCOUNT_LINKS` in `store.js` is one list, not two menus.** The hub
+  reads it and anything built on it later reads it, so they cannot drift
+  into two menus saying different things — the same reason `ATTRIBUTES` is
+  a registry and not a set of fields.
+- `#drOut` kept its id, so the sign-out wiring at the end of the drawer
+  function needed no change at all; the new button carries `data-route` and
+  `wireRoutes` takes it.
+
+### The picture: three kinds, and I had measured the wrong axis
+I argued against ready-made avatars on storage grounds. ⚠️ **I had costed
+it as though every reader stored a copy.** Rai's design is that the
+pictures live in `js/avatars.js` **once** and the reader stores an id.
+
+```
+one vector mark        292 bytes (measured)
+twelve of them       3,503 bytes  =  0.052% of the single-file build
+what a reader keeps  { kind:'preset', id:'p07' }
+```
+
+⚠️ **And the larger gain neither of us saw during the discussion:** an
+uploaded photo goes to the admin queue (`setAvatar` writes
+`status:'pending'`). **A ready-made mark is our own picture, so it is
+never reviewed at all** — the decision takes work *off* the admin.
+
+- **SVG and never PNG**: the single-file build inlines every image as
+  base64 and base64 inflates by a third; a vector drawing stays text.
+- ⚠️ **Not one of the twelve marks a person's identity** — no flag, no
+  sect, no country. Whoever picks a lantern picked it themselves; we did
+  not hand it to them. Same rule that forbids tagging a mosque with a
+  school.
+- **Verified, not taken on trust**: 12 marks · **zero hues in the gold
+  band 35–55** · closest pair **12° apart** (80/92) · `fill-rule="evenodd"`
+  present in all twelve — without it a door, a flame and a snowcap are
+  filled in and vanish.
+- `avatarHtml()` is one renderer for the three kinds so no screen invents a
+  fourth shape. ⚠️ **The preset's markup is our own svg and is the one
+  thing not escaped; the emoji is a reader's value and is.** The name ends
+  in `Html`, which is the V.04.1 rule that stopped an `<svg>` being printed
+  as words on the two most expensive rows in the app.
+- ⚠️ **`[...String(ch)][0]`, never `ch[0]`** — an emoji is two or more
+  units in JavaScript and `[0]` cuts it in half, which renders as a box.
+- ⚠️ **And the sharpest edge in the batch:** the old save line read
+  `u.avatar.url`, which is `undefined` on a preset — so it fell into the
+  clear branch and **erased a mark the reader had just chosen, the moment
+  they pressed «حفظ»**. Only the photo half is touched now. Measured
+  end to end: pick p04 → `{kind:'preset',id:'p04'}`, type 🌙 →
+  `{kind:'emoji',ch:'🌙'}` with the preset marks released, press save →
+  **still there**, and it draws at 66×66 on `#/profile`.
+
+### The suites
+`v5` did not fail, it **crashed** on `[data-toggle="account"]` after a
+30-second wait and lost **135 assertions**; the accordion is asserted on
+the two groups that remain, which is what that check was ever about. And
+the six destinations were **moved into the hub's own check, never
+dropped** — a destination nobody checks is one that quietly disappears.
+`v7` and `v17` go from eight blocks to six, each naming the reversal.
 
 ## Known open items
 - **The header image is still far larger than its box.** V.04.7 replaced

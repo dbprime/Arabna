@@ -315,10 +315,13 @@ await go('#/home');
 await openDrawer();
 const rows = await page.evaluate(() => Array.from(document.querySelectorAll('.drawer-panel > *'))
   .filter(el => el.classList.contains('dr-item') || el.classList.contains('dr-group')).length);
-/* ⚠️ EIGHT SINCE V.04.8: «الإعدادات» had to leave «حسابي», because that
-   group is not drawn for a visitor at all and a visitor who wanted larger
-   text was being sent to a sign-up form. */
-ok('member drawer is eight blocks', rows === 8, rows + ' blocks');
+/* ⚠️ SIX SINCE V.05.5, and it was eight: the «حسابي» GROUP and the standalone
+   sign-out row both left, replaced by two buttons inside the head. Measured
+   on the panel itself — member, worst group open: 165px over → 112, and the
+   help group went 65 → 12. Neither number is what the batch file predicted
+   (94 and 0) because its baseline predated V.05.3's taller drawer mark, which
+   adds 18 to every group; the saving itself is exactly the 53 it claimed. */
+ok('member drawer is six blocks', rows === 6, rows + ' blocks');
 const fitInfo = await page.evaluate(() => {
   const p = document.querySelector('.drawer-panel');
   return { s: p.scrollHeight, c: p.clientHeight };
