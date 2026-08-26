@@ -248,9 +248,15 @@ for (const theme of ['dark', 'light']) {
     const i = document.querySelector('.drawer-head img');
     return i ? { src: i.getAttribute('src'), kind: i.dataset.logo, loaded: i.complete && i.naturalWidth > 0 } : null;
   });
+  /* REVERSED in V.05.1: the drawer used the WIDE lockup, which put «عربنا»
+     and ARABNA beside the mark instead of under it — the same fault the
+     header had already fixed in V.02.5b, on a screen that batch listed as a
+     remaining user of the wide file. It is `stacked` now, so the files are
+     logo.png / logo-ink.png. The check is the same check: the mark loads,
+     and it follows the theme. */
   ok(`3.${theme === 'dark' ? 6 : 7} ${theme}: the drawer mark matches the theme`,
-     dr && dr.kind === 'wide' && dr.loaded &&
-     (theme === 'light' ? /logo-sm-ink|^data:/.test(dr.src) : /logo-sm\.png|^data:/.test(dr.src)),
+     dr && dr.kind === 'stacked' && dr.loaded &&
+     (theme === 'light' ? /logo-ink\.png|^data:/.test(dr.src) : /logo\.png|^data:/.test(dr.src)),
      dr && dr.src.slice(0, 44));
   await page.evaluate(() => { location.hash = '#/auth/signup'; });
   await page.waitForTimeout(500);

@@ -346,11 +346,21 @@ ok('5.14 …with a negative amount pointing at the first', refund.negative && re
 ok('5.15 …and the original is never edited', refund.firstUnchanged);
 
 /* the money record survives the person */
+/* CHANGED in V.05.2, and the suite CRASHED on it rather than failing:
+   `deleteAccount` ends the session, and `receipts()` now returns [] to
+   anybody not signed in — so `S.receipts()[0]` was `undefined` and reading
+   `.buyer` took the whole suite down with it.
+   ⚠️ The point being tested is unchanged and still the important one: the
+   money record survives the person. It is simply no longer readable through
+   the signed-in accessor, so it is read off the record itself — which is the
+   truer test anyway, because that is where an accounting record lives. */
 const afterDelete = await page.evaluate(() => {
   const S = window.__m.S;
   S.deleteAccount();
-  const r = S.receipts()[0];
-  return { user: S.state.user, kept: S.receipts().length, name: r.buyer.name, anon: !!r.anonymized, amount: r.amount };
+  const kept = (S.state.receipts || []);
+  const r = kept[0] || {};
+  return { user: S.state.user, kept: kept.length, viaAccessor: S.receipts().length,
+           name: r.buyer && r.buyer.name, anon: !!r.anonymized, amount: r.amount };
 });
 ok('5.16 deleting the account keeps the financial record',
    afterDelete.user === null && afterDelete.kept === 2, JSON.stringify(afterDelete));

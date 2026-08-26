@@ -38,7 +38,10 @@ const patch = async (fn) => { await page.evaluate(fn); await page.reload(); awai
 await page.goto(BASE); await page.waitForTimeout(800);
 await patch(() => {
   const s = JSON.parse(localStorage.getItem('arabna.v1') || '{}');
-  s.radius = 100; s.myBusinessId = null; s.subscription = null; s.adminLog = [];
+  /* REVERSED in V.05.4: `myBusinessId` became `myBusinessIds`, an array —
+     the singular field let a second approval shred the first. Every seed
+     here is the same seed, written in the plural. */
+  s.radius = 100; s.myBusinessIds = []; s.subscription = null; s.adminLog = [];
   s.user = { name: 'رامي', email: 'r@a.app', phone: '(713) 466-9182',
              phoneVerified: true, emailVerified: true, tier: 2, joined: Date.now() };
   localStorage.setItem('arabna.v1', JSON.stringify(s));
@@ -191,7 +194,7 @@ ok('3.6 startSubscription refuses a business the caller does not own',
 /* an owner is unaffected */
 await patch(() => {
   const s = JSON.parse(localStorage.getItem('arabna.v1') || '{}');
-  s.myBusinessId = 'b1';
+  s.myBusinessIds = ['b1'];
   localStorage.setItem('arabna.v1', JSON.stringify(s));
 });
 ok('3.7 the real owner still reaches the subscription screen',
@@ -210,7 +213,7 @@ ok('3.9 …and startSubscription works for them', await page.evaluate(() => {
 console.log('--- the admin ---');
 await patch(() => {
   const s = JSON.parse(localStorage.getItem('arabna.v1') || '{}');
-  s.myBusinessId = null; s.subscription = null; s.adminLog = [];
+  s.myBusinessIds = []; s.subscription = null; s.adminLog = [];
   localStorage.setItem('arabna.v1', JSON.stringify(s));
 });
 await go('#/admin');
@@ -262,7 +265,7 @@ ok('5.5 …under «آخر ما عُدِّل»', /آخر ما عُدِّل|Last e
 /* the owner's own edit records nothing */
 await patch(() => {
   const s = JSON.parse(localStorage.getItem('arabna.v1') || '{}');
-  s.myBusinessId = 'b1'; s.adminLog = [];
+  s.myBusinessIds = ['b1']; s.adminLog = [];
   localStorage.setItem('arabna.v1', JSON.stringify(s));
 });
 await go('#/business/edit/b1');
@@ -280,7 +283,7 @@ ok('5.7 …and their own edit leaves no line in the log',
 console.log('--- the standing rules ---');
 await patch(() => {
   const s = JSON.parse(localStorage.getItem('arabna.v1') || '{}');
-  s.lang = 'en'; s.myBusinessId = null;
+  s.lang = 'en'; s.myBusinessIds = [];
   localStorage.setItem('arabna.v1', JSON.stringify(s));
 });
 await go('#/directory/b63');

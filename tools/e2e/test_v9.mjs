@@ -202,7 +202,12 @@ let st = await ls();
 ok('the claim was recorded as pending',
    (st.claims || []).length === 1 && st.claims[0].status === 'pending',
    JSON.stringify((st.claims || [])[0] || {}).slice(0, 90));
-ok('ownership is NOT granted on the spot', !st.myBusinessId, String(st.myBusinessId));
+/* REVERSED in V.05.4: ownership is a LIST. One account may own several
+   listings — the singular field let `approveClaim` REPLACE, so a second
+   approval silently dropped the first and left it locked and ownerless.
+   The check is the same check: nothing is owned until the admin agrees. */
+ok('ownership is NOT granted on the spot', !(st.myBusinessIds || []).length,
+   JSON.stringify(st.myBusinessIds));
 await go('#/directory/b2');
 // V.03.4: «بانتظار الموافقة» says what you are waiting FOR
 ok('the page says the claim is waiting on approval', (await txt()).includes('بانتظار الموافقة'));
@@ -213,7 +218,8 @@ await adminLogin();
 ok('the claim is in the moderation queue', (await page.textContent('#aBody')).includes('طلبات ملكية'));
 await page.click('#aBody [data-clok]'); await page.waitForTimeout(700);
 st = await ls();
-ok('approving grants ownership', st.myBusinessId === 'b2', String(st.myBusinessId));
+ok('approving grants ownership', (st.myBusinessIds || []).includes('b2'),
+   JSON.stringify(st.myBusinessIds));
 ok('the owner is notified', (st.extraNotifs || []).some(n => n.title.ar.includes('مالك')),
    ((st.extraNotifs || [])[0] || {}).title?.ar);
 

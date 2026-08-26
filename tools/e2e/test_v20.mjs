@@ -235,8 +235,15 @@ ok('6.3 «إعلانات مميّزة» took their place', dr.featured && dr.rou
    «المساعدة»), 941 / 991 / 891 for a member. And the half worth keeping in
    view: **folded, the panel is exactly 844 and still does not scroll.**
    The ceiling did its job a third time. */
+/* V.05.3 raises it a FOURTH time, to 200, and by the smallest amount yet:
+   the drawer mark went 46px to 64px so the two names under it can be read.
+   Every group grew by exactly 18 — measured at both heights, visitor and
+   member alike — and nothing else moved. 1039/939 for a visitor, 959/1009/909
+   for a member. Folded it is still exactly 844 and still does not scroll.
+   The ceiling did its job a fourth time: the number is written down, and the
+   check is not softened past what was actually measured. */
 ok('6.4 the drawer overflow with a group open does not grow past the known gap',
-   dr.height - dr.box <= 185, (dr.height - dr.box) + 'px over, one row is ' + dr.row);
+   dr.height - dr.box <= 200, (dr.height - dr.box) + 'px over, one row is ' + dr.row);
 /* …and the rule still holds where it is most often read */
 await page.evaluate(() => { const g = document.querySelector('.dr-group.open');
   if (g) g.querySelector('.dr-head').click(); });
