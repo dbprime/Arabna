@@ -523,7 +523,11 @@ function bizStatsBlock(b) {
 export function MyBusinessScreen(root) {
   if (!memberOnly('#/my-business')) return;
   renderHeader({ simple: true, title: t('myBusiness') });
-  const b = S.state.myBusinessId ? S.businessById(S.state.myBusinessId) : null;
+  /* PLURAL since V.05.4: `mine[0]` is the first element of the one list,
+     not a second source of truth, so an account with one listing sees
+     exactly what it saw before. */
+  const mine = S.myBusinesses();
+  const b = mine[0] || null;
 
   root.innerHTML = !b
     ? `${emptyState('briefcase', t('emptyBizTitle'), t('emptyBizSub'), t('addBusiness'), '#/add-business')}
@@ -546,6 +550,21 @@ export function MyBusinessScreen(root) {
                <button class="btn btn-gold btn-sm" data-route="#/subscribe/${b.id}">${t('upgradeBtn')}</button>
              </div>`}
         <button class="btn btn-ghost btn-block mt-8" data-route="#/advertise">${icon('megaphone', 19)} ${t('advertiseWithUs')}</button>
+        ${/* The other branches. `esc()` on the name and the address is not
+             decoration — the single-file build is served with
+             'unsafe-inline', so esc is the only layer there. */''}
+        ${mine.length > 1 ? mine.slice(1).map(x => `
+          <div class="list-row" data-route="#/directory/${x.id}">
+            <span class="row-ico">${icon(catIcon(x.cat), 22)}</span>
+            <div class="row-main">
+              <div class="row-title">${esc(L(x.name))}${bizBadgeHtml(x)}</div>
+              <div class="row-sub">${icon('mapPin', 13)} <span class="ltr">${esc(x.address)}</span></div>
+            </div>
+          </div>`).join('') : ''}
+        ${/* Rai's own wording: «زرّ للإضافة اليدويّة لأكثر من محلّ، توصلنا
+             وننظر فيها». It goes to the EXISTING claim screen and the
+             existing admin queue — no new screen, no invented review. */''}
+        <button class="btn btn-ghost btn-block mt-8" data-route="#/claim">${icon('plus', 19)} ${t('claimAnother')}</button>
       </div>`;
   wireRoutes(root);
 }

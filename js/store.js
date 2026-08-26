@@ -63,7 +63,13 @@ const DEFAULTS = {
      file is a brand-new visitor, never a test seat.** Any id written into
      it is a bug waiting for somebody's first launch. */
   myListings: [],           // classifieds owned by the current user
-  myBusinessId: null,       // claimed / added business id
+  /* PLURAL since V.05.4. One account can own several listings — Rai's
+     question about a restaurant with three branches, each with its own
+     phone number, was the case that exposed it. The singular field let
+     `approveClaim` REPLACE, so approving a second branch silently dropped
+     the first while still marking it `claimed: true` — leaving it locked,
+     ownerless, and unclaimable by anybody. */
+  myBusinessIds: [],        // claimed / added business ids
   subscription: null,       // { businessId, since }
   myAds: [],                // purchased ad placements (pending review / live)
   notifPrefs: { messages: true, expiry: true, adLive: true, reviews: true },
@@ -143,6 +149,23 @@ if (!state.user && state.myListings && state.myListings.length) {
    wrong here wipes a city somebody chose deliberately. */
 if (state.location && state.location.city && state.location.manual === undefined) {
   state.location = Object.assign({}, state.location, { manual: !state.geo });
+  try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) { /* memory only */ }
+}
+
+/* V.05.3 and older wrote a single `myBusinessId`. That key is still in
+   every existing device's localStorage, and changing DEFAULTS does not
+   touch it — so without this the owner of a claimed page loses it the
+   moment this lands. Fold it in once, then drop it: same shape as the
+   two migrations above, and it runs at most once per device.
+   ⚠️ `!== undefined`, never `if (state.myBusinessId)`: a key sitting there
+   as `null` — which is most devices — has to be removed too, or it stays
+   in their storage for ever and the migration never finishes. Same rule
+   as `occFirst` in V.04.9. */
+if (state.myBusinessId !== undefined) {
+  const ids = Array.isArray(state.myBusinessIds) ? state.myBusinessIds.slice() : [];
+  if (state.myBusinessId && !ids.includes(state.myBusinessId)) ids.push(state.myBusinessId);
+  state.myBusinessIds = ids;
+  delete state.myBusinessId;
   try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) { /* memory only */ }
 }
 
@@ -1690,7 +1713,11 @@ export function mergeBusinesses(keepId, dropId) {
     state.saved = state.saved.filter(x => x !== dropId);
     if (!state.saved.includes(keepId)) state.saved.push(keepId);
   }
-  if (state.myBusinessId === dropId) state.myBusinessId = keepId;
+  /* the survivor inherits, and never twice: the account may already own it */
+  if ((state.myBusinessIds || []).includes(dropId)) {
+    state.myBusinessIds = state.myBusinessIds.filter(x => x !== dropId);
+    if (!state.myBusinessIds.includes(keepId)) state.myBusinessIds.push(keepId);
+  }
   if (state.subscription && state.subscription.businessId === dropId) state.subscription.businessId = keepId;
 
   // anything the duplicate knew that the survivor did not
@@ -1765,7 +1792,7 @@ export function purgeDemoData() {
   state.demoPurged = true;
   state.showDemo = false;
   state.saved = (state.saved || []).filter(id => !demoIds.includes(id));
-  if (demoIds.includes(state.myBusinessId)) state.myBusinessId = null;
+  state.myBusinessIds = (state.myBusinessIds || []).filter(id => !demoIds.includes(id));
   if (state.subscription && demoIds.includes(state.subscription.businessId)) state.subscription = null;
   state.extraNotifs = (state.extraNotifs || []).filter(n => !n.demo);
   save();
@@ -2324,7 +2351,18 @@ export function pendingBizPhotos() {
    returned true while `isLoggedIn()` returned false — and that single
    disagreement opened the owner's edit form to somebody with no account. */
 export function ownsBusiness(bizId) {
-  return isLoggedIn() && !!bizId && state.myBusinessId === bizId;
+  return isLoggedIn() && !!bizId && (state.myBusinessIds || []).includes(bizId);
+}
+/** every listing this account owns, records not ids, newest claim last */
+export function myBusinesses() {
+  if (!isLoggedIn()) return [];
+  return (state.myBusinessIds || []).map(id => businessById(id)).filter(Boolean);
+}
+/* The screens that still speak of "my business" in the singular read this.
+   It is NOT a second source of truth — it is the first element of the one
+   list — and it keeps a one-business account behaving exactly as before. */
+export function primaryBusinessId() {
+  return (state.myBusinessIds || [])[0] || null;
 }
 export function claimFor(bizId) {
   return (state.claims || []).find(c => c.bizId === bizId) || null;
@@ -2344,7 +2382,11 @@ export function approveClaim(id) {
   const c = (state.claims || []).find(x => x.id === id);
   if (!c) return;
   c.status = 'approved'; c.decided = Date.now();
-  state.myBusinessId = c.bizId;                 // ownership lands only here
+  /* ADD, never replace. The old line dropped whatever the account already
+     owned — and because the line below still marks the listing `claimed`,
+     the dropped one became unclaimable by anybody, including its owner. */
+  state.myBusinessIds = state.myBusinessIds || [];
+  if (!state.myBusinessIds.includes(c.bizId)) state.myBusinessIds.push(c.bizId);
   const biz = businessById(c.bizId);
   if (biz) applyBusinessEdit(c.bizId, { claimed: true });
   notifyKeys('claimOkTitle', 'claimOkBody', '#/directory/' + c.bizId, 'checkCircle');
@@ -3200,7 +3242,7 @@ export function addReview(bizId, rating, text) {
   };
   state.reviews.unshift(rec);
   // the owner hears about it — this is the notification shop owners open
-  if (state.myBusinessId === bizId) {
+  if ((state.myBusinessIds || []).includes(bizId)) {
     const stars = '★'.repeat(rating);
     notifyKeys('revNewTitle', 'revNewBody', '#/directory/' + bizId, 'star', stars);
   }
@@ -3525,7 +3567,7 @@ export function deleteBusiness(id) {
   if (state.bizVerify) delete state.bizVerify[id];
   state.saved = (state.saved || []).filter(x => x !== id);
   state.reviews = (state.reviews || []).filter(r => r.bizId !== id);
-  if (state.myBusinessId === id) state.myBusinessId = null;
+  state.myBusinessIds = (state.myBusinessIds || []).filter(x => x !== id);
   save();
   return true;
 }
@@ -3543,7 +3585,10 @@ export function addBusiness(biz, { pendingReview = false } = {}) {
     state.myPendingBusinesses = (state.myPendingBusinesses || []).concat(id);
   }
   state.extraBusinesses.unshift(rec);
-  if (!pendingReview) state.myBusinessId = id;
+  if (!pendingReview) {
+    state.myBusinessIds = state.myBusinessIds || [];
+    state.myBusinessIds.push(id);
+  }
   save();
   return rec;
 }
@@ -3954,7 +3999,7 @@ export function deletionSummary() {
     saved: (state.saved || []).length,
     messages: (state.messages || []).length,
     ads: (state.myAds || []).length,
-    business: state.myBusinessId ? 1 : 0,
+    business: (state.myBusinessIds || []).length,
     subscription: state.subscription ? 1 : 0,
   };
 }
@@ -3976,7 +4021,7 @@ export function deleteAccount() {
   state.myAds = [];
   state.adStats = {};
   state.subscription = null;
-  state.myBusinessId = null;
+  state.myBusinessIds = [];
   state.myPendingBusinesses = [];
   state.extraBusinesses = (state.extraBusinesses || []).filter(b => !b.claimed);
   state.claims = [];

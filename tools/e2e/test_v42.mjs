@@ -34,7 +34,7 @@ const NOW = Date.now();
 const OWNER = {
   user: { name: 'رامي', email: 'a@b.c', emailVerified: true, phone: '7134669182',
           phoneVerified: true, joined: NOW - 9e8 },
-  myBusinessId: 'b1',
+  myBusinessIds: ['b1'],
   subscription: { businessId: 'b1', plan: 'monthly', price: 29, status: 'active',
                   since: NOW - 9e8, trialEndsAt: NOW - 8e8, currentPeriodEnd: NOW + 2.6e9,
                   cancelAtPeriodEnd: false, invoices: [] },
@@ -106,7 +106,10 @@ ok('1.2 …and the receipt is on the screen', /ARB-26-5UQQ4/.test(sc.txt));
 await p.evaluate(() => window.__S.signOut());
 await p.waitForTimeout(200);
 let d = await disk(p);
-ok('2.1 myBusinessId back to default', d.myBusinessId === null, String(d.myBusinessId));
+/* REVERSED in V.05.4: ownership became a LIST — one account may own several
+   listings — so the default is [] and not null. The check is the same check. */
+ok('2.1 myBusinessIds back to default', Array.isArray(d.myBusinessIds) && d.myBusinessIds.length === 0,
+  JSON.stringify(d.myBusinessIds));
 ok('2.2 subscription back to default', d.subscription === null, String(d.subscription));
 ok('2.3 cardOnFile back to default', d.cardOnFile === null, String(d.cardOnFile));
 ok('2.4 saved · blocked · myAds emptied',

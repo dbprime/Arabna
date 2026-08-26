@@ -2012,7 +2012,7 @@ export function fmtDate(ms) {
  */
 export function SubscribeScreen(root, params) {
   renderHeader({ simple: true, title: t('subscription') });
-  const bizId = params[0] || S.state.myBusinessId;
+  const bizId = params[0] || S.primaryBusinessId();
   /* The photos and the badge were guarded and the payment path was not —
      not because the admin bypass leaked into it, but because nobody had
      ever put a guard here at all. `#/subscribe/b1` opened in full for a
@@ -2089,9 +2089,9 @@ export function SubscribeScreen(root, params) {
     const sb = $('#subBtn');
     if (sb) sb.addEventListener('click', () => {
       if (!S.requireTier(2, location.hash, go)) return;
-      if (!S.state.myBusinessId && !bizId) { go('#/claim'); return; }
+      if (!S.primaryBusinessId() && !bizId) { go('#/claim'); return; }
       // no card field on this screen: the consent step comes first, by law
-      go('#/subscribe-consent/' + (bizId || S.state.myBusinessId) + '?plan=' + plan);
+      go('#/subscribe-consent/' + (bizId || S.primaryBusinessId()) + '?plan=' + plan);
     });
   };
   paint();
@@ -2106,7 +2106,7 @@ export function SubscribeScreen(root, params) {
  */
 export function SubscribeConsentScreen(root, params) {
   renderHeader({ simple: true, title: t('consentTitle') });
-  const bizId = params[0] || S.state.myBusinessId;
+  const bizId = params[0] || S.primaryBusinessId();
   if (bizId && !ownerOnly(bizId)) return;   // see SubscribeScreen
   const b = S.businessById(bizId);
   const plan = (query().plan === 'yearly') ? 'yearly' : 'monthly';

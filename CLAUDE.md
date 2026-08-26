@@ -7,7 +7,7 @@ ARABNA · عربنا — a mobile-first web app for the Arab community in the U.
 **business directory + marketplace + events + magazine**, Arabic-first with a full English toggle.
 ("Classifieds / الإعلانات الشخصية" is now "Marketplace / السوق" — the old `#/classifieds`
 routes still resolve so shared links keep working.)
-Current version: **V.05.3 (prototype)**. Owner: Rai Elby (@dbprime). Deploys to Vercel (team DB Prime).
+Current version: **V.05.4 (prototype)**. Owner: Rai Elby (@dbprime). Deploys to Vercel (team DB Prime).
 
 ## Hard rules (from the product brief)
 1. **One repository, one Vercel project.** No duplicates, no stray preview projects.
@@ -4134,6 +4134,91 @@ waits for `#app` to actually have text, capped at 8s.
   flat wait paid 600ms for each of 41 screens even when one drew in 80.
   This is the second check in one day found lying — after `test_v36`'s
   hardcoded port.
+
+## V.05.4 — the second approval was shredding the first
+
+### Silent, and worse than a refusal
+Rai asked about a restaurant with three branches, each with its own phone
+number, and then about one owner trading under three names. Neither is a
+verification problem — a code to the **listing's** own number proves
+control per listing, and the name never enters it. The question exposed
+something one step past that:
+
+```js
+approveClaim →  state.myBusinessId = c.bizId;      // REPLACES
+```
+
+Measured before touching anything: the admin approves `b1`, `b2`, `b3`,
+and the account ends up owning **`b3` alone** — while the line below has
+already marked all three `claimed: true`. And `directory.js` reads:
+
+```js
+if (b.claimed) return '';                      the claim button goes
+const unclaimed = …filter(b => !b.claimed);    and so does the listing
+```
+
+⚠️ **So the two dropped branches become orphans: locked, ownerless, and
+claimable by nobody — their owner included.** Measured: neither appeared
+on `#/claim` afterwards. The approval did damage no screen could undo,
+**with no message, no console error and no log line** — and nobody
+complains about what they cannot see.
+
+- **The request side was never broken.** `state.claims` is already an
+  array and all three reach the admin. Only the approval replaced, which
+  is why the fix is smaller than the fault.
+- **`deletionSummary` said «1» to somebody who owned three.** Not
+  cosmetic: that is the sheet listing what an account deletion destroys.
+
+### The migration is the dangerous half, not the model
+⚠️ **Changing `DEFAULTS` does nothing to a device that already exists.**
+Every phone that has opened the app carries `myBusinessId` in its own
+`localStorage`, and it survives every update — so without the boot
+migration **every current owner loses their listing the moment this
+lands.** It folds the old key in once, then deletes it, from state and
+from disk.
+
+⚠️ **`!== undefined`, never `if (state.myBusinessId)`.** Most devices hold
+the key as `null`: the truthy test would leave it in their storage for
+ever and the migration would never finish. Same rule as `occFirst` in
+V.04.9, and `test_v43 · 2.1` is what holds it there.
+
+### Plural, and singular where a screen still speaks singular
+`myBusinessIds: []` with `ownsBusiness()` reading `includes`, plus
+`myBusinesses()` (records) and `primaryBusinessId()`. ⚠️ **The second is
+not a second source of truth — it is the first element of the one list**,
+so an account with one listing behaves exactly as before, to the letter.
+Ten sites in `store.js`, four in `directory.js`, one in `profile.js`.
+
+- ⚠️ **`KEEPS_ON_SIGN_OUT` is untouched and did not need touching.** The
+  new key is not in it, so signing out resets it to `[]` by itself. That
+  is what V.05.2 bought: one rule that governs every key added afterwards
+  without naming it.
+- ⚠️ **The subscription stays singular on purpose, and it is written down
+  as a gap.** A subscription is a payment, and payment belongs on the
+  server, not in a browser. An owner of three branches subscribes once
+  until then.
+- The new button is **«عندي نشاط آخر» → `#/claim`** — Rai's own wording,
+  landing in the **existing** admin queue. No new screen, no invented
+  review path.
+
+### Measured after
+```
+three approvals          all three owned · ownsBusiness true · true · true
+the first branch         still owned — it was the one silently dropped
+a repeated approval      does not duplicate the entry
+deletionSummary          3, where it said 1
+an existing owner        keeps their listing, and myBusinessId is gone
+                         from state AND from localStorage
+a null key               removed too, and the list is [] not [null]
+signing out              the list empties · 225 still holds
+a visitor, ids on disk   owns nothing — the accessor refuses, not a route
+one-business owner       #/my-business unchanged, plus the new button
+```
+
+**`test_v43` — 23 assertions, six blocks, both builds.** Block 1 is the
+migration and is the most dangerous thing in the batch. **`test_v42 · 2.1`
+was reversed rather than deleted** — it checked the key by its old name,
+and the comment there names the reversal.
 
 ## Known open items
 - **The header image is still far larger than its box.** V.04.7 replaced
