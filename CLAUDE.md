@@ -4406,6 +4406,27 @@ and still 844/844 folded.
 email was not added**: it is `SUPPORT_EMAIL` and has been on that screen
 for a long time; it is not written twice.
 
+### And v15's one red, which was pressure — with the diagnosis written down
+The first full run after this batch came back with `v15` red: eight
+failures on the single-file build and a **crash** on the module one. The
+second full run, unchanged, came back **82 results, 5146 assertions, zero
+red**, and `v15` at 88/0 both times it was run on its own.
+
+⚠️ **All eight failures trace to ONE step, not eight faults.** The suite
+grants a Houston point and seeds a listing's coordinates, then measures.
+When that one step does not land in its flat `waitForTimeout(1400)`, the
+city stays Katy (6.29, 6.30), the seeded listing has no miles (6.31,
+6.33), the mile options never appear (6.35), "nearest" picks the wrong row
+(6.36), and the export counts **515 lines instead of 514** because that
+listing is still waiting (6.46, 6.48). One race, eight symptoms.
+
+**It is recorded and not chased**, which is the precedent `245` set for
+`v28`/`v31`/`v37`: pressure on a two-core machine is not a defect. But it
+is a *latent* flat-timeout race of exactly the kind `235` removed from
+`v37` — **wait for what is measured, never for a number** — and it will
+bite again. The fix pattern already exists in the repository; it belongs
+in a suite file of its own, not in a batch about social icons.
+
 ## Known open items
 - **The header image is still far larger than its box.** V.04.7 replaced
   the 831/837 KB lockups with the cropped marks at **333/338 KB** — 60% off
