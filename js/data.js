@@ -91,7 +91,32 @@ export const CLASSIFIED_CATS = MARKET_CATS;
    hand-typed «0.1» while the project had reached V.03.6 — two literals,
    both stale, and a reader reporting a fault could not tell us which build
    they were on. Raise it here when CLAUDE.md's version line moves. */
-export const APP_VERSION = '0.5.5';
+export const APP_VERSION = '0.5.6';
+
+/* ============================================================
+   Where the app lives outside itself
+   ------------------------------------------------------------
+   A registry, not four hard-coded anchors: adding a fifth is one line
+   here and nothing anywhere else — the same shape as ATTRIBUTES.
+
+   ⚠️ `url: ''` means the account is not connected YET, and a row with no
+   url is drawn DIMMED with «قريباً» and does not navigate. That is the
+   rule the drawer's «إعلانات مميّزة» already follows: a control that can
+   do nothing reads as a broken app, and a dead link on the About page is
+   the first thing a shop owner taps.
+
+   ⚠️ Facebook first ON PURPOSE — that is where the audience actually is:
+   the broadcast, the quiz and the sponsors are all there.
+
+   ⚠️ `https://` only. `SAFE = /^(https:\/\/|tel:\+|mailto:)/` — no
+   `http:`, no `javascript:`, no `data:`.
+   ============================================================ */
+export const SOCIAL = [
+  { id: 'facebook',  icon: 'facebook',  url: 'https://facebook.com/Arabnaapp' },
+  { id: 'instagram', icon: 'instagram', url: 'https://instagram.com/arabna.app' },
+  { id: 'x',         icon: 'xMark',     url: 'https://x.com/ARABNAapp' },
+  { id: 'whatsapp',  icon: 'whatsapp',  url: '' },
+];
 
 export const FREE_PRICE = '__FREE__';
 

@@ -7,7 +7,7 @@ ARABNA · عربنا — a mobile-first web app for the Arab community in the U.
 **business directory + marketplace + events + magazine**, Arabic-first with a full English toggle.
 ("Classifieds / الإعلانات الشخصية" is now "Marketplace / السوق" — the old `#/classifieds`
 routes still resolve so shared links keep working.)
-Current version: **V.05.5 (prototype)**. Owner: Rai Elby (@dbprime). Deploys to Vercel (team DB Prime).
+Current version: **V.05.6 (prototype)**. Owner: Rai Elby (@dbprime). Deploys to Vercel (team DB Prime).
 
 ## Hard rules (from the product brief)
 1. **One repository, one Vercel project.** No duplicates, no stray preview projects.
@@ -4353,6 +4353,58 @@ not buried, and all six account rows are reachable — on the hub.
 the rule is worth stating in its strongest form: *run the full net before
 saying a batch is finished, not after.* Its own five suites were green
 here while eight assertions across three others were broken or unmeasured.
+
+## V.05.6 — the marks are placed, and WhatsApp says «قريباً» rather than lying
+
+### A button that does nothing is worse than no button
+Rai: «حطّ الأيقونة وبعدين بنربطه.» That runs straight into a rule this
+project has carried since V.02.1 — and the answer is not one side or the
+other, it is what the drawer already does for «إعلانات مميّزة»:
+
+```
+url present  →  <a>     navigates · opacity 1
+url empty    →  <span>  does not navigate · opacity .42 · title «قريباً»
+```
+
+⚠️ **A `<span>` and never a disabled `<a>`.** An anchor with no `href`
+stays in the tab order and a screen reader still announces it as a link —
+it promises what it cannot do. Measured: pressing it leaves the hash at
+`#/about`, opens no tab, and the screen is still drawn.
+
+**And connecting it later is one line in `data.js` and nothing anywhere
+else** — `SOCIAL` is a registry, not four hard-coded anchors, the same
+shape as `ATTRIBUTES`.
+
+### `xMark`, and why the name is the item
+⚠️ **`x` was already taken in `icons.js` — it is the close mark**, used by
+the photo picker, the search clear, the filter pills and the admin reject
+button. Naming the platform glyph `x` would have turned every close button
+in the app into a logo. That collision was checked, not guarded against.
+
+- All four are drawn in this file's own one-stroke 24-grid idiom, with
+  `fill="none"` and `stroke="currentColor"` — so they follow the text
+  colour and flip with the theme by themselves. **Measured: rgb(214,212,206)
+  dark → rgb(30,41,66) light, and not one colour written anywhere.**
+- Instagram's dot is a line from a point to itself (`17.5 → 17.51`) —
+  this file's own idiom, where `stroke-linecap: round` makes it a circle
+  that scales with the stroke. A `<circle>` would not.
+- Each platform publishes brand assets under its own rules; these are
+  simple recognisable glyphs, and if a platform objects, its own file
+  replaces the path and nothing else moves.
+
+### Where the row goes, and where it deliberately does not
+**On «عن التطبيق» alone.** ⚠️ **Not on privacy or terms:** a legal page
+carries a published address for complaints, not marketing accounts, and a
+follow row above «طلبات إزالة المحتوى» reads wrong. ⚠️ **And not in the
+drawer:** it is 112 over for a member and 195 for a visitor after V.05.5,
+and another row adds to that — Rai's answer to question 4 was to leave the
+overflow, not to feed it. Measured: privacy 0, terms 0, help 0, drawer 0
+and still 844/844 folded.
+
+**No new word in `i18n.js`** — `soon` has existed since V.02.7, and
+`chk_i18n` is unchanged at 416 derived keys and 1747 strings. **And the
+email was not added**: it is `SUPPORT_EMAIL` and has been on that screen
+for a long time; it is not written twice.
 
 ## Known open items
 - **The header image is still far larger than its box.** V.04.7 replaced

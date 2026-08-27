@@ -2,7 +2,7 @@
 import { t, arCount, L, icon, $, $$, go, renderHeader, toast, wireRoutes, emptyState, confirmSheet,
          openSheet, closeSheet,
          fmtMoney, priceLabel, statusBadgeHtml, stars, logoSrc, shareItem,
-         mapChoices, esc, bizBadgeHtml, avatarHtml } from '../ui.js';
+         mapChoices, esc, bizBadgeHtml, avatarHtml, socialRowHtml } from '../ui.js';
 import { SUBSCRIPTION_PRICE, CATEGORIES, APP_VERSION } from '../data.js';
 import * as S from '../store.js';
 import { catIcon } from './home.js';
@@ -968,6 +968,13 @@ export function AboutScreen(root) {
         <div class="hint" style="margin-bottom:8px">${t('contactUsSub')}</div>
         <a class="contact-line" href="mailto:${S.SUPPORT_EMAIL}">${icon('mail', 18)}<span class="ltr">${S.SUPPORT_EMAIL}</span></a>
         ${S.SUPPORT_PHONE ? `<a class="contact-line" href="tel:${esc(S.SUPPORT_PHONE.replace(/[^0-9+]/g, ''))}">${icon('phone', 18)}<span class="ltr">${esc(S.SUPPORT_PHONE)}</span></a>` : ''}
+        ${/* ⚠️ On «عن التطبيق» ALONE. Not privacy, not terms: a legal page
+             carries a published address for complaints, not marketing
+             accounts, and a follow row above «طلبات إزالة المحتوى» reads
+             wrong. And not in the drawer either — it is 112 over for a
+             member and 195 for a visitor after 255, and another row adds
+             to that; Rai's answer to question 4 was to leave it. */''}
+        ${socialRowHtml()}
       </div>
       <span class="muted fs-12 mt-16">${t('version')} ${APP_VERSION} · est. 2026</span>
     </div>`;

@@ -4,7 +4,7 @@
 
 import { icon, iconFilled } from './icons.js';
 import { t, L, arCount, getLang, setLang } from './i18n.js';
-import { FREE_PRICE, APP_VERSION, CAT_HUE, CATEGORIES } from './data.js';
+import { FREE_PRICE, APP_VERSION, CAT_HUE, CATEGORIES, SOCIAL } from './data.js';
 import * as S from './store.js';
 
 export const $ = (sel, root = document) => root.querySelector(sel);
@@ -796,6 +796,26 @@ let openGroup = null;          // remembered while the drawer is on screen
     ⚠️ The preset's markup is OUR OWN svg from `avatars.js` — never a value a
     reader typed — which is why it is the one thing here not wrapped in esc().
     The emoji IS a reader's value and is escaped; the photo's URL likewise. */
+/** the row of social marks — ONE renderer, so About and Help cannot differ.
+    ⚠️ A row with no url is drawn dimmed with «قريباً» and carries no href:
+    the «إعلانات مميّزة» rule — a control that can do nothing is worse than
+    no control, and a dead link on the About page is what a shop owner taps
+    first. WhatsApp is exactly that case today: the mark is placed, and the
+    number is connected later without touching this function.
+    ⚠️ A `<span>` and never a disabled `<a>`: an anchor with no href stays in
+    the tab order and a screen reader still announces it as a link, so it
+    promises what it cannot do.
+    ⚠️ `rel="noopener noreferrer"` is not decoration — without `noopener` the
+    opened page gets `window.opener` and can redirect ours from under us. */
+export function socialRowHtml() {
+  return `<div class="social-row">${SOCIAL.map(sx => sx.url
+    ? `<a class="soc" href="${esc(sx.url)}" target="_blank" rel="noopener noreferrer"
+         aria-label="${esc(sx.id)}">${icon(sx.icon, 21)}</a>`
+    : `<span class="soc soc-soon" aria-disabled="true"
+         title="${t('soon')}" aria-label="${esc(sx.id)} — ${t('soon')}">${icon(sx.icon, 21)}</span>`
+  ).join('')}</div>`;
+}
+
 export function avatarHtml(view, px = 66) {
   const box = `width:${px}px;height:${px}px;overflow:hidden`;
   if (!view) return '';

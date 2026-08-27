@@ -13,6 +13,24 @@ const P = {
   star: '<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>',
   phone: '<path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.9.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/>',
   check: '<polyline points="20 6 9 17 4 12"/>',
+  /* ---- the four social marks ----
+     Drawn in this file's own one-stroke, 24-grid idiom so they sit beside
+     every other icon instead of importing four foreign styles. ⚠️ And each
+     platform publishes brand assets with rules of its own; these are simple
+     recognisable glyphs, and if any platform objects its own file replaces
+     the path here and nothing else moves.
+     ⚠️ `xMark` and NOT `x`: `x` is already the close mark in this file and
+     is used by the photo picker, the search clear, the filter pills and the
+     admin reject button — naming this one `x` would turn every close button
+     in the app into a platform logo. Measured, not guarded against.
+     ⚠️ And instagram's dot is a line from a point to itself (17.5 → 17.51),
+     which is this file's own idiom: `stroke-linecap: round` makes it a
+     circle whose size follows the stroke, so it scales with the text. A
+     `<circle>` would not. */
+  instagram: '<rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/>',
+  facebook: '<path d="M15 3h-2.5A4.5 4.5 0 0 0 8 7.5V11H5v4h3v6h4v-6h3l1-4h-4V7.5a1 1 0 0 1 1-1H15z"/>',
+  xMark: '<line x1="4" y1="4" x2="20" y2="20"/><line x1="20" y1="4" x2="4" y2="20"/>',
+  whatsapp: '<path d="M3 21l1.7-4.6A8.4 8.4 0 1 1 8 20.2z"/><path d="M9 9.5c0 3 2.5 5.5 5.5 5.5"/>',
   checkCircle: '<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>',
   x: '<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>',
   chevronL: '<polyline points="15 18 9 12 15 6"/>',
