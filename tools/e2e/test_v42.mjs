@@ -103,6 +103,10 @@ let sc = await screen(p, '#/receipts');
 ok('1.2 …and the receipt is on the screen', /ARB-26-5UQQ4/.test(sc.txt));
 
 /* ---- 2. signing out clears what the ACCOUNT owned ------------------ */
+/* read before, so 3.1 can assert that signOut left it exactly as it was —
+   the boot has already reset the theme by this point, and that is the
+   launch's doing and not the sign-out's */
+const themeBeforeSignOut = (await disk(p)).theme;
 await p.evaluate(() => window.__S.signOut());
 await p.waitForTimeout(200);
 let d = await disk(p);
@@ -121,8 +125,17 @@ ok('2.6 the receipt is STILL on disk', (d.receipts || []).length === 1,
   (d.receipts || []).length + ' on disk');
 
 /* ---- 3. …and keeps what belongs to the DEVICE and the operator ----- */
+/* ⚠️ ADJUSTED in V.06.0, and the rule it guards is UNCHANGED: device
+   preferences are not the account's and signing out does not touch them.
+   What changed is that the theme is cleared to `auto` at every BOOT — so
+   the seeded «light» is already `auto` before signOut ever runs, and
+   asserting «light» here would be measuring the boot, not the sign-out.
+   So it asserts what 225 actually bought: signOut left the theme exactly
+   as it found it. The font size, which the boot does not touch, still
+   carries its real value across. */
 ok('3.1 theme and font size survive (the 195 rule)',
-  d.theme === 'light' && d.fontScale === 21, `${d.theme} · ${d.fontScale}`);
+  d.theme === themeBeforeSignOut && d.fontScale === 21,
+  `${d.theme} (was ${themeBeforeSignOut}) · ${d.fontScale}`);
 ok('3.2 the location survives — nobody is asked twice',
   d.location && d.location.city === 'Katy' && d.geoGranted === true && !!d.geo);
 ok('3.3 the admin password is not a reader\'s to clear', !!d.adminAuth);

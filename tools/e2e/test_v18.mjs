@@ -63,13 +63,21 @@ const openPage = async (opts = {}) => {
 /* The theme is set through localStorage and a reload rather than by
    importing ui.js: in the single-file build that import is a second copy
    of the module and would drive a different app. */
+/* ⚠️ APPLIED LIVE, never «write and reload» — V.06.0. The theme is now
+   cleared back to `auto` at every boot (Rai: the launch always starts from
+   the device), so writing it to localStorage and reloading landed on the
+   device's dark and every colour measured below was the wrong theme's.
+   Within one session an explicit choice still holds, which is exactly what
+   the app itself does and what these assertions are about, so the helper
+   does what the Settings screen does. Not one of the six checks under it
+   was weakened — they measure the same files and the same colours. */
 const setTheme = async (p, mode) => {
-  await p.evaluate(m => {
-    const k = 'arabna.v1';
-    const s = JSON.parse(localStorage.getItem(k) || '{}');
-    s.theme = m; localStorage.setItem(k, JSON.stringify(s));
+  await p.evaluate(async m => {
+    const S = await import('arabna/js/store.js').catch(() => import('./js/store.js'));
+    const U = await import('arabna/js/ui.js').catch(() => import('./js/ui.js'));
+    S.setThemeMode(m); U.applyTheme();
   }, mode);
-  await p.reload(); await p.waitForTimeout(700);
+  await p.waitForTimeout(700);
 };
 
 /* ---- the contrast maths, run in the page over the real background stack ---- */

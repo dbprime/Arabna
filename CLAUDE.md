@@ -4692,6 +4692,29 @@ not because what it guards did.
 
 `v17` 46/0 and `v41` 26/0 on both builds.
 
+### And the net found two more, both this batch's — and neither was reversed
+⚠️ **`v18` lost six colour assertions to its own HELPER, not to a decision.**
+`setTheme` wrote the theme to `localStorage` **and reloaded** — and the boot
+now clears it, so every measurement below landed on the device's dark and
+read the wrong theme's files. **The behaviour those six guard is unchanged
+and still true**, so the helper was fixed to apply the theme live, exactly
+as the Settings screen does. **Not one of the six was weakened.** 29/6 → 35/0.
+
+⚠️ **And `v42 · 3.1` guards a rule that is still true.** Device preferences
+are not the account's and `signOut` does not touch the theme — that is
+V.05.2, and it holds. What changed is that the **boot** clears a pinned
+theme, so the seeded «light» was already `auto` before `signOut` ever ran,
+and asserting «light» would have been measuring the launch rather than the
+sign-out. It now reads the theme before signing out and asserts it came
+through unchanged. **The font size, which the boot does not touch, still
+carries its real value across.**
+
+**The lesson worth keeping**: a reversal breaks two kinds of check — the
+ones that asserted the old behaviour, which get rewritten, and the ones
+whose *setup* silently depended on it, which get repaired. The second kind
+looks like a failure of what it guards and is not.
+
+
 ## Known open items
 - **The header image is still far larger than its box.** V.04.7 replaced
   the 831/837 KB lockups with the cropped marks at **333/338 KB** — 60% off
