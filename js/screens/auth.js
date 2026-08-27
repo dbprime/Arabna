@@ -190,7 +190,11 @@ export function ForgotScreen(root) {
 /* ------------------------ EMAIL VERIFICATION ------------------------ */
 export function EmailVerifyScreen(root) {
   renderHeader({ simple: true, title: t('verifyEmail') });
-  const email = S.state.user ? S.state.user.email : '';
+  /* the address the code was sent to — the NEW one while a change waits,
+     because printing the old address over a code sent to the new one is
+     the app telling the reader something untrue at the exact moment they
+     are checking their inbox. */
+  const email = S.pendingEmail() || (S.state.user ? S.state.user.email : '');
   const pv = S.pendingVerify();
 
   root.innerHTML = `

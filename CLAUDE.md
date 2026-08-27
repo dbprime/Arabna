@@ -7,7 +7,7 @@ ARABNA · عربنا — a mobile-first web app for the Arab community in the U.
 **business directory + marketplace + events + magazine**, Arabic-first with a full English toggle.
 ("Classifieds / الإعلانات الشخصية" is now "Marketplace / السوق" — the old `#/classifieds`
 routes still resolve so shared links keep working.)
-Current version: **V.05.6 (prototype)**. Owner: Rai Elby (@dbprime). Deploys to Vercel (team DB Prime).
+Current version: **V.05.7 (prototype)**. Owner: Rai Elby (@dbprime). Deploys to Vercel (team DB Prime).
 
 ## Hard rules (from the product brief)
 1. **One repository, one Vercel project.** No duplicates, no stray preview projects.
@@ -4426,6 +4426,101 @@ is a *latent* flat-timeout race of exactly the kind `235` removed from
 `v37` — **wait for what is measured, never for a number** — and it will
 bite again. The fix pattern already exists in the repository; it belongs
 in a suite file of its own, not in a batch about social icons.
+
+## V.05.7 — a new email inherited a badge it never earned
+
+### The one exception in the whole file
+Measured from the code, not guessed: `updateProfile` wrote
+`u.email = email` and **nothing touched `emailVerified`**, while the phone
+three lines below had always cleared its own flag correctly.
+
+⚠️ **So a new address inherited «verified».** Whoever reached an open
+account for one minute could change the address, and from then on
+everything the app sends — a password reset first — goes to them, with no
+way back for the owner.
+
+### And the obvious fix is not the right one
+Write the address and clear the flag: **one typo then drops the account to
+tier 0 at an address no code can ever reach**, and there is no way back
+from that either.
+
+> **The new address is held aside until a code confirms it, the old one
+> keeps working, and an abandoned change costs nothing.**
+
+⚠️ **That is stronger than what I had promised** — I had offered clearing
+the flag alone.
+
+- ⚠️ **`email !== u.email`**, or a «change» is parked every time «حفظ» is
+  pressed and a code is demanded for an address that never moved.
+  Measured: saving without touching the field goes to `#/profile` with no
+  code and no pending.
+- ⚠️ **The promotion lives in `confirmEmail()` and nowhere else** — the one
+  function never called without a correct code. A promotion anywhere else
+  would undo the whole guard.
+- **No new screen.** `#/auth/email` exists and works, with its resend
+  timer, its ten-minute code life and «تصفّح الآن وأكمل لاحقاً». One line
+  in `auth.js` makes it print the **pending** address: showing the old one
+  over a code sent to the new one is the app lying at the exact moment the
+  reader is checking their inbox.
+
+**Measured end to end:**
+```
+before             old@a.app · verified · tier 2
+after «حفظ»        old@a.app · verified · tier 2 · pending new@b.app
+                   → #/auth/email, and the screen prints new@b.app, not the old
+abandoned          old@a.app · verified · tier 2 — nothing broke
+after the code     new@b.app · pending null · verified · tier 2
+```
+
+### The business mark, and the honest part of it
+Rai's decision (question 2): **one account, with a flag added at the
+moment somebody presses «هذا نشاطي»** — not two kinds at sign-up, where
+nobody yet knows which they are and the question only costs registrations.
+
+⚠️ **And the gate he asked for already exists and is stronger than a
+flag**: `requireTier(2)` plus a name, a role, a phone and written proof.
+**The flag does not buy the gate — it buys the admin's signal.**
+`approvedClaims()` says how many of this account's claims were approved
+before, and an account with a record is the one that reviews fastest.
+**That is the axis, never the name of the business** — the recommendation
+I withdrew after his question about one owner trading under three names.
+
+- **The form is the step**: it already asks the four things, so a separate
+  «convert» screen would be the same four fields twice.
+- **The mark is added on SENDING, not on approval**, deliberately: somebody
+  who sent a request and waited a week is not offered «convert your
+  account» again on every listing they open. Measured: note shown on
+  `#/claim/b30`, `personal` → `business` on send, **note gone on
+  `#/claim/b31`**.
+- ⚠️ **No new key in `DEFAULTS`** — the flag lives on `state.user`, so
+  signing out takes it with no line written anywhere. Measured: `business`
+  → `personal` after sign-out. That is V.05.2's rule paying again.
+
+### A product's name is not translated
+Rai on the directions sheet: «بفضّل تكتب أسامي البرامج بالإنجليزيّة.» It is
+the rule the project already has for «Houston» and every shopfront — and
+**the list itself was the proof it had been missed:**
+
+```
+mapsGoogle: 'خرائط جوجل'   translated
+mapsApple:  'خرائط آبل'     translated
+mapsWaze:   'Waze'         ⚠️ not translated
+```
+
+Three products in one list and one of them had kept its name. Now all
+three keep theirs, and `grep` for «جوجل» or «آبل» in `i18n.js` returns
+**zero**.
+
+**The name and not the logo**, for three reasons: those marks belong to
+their owners and each has its own usage rules, so drawing them in our
+style breaks those rules rather than following them; «Google Maps» in
+words is recognised by everyone while an icon in a list of three has to be
+learned; and the four marks added in V.05.6 are **our own accounts** —
+these are somebody else's products.
+
+⚠️ **`chk_i18n` reads 1753, not the 1748 the batch file predicted** — six
+new keys on a base of 1747, and the file's base predated V.05.5's four.
+The arithmetic is right, the baseline had moved under it. Again.
 
 ## Known open items
 - **The header image is still far larger than its box.** V.04.7 replaced

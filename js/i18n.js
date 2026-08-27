@@ -195,6 +195,12 @@ export const STRINGS = {
     claimBusiness: 'المطالبة بنشاط موجود',
     claimAnother: 'عندي نشاط آخر',
     myAccount: 'حسابي',
+    emailChangeNeedsCode: 'تغيير البريد يحتاج رمز تأكيد يصل إلى العنوان الجديد.',
+    emailChangeSent: 'أرسلنا رمزاً إلى العنوان الجديد.',
+    emailPending: 'بانتظار تأكيد {e} — وبريدك الحالي يعمل حتى ذلك الحين.',
+    toBusinessTitle: 'هذه الخطوة تحوّل حسابك إلى حساب أعمال',
+    toBusinessSub: 'حسابك يبقى واحداً، ويبقى لك كل ما فيه — وتُضاف إليه صفة الأعمال.',
+    businessAccount: 'حساب أعمال',
     avatarPresetHint: 'اختر صورة جاهزة — تظهر فوراً بلا موافقة.',
     avatarEmoji: 'أو إيموجي',
     avatarUpload: 'أو ارفع صورتك',
@@ -1011,8 +1017,12 @@ export const STRINGS = {
     statPaidCash: 'مدفوع نقداً',
     // --- directions (V.03.4)
     mapsOpenIn: 'افتح الاتجاهات في',
-    mapsGoogle: 'خرائط جوجل',
-    mapsApple: 'خرائط آبل',
+    /* ⚠️ A PRODUCT'S NAME IS NOT TRANSLATED — Rai's rule, and the same one
+       that keeps «Houston» and every shopfront in English inside an Arabic
+       sentence. And this very list was the proof it had been missed: three
+       products, and `Waze` had kept its name while the other two had not. */
+    mapsGoogle: 'Google Maps',
+    mapsApple: 'Apple Maps',
     mapsWaze: 'Waze',
     mapsAlways: 'افتح فيه دائماً',
     mapsApp: 'برنامج الخرائط',
@@ -1807,6 +1817,12 @@ export const STRINGS = {
     claimBusiness: 'Claim an existing listing',
     claimAnother: 'I have another business',
     myAccount: 'My account',
+    emailChangeNeedsCode: 'Changing your email needs a code sent to the new address.',
+    emailChangeSent: 'We sent a code to the new address.',
+    emailPending: 'Waiting on confirmation of {e} — your current email keeps working until then.',
+    toBusinessTitle: 'This step turns your account into a business account',
+    toBusinessSub: 'It stays one account and you keep everything in it — a business mark is added to it.',
+    businessAccount: 'Business account',
     avatarPresetHint: 'Pick a ready-made mark — it shows at once, no approval needed.',
     avatarEmoji: 'Or an emoji',
     avatarUpload: 'Or upload your own',

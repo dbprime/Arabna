@@ -135,7 +135,13 @@ export function EditProfileScreen(root) {
       <div class="field"><label class="label">${t('fullName')}</label>
         <input class="input" id="pName" value="${esc(u.name)}" /></div>
       <div class="field"><label class="label">${t('email')}</label>
-        <input class="input" id="pEmail" type="email" value="${esc(u.email)}" /></div>
+        <input class="input" id="pEmail" type="email" value="${esc(u.email)}" />
+        ${/* ⚠️ The rule is said BEFORE the typing, not after: somebody who
+             knows a code is coming is not ambushed by a screen they did not
+             ask for. */''}
+        <div class="hint">${S.pendingEmail()
+          ? `<span class="ink-danger">${t('emailPending').replace('{e}', esc(S.pendingEmail()))}</span>`
+          : t('emailChangeNeedsCode')}</div></div>
       <div class="field"><label class="label">${t('phoneNumber')}</label>
         <input class="input" id="pPhone" inputmode="tel" value="${esc(u.phone || '')}" />
         <div class="hint">${u.phoneVerified ? t('verified') : t('phoneNotVerified')} — ${t('phoneChangedReverify')}</div></div>
@@ -179,7 +185,7 @@ export function EditProfileScreen(root) {
     if (!name || !email) { toast(t('required'), 'err'); return; }
 
     const phoneChanged = phone !== (u.phone || '');
-    S.updateProfile({ name, email, phone });
+    const r = S.updateProfile({ name, email, phone });
 
     // photo: only re-queue it when it actually changed
     /* ⚠️ Only the PHOTO half is touched here. Reading `u.avatar.url` on a
@@ -192,6 +198,22 @@ export function EditProfileScreen(root) {
     else if (!newPhoto && hadPhoto) S.clearAvatar();
 
     if (!S.lastSaveOk) { toast(t('storageFull'), 'err'); return; }
+
+    /* ⚠️ The email goes FIRST when both changed. The address is what a
+       password reset and every notice travels to, so it is the one that
+       must not be left half-changed — and the phone's own screen is one
+       tap from the profile afterwards.
+       ⚠️ And no new screen is built: `#/auth/email` already exists, with
+       its resend timer, its ten-minute code life and «تصفّح الآن وأكمل
+       لاحقاً». A second screen for the same thing is the duplication this
+       project bans. */
+    if (r && r.emailPending) {
+      S.sendEmailCode(email);
+      S.setPendingVerify('email', email);
+      toast(t('emailChangeSent'), 'ok');
+      go('#/auth/email');
+      return;
+    }
     toast(phoneChanged ? t('phoneChangedReverify') : t('profileSaved'), phoneChanged ? 'err' : 'ok');
     go(phoneChanged ? '#/auth/phone' : '#/profile');
   });

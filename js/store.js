@@ -300,6 +300,39 @@ export function peekPendingIntent() { return pendingIntent; }
  * Gate an action behind a tier. Returns true if allowed.
  * If not allowed it stores the intent and sends the user to the right screen.
  */
+/* ============================================================
+   Personal account or business account
+   ------------------------------------------------------------
+   Rai's decision (question 2): ONE account with a flag added at the
+   moment somebody presses «هذا نشاطي» — not two kinds chosen at sign-up,
+   where nobody yet knows which they are and the question only costs
+   registrations.
+
+   ⚠️ And the honest part: the gate he asked for EXISTS ALREADY and is
+   stronger than a flag — `requireTier(2)` plus a name, a role, a phone
+   and written proof. What the flag buys is not the gate; it is the
+   ADMIN'S SIGNAL: `approvedClaims()` says how many claims this account
+   has had approved before, and an account with a record is the one that
+   reviews fastest. That is the axis — never the name of the business.
+   ============================================================ */
+export function accountKind() {
+  return (state.user && state.user.accountKind) || 'personal';
+}
+export function isBusinessAccount() { return accountKind() === 'business'; }
+export function makeBusinessAccount() {
+  if (!state.user) return null;
+  if (state.user.accountKind !== 'business') {
+    state.user.accountKind = 'business';
+    state.user.businessSince = now();
+    save();
+  }
+  return state.user;
+}
+/** how many of this account's claims an admin has approved before */
+export function approvedClaims() {
+  return (state.claims || []).filter(c => c.status === 'approved').length;
+}
+
 export function requireTier(needed, route, go) {
   if (tier() >= needed) return true;
   setPendingIntent(route, undefined, needed);
@@ -2951,7 +2984,16 @@ export async function signUp({ name, email, password, phone }) {
   await setUserPassword(password || '');
 }
 export function confirmEmail() {
-  if (state.user) { state.user.emailVerified = true; save(); }
+  if (!state.user) return;
+  /* a change waiting on this very code is promoted here, and ONLY here —
+     this is the one function that is never called without a correct code,
+     and a promotion anywhere else would undo the whole guard. */
+  if (state.user.pendingEmail) {
+    state.user.email = state.user.pendingEmail;
+    delete state.user.pendingEmail;
+  }
+  state.user.emailVerified = true;
+  save();
 }
 export function confirmPhone(phone) {
   if (state.user) { state.user.phone = phone; state.user.phoneVerified = true; save(); }
@@ -2991,17 +3033,43 @@ export function signOut() {
 
 /** Editing the profile. Changing the phone number is the only thing that
     costs a re-verification — everything else keeps the verified state. */
+/* ⚠️ THE EMAIL IS NOT WRITTEN HERE, and that is the item.
+   Before V.05.7 this line was `u.email = email` with NOTHING clearing
+   `emailVerified` — so a new address inherited a «verified» mark it had
+   never earned, and whoever reached the account for one minute could
+   change the address and lock its owner out. The phone had always been
+   done correctly; the email was the one exception in the whole file.
+
+   And the obvious fix — write the address and clear the flag — has a
+   second fault of its own: a typo would drop the account to tier 0 with
+   an address nobody can receive a code at, and there is no way back.
+   So the NEW address is held aside until a code confirms it, the OLD one
+   keeps working meanwhile, and an abandoned change costs nothing. */
 export function updateProfile({ name, email, phone }) {
   const u = state.user;
   if (!u) return null;
   if (name) u.name = name;
-  if (email) u.email = email;
+  let emailPending = false;
+  /* ⚠️ `email !== u.email`: without it a «change» is parked every time
+     «حفظ» is pressed even when the field was never touched, and a code is
+     demanded for an address that did not move. */
+  if (email && email !== u.email) {
+    u.pendingEmail = email;
+    emailPending = true;
+  }
   if (phone !== undefined && phone !== u.phone) {
     u.phone = phone;
     u.phoneVerified = false;
   }
   save();
-  return u;
+  return Object.assign({}, u, { emailPending });
+}
+/** the address waiting on a code, or null — never shown as the account's */
+export function pendingEmail() {
+  return (state.user && state.user.pendingEmail) || null;
+}
+export function cancelEmailChange() {
+  if (state.user) { delete state.user.pendingEmail; save(); }
 }
 
 export async function changePassword(current, next) {

@@ -1718,6 +1718,16 @@ export function ClaimScreen(root, params) {
           <div class="row-sub"><span class="ltr">${esc(b.address)}</span></div></div>
       </div>
       <div class="list-note" style="margin:0 0 14px">${icon('info', 18)}<span>${t('claimFormNote')}</span></div>
+      ${/* Rai's decision (question 2): ONE account, and the business mark is
+           added HERE — at the moment of pressing, which is the highest point
+           of willingness there is. Not two kinds at sign-up, where nobody yet
+           knows which they are and the question only costs registrations.
+           ⚠️ And the FORM IS THE STEP: it already asks the name, the role,
+           the phone and the proof, so a second «convert» screen would be the
+           same four fields twice — the duplication this project bans. */''}
+      ${S.isBusinessAccount() ? '' : `
+      <div class="list-note" style="margin:0 0 14px">${icon('briefcase', 18)}
+        <span><b>${t('toBusinessTitle')}</b><br>${t('toBusinessSub')}</span></div>`}
 
       <div class="field"><label class="label">${t('claimYourName')}</label><input class="input" id="cName" /></div>
       <div class="field"><label class="label">${t('claimRole')}</label>
@@ -1741,6 +1751,11 @@ export function ClaimScreen(root, params) {
     if (!name || !phone) { toast(t('required'), 'err'); return; }
     // a real mobile is the same bar as posting or paying
     if (!S.requireTier(2, '#/claim/' + bizId, go)) return;
+    /* the mark is added on SENDING, not on approval: somebody who sent a
+       request and waited a week is not offered a «convert your account»
+       note again every time they open another listing. Approval is the
+       admin's decision; the mark describes what the reader did. */
+    S.makeBusinessAccount();
     S.requestClaim(bizId, { name, phone, role: $('#cRole').value, proof: $('#cProof').value.trim() });
     toast(t('claimSent'), 'ok');
     go('#/directory/' + bizId);
