@@ -454,7 +454,15 @@ await adminLogin();
 ok('avatar appears in the moderation queue', (await txt()).includes('صورة الملف'));
 await page.locator('[data-avok]').first().click(); await page.waitForTimeout(500);
 await go('#/profile');
-ok('approved avatar is displayed', await page.evaluate(() => !!document.querySelector('.avatar img')));
+/* REVERSED in V.05.5: the profile draws three kinds of mark through one
+   `avatarHtml()`, and the photo case is a bare <img> — the `.avatar` div is
+   now only the initial-letter fallback, which is what the check above reads.
+   Measured: the approved photo still renders at 66x66; only the wrapper
+   class went. The check is the same check — is the photo on the screen. */
+ok('approved avatar is displayed', await page.evaluate(() => {
+  const img = document.querySelector('#app .center-col img[src]');
+  return !!img && img.getBoundingClientRect().width > 0;
+}));
 
 await go('#/profile/edit');
 await page.locator('#badgeBtn').click(); await page.waitForTimeout(700);

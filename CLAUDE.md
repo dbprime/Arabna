@@ -4334,6 +4334,26 @@ the six destinations were **moved into the hub's own check, never
 dropped** — a destination nobody checks is one that quietly disappears.
 `v7` and `v17` go from eight blocks to six, each naming the reversal.
 
+**And the full run found three more, all of them this batch's:**
+
+| suite | was | now |
+|---|---|---|
+| v3 | `.avatar img` for an approved photo | the `.avatar` div is the initial-letter fallback only; the photo is a bare `<img>` and still renders at 66×66 — measured before the selector was touched |
+| v4 | six personal rows in the drawer · three groups | none in the drawer · two groups — they are asserted on the hub in v5 |
+| v41 | clicked `[data-toggle="account"]` | **crashed**, waiting thirty seconds for a group that no longer exists |
+
+⚠️ **`v41` crashed rather than failed, and that is the second time in two
+batches** (`v5` here, `v27` in V.05.2). A selector that no longer matches
+takes the whole suite down and every assertion after it goes unmeasured —
+which is exactly how a batch reports green while it is not. Both halves of
+what V.04.8 bought are still checked afterwards: settings is one row and
+not buried, and all six account rows are reachable — on the hub.
+
+⚠️ **And this is the third batch running to leave older suites red**, so
+the rule is worth stating in its strongest form: *run the full net before
+saying a batch is finished, not after.* Its own five suites were green
+here while eight assertions across three others were broken or unmeasured.
+
 ## Known open items
 - **The header image is still far larger than its box.** V.04.7 replaced
   the 831/837 KB lockups with the cropped marks at **333/338 KB** — 60% off

@@ -399,8 +399,14 @@ ok('marketplace sections removed from the drawer', !dr.hasMarketSections);
    permanent bottom-bar tab, and the drawer is not a second copy of it. */
 ok('home and directory both out of the drawer', !dr.hasHome && !dr.hasDirectory);
 // V.01.5 also moves the personal rows back, into their own folded group.
-ok('personal rows live in the account group', dr.personal.length === 6, dr.personal.join(', ') || 'none');
-ok('three collapsible groups', dr.groups === 3, dr.groups + ' groups');
+/* REVERSED in V.05.5: the six personal rows left the drawer for the account
+   hub on #/profile, reached from the «حسابي» button in the drawer's head —
+   Rai's decision, and it took 53px off the member's worst group. They are
+   asserted on the hub in test_v5, moved and not dropped. So: none of the six
+   in the drawer, and two groups where there were three. */
+ok('personal rows have left the drawer for the hub', dr.personal.length === 0,
+   dr.personal.join(', ') || 'none, as intended');
+ok('two collapsible groups', dr.groups === 2, dr.groups + ' groups');
 ok('all groups start collapsed', dr.openGroups === 0);
 ok('drawer needs no scrolling', dr.height <= dr.panelH, `${dr.height}px content / ${dr.panelH}px panel`);
 ok('language row stays outside any group', dr.lang);

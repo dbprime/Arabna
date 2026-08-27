@@ -73,14 +73,22 @@ ok('1.4 exactly one settings row', drawer.count === 1, String(drawer.count));
 await asReader(MEMBER);
 await at('#/home');
 await page.click('#hMenu'); await page.waitForTimeout(400);
-await page.click('[data-toggle="account"]'); await page.waitForTimeout(400);
-/* A second copy inside «حسابي» would be worse than the burial: the reader
-   would not know which one they were meant to press. */
-ok('1.5 a member has one too, and no second copy inside «حسابي»',
+/* REVERSED in V.05.5: there is no «حسابي» GROUP to open any more — this line
+   was `click('[data-toggle="account"]')` and, with the group deleted, it
+   waited thirty seconds and CRASHED the suite rather than failing one item.
+   The six rows are the account hub on #/profile now, reached from the button
+   in the drawer's head. Both halves of what 195 bought are still checked:
+   settings is one row and it is not buried, and the six are still reachable
+   — they are simply reachable from the hub. */
+ok('1.5 a member has one too, and exactly one',
   await page.evaluate(() => document.querySelectorAll('.drawer-panel [data-route="#/settings"]').length === 1));
-ok('1.6 …and the rest of «حسابي» is intact', await page.evaluate(() =>
+ok('1.5b …and the head carries «حسابي» in place of the group',
+  await page.evaluate(() => !!document.querySelector('.dr-head-acts [data-route="#/profile"]')
+                         && !document.querySelector('[data-group="account"]')));
+await page.evaluate(() => { location.hash = '#/profile'; }); await page.waitForTimeout(700);
+ok('1.6 …and all six account rows are intact, on the hub', await page.evaluate(() =>
   ['#/my-business', '#/my-ads', '#/my-reviews', '#/messages', '#/saved', '#/subscribe']
-    .every(r => !!document.querySelector(`[data-group="account"] [data-route="${r}"]`))));
+    .every(r => !!document.querySelector(`#app [data-route="${r}"]`))));
 
 /* ---------------- 2 · the screen opens for a visitor ---------------- */
 console.log('--- 2 · the screen ---');
