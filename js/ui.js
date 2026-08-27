@@ -813,7 +813,19 @@ export function socialRowHtml() {
          aria-label="${esc(sx.id)}">${icon(sx.icon, 21)}</a>`
     : `<span class="soc soc-soon" aria-disabled="true"
          title="${t('soon')}" aria-label="${esc(sx.id)} — ${t('soon')}">${icon(sx.icon, 21)}</span>`
-  ).join('')}</div>`;
+  ).join('')}</div>` + soonLineHtml();
+}
+
+/* The word has to be SEEN, not hovered. `title` never appears on a phone,
+   so a dimmed icon with nothing beside it reads as a broken icon — which
+   is the very thing the dimming was there to prevent. The line is built
+   FROM the registry, so connecting WhatsApp removes it by itself and a
+   fifth account added tomorrow joins it with no code here. */
+function soonLineHtml() {
+  const soon = SOCIAL.filter(sx => !sx.url).map(sx => esc(sx.name || sx.id));
+  return soon.length
+    ? `<div class="social-soon">${soon.join(' \u00B7 ')} — ${t('soon')}</div>`
+    : '';
 }
 
 export function avatarHtml(view, px = 66) {

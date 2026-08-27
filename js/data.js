@@ -91,7 +91,7 @@ export const CLASSIFIED_CATS = MARKET_CATS;
    hand-typed «0.1» while the project had reached V.03.6 — two literals,
    both stale, and a reader reporting a fault could not tell us which build
    they were on. Raise it here when CLAUDE.md's version line moves. */
-export const APP_VERSION = '0.5.7';
+export const APP_VERSION = '0.5.8';
 
 /* ============================================================
    Where the app lives outside itself
@@ -112,10 +112,10 @@ export const APP_VERSION = '0.5.7';
    `http:`, no `javascript:`, no `data:`.
    ============================================================ */
 export const SOCIAL = [
-  { id: 'facebook',  icon: 'facebook',  url: 'https://facebook.com/Arabnaapp' },
-  { id: 'instagram', icon: 'instagram', url: 'https://instagram.com/arabna.app' },
-  { id: 'x',         icon: 'xMark',     url: 'https://x.com/ARABNAapp' },
-  { id: 'whatsapp',  icon: 'whatsapp',  url: '' },
+  { id: 'facebook',  name: 'Facebook',  icon: 'facebook',  url: 'https://facebook.com/Arabnaapp' },
+  { id: 'instagram', name: 'Instagram', icon: 'instagram', url: 'https://instagram.com/arabna.app' },
+  { id: 'x',         name: 'X',         icon: 'xMark',     url: 'https://x.com/ARABNAapp' },
+  { id: 'whatsapp',  name: 'WhatsApp',  icon: 'whatsapp',  url: '' },
 ];
 
 export const FREE_PRICE = '__FREE__';

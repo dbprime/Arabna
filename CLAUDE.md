@@ -7,7 +7,7 @@ ARABNA · عربنا — a mobile-first web app for the Arab community in the U.
 **business directory + marketplace + events + magazine**, Arabic-first with a full English toggle.
 ("Classifieds / الإعلانات الشخصية" is now "Marketplace / السوق" — the old `#/classifieds`
 routes still resolve so shared links keep working.)
-Current version: **V.05.7 (prototype)**. Owner: Rai Elby (@dbprime). Deploys to Vercel (team DB Prime).
+Current version: **V.05.8 (prototype)**. Owner: Rai Elby (@dbprime). Deploys to Vercel (team DB Prime).
 
 ## Hard rules (from the product brief)
 1. **One repository, one Vercel project.** No duplicates, no stray preview projects.
@@ -4521,6 +4521,45 @@ these are somebody else's products.
 ⚠️ **`chk_i18n` reads 1753, not the 1748 the batch file predicted** — six
 new keys on a base of 1747, and the file's base predated V.05.5's four.
 The arithmetic is right, the baseline had moved under it. Again.
+
+## V.05.8 — «قريباً» has to be seen, not hovered
+
+`title` never appears on a phone — there is no hover there. So V.05.6's
+dimmed WhatsApp mark stood with **nothing beside it to explain it**, and a
+dimmed icon with no explanation reads as a broken icon — **which is the
+exact thing the dimming was put there to prevent.**
+
+One line under the row: **«WhatsApp — قريباً»**, «WhatsApp — Soon» in
+English.
+
+- ⚠️ **It is built FROM `SOCIAL`, not written.** Connecting WhatsApp
+  removes the line by itself and a fifth account added tomorrow joins it
+  with no code touched. Verified by flipping the url at runtime: the line
+  is there, giving it a url removes it **and turns the `<span class="soc
+  soc-soon">` into a real `<a>`**, and taking it away brings the line
+  back.
+- **`name` on the registry**, so the caption reads «WhatsApp» rather than
+  the internal id — and it is still passed through `esc()`, because that
+  rule has no exceptions.
+- `soonLineHtml` — the `Html` suffix is the V.04.1 rule, private to the
+  module because only `socialRowHtml` composes it.
+
+**Measured** — one line, centred, 6px under the row, 12.75px, both
+languages:
+
+```
+dark    rgb(139,147,172) on rgb(28,42,80)   4.59
+light   rgb(69,75,92)  on rgb(243,249,253)  8.19
+```
+
+⚠️ **4.59 clears 4.5, and it does so because the ground is `--surface`
+(#1C2A50) and not `--surface-2`.** `--muted` on `--surface-2` measures
+3.79 and is banned by the V.02.5 rule; this caption sits on the card, not
+the tinted pill, so the rule holds and the margin is real but thin. Worth
+knowing before anything moves this line onto a darker ground.
+
+**And `#/privacy` and `#/terms` still carry none of it** — zero rows,
+zero captions.
 
 ## Known open items
 - **The header image is still far larger than its box.** V.04.7 replaced

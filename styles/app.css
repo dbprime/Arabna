@@ -2572,3 +2572,5 @@ input[inputmode="tel"], input[type="email"], input[inputmode="decimal"], #zipIn 
   background:var(--surface-2); border:1px solid var(--line); color:var(--text-2); }
 .soc:active { background:var(--wash-3); }
 .soc-soon { opacity:.42; cursor:default; }
+/* the same muted caption size the hints use; centred under the row it explains */
+.social-soon { margin-top:6px; text-align:center; font-size:.75rem; color:var(--muted); }
