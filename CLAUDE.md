@@ -7,7 +7,7 @@ ARABNA · عربنا — a mobile-first web app for the Arab community in the U.
 **business directory + marketplace + events + magazine**, Arabic-first with a full English toggle.
 ("Classifieds / الإعلانات الشخصية" is now "Marketplace / السوق" — the old `#/classifieds`
 routes still resolve so shared links keep working.)
-Current version: **V.05.8 (prototype)**. Owner: Rai Elby (@dbprime). Deploys to Vercel (team DB Prime).
+Current version: **V.05.9 (prototype)**. Owner: Rai Elby (@dbprime). Deploys to Vercel (team DB Prime).
 
 ## Hard rules (from the product brief)
 1. **One repository, one Vercel project.** No duplicates, no stray preview projects.
@@ -4560,6 +4560,77 @@ knowing before anything moves this line onto a darker ground.
 
 **And `#/privacy` and `#/terms` still carry none of it** — zero rows,
 zero captions.
+
+## V.05.9 — the flag arrived as half a flag, and nothing was watching
+
+### The gap comes first, because it is the larger fault
+**Not one line in the whole net touched the ready-made marks.** Searching
+`tools/e2e/` for `av-opt`, `AVATARS`, `avatarSvg` and `data-preset`
+returned nothing. ⚠️ **So the biggest feature V.05.5 landed went in with
+no guard at all** — and `255` asked for `v5`, `v7` and `v17` to be updated
+for the drawer while asking for no coverage of the pictures. That is how
+the fault below walked past everybody.
+
+### The comment named the bug and then committed a smaller version of it
+`setAvatarEmoji` kept **one code point** and called it a cluster:
+
+```js
+const one = [...String(ch || '')][0] || '';
+```
+
+The comment above it said «an emoji is two or more units and `[0]` cuts it
+in half» — and then the spread iterated **code points**, not grapheme
+clusters. Measured on the running app, before anything was changed:
+
+```
+U+1F1F8 U+1F1E6              →  U+1F1F8    the Saudi flag, halved
+U+1F1F1 U+1F1E7              →  U+1F1F1    Lebanon, the same
+U+1F44D U+1F3FD              →  U+1F44D    the skin tone dropped
+U+1F468 U+200D U+1F469 …     →  U+1F468    a family became one man
+U+1F319                      →  U+1F319    the only kind that worked
+```
+
+⚠️ **And the flags are the case that matters for this app in particular.**
+It is built for Arabs in Houston, and the flags of Saudi, Lebanon,
+Palestine, Egypt, Iraq, Syria and Jordan are the likeliest single
+character any of them would pick to stand for themselves. Every one is two
+code points, so every one arrived as half.
+
+⚠️ **And nobody would ever have reported it.** The reader types their flag,
+sees a box with a letter in it, concludes the app «does not support flags»
+and picks something else. **A fault that looks like a design decision is
+never reported.**
+
+`Intl.Segmenter` with a spread fallback, so an older browser keeps working
+rather than throwing. The old rule is unchanged: one, however much was
+pasted.
+
+### The two numbers are one item, not two
+`maxlength="4"` counts **UTF-16 units** and a ZWJ family is eight of them,
+so fixing the function alone would leave the field refusing to accept one
+at all — **and the test would go green on something the reader cannot
+do.** 16 fits the longest single cluster, and the function trims to one
+regardless, so nothing leaks.
+
+### `test_v44` — and it was proven in both directions
+22 assertions in six blocks, covering what had no cover at all: the twelve
+marks and their hues, the instant choice with no queue, the emoji kinds,
+the uploaded photo that **stays** pending, and the picture leaving with
+the account at sign-out.
+
+```
+with the fix     22 passed, 0 failed   ·  both builds
+without it       18 passed, 4 failed   ·  both builds
+   FAIL 3.1 a flag survives whole
+   FAIL 3.2 …and so does the second one anybody would pick
+   FAIL 3.3 a skin tone is not stripped
+   FAIL 3.4 a ZWJ sequence is kept entire
+```
+
+⚠️ **The second half is the point.** A check that is green with the fix and
+green without it guards nothing — and we walked into that twice this week
+(`test_v36`'s written-in port, `test_v37`'s flat wait). **Teeth proven
+before the thing is called a net.**
 
 ## Known open items
 - **The header image is still far larger than its box.** V.04.7 replaced

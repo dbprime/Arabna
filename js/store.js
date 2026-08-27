@@ -3121,10 +3121,27 @@ export function setAvatarPreset(id) {
 }
 export function setAvatarEmoji(ch) {
   if (!state.user) return null;
-  /* one grapheme, and never a long string somebody pasted. ⚠️ The spread,
-     not `ch[0]`: an emoji is two or more units in JavaScript and `[0]`
-     cuts it in half, which renders as an empty box. */
-  const one = [...String(ch || '')][0] || '';
+  /* ⚠️ ONE GRAPHEME CLUSTER, not one code point — and that is the difference
+     that was cutting the flags in half. The spread `[...s][0]` takes the
+     first CODE POINT, and a Saudi flag is two of them (a pair of regional
+     indicators), so out came a single letter no font draws as a flag. The
+     same way a thumb loses its skin tone and a family becomes one man.
+     ⚠️ And the comment that stood here named this very fault — «an emoji is
+     two or more units and [0] cuts it in half» — and then did a smaller
+     version of it. Measured on the running app before the fix:
+       U+1F1F8 U+1F1E6  ->  U+1F1F8        the Saudi flag, halved
+       U+1F44D U+1F3FD  ->  U+1F44D        the skin tone dropped
+     `Intl.Segmenter` is the only correct tool for this, and the fallback
+     keeps an older browser working rather than throwing.
+     ⚠️ The old rule is unchanged: ONE, however much was pasted. */
+  const s = String(ch || '');
+  let one = '';
+  if (typeof Intl !== 'undefined' && Intl.Segmenter) {
+    const it = new Intl.Segmenter('ar', { granularity: 'grapheme' }).segment(s)[Symbol.iterator]().next();
+    one = it.done ? '' : it.value.segment;
+  } else {
+    one = [...s][0] || '';
+  }
   if (!one) return null;
   state.user.avatar = { kind: 'emoji', ch: one };
   save();

@@ -124,7 +124,13 @@ export function EditProfileScreen(root) {
         <div class="hint">${t('avatarPresetHint')}</div>
 
         <div class="field mt-12"><label class="label">${t('avatarEmoji')}</label>
-          <input class="input" id="avEmoji" maxlength="4" style="text-align:center;font-size:1.4rem"
+          ${/* ⚠️ 16 and not 4, and this is ONE item with the store's fix, not two:
+      `maxlength` counts UTF-16 UNITS and a ZWJ family is eight of them, so
+      fixing the function alone would leave the field refusing to accept one
+      at all — and the test would go green on something the reader cannot
+      do. 16 fits the longest single cluster, and the function trims to one
+      regardless, so nothing leaks through. */''}
+          <input class="input" id="avEmoji" maxlength="16" style="text-align:center;font-size:1.4rem"
             value="${u.avatar && u.avatar.kind === 'emoji' ? esc(u.avatar.ch) : ''}" placeholder="🌙" /></div>
 
         <div class="dr-group-label mt-12">${t('avatarUpload')}</div>
