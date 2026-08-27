@@ -7,7 +7,7 @@ ARABNA · عربنا — a mobile-first web app for the Arab community in the U.
 **business directory + marketplace + events + magazine**, Arabic-first with a full English toggle.
 ("Classifieds / الإعلانات الشخصية" is now "Marketplace / السوق" — the old `#/classifieds`
 routes still resolve so shared links keep working.)
-Current version: **V.05.9 (prototype)**. Owner: Rai Elby (@dbprime). Deploys to Vercel (team DB Prime).
+Current version: **V.06.0 (prototype)**. Owner: Rai Elby (@dbprime). Deploys to Vercel (team DB Prime).
 
 ## Hard rules (from the product brief)
 1. **One repository, one Vercel project.** No duplicates, no stray preview projects.
@@ -4631,6 +4631,66 @@ without it       18 passed, 4 failed   ·  both builds
 green without it guards nothing — and we walked into that twice this week
 (`test_v36`'s written-in port, `test_v37`'s flat wait). **Teeth proven
 before the thing is called a net.**
+
+## V.06.0 — the appearance starts from the device on every launch
+
+### Rai's decision, and it reverses half of V.04.8 on purpose
+> «خليه كل مرة يفتح تلقائي بغض النظر عن اختياري.»
+
+**The other half stands**: the header button still flips, Settings still
+offers the three, and `mountThemeWatch` still follows the device live.
+**What changed is only what SURVIVES a launch.**
+
+His reason is the one that settles it: **a phone that dims itself at night
+should dim the app with it, and a choice made once at noon should not
+outlive the day.**
+
+### One block, at boot, and nowhere else
+It sits beside the other two boot migrations and clears a pinned theme
+back to `auto`. ⚠️ **So it heals existing devices by itself** — a phone
+carrying a pinned theme from an old tap has it cleared on the first launch
+after this lands, and nothing is asked of its owner.
+
+⚠️ **`setThemeMode`, `resolvedTheme`, `applyTheme`, the header button and
+the Settings screen are untouched.** The whole rule is that one block —
+one place decides, and no screen has to remember it, exactly like the
+ownership rule of V.05.2.
+
+**Measured before and after:**
+```
+                                    before            after
+device light · nothing saved   light  · auto      light · auto
+device dark  · nothing saved   dark   · auto      dark  · auto
+device light · «dark» saved    dark   · dark      light · auto   ← healed
+device dark  · «light» saved   light  · light     dark  · auto   ← healed
+
+the button inside one session
+  clean open on a dark device        dark  · auto
+  after the tap                      light · light
+  after reopening                    dark  · auto
+```
+
+### And the note had to change with it
+`themeAutoNote` said «يتبع إعدادات جهازك». It now says the choice is for
+this session and the next launch follows the device again.
+
+⚠️ **That is not decoration.** Without it Settings offers three options and
+**silently forgets two of them** on the next launch — which is precisely
+the «button that does nothing» this project bans. The option stays; the
+screen says what it is worth. **No new key** — two strings rewritten, and
+`chk_i18n` is unchanged at 416 / 1753.
+
+### Six assertions reversed, none deleted
+`v17` (four) and `v41` (one), each carrying a comment naming the reversal.
+
+⚠️ **And `3.8` was not broken in itself** — it measured the gold assuming
+light was still applied, and the launch now returns to dark, so light is
+re-applied explicitly before the measurement. **The value measured is
+unchanged: `#7A5D28`.** That is the kind of collateral a reversal leaves,
+and it is worth naming: a check can fail because the step before it moved,
+not because what it guards did.
+
+`v17` 46/0 and `v41` 26/0 on both builds.
 
 ## Known open items
 - **The header image is still far larger than its box.** V.04.7 replaced

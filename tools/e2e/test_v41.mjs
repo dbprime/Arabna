@@ -171,13 +171,15 @@ for (const device of ['light', 'dark']) {
     JSON.stringify(a2));
 }
 
-/* an explicit choice made in Settings is not overruled by the button
-   sitting somewhere else on the screen */
+/* REVERSED in V.06.0, Rai's decision: the theme is not carried across a
+   launch at all — `asReader` opens the app afresh, so a stored «فاتح»
+   is cleared at boot and the device decides. Within one session the
+   choice still holds; that is what 3.1–3.3 above measure. */
 await asReader({ theme: 'light' }, 'dark');
 await at('#/home');
-ok('3.4 «فاتح» chosen in Settings survives a dark device', await page.evaluate(() =>
-  document.documentElement.getAttribute('data-theme') === 'light'
-  && JSON.parse(localStorage.getItem('arabna.v1')).theme === 'light'));
+ok('3.4 a stored choice does not survive a launch', await page.evaluate(() =>
+  document.documentElement.getAttribute('data-theme') === 'dark'
+  && JSON.parse(localStorage.getItem('arabna.v1')).theme === 'auto'));
 
 /* and «auto» still follows the device live, with the app open */
 await asReader({ theme: 'auto' }, 'light');

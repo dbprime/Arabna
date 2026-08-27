@@ -124,7 +124,22 @@ ok('3.5 the iPhone status bar style follows', st.status === 'default', st.status
 ok('3.6 the choice is saved', st.saved === 'light');
 await page.reload(); await page.waitForTimeout(700);
 st = await state();
-ok('3.7 …and survives a restart', st.attr === 'light' && st.saved === 'light');
+/* REVERSED in V.06.0, Rai's decision: the choice is for the session and
+   the launch always starts from the device again — a phone that dims
+   itself at night should dim the app with it. So a restart RESETS it,
+   which is the opposite of what this line used to demand, and the check
+   is now that the reset really happens. */
+ok('3.7 …and a restart returns to the device', st.attr === 'dark' && st.saved === 'auto',
+   st.attr + ' / ' + st.saved);
+/* the gold has to be measured while light is actually on, and after 3.7
+   the page is back on the device's dark — so light is re-applied here. */
+await page.evaluate(async () => {
+  const S = (window.__m && window.__m.S) || await import('arabna/js/store.js').catch(() => import('./js/store.js'));
+  S.setThemeMode('light');
+  const U = (window.__m && window.__m.U) || await import('arabna/js/ui.js').catch(() => import('./js/ui.js'));
+  U.applyTheme();
+});
+await page.waitForTimeout(300);
 ok('3.8 light darkens the gold for ivory', await tok(page, '--gold') === '#7A5D28', await tok(page, '--gold'));
 await page.evaluate(async () => (await import('/js/ui.js')).setTheme('dark'));
 await page.waitForTimeout(300);
@@ -150,7 +165,11 @@ ok('3.11 …and back again', (await state()).attr === 'dark', (await state()).at
 /* an explicit choice ignores the device */
 await setSaved('light');
 await page.emulateMedia({ colorScheme: 'dark' }); await page.waitForTimeout(400);
-ok('3.12 an explicit choice outranks the device', (await state()).attr === 'light', (await state()).attr);
+/* REVERSED in V.06.0: an explicit choice still outranks the device
+   WITHIN the session — the button and Settings both work — but `setSaved`
+   reloads, and a launch now clears the choice. So what is measured here
+   is the new rule: whatever was pinned, the launch follows the device. */
+ok('3.12 a pinned choice does not survive the launch', (await state()).attr === 'dark', (await state()).attr);
 await page.emulateMedia({ colorScheme: 'dark' });
 
 /* ============ 4 — where you switch it ============ */
@@ -169,10 +188,21 @@ const opts = await page.evaluate(() => [...document.querySelectorAll('[data-them
 })));
 ok('4.1 settings offers all three', opts.map(o => o.v).join(',') === 'auto,light,dark', opts.map(o => o.v).join(','));
 ok('4.2 each one previews itself', opts.every(o => o.hasPreview));
+/* REVERSED in V.06.0: the launch resets to auto, so the marked one on a
+   freshly opened Settings screen is «تلقائي» and never the pinned value.
+   What the check is for is unchanged — exactly one is marked, and the
+   screen reader is told which. */
 ok('4.3 the current one is marked, for eye and screen reader',
-   opts.filter(o => o.on).length === 1 && opts.find(o => o.v === 'dark').checked === 'true');
+   opts.filter(o => o.on).length === 1 && opts.find(o => o.v === 'auto').checked === 'true',
+   opts.map(o => o.v + ':' + o.checked).join(' '));
 // V.03.4: «بيتبع» was dialect; plain MSA is «يتبع»
-ok('4.4 the automatic one says what it follows', (await page.textContent('#app')).includes('يتبع إعدادات جهازك'));
+/* REVERSED in V.06.0: the note had to stop saying only «يتبع إعدادات
+   جهازك», because the sentence has to warn that the choice is temporary
+   — a Settings control that silently forgets itself is the «button that
+   does nothing» this project bans. */
+ok('4.4 the note says the choice is for this session',
+   (await page.textContent('#app')).includes('لهذه الجلسة')
+   && (await page.textContent('#app')).includes('يتبع جهازك'));
 await page.click('[data-theme-opt="light"]'); await page.waitForTimeout(450);
 ok('4.5 picking one switches the app there and then',
    (await page.evaluate(() => document.documentElement.getAttribute('data-theme'))) === 'light');

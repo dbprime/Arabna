@@ -155,6 +155,23 @@ if (state.location && state.location.city && state.location.manual === undefined
   try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) { /* memory only */ }
 }
 
+/* THE THEME IS NOT REMEMBERED ACROSS LAUNCHES — Rai's decision.
+   ⚠️ This REVERSES half of V.04.8: the tap still pins light or dark, and
+   Settings still offers the three, but every launch starts from the
+   device again. His reason is the one that matters: a phone that dims
+   itself at night should dim the app with it, and a choice made once at
+   noon should not outlive the day.
+   The header button and the Settings screen are untouched — the change is
+   only in what SURVIVES a launch, exactly like the ownership rule of 225:
+   what is written here decides, and no screen has to remember it.
+   ⚠️ And it heals existing devices by itself: a phone carrying a pinned
+   theme from an old tap has it cleared on the first launch after this
+   lands, so nothing is asked of its owner. */
+if (state.theme && state.theme !== 'auto') {
+  state.theme = 'auto';
+  try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) { /* memory only */ }
+}
+
 /* V.05.3 and older wrote a single `myBusinessId`. That key is still in
    every existing device's localStorage, and changing DEFAULTS does not
    touch it — so without this the owner of a claimed page loses it the
