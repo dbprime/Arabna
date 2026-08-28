@@ -491,17 +491,17 @@ export function PostScreen(root) {
           <span class="ch-count" id="c_pTitle"></span></label>
         <input class="input" id="pTitle" maxlength="${S.LISTING_TITLE_MAX}"
                value="${esc(editing ? L(editing.title) : (draft && draft.title) || '')}" />
-        <div id="e_pTitle"></div></div>
+        <div class="field-err" id="e_pTitle"></div></div>
       <div class="field" id="priceField"><label class="label">${t('priceLabel')}</label>
         <input class="input" id="pPrice" inputmode="decimal" placeholder="$"
                value="${esc(editing ? (editing.price !== FREE_PRICE ? editing.price : '') : (draft && draft.price) || '')}" />
-        <div id="e_pPrice"></div></div>
+        <div class="field-err" id="e_pPrice"></div></div>
       <div class="field"><label class="label">${t('cityLabel')}</label>
         <input class="input" id="pCity" value="${esc(editing ? editing.city : (draft && draft.city) || (S.userCity() ? S.userCity() + ', ' + S.state.location.state : ''))}" /></div>
       <div class="field"><label class="label">${t('descLabel')}
           <span class="ch-count" id="c_pDesc"></span></label>
         <textarea class="textarea" id="pDesc" maxlength="${S.LISTING_DESC_MAX}">${esc(editing ? L(editing.desc || '') : (draft && draft.desc) || '')}</textarea>
-        <div id="e_pDesc"></div></div>
+        <div class="field-err" id="e_pDesc"></div></div>
 
       <div class="field"><label class="label">${t('photosLabel')}</label><div id="phHost"></div></div>
 

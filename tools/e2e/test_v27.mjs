@@ -234,8 +234,23 @@ ok('4.3 the strength meter is gone', await page.evaluate(async () =>
   && !/pw-meter/.test(await (await fetch('/js/screens/auth.js')).text())));
 
 await go('#/auth/signup');
-ok('4.4 five conditions, listed from the start', await page.locator('.pw-reqs li').count() === 5);
-ok('4.5 «English only» is a hint above, not a sixth row',
+/* ⚠️ THE NUMBER IS NO LONGER TYPED HERE, and that is the point. It used to
+   read `=== 5`, and when `common` was added to `passwordChecks` the list
+   kept showing five: a reader watched every tick go green, tapped, and the
+   button did nothing, because the sixth rule refused in silence. So the
+   count is now read FROM the rules — every condition the submit can refuse
+   on has to be a visible row. Add a rule without adding a row and this
+   line goes red, which is the check that was missing.
+   `latin` is the one exception on purpose: it is a hint ABOVE the list,
+   not a row, and 4.5 below says so. */
+const pwConditions = await page.evaluate(async () => {
+  const S = await import('arabna/js/store.js').catch(() => import('./js/store.js'));
+  return Object.keys(S.passwordChecks('Aa1!aaaa')).filter(k => k !== 'latin').length;
+});
+ok('4.4 every condition the submit can refuse on is listed from the start',
+   await page.locator('.pw-reqs li').count() === pwConditions,
+   await page.locator('.pw-reqs li').count() + ' rows for ' + pwConditions + ' conditions');
+ok('4.5 «English only» is a hint ABOVE the list, never one of its rows',
    (await page.textContent('#sPass_latin')).includes('بالإنجليزية'));
 await page.fill('#sPass', 'R'); await page.waitForTimeout(250);
 ok('4.6 one letter draws no red', (await page.textContent('#e_sPass')).trim() === '');
@@ -291,7 +306,8 @@ ok('4.17 a good one goes through', (await page.evaluate(() => location.hash)) ==
 
 await adminIn();
 await page.click('[data-t="set"]'); await page.waitForTimeout(700);
-ok('4.18 the panel has the same list', await page.locator('#apNew_reqs li').count() === 5);
+ok('4.18 the panel has the same list', await page.locator('#apNew_reqs li').count() === pwConditions,
+   await page.locator('#apNew_reqs li').count() + ' rows for ' + pwConditions + ' conditions');
 
 /* ======================================================================
    5 — receipts

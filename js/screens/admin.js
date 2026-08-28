@@ -39,7 +39,7 @@ function setupView(root) {
                autocorrect="off" spellcheck="false" inputmode="email" /></div>
       ${passwordField('aNew', t('password'))}
       ${passwordChecklist('aNew')}
-      <div id="e_aNew"></div>
+      <div class="field-err" id="e_aNew"></div>
       <div id="aErr"></div>
       <div class="hint mt-8">${t('adminSetupNote')}</div>
       <button class="btn btn-gold btn-block mt-12" id="aSet">${t('adminSetupGo')}</button>`

@@ -7,7 +7,7 @@ ARABNA · عربنا — a mobile-first web app for the Arab community in the U.
 **business directory + marketplace + events + magazine**, Arabic-first with a full English toggle.
 ("Classifieds / الإعلانات الشخصية" is now "Marketplace / السوق" — the old `#/classifieds`
 routes still resolve so shared links keep working.)
-Current version: **V.06.2 (prototype)**. Owner: Rai Elby (@dbprime). Deploys to Vercel (team DB Prime).
+Current version: **V.06.3 (prototype)**. Owner: Rai Elby (@dbprime). Deploys to Vercel (team DB Prime).
 
 ## Hard rules (from the product brief)
 1. **One repository, one Vercel project.** No duplicates, no stray preview projects.
@@ -4949,6 +4949,95 @@ nothing entered quietly.
 the suites this batch touched would have reported green while three items
 in two suites it never considered were broken — the third batch in a row
 to prove the same rule.
+
+## V.06.3 — the checklist says every condition, and a refusal reads as one
+
+### Rai found it, and the app was right
+He opened `#/admin` on his phone to set the panel's password, typed one,
+pressed the button — **and nothing happened**. «لوحة الادمن ما بتفتح.»
+
+Reproduced exactly, before touching anything:
+
+```
+8 chars ✓   upper ✓   lower ✓   digit ✓   symbol ✓   not common ✗
+pressed: no navigation, no visible message, the screen unchanged
+```
+
+**And the refusal was correct.** The word he typed is, to the letter, the
+one that used to sit inside `store.js` — downloaded by every browser that
+opened the app, and still in the repository's history. `PW_BRAND` refused
+it, which is exactly its job.
+
+⚠️ **What was broken is that the refusal did not read as a refusal.**
+
+### Half one: the checklist was lying
+`passwordChecks` returns **six** conditions the submit refuses on.
+`PW_ROWS` — the list the reader watches — held **five**. `common` was not
+in it.
+
+⚠️ **So the reader watches five ticks go green, reads «done», presses, and
+nothing happens.** The sixth rule refuses from a place they cannot see.
+
+**A list showing SOME of the conditions is worse than no list at all**:
+with no list a reader looks for the message; with a partial one they trust
+it, and it is lying. `pwReqNotCommon` is the new string and it **names what
+the rule actually does** — common words, the app's own name, and the
+cities — because somebody refused has to know *why*, not guess.
+
+### Half two: the message did not look like a message
+`wirePasswordField` writes the reason into `#e_aNew`, and that box was
+written `<div id="e_aNew"></div>` — **with no `class="field-err"`**.
+Measured: `rgb(12,20,36)` at **17px**, the body's own ink and size, so the
+sentence sat among the grey hints around it and read as advice.
+
+- **Every other screen had it right** — `auth.js` in five places,
+  `profile.js`, and `admin.js`'s *other* password field. That one box was
+  the exception.
+- ⚠️ **And searching rather than guessing found three more**: `e_pTitle`,
+  `e_pPrice` and `e_pDesc` in `js/screens/marketplace.js` — **the post-a-
+  listing form**. A seller refused could have read the reason in black ink
+  among the hints.
+- **No CSS was added.** `.field-err` and `.field-err:empty { display:none }`
+  have been in `app.css` for a long time; those four boxes were simply
+  outside them.
+
+**Measured after: `rgb(176,42,46)` at 12.75px, the empty box still not
+drawn, six rows with the sixth unticked — and a password that passes all
+six opens the panel.**
+
+### The check that should have caught this had a number typed into it
+⚠️ **This is the most important thing in the batch.** `v27 · 4.4` read:
+
+```js
+ok('4.4 five conditions, listed from the start', … .count() === 5);
+```
+
+**The `5` was typed in the test.** So when `common` was added to
+`passwordChecks`, the list kept showing five and **the check stayed
+green** — it counted five and found five. *The guard did not catch the
+fault it exists to catch.*
+
+The count is now **read from the rules themselves**, so adding a rule
+without adding a row turns the line red. `latin` is excluded on purpose:
+it is a hint above the list, not a row, and `4.5` says so — and that
+item's name was corrected too, because «not a sixth row» became misleading
+the moment a sixth row existed.
+
+⚠️ **Proven with teeth**: a seventh condition added to `passwordChecks`
+with no row produced **`98 passed, 2 failed`**, both items reading
+`-> 6 rows for 7 conditions`. That is precisely the check that was missing
+the day the sixth rule went in.
+
+**And `v18`'s stale comment, a debt from V.06.0, is paid**: it said the
+theme is set «rather than by importing ui.js» while the code beneath it
+imported `ui.js`. The warning is **rewritten, not deleted** — the danger it
+describes (a second copy of the module on the single-file build) is still
+real and is still why the import is written `arabna/js/…`. What expired was
+the method, not the reason.
+
+**84 runs · 5,194 assertions · zero red · zero crash** — unchanged, because
+`v27` reworded two items and added none. `chk_i18n` goes 1753 → **1754**:
+one new key, intended and measured.
 
 ## Known open items
 - **The header image is still far larger than its box.** V.04.7 replaced

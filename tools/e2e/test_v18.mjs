@@ -60,9 +60,12 @@ const openPage = async (opts = {}) => {
   return p;
 };
 
-/* The theme is set through localStorage and a reload rather than by
-   importing ui.js: in the single-file build that import is a second copy
-   of the module and would drive a different app. */
+/* ⚠️ The import is written `arabna/js/…` and NEVER as a bare relative
+   path. On the single-file build a relative import fetches the file again
+   and hands back a SECOND copy of the module with its own state, so it
+   would drive a different app than the one on screen. The importmap name
+   reaches the app's own instance. This warning is older than the helper
+   below and still decides how it is written. */
 /* ⚠️ APPLIED LIVE, never «write and reload» — V.06.0. The theme is now
    cleared back to `auto` at every boot (Rai: the launch always starts from
    the device), so writing it to localStorage and reloading landed on the

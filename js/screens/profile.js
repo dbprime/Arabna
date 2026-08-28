@@ -318,9 +318,16 @@ export function passwordField(id, label) {
    sixth green tick it would be permanently green for everybody
    typing Latin and would confuse whoever is not.
    ------------------------------------------------------------ */
+/* ⚠️ `common` IS IN THIS LIST, and leaving it out was the fault. The rule
+   existed and refused passwords, but the checklist showed only the other
+   five — so a reader watched five ticks go green, tapped, and the button
+   did nothing. A list that shows SOME of the conditions is worse than no
+   list: it says «you are done» when you are not. Every condition the
+   submit is allowed to refuse on has to be visible while typing. */
 const PW_ROWS = [
   ['len', 'pwReqLen'], ['upper', 'pwReqUpper'], ['lower', 'pwReqLower'],
   ['digit', 'pwReqDigit'], ['symbol', 'pwReqSymbol'],
+  ['common', 'pwReqNotCommon'],
 ];
 
 export function passwordChecklist(id) {
