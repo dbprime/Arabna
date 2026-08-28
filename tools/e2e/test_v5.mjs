@@ -190,12 +190,20 @@ d = await drawerMap();
    hub. They are asserted below, on #/profile, where they now live — moved,
    never dropped, because a destination nobody checks is a destination that
    quietly disappears. */
+/* MOVED, NOT DROPPED: «كل التصنيفات» left the drawer because Home already
+   carries it as the computed «+N / شاهد الكل» tile and Home is a permanent
+   bottom-bar tab — the same rule that took «الدليل» and «السوق» out. So
+   `#/categories` is checked BELOW, on Home, and the drawer is checked for
+   its absence. Deleting the line instead would have taken the destination
+   out of the net entirely. */
 const wanted = ['#/profile',
-  '#/settings', '#/events', '#/magazine', '#/categories', '#/directory?featured=1',
+  '#/settings', '#/events', '#/magazine', '#/directory?featured=1',
   '#/advertise', '#/help', '#/about', '#/privacy', '#/terms', '#/notifications'];
 const HUB = ['#/my-business', '#/my-ads', '#/my-reviews', '#/messages', '#/saved', '#/subscribe'];
 for (const r of wanted) ok('drawer has a leaf for ' + r, d.routes.includes(r));
 ok('Home is deliberately absent (V.01.7)', !d.routes.includes('#/home'));
+ok('…and «كل التصنيفات» too, for the same reason', !d.routes.includes('#/categories'),
+   d.routes.filter(r => r === '#/categories').join(','));
 /* V.02.7 takes it out again: a permanent bottom-bar tab does not need a
    drawer row, and «إعلانات مميّزة» took the space. */
 ok('Directory taken back out of app sections', !d.routes.includes('#/directory'));
@@ -221,7 +229,7 @@ for (const r of wanted) {
   await openDrawer();
   /* settings is a top-level row now, so it is NOT opened through a group */
   const grp = ['#/my-business', '#/my-ads', '#/my-reviews', '#/messages', '#/saved', '#/subscribe'].includes(r) ? 'account'
-            : ['#/directory', '#/marketplace', '#/events', '#/magazine', '#/categories'].includes(r) ? 'sections'
+            : ['#/directory', '#/marketplace', '#/events', '#/magazine'].includes(r) ? 'sections'
             : ['#/help', '#/about', '#/privacy', '#/terms'].includes(r) ? 'help' : null;
   if (grp) { await page.click(`#drawer [data-toggle="${grp}"]`); await page.waitForTimeout(300); }
   await page.evaluate((route) => document.querySelector(`#drawer [data-route="${route}"]`).click(), r);

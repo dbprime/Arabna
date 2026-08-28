@@ -895,16 +895,34 @@ export function openDrawer() {
   const badge = (n) => n > 0 ? `<span class="dr-badge">${n > 9 ? '+9' : n}</span>` : '';
 
   const unread = S.unreadCount();
-  /** `accent` marks the one row allowed to keep the gold icon. */
-  const item = (ico, label, route, count = 0, accent = false) =>
-    `<button class="dr-item ${accent ? 'dr-accent' : ''}" data-route="${route}">${icon(ico, 22)}<span>${label}</span>
+  /** `accent` marks the one row allowed to keep the gold icon.
+      ⚠️ THE TILE IS OPT-IN, and that is the whole design.
+      `h` undefined  → the plain icon, exactly as before.
+      `h` a number    → a filled tile in that hue, white glyph.
+      `h === 'gold'`  → the reserved gold, for «أعلن معنا» ALONE.
+      A LEAF IS NEVER GIVEN ONE. Rai's decision, and it is a measurement,
+      not a preference: tiles on the leaves grow the drawer's overflow
+      195 -> 259, a full row. Top-level rows and group heads alone cost
+      195 -> 231. So the leaves are not «tiles turned off in CSS» — they
+      are never asked for, and there is no rule anywhere undoing another. */
+  const tile = (ico, h) => h === undefined
+    ? icon(ico, 22)
+    : h === 'gold'
+      ? `<span class="dr-tile dr-tile-gold">${icon(ico, 19)}</span>`
+      /* ⚠️ `--h` is written ON THE TILE, never on a parent — the V.04.7
+         rule: `var()` inside a custom property is substituted where the
+         property is DECLARED, so a hue set on a wrapper resolves once for
+         every child and they all come out the same colour. */
+      : `<span class="dr-tile" style="--h:${h}">${icon(ico, 19)}</span>`;
+  const item = (ico, label, route, count = 0, accent = false, h) =>
+    `<button class="dr-item ${accent ? 'dr-accent' : ''}" data-route="${route}">${tile(ico, h)}<span>${label}</span>
       ${badge(count)}</button>`;
 
   // A group head carries no route: it toggles its own group and nothing else.
-  const group = (id, label, rows) => `
+  const group = (id, label, rows, ico, h) => `
     <div class="dr-group ${openGroup === id ? 'open' : ''}" data-group="${id}">
       <button class="dr-item dr-head" data-toggle="${id}" aria-expanded="${openGroup === id}">
-        ${icon('chevronD', 20, 'grp-arrow')}<span>${label}</span>
+        ${ico ? tile(ico, h) : ''}${icon('chevronD', 20, 'grp-arrow')}<span>${label}</span>
       </button>
       <div class="dr-sub"><div class="dr-sub-inner">${rows}</div></div>
     </div>`;
@@ -925,7 +943,7 @@ export function openDrawer() {
   const sections = [
     /* Prayer times sit inside the sections group, not in the bottom bar:
        the bar has five slots and every one of them is spoken for. */
-    item('moon', t('prayerTitle'), '#/prayer'),
+    item('mosque', t('prayerTitle'), '#/prayer'),
     /* Directly under it and in the same group, in the same weight and the
        same font. «مواعيد القداس» and «مواقيت الصلاة» are two lines of one
        shape: putting this in another group would make it an appendix, and
@@ -938,7 +956,15 @@ export function openDrawer() {
       ? item('crown', t('drFeatured'), '#/directory?featured=1')
       : `<button class="dr-item dr-soon" disabled aria-disabled="true">${icon('crown', 22)}
            <span>${t('drFeatured')}</span><span class="soon-tag">${t('soon')}</span></button>`,
-    item('grid', t('allCategories'), '#/categories'),
+    /* ⚠️ «كل التصنيفات» IS NOT HERE, and it was not dropped — it was
+       already on HOME, as the computed «+N / شاهد الكل» tile at the end of
+       the category row, and Home is a permanent bottom-bar tab. This is
+       the SAME rule that took «الدليل» and «السوق» out of this list: a
+       destination with a permanent tab does not get repeated in the menu.
+       ⚠️ And it is asserted where it now lives, not deleted from the net:
+       `v3` taps the Home tile and lands on `#/categories`, and `v5` and
+       `v4` were moved to check Home rather than the drawer. A check that
+       disappears takes its behaviour with it two batches later. */
   ].join('');
 
   /* ⚠️ A LEAF, NOT A TOP-LEVEL ROW. The drawer's standing rule is that it
@@ -983,7 +1009,7 @@ export function openDrawer() {
       </div>`;
 
   const langRow = `
-      <button class="dr-item" id="drLang">${icon('globe', 22)}<span>${t('language')}</span>
+      <button class="dr-item" id="drLang">${tile('globe', 202)}<span>${t('language')}</span>
         <span class="lang-pill dr-end">${getLang() === 'ar' ? 'العربية' : 'English'}</span></button>`;
 
 
@@ -1003,11 +1029,22 @@ export function openDrawer() {
            back to. And it does not stay in «حسابي», because that group is
            NOT DRAWN AT ALL for a visitor — which was the fault itself,
            not merely where it sat. */''}
-      ${item('settings', t('settings'), '#/settings')}
-      ${member ? item('bell', t('notifications'), '#/notifications', unread) : ''}
-      ${group('sections', t('grpSections'), sections)}
-      ${item('megaphone', t('advertiseWithUs'), '#/advertise', 0, true)}
-      ${group('help', t('grpHelp'), help)}
+      ${/* ⚠️ EVERY HUE HERE IS A VALUE OUT OF `CAT_HUE`, not a colour
+           picked by eye — Rai's decision. Those twenty-one were already
+           measured for contrast when the categories were built, so nothing
+           new has to be proved. And NONE of them is in the gold band
+           35–55: that band is the button and the action, and a row wearing
+           it would read as «selected».
+           realestate 202 · lawyers 232 · sweets 348 · auto 128 · worship 266 */''}
+      ${item('settings', t('settings'), '#/settings', 0, false, 232)}
+      ${member ? item('bell', t('notifications'), '#/notifications', unread, false, 348) : ''}
+      ${group('sections', t('grpSections'), sections, 'grid', 128)}
+      ${/* ⚠️ 'gold', NOT A HUE. This is the one paid row in the drawer, and
+           the gold is what says so. Giving it a hue out of the twenty-one
+           would have made it one row among many — which is the exact thing
+           the reserved band exists to prevent. */''}
+      ${item('megaphone', t('advertiseWithUs'), '#/advertise', 0, true, 'gold')}
+      ${group('help', t('grpHelp'), help, 'help', 266)}
       <div class="dr-version">ARABNA · عربنا — ${t('version')} ${APP_VERSION}</div>
     </aside>`;
 

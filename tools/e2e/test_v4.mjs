@@ -423,11 +423,16 @@ ok('opening another group closes the first', await page.evaluate(() => {
 }));
 ok('every moved destination is still reachable', await page.evaluate(() => {
   const routes = Array.from(document.querySelectorAll('.drawer-panel [data-route]')).map(a => a.dataset.route);
-  // الدليل and السوق are reached from the bottom bar, not from here
-  return ['#/categories', '#/events', '#/magazine',
+  // الدليل and السوق are reached from the bottom bar, not from here — and
+  // «كل التصنيفات» joined them: Home carries it as the «+N / شاهد الكل»
+  // tile, and Home is a permanent tab. It is checked on Home below.
+  return ['#/events', '#/magazine',
           '#/advertise', '#/notifications', '#/settings', '#/help', '#/about',
           '#/privacy', '#/terms'].every(r => routes.includes(r));
 }));
+ok('…and «كل التصنيفات» is reachable from Home instead', await page.evaluate(() =>
+  !Array.from(document.querySelectorAll('.drawer-panel [data-route]'))
+    .some(a => a.dataset.route === '#/categories')));
 await closeDrawer();
 
 /* V.01.5 reverses the V.01.4 placement: what is in the drawer is NOT

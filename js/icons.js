@@ -97,6 +97,19 @@ const P = {
   /* V.01.8 — directory attributes, worship, hours */
   landmark: '<line x1="3" y1="21" x2="21" y2="21"/><line x1="4" y1="21" x2="4" y2="10"/><line x1="20" y1="21" x2="20" y2="10"/><line x1="9" y1="21" x2="9" y2="10"/><line x1="15" y1="21" x2="15" y2="10"/><polygon points="12 2 22 8 2 8 12 2"/>',
   moon: '<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/>',
+  /* ⚠️ `moon` IS THE THEME BUTTON. It was also standing for prayer in ten
+     places, so one drawing meant «prayer» in a list and «night mode» in the
+     header — the same fault as `xMark`, one glyph with two meanings.
+     A dome, a door, and a minaret with a balcony and a crescent. Drawn to
+     sit BESIDE `church`: same construction — a building, a religious mark
+     above it, a door — so «مواقيت الصلاة» and «مواعيد القداس» read as a
+     pair rather than two drawings from two worlds.
+     ⚠️ ONE minaret, not two. Two collapse into a pair of ticks at 19px,
+     which is the real drawer size; one survives, and so does the crescent
+     on it — measured at 17, 19 and 21 before this was written.
+     `moon` STAYS for the theme button, for Ramadan and for iftar: there a
+     crescent is the right drawing and not a stand-in. */
+  mosque: '<path d="M3 15a5 5 0 0 1 10 0"/><path d="M3 15v6"/><path d="M13 15v6"/><path d="M2 21h20"/><path d="M6.4 21v-2.4a1.6 1.6 0 0 1 3.2 0V21"/><path d="M16.6 21V11"/><path d="M20.2 21V11"/><path d="M16 11h4.8"/><path d="M20.4 4.2a2.4 2.4 0 1 0 0 3.3"/><path d="M18.4 8.8V11"/>',
   /* A church: a cross above a roof line. Drawn in the same one-stroke,
      24-grid, no-fill idiom as every other icon here, so it sits beside
      `moon` on the same row without either looking borrowed. */

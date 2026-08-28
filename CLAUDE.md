@@ -7,7 +7,7 @@ ARABNA · عربنا — a mobile-first web app for the Arab community in the U.
 **business directory + marketplace + events + magazine**, Arabic-first with a full English toggle.
 ("Classifieds / الإعلانات الشخصية" is now "Marketplace / السوق" — the old `#/classifieds`
 routes still resolve so shared links keep working.)
-Current version: **V.06.1 (prototype)**. Owner: Rai Elby (@dbprime). Deploys to Vercel (team DB Prime).
+Current version: **V.06.2 (prototype)**. Owner: Rai Elby (@dbprime). Deploys to Vercel (team DB Prime).
 
 ## Hard rules (from the product brief)
 1. **One repository, one Vercel project.** No duplicates, no stray preview projects.
@@ -4819,6 +4819,136 @@ Three suites, and only one of them was a real red.
 
 ⚠️ **And the count checks itself.** V.06.0 ran 5,190; this batch adds two
 assertions × two builds = 4, so 5,194 is what must appear. It did.
+
+## V.06.2 — the drawer's tiles, the mosque, and the duplicated row leaves
+
+### One glyph cannot mean two things
+`moon` was the theme button **and** stood for prayer in ten places, so the
+same drawing meant «prayer» in a list and «night mode» in the header —
+`xMark` again, one symbol with two jobs. `mosque` is new: a dome, a door,
+and **one** minaret with a balcony and a crescent, drawn to sit **beside
+`church`** — a building, a religious mark above it, a door — so «مواقيت
+الصلاة» and «مواعيد القداس» read as a pair rather than two drawings from
+two worlds.
+
+- ⚠️ **One minaret, not two.** Two collapse into a pair of ticks at 19px,
+  which is the real drawer size. Five alternatives were drawn and thrown
+  out **by measurement, not taste**: two minarets, a lone minaret, a
+  rosary, a dome with a filled crescent, a mihrab with no mark. **The
+  church survives small because its cross is two straight lines**, and a
+  straight line survives shrinking where a small curve does not.
+- ⚠️ **`moon` is not deleted.** It is the theme button, and it is Ramadan
+  and iftar in `data.js` — there a crescent is the right drawing, not a
+  stand-in for one.
+- ⚠️ **And the trap for anyone who searches and replaces:**
+  `suggestWorshipHtml('mosque')` and `mountSuggestWorship(root, 'mosque')`
+  take a **kind of place of worship, not the name of a symbol**, and the
+  string never reaches `icon()`. The likeness is a coincidence.
+- On `#/mass` the feast rows were asked about explicitly, because the
+  crescent there is correct in itself — the calendar is Hijri. Measured
+  before changing anything: the feast crescent is **gold inside a gold
+  square** (`rgb(228,199,126)` dark, `rgb(90,68,24)` light) while the theme
+  button's is **grey**, and in dark the theme button shows a sun at all —
+  so the two never met. Rai chose the mosque there too. **The line changes
+  and no colour is added**, because the colour asked for was already there.
+
+### The tile is opt-in, and a leaf is never given one
+`tile(ico, h)` in `js/ui.js`: `h` undefined is the plain icon exactly as
+before, a number is a filled tile in that hue, and `'gold'` is the
+reserved gold for «أعلن معنا» alone. Both new arguments sit last and
+default to absent, so **every existing call works untouched** — and the
+group leaves are all of that kind.
+
+- ⚠️ **The leaves get nothing, and that is a measurement, not a taste.**
+  Tiles on the leaves take the visitor's overflow **195 → 259**, a full
+  row; the top-level rows and the two group heads alone cost 195 → 231.
+  So there is **no CSS rule turning a tile off inside `.dr-sub`** — none is
+  ever asked for, and a stylesheet undoing what the markup just requested
+  is two sources of truth.
+- **Every hue comes out of `CAT_HUE`** — realestate 202 · lawyers 232 ·
+  sweets 348 · auto 128 · worship 266 — already measured for contrast when
+  the categories were built, and **none in the gold band 35–55**: that band
+  is the button and the action, and a row wearing it reads as «selected».
+- ⚠️ **`--h` is written on the tile, never on a parent** — the V.04.7 rule.
+- ⚠️ **`.dr-accent` is untouched**, so if the tile is ever lifted the row
+  goes back to gold with nothing written.
+- **Measured: 30×30 exactly, glyph 19, ink white on the colours and
+  `--on-gold` on the gold** (`rgb(26,18,6)` dark, `rgb(255,253,248)`
+  light), **zero tiles inside `.dr-sub`**, zero console errors.
+
+**And a number given to Rai was wrong, so it is written here corrected.**
+I told him «no row grows, the cost is 36px». The truth: «اللغة» is 67px
+and swallows the tile (+0) **because it is the tallest row in the drawer,
+carrying the language disc** — I measured that one and generalised from
+it. Every other top-level row grows **+8** and each group head **+10**, so
+the real cost is **+36 for a visitor and +44 for a member**. He was then
+given the full four-size table and chose 30 again.
+
+### The duplicated row leaves, and the ceiling comes DOWN
+«كل التصنيفات» is out of the drawer — **not for space, because it is a
+duplicate**: Home already carries it as the computed «+N / شاهد الكل» tile
+at the end of the category row, and Home is a permanent bottom-bar tab.
+**That is word for word the rule that took «الدليل» and «السوق» out of the
+same list at V.02.7.** The route, the screen and the Home tile are all
+untouched — what left is a row in a menu, not a destination.
+
+```
+              with tiles   after the row left
+visitor · الأقسام   231    →    181
+member  · الأقسام   156    →    106
+folded              0      →      0
+```
+
+- ⚠️ **The ceiling in `v20` lands at 191 — lower than the 205 this batch
+  started from, and the first fall in five raises.**
+- ⚠️ **And a sentence repeated for four batches was measured and is
+  false**: «one row removed fixes every measurement at once». A leaf is
+  50px and the visitor was 231 over — it takes **five**. It was true when
+  written at V.03.2 and nobody re-measured it for four batches. That is
+  exactly the stale-number fault this file hunts in the tests, committed
+  in the file's own prose.
+- ⚠️ **What is true, and is why the ceiling is a watchdog and not an
+  alarm:** `.drawer-panel` is `overflow-y: auto` and scrolls the whole
+  way — dragged to its end, `scrollTop` reaches 231 of a 231 maximum and
+  the version line's bottom lands exactly on 844. **No row is ever out of
+  reach.** The promise that matters — folded, it does not scroll — is **0
+  for both roles in both themes.**
+
+### Five checks, and every one of them moved rather than died
+⚠️ **A destination that leaves a screen must not take its check with it**,
+or the destination itself disappears two batches later and nobody knows
+when. So the check follows the destination, and a new one guards its
+absence from where it left.
+
+- **`v7` — the real red, and the rule was never broken.** «The gold is
+  spent on one row» still holds to the letter; **what moved is where the
+  gold sits** — it was the glyph's colour, and on a tiled row it is the
+  tile's background with `--on-gold` ink on top. So a check counting gold
+  SVGs returned **0 on a build that obeys the rule perfectly** (96/2). It
+  counts by **row** now, reading the tile first and the bare glyph second,
+  and **it knows both themes** where it knew only dark — a second gold in
+  light would have passed unseen. Proven with teeth: giving «الإعدادات» a
+  gold tile too returns **2 gold rows** and both items go red.
+- **`v7`'s other three** — the leaf counter (seven → six) and the label in
+  both languages — were **replaced, not deleted**: the count stays a number
+  so a leaf added without a decision turns it red, and «كل الأقسام» stays
+  in the check because it is the old wording that must not return through
+  the Home tile either. **98 items before and after.**
+- **`v5` and `v4`** lose `#/categories` from their drawer lists and each
+  gain an assertion that it is **absent** from the drawer — while `v3`
+  (which taps the Home tile and lands on `#/categories`) and `v16 · 5.10`
+  are untouched and are now the destination's real guards.
+- **Proven in reverse**: putting the row back makes **five items in three
+  suites** go red — `v7` 95/3, `v5` 133/1, `v4` 102/1.
+
+⚠️ **And the count closes itself: 5,194, the same as V.06.1.** `v4` +1 and
+`v5` −1 per build, `v7` and `v20` unchanged in number. Nothing was lost and
+nothing entered quietly.
+
+⚠️ **Two of the five reds were found by the full net alone.** Running only
+the suites this batch touched would have reported green while three items
+in two suites it never considered were broken — the third batch in a row
+to prove the same rule.
 
 ## Known open items
 - **The header image is still far larger than its box.** V.04.7 replaced

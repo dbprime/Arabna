@@ -101,7 +101,7 @@ function feastListHtml(title, rows) {
 function feastRowHtml(f) {
   return `
     <div class="list-row feast-row${f.passed ? ' past' : ''}">
-      <span class="row-ico">${icon(f.tradition === 'islam' ? 'moon' : 'church', 19)}</span>
+      <span class="row-ico">${icon(f.tradition === 'islam' ? 'mosque' : 'church', 19)}</span>
       <span class="row-main">
         <span class="row-title">${esc(feastLabel(f))}</span>
       </span>

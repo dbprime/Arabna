@@ -720,7 +720,7 @@ function worshipBlock(b) {
       method: S.prayerMethod(), asrShadow: S.asrShadow(),
     }) : null;
     if (times) {
-      rows.push(`<div class="wor-head">${icon('moon', 17)} ${t('prAdhanCalc')}</div>
+      rows.push(`<div class="wor-head">${icon('mosque', 17)} ${t('prAdhanCalc')}</div>
         <div class="wor-grid">
           ${['fajr', 'dhuhr', 'asr', 'maghrib', 'isha'].map(k =>
             `<div class="wor-cell"><b>${t('pr' + k[0].toUpperCase() + k.slice(1))}</b>

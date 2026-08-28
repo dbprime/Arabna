@@ -73,7 +73,7 @@ export function prayerLocating() { return S.geoPending(); }
  */
 export function prayerAskHtml() {
   return `<div class="pr-ask" id="prAsk">
-    <div class="pr-ask-txt">${icon('moon', 19)}<span>${t('prAskHome')}</span></div>
+    <div class="pr-ask-txt">${icon('mosque', 19)}<span>${t('prAskHome')}</span></div>
     <div class="pr-ask-btns">
       <button class="btn btn-gold btn-sm" id="prAskYes">${t('yes')}</button>
       <button class="btn btn-ghost btn-sm" id="prAskNo">${t('prAskNo')}</button>
@@ -105,15 +105,15 @@ export function prayerBarHtml() {
         <span class="spinner sm"></span><span>${t('prLocating')}</span></span>`;
     }
     return `<button class="pr-bar unset" data-route="#/prayer">
-      ${icon('moon', 17)}<span>${t('prNoLocation')}</span></button>`;
+      ${icon('mosque', 17)}<span>${t('prNoLocation')}</span></button>`;
   }
   return `<button class="pr-bar" id="prBar" data-route="#/prayer">${prayerBarInner(times)}</button>`;
 }
 
 function prayerBarInner(times) {
   const nx = nextPrayer(times, minutesNow());
-  if (!nx) return `${icon('moon', 17)}<span>${t('prayerTitle')}</span>`;
-  return `${icon('moon', 17)}
+  if (!nx) return `${icon('mosque', 17)}<span>${t('prayerTitle')}</span>`;
+  return `${icon('mosque', 17)}
     <span class="pr-bar-name">${prLabel(nx.key)}</span>
     <span class="pr-bar-at ltr">${fmtPrayer(nx.at, S.state.lang)}</span>
     <span class="pr-bar-left">${t('prIn')} ${fmtLeft(nx.in)}</span>`;
@@ -158,7 +158,7 @@ function ramadanBarInner(times) {
      «باقي -20 دقيقة» is worse than one that simply says the time. */
   const left = m == null ? null : Math.round(m - now);
   return `<div class="rm-line">
-      ${icon('moon', 17)}
+      ${icon('mosque', 17)}
       <span class="rm-name">${t('rmIftar')}</span>
       <span class="rm-at ltr">${m == null ? '—' : fmtPrayer(m, S.state.lang)}</span>
       ${left != null && left > 0
@@ -227,7 +227,7 @@ function draw(root) {
     root.innerHTML = `
       <div class="pad mt-16">
         <div class="empty">
-          <div class="empty-ico">${icon('moon', 40)}</div>
+          <div class="empty-ico">${icon('mosque', 40)}</div>
           <div class="empty-title">${t('prNoLocation')}</div>
           <button class="btn btn-gold mt-12" id="prLoc">${icon('navigation', 18)} ${t('useMyLocation')}</button>
           <!-- The second door. The calculation method needs no location at
@@ -259,7 +259,7 @@ function draw(root) {
         <div class="list">
           ${mosques.map(m => `
             <button class="list-row" data-route="#/directory/${m.id}">
-              <span class="row-ico">${icon('moon', 20)}</span>
+              <span class="row-ico">${icon('mosque', 20)}</span>
               <span class="row-main">
                 <span class="row-title">${S.state.lang === 'en' ? (m.name.en || m.name.ar) : (m.name.ar || m.name.en)}</span>
                 <span class="row-sub">${jumuahLine(m)}</span>

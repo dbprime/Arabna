@@ -250,8 +250,27 @@ ok('6.3 «إعلانات مميّزة» took their place', dr.featured && dr.rou
    but the gap itself has never once been closed. ONE row removed from the
    drawer fixes every measurement at once, and that question has stood in
    Rai's name since V.03.2. A row is a product decision, not a code one. */
+/* The tile pushed every EXISTING overflow up — a top-level row grew 8px
+   and a group head 10 — and no new overflow was born: a visitor went 195
+   -> 231 with «تصنيفات عربنا» and 95 -> 131 with «المساعدة», a member
+   112 -> 156 and 12 -> 56.
+   ⚠️ AND THEN IT COMES BACK DOWN, in the SAME batch, because Rai took the
+   duplicate row out: 231 -> 181 for a visitor and 156 -> 106 for a member.
+   So the ceiling lands at 191, not 241 — LOWER than the 205 this batch
+   started from, and the first time in five raises that it has gone down.
+   191 and not 181: the same +10 headroom every earlier raise left.
+   ⚠️ And the sentence repeated for four raises — «ONE row removed fixes
+   every measurement at once» — WAS MEASURED AND IS FALSE. A leaf is 50px
+   and the visitor was 231 over: it takes five. It was true when it was
+   first written at V.03.2 and nobody re-measured it for four batches.
+   ⚠️ What IS true, and is the reason this ceiling is a watchdog and not an
+   alarm: `.drawer-panel` is `overflow-y: auto` and scrolls the whole way.
+   Measured — dragged to the end, scrollTop reached 231 of a 231 maximum
+   and the version line's bottom landed exactly on the viewport's 844. NO
+   ROW IS EVER OUT OF REACH. The promise that matters is «folded, it does
+   not scroll», and that is 0 for both roles in both themes. */
 ok('6.4 the drawer overflow with a group open does not grow past the known gap',
-   dr.height - dr.box <= 205, (dr.height - dr.box) + 'px over, one row is ' + dr.row);
+   dr.height - dr.box <= 191, (dr.height - dr.box) + 'px over, one row is ' + dr.row);
 /* …and the rule still holds where it is most often read */
 await page.evaluate(() => { const g = document.querySelector('.dr-group.open');
   if (g) g.querySelector('.dr-head').click(); });

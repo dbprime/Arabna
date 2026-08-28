@@ -2574,3 +2574,31 @@ input[inputmode="tel"], input[type="email"], input[inputmode="decimal"], #zipIn 
 .soc-soon { opacity:.42; cursor:default; }
 /* the same muted caption size the hints use; centred under the row it explains */
 .social-soon { margin-top:6px; text-align:center; font-size:.75rem; color:var(--muted); }
+
+/* ---------- the drawer's coloured tiles ----------
+   ⚠️ 30px in a row whose content box is 23px (55 tall, minus 16+16 of
+   padding), so a top-level row grows by 8 and a group head — which
+   carried only an arrow before — by 10. «اللغة» is the one exception at
+   67px: the tile sits inside the room it already had.
+   Measured with a group open: a visitor 195 -> 231, a member 112 -> 156.
+   ⚠️ AND FOLDED THE DRAWER IS STILL 0, for both roles and both themes.
+   That is the rule that actually stands; the overflow above only ever
+   appears with a group open, which was true before this too.
+   ⚠️ AND THE LEAVES GET NOTHING. There is no rule here turning a tile off
+   inside `.dr-sub`, because no leaf is ever given one — a stylesheet that
+   undoes what the markup just asked for is two sources of truth. */
+.dr-tile {
+  width: 30px; height: 30px; flex: 0 0 30px;
+  border-radius: 9px; display: grid; place-items: center;
+  background: hsl(var(--h) 58% 42%);
+}
+/* ⚠️ `!important` because `.dr-item svg` sets the muted ink for every glyph
+   in the drawer and it is the more specific of the two by element type.
+   The tile's whole job is that the glyph stops being drawer-grey. */
+.dr-tile svg { color: #fff !important; flex: 0 0 19px; }
+/* The one paid row. `--on-gold` is the ink the gold BUTTON already uses,
+   so the tile and the button say gold the same way in both themes. */
+.dr-tile-gold { background: linear-gradient(145deg, var(--gold-bright), var(--gold)); }
+.dr-tile-gold svg { color: var(--on-gold) !important; }
+/* the arrow keeps its own size beside a tile */
+.dr-head .grp-arrow { flex: 0 0 20px; }

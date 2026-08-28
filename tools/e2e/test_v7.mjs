@@ -180,9 +180,25 @@ let d = await page.evaluate(() => {
     routes: Array.from(panel.querySelectorAll('[data-route]')).map(b => b.dataset.route),
     chevrons: panel.querySelectorAll('.dr-item .chev').length,
     grpArrows: panel.querySelectorAll('.grp-arrow').length,
-    goldIcons: Array.from(panel.querySelectorAll('svg')).filter(sv => {
-      const c = getComputedStyle(sv).color;
-      return /198,\s*161,\s*91|228,\s*199,\s*126/.test(c);
+    /* CHANGED with the drawer tiles: the rule guarded here is «the gold is
+       spent on ONE ROW», and it has not moved — but WHERE the gold sits
+       has. It used to be the glyph's colour; on a tiled row it is the
+       TILE's background, and the glyph on top is `--on-gold` ink. Counting
+       gold SVGs therefore returned 0 and the check went red on a build
+       that obeys the rule perfectly.
+       ⚠️ So the count is now by ROW, and it reads the tile first and the
+       bare glyph second — whichever the row actually wears. Both gold
+       tokens are matched in both themes (dark #C6A15B/#E4C77E, light
+       #7A5D28/#5A4418), because a check that only knows one theme is half
+       a check. And it stays scoped to `.dr-item`: the «إنشاء حساب» button
+       in the visitor's head is gold too, on purpose, and was never what
+       this line was about. */
+    goldRows: Array.from(panel.querySelectorAll('.dr-item')).filter(r => {
+      const g = r.querySelector('.dr-tile') || r.querySelector('svg');
+      if (!g) return false;
+      const cs = getComputedStyle(g);
+      return /198,\s*161,\s*91|228,\s*199,\s*126|122,\s*93,\s*40|90,\s*68,\s*24/
+        .test(cs.color + ' ' + cs.backgroundImage + ' ' + cs.backgroundColor);
     }).length,
     width: Math.round(panel.getBoundingClientRect().width),
     scrim: getComputedStyle(document.querySelector('.drawer-scrim')).backgroundColor,
@@ -215,8 +231,13 @@ ok('Directory left with it', !d.routes.includes('#/directory'));
 /* V.03.9 added «مواعيد القداس» directly under «مواقيت الصلاة» — Rai asked
    for a churches section so a Christian reader finds something of theirs
    here, and the two lines are deliberately the same shape. */
-ok('the sections group is seven leaves', await page.evaluate(() =>
-  document.querySelectorAll('.dr-group[data-group="sections"] .dr-item').length) === 8,  // head + 7
+/* SIX now, not seven: «كل التصنيفات» left, because Home already carries
+   it as the computed «+N / شاهد الكل» tile and Home is a permanent
+   bottom-bar tab — the same rule that took «الدليل» and «السوق» out.
+   The count is kept as a NUMBER on purpose: a leaf added or lost without
+   a decision behind it turns this line red, which is the whole job. */
+ok('the sections group is six leaves', await page.evaluate(() =>
+  document.querySelectorAll('.dr-group[data-group="sections"] .dr-item').length) === 7,  // head + 6
    await page.evaluate(() => document.querySelectorAll('.dr-group[data-group="sections"] .dr-item').length) + ' incl. head');
 ok('…prayer times among them', await page.evaluate(() =>
   [...document.querySelectorAll('.dr-group[data-group="sections"] [data-route]')]
@@ -239,7 +260,7 @@ ok('version line is pinned to the foot', d.versionIsLast && d.versionAtBottom,
 ok('version line has a rule above it', parseFloat(d.versionBorder) > 0, d.versionBorder);
 
 /* gold discipline: only the advertise icon inside the visitor drawer */
-ok('gold is spent on one icon only (advertise)', d.goldIcons === 1, d.goldIcons + ' gold icons');
+ok('gold is spent on one row only (advertise)', d.goldRows === 1, d.goldRows + ' gold rows');
 ok('that icon is the advertise row', await page.evaluate(() => {
   const r = document.querySelector('.dr-accent');
   return !!r && r.dataset.route === '#/advertise';
@@ -254,7 +275,15 @@ ok('the language pill is neutral now', await page.evaluate(() => {
 /* labels */
 let dtxt = await page.textContent('#drawer');
 ok('group renamed to «تصنيفات عربنا»', dtxt.includes('تصنيفات عربنا') && !dtxt.includes('أقسام التطبيق'));
-ok('leaf renamed to «كل التصنيفات»', dtxt.includes('كل التصنيفات') && !dtxt.includes('كل الأقسام'));
+/* MOVED, NOT DROPPED. The leaf's LABEL is no longer in the drawer at all,
+   so what is asserted here is the absence — and the destination itself is
+   asserted where it now lives: `v3` taps the Home tile and lands on
+   `#/categories`, and `v16 · 5.10` counts it on Home. Neither was touched.
+   ⚠️ And «كل الأقسام» stays in the check: it is the OLD wording this line
+   was written to keep out, and it must not come back through the Home
+   tile either. */
+ok('«كل التصنيفات» is out of the drawer, and the old wording never returned',
+   !dtxt.includes('كل التصنيفات') && !dtxt.includes('كل الأقسام'));
 
 /* the open group: faint ground, not gold text, plus the vertical rule */
 await page.click('#drawer [data-toggle="sections"]'); await page.waitForTimeout(400);
@@ -509,13 +538,19 @@ ok('switched to English', await page.evaluate(() => document.documentElement.lan
 await openDrawer();
 dtxt = await page.textContent('#drawer');
 ok('EN: group is "ARABNA categories"', dtxt.includes('ARABNA categories') && !dtxt.includes('App sections'));
-ok('EN: leaf is "All categories"', dtxt.includes('All categories') && !dtxt.includes('All sections'));
+ok('EN: "All categories" is out of the drawer too',
+   !dtxt.includes('All categories') && !dtxt.includes('All sections'));
 ok('EN: Home still absent', !/(^|\s)Home(\s|$)/.test(dtxt), dtxt.includes('Home') + '');
 ok('EN: still no chevrons', await page.evaluate(() =>
   document.querySelectorAll('.drawer-panel .dr-item .chev').length) === 0);
-ok('EN: gold still on one icon', await page.evaluate(() =>
-  Array.from(document.querySelectorAll('.drawer-panel svg'))
-    .filter(sv => /198,\s*161,\s*91|228,\s*199,\s*126/.test(getComputedStyle(sv).color)).length) === 1);
+ok('EN: gold still on one row', await page.evaluate(() =>
+  Array.from(document.querySelectorAll('.drawer-panel .dr-item')).filter(r => {
+    const g = r.querySelector('.dr-tile') || r.querySelector('svg');
+    if (!g) return false;
+    const cs = getComputedStyle(g);
+    return /198,\s*161,\s*91|228,\s*199,\s*126|122,\s*93,\s*40|90,\s*68,\s*24/
+      .test(cs.color + ' ' + cs.backgroundImage + ' ' + cs.backgroundColor);
+  }).length) === 1);
 await closeDrawer();
 
 await go('#/advertise');
