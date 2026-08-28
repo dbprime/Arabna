@@ -19,7 +19,7 @@ const P = {
      platform publishes brand assets with rules of its own; these are simple
      recognisable glyphs, and if any platform objects its own file replaces
      the path here and nothing else moves.
-     ⚠️ `xMark` and NOT `x`: `x` is already the close mark in this file and
+     ⚠️ `xLogo` and NOT `x`: `x` is already the close mark in this file and
      is used by the photo picker, the search clear, the filter pills and the
      admin reject button — naming this one `x` would turn every close button
      in the app into a platform logo. Measured, not guarded against.
@@ -29,7 +29,11 @@ const P = {
      `<circle>` would not. */
   instagram: '<rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/>',
   facebook: '<path d="M15 3h-2.5A4.5 4.5 0 0 0 8 7.5V11H5v4h3v6h4v-6h3l1-4h-4V7.5a1 1 0 0 1 1-1H15z"/>',
-  xMark: '<line x1="4" y1="4" x2="20" y2="20"/><line x1="20" y1="4" x2="4" y2="20"/>',
+  /* ⚠️ `xMark` was two crossed lines, which is the CLOSE glyph with a
+     different name — so the row read «facebook · instagram · close».
+     `xLogo` is the platform's own mark and is drawn FILLED, so it needs
+     `iconFilled`, which is why the registry row carries `filled: true`. */
+  xLogo: '<path d="M17.53 3h3.02L13.9 10.6 21.75 21h-6.09l-4.77-6.23L5.42 21H2.4l7.06-8.07L2 3h6.24l4.31 5.7zM16.47 19.2h1.67L7.6 4.71H5.81z"/>',
   whatsapp: '<path d="M3 21l1.7-4.6A8.4 8.4 0 1 1 8 20.2z"/><path d="M9 9.5c0 3 2.5 5.5 5.5 5.5"/>',
   checkCircle: '<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>',
   x: '<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>',

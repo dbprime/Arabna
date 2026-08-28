@@ -91,7 +91,7 @@ export const CLASSIFIED_CATS = MARKET_CATS;
    hand-typed «0.1» while the project had reached V.03.6 — two literals,
    both stale, and a reader reporting a fault could not tell us which build
    they were on. Raise it here when CLAUDE.md's version line moves. */
-export const APP_VERSION = '0.6.0';
+export const APP_VERSION = '0.6.1';
 
 /* ============================================================
    Where the app lives outside itself
@@ -105,17 +105,33 @@ export const APP_VERSION = '0.6.0';
    do nothing reads as a broken app, and a dead link on the About page is
    the first thing a shop owner taps.
 
-   ⚠️ Facebook first ON PURPOSE — that is where the audience actually is:
-   the broadcast, the quiz and the sponsors are all there.
+   ⚠️ The order is: the two ways to REACH us (the address, the site),
+   then the accounts — and Facebook first among the accounts ON PURPOSE,
+   because that is where the audience actually is: the broadcast, the quiz
+   and the sponsors are all there. The row is drawn right-to-left in
+   Arabic, so the address sits under the reader's thumb.
 
-   ⚠️ `https://` only. `SAFE = /^(https:\/\/|tel:\+|mailto:)/` — no
-   `http:`, no `javascript:`, no `data:`.
+   ⚠️ `https://` and `mailto:` only — both sit inside
+   `SAFE = /^(https:\/\/|tel:\+|mailto:)/`. No `http:`, no `javascript:`,
+   no `data:`. And the `mailto:` is BUILT in `ui.js` from the one address;
+   no row here ever writes an address as a literal.
    ============================================================ */
 export const SOCIAL = [
-  { id: 'facebook',  name: 'Facebook',  icon: 'facebook',  url: 'https://facebook.com/Arabnaapp' },
-  { id: 'instagram', name: 'Instagram', icon: 'instagram', url: 'https://instagram.com/arabna.app' },
-  { id: 'x',         name: 'X',         icon: 'xMark',     url: 'https://x.com/ARABNAapp' },
-  { id: 'whatsapp',  name: 'WhatsApp',  icon: 'whatsapp',  url: '' },
+  /* ⚠️ The mail and the site are in the SAME registry, not beside it — the
+     block's own title is «where the app lives outside itself», and an
+     address is one of those. */
+  /* ⚠️ The address itself is NOT repeated here. `SUPPORT_EMAIL` lives in
+     `store.js`, and `data.js` must not import from it — `store.js` imports
+     THIS file, so the arrow only points one way. `mail: true` says «build
+     the mailto from the one address», and `ui.js` does it; if that address
+     is ever emptied the row falls to the «قريباً» path by itself, exactly
+     as the directory drops a call button for a shop with no phone. */
+  { id: 'email',     name: 'Email',      icon: 'mail',   mail: true, url: '' },
+  { id: 'website',   name: 'arabna.app', icon: 'globe',  url: 'https://arabna.app' },
+  { id: 'facebook',  name: 'Facebook',   icon: 'facebook',  url: 'https://facebook.com/Arabnaapp' },
+  { id: 'instagram', name: 'Instagram',  icon: 'instagram', url: 'https://instagram.com/arabna.app' },
+  { id: 'x',         name: 'X',          icon: 'xLogo', filled: true, url: 'https://x.com/ARABNAapp' },
+  { id: 'whatsapp',  name: 'WhatsApp',   icon: 'whatsapp',  url: '' },
 ];
 
 export const FREE_PRICE = '__FREE__';

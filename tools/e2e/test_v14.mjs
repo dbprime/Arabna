@@ -381,9 +381,22 @@ ok('…and it is remembered', ((await ls()).savedEvents || []).length === 1);
    ====================================================================== */
 console.log('--- G: safety ---');
 await go('#/about');
-ok('the complaint address is published, not behind a form', (await txt()).includes('support@arabna.app'));
+/* CHANGED here, Rai's decision: on «من نحن» the address is an ICON in the
+   row beside the site and the four accounts, not a written-out line — so
+   what has to be true here is that the icon REACHES it. An `<a>` with no
+   `mailto:` would fail this, which is the whole point: the row must not
+   become six pictures that go nowhere.
+   ⚠️ The published-as-TEXT duty did not disappear, it MOVED — and the
+   three lines below hold it on the three pages where a published address
+   is actually required. Before this batch only «الشروط» was checked. */
+ok('the complaint address is REACHABLE from «من نحن»', await page.evaluate(() =>
+  !!document.querySelector('#app a[href="mailto:support@arabna.app"]')));
 await go('#/terms');
-ok('…and repeated in the terms', (await txt()).includes('support@arabna.app'));
+ok('…and published as text in the terms', (await txt()).includes('support@arabna.app'));
+await go('#/privacy');
+ok('…and in the privacy page', (await txt()).includes('support@arabna.app'));
+await go('#/help');
+ok('…and in help, which is where a reader looks for it', (await txt()).includes('support@arabna.app'));
 
 await go('#/marketplace');
 const listing = await page.evaluate(() => {

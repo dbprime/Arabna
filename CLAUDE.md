@@ -7,7 +7,7 @@ ARABNA · عربنا — a mobile-first web app for the Arab community in the U.
 **business directory + marketplace + events + magazine**, Arabic-first with a full English toggle.
 ("Classifieds / الإعلانات الشخصية" is now "Marketplace / السوق" — the old `#/classifieds`
 routes still resolve so shared links keep working.)
-Current version: **V.06.0 (prototype)**. Owner: Rai Elby (@dbprime). Deploys to Vercel (team DB Prime).
+Current version: **V.06.1 (prototype)**. Owner: Rai Elby (@dbprime). Deploys to Vercel (team DB Prime).
 
 ## Hard rules (from the product brief)
 1. **One repository, one Vercel project.** No duplicates, no stray preview projects.
@@ -4714,6 +4714,111 @@ ones that asserted the old behaviour, which get rewritten, and the ones
 whose *setup* silently depended on it, which get repaired. The second kind
 looks like a failure of what it guards and is not.
 
+
+## V.06.1 — «من نحن» in Rai's own words, and the real X mark
+
+### The row read «facebook · instagram · close»
+`xMark` was two crossed lines — **the close glyph under a different
+name**. V.05.6 named it `xMark` precisely so it would not collide with
+`x`, the real close mark, and the collision it avoided was in the file
+while the one it created was on the screen: a reader met the same two
+crossed strokes they press to dismiss a sheet, sitting in a row of
+platform accounts.
+
+- `xLogo` is the platform's own mark and is **filled**, so it is drawn
+  with `iconFilled(sx.icon, 20)` and the registry row carries
+  `filled: true`. Every other row stays on this file's one-stroke idiom.
+- **One pixel smaller (20 against 21)** because a filled glyph reads
+  heavier than a stroked one in the same box.
+- ⚠️ **The name changed, it was not repointed.** Leaving `xMark` in the
+  file would leave two symbols named «X» with one of them an
+  **abbreviation** — which is exactly the trap the first naming fell into.
+  `xMark` was called by the registry and by nothing else, measured across
+  `js/`. **And `x` — no suffix — is untouched**; it is the real close mark
+  the photo picker, the search clear, the filter pills and the admin
+  reject button all use.
+
+### The address is a tile, not a line above a row of tiles
+`SOCIAL` grows from four rows to six: the mail and the site join the four
+accounts **in the same registry**, because the block's own subject is
+where the app lives outside itself and an address is one of those. The
+order is the two ways to reach us, then the accounts — Facebook still
+first among them, for the audience reason V.05.6 recorded.
+
+- ⚠️ **The address is not written into `data.js` even once.** `data.js`
+  must not import from `store.js` — `store.js` imports it, so the arrow
+  points one way — so the row carries `mail: true` and **`ui.js` builds the
+  `mailto:` from the one `SUPPORT_EMAIL`.** Measured: emptying that
+  constant drops the row to the «قريباً» path by itself, exactly as the
+  directory drops a call button for a shop with no phone.
+- ⚠️ **`target="_blank"` falls off `mailto:`** on purpose — on a desktop
+  browser a mail link opened in a new tab leaves an empty window standing.
+  The condition is `/^https:/`, so the four accounts and the site keep it
+  along with `rel="noopener noreferrer"`.
+- **`aria-label` reads `sx.name`**, not `sx.id`: a screen reader was
+  saying «إكس» and «واتساب» in lower case. V.05.8 added `name` for the
+  caption underneath and never reached the tiles themselves.
+- ⚠️ **`soonLineHtml` had to learn the mail row, and without it there is a
+  visible fault**: the mail row's own `url` is empty, so the old
+  `!sx.url` filter would have printed **«Email · WhatsApp — قريباً»** under
+  a working mail icon. **The line and the row must ask the same question**,
+  so the filter is `!(sx.mail ? S.SUPPORT_EMAIL : sx.url)` — one source of
+  truth, read twice the same way.
+
+### «عن التطبيق» becomes «من نحن», and the page says what the app is
+Rai's wording, and the three paragraphs are his own, put into plain MSA
+and approved by him — the same rule the newcomer guide's text lives under.
+**Nothing is invented**: the need, the two kinds of reader (newly arrived
+or settled for years), Houston as the start and every American city as the
+aim are all his.
+
+- ⚠️ **The first paragraph grew because it was WRONG, not because he asked
+  it to.** It counted three sections while the app has five: prayer and
+  mass times and the newcomer's guide were missing from the one sentence
+  that defines the app to a stranger.
+- **`Houston, Texas` stays English inside the Arabic sentence** — the
+  standing rule that a place name is never translated, and it is written
+  that way in all 514 addresses.
+- ⚠️ **The written-out address leaves «من نحن» and only «من نحن».** It is
+  the first tile in the row below, so the block reads as one row of icons
+  rather than a line and then a row — and it is **still published in full
+  on «الخصوصية» and «الشروط» and «المساعدة»**, which is where a legal page
+  has to carry it. `contactBlock` is untouched, and so is the same line in
+  `HelpScreen`.
+- «سنرد خلال يومَي عمل» left «من نحن» with it and is **still published,
+  unchanged**, by `contactBlock` on both legal pages. Measured on all four
+  screens rather than assumed.
+- **«ابعث» was dialect** — «ما تستخدم العاميّة أبداً» — so `shareApp` is
+  «شارك عربنا مع صديق». Six strings changed text and **not one key was
+  added**: `chk_i18n` reads 416 derived keys · 1753 strings · 343
+  attributes, the same three numbers as before.
+
+### A green that guards nothing is worse than a red
+Three suites, and only one of them was a real red.
+
+- **`v14` is the red, and it grew rather than being relaxed.** It checked
+  two pages; it checks four. On «من نحن» what must be true is that the
+  icon **reaches** the address — an `<a>` with no `mailto:` fails it, which
+  is the whole point, since the row must not become six pictures that go
+  nowhere. The published-as-**text** duty did not disappear, it **moved**:
+  «الشروط», «الخصوصية» and «المساعدة» each assert it now, where only the
+  first did before. **107 → 109.** ⚠️ **And it has teeth, proven rather
+  than claimed:** the mail link was pointed at `#` and nothing else
+  touched, and the run came back **108 passed, 1 failed** — the one red
+  being the only assertion in the file that reads that href.
+- **`v5` was dying silently.** Its loop guards the V.05.5 rule that the
+  account hub does not reprint the drawer's rows, by asserting each row's
+  text is absent — and «عن التطبيق» now appears **nowhere in the rendered
+  app**, so that member of the loop could not fail whatever the screen did.
+  It reads «من نحن». Same shape as v9's `!st.myBusinessId` in V.05.4.
+- **`v40`'s assertion NAME had gone stale** — it printed «ابعث عربنا
+  لصديقك» on every run while the drawer says «شارك». It measures
+  `#drShareApp` and not the text, so it was green before and after; **the
+  name is corrected and the check is not deleted**, because a green line
+  read six months from now is documentation.
+
+⚠️ **And the count checks itself.** V.06.0 ran 5,190; this batch adds two
+assertions × two builds = 4, so 5,194 is what must appear. It did.
 
 ## Known open items
 - **The header image is still far larger than its box.** V.04.7 replaced

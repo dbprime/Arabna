@@ -934,8 +934,8 @@ export function HelpScreen(root) {
     <div class="legal-body">
       <h2>${t('contactUsTitle')}</h2>
       <p>${S.state.lang === 'en'
-        ? 'Anything the answers above do not cover — write to the ARABNA team any time.'
-        : 'أي شيء لا تغطّيه الإجابات أعلاه — راسل فريق عربنا في أي وقت.'}</p>
+        ? 'If you did not find what you were looking for, get in touch.'
+        : 'إذا لم تجد ما تبحث عنه، تواصل معنا.'}</p>
       <a class="contact-line" href="mailto:${S.SUPPORT_EMAIL}">${icon('mail', 18)}<span class="ltr">${S.SUPPORT_EMAIL}</span></a>
     </div>`;
 
@@ -986,22 +986,48 @@ export function AboutScreen(root) {
   root.innerHTML = `
     <div class="pad mt-20 center-col">
       <img data-logo="stacked" src="${logoSrc('stacked')}" style="max-width:230px" alt="ARABNA عربنا" />
+      ${/* ⚠️ RAI'S OWN WORDS, put into plain MSA and approved by him — the
+           same rule the newcomer guide's text lives under. Nothing here is
+           invented: the need, the two kinds of reader, Houston as the
+           start and every American city as the aim are all his.
+           ⚠️ And «Houston, Texas» stays in English inside the Arabic
+           sentence — the standing rule that a place name is never
+           translated. */''}
       <p class="fs-13 muted mt-16" style="max-width:300px;text-align:center">
         ${S.state.lang === 'en'
-          ? 'ARABNA brings the Arab community in America together in one app: a business directory, a marketplace, and a community magazine.'
-          : 'عربنا يجمع الجالية العربية في أمريكا بتطبيق واحد: دليل أعمال، وسوق، ومجلة للمجتمع.'}
+          ? 'ARABNA brings the Arab community in America together in one app: a business directory, a marketplace, prayer and mass times, a guide for newcomers, and a community magazine.'
+          : 'عربنا يجمع الجالية العربية في أمريكا بتطبيق واحد: دليل أعمال، وسوق، ومواقيت الصلاة ومواعيد القداس، ودليل للواصل الجديد، ومجلة للمجتمع.'}
+      </p>
+      <p class="fs-13 muted mt-12" style="max-width:300px;text-align:center">
+        ${S.state.lang === 'en'
+          ? 'ARABNA grew out of what people actually need. An Arab in America — newly arrived or settled here for years — is always looking for the short, useful answer, and that is what this app is built on.'
+          : 'نشأ عربنا من احتياجات الناس. فالعربيّ في أمريكا — واصلاً جديداً كان أو مقيماً منذ سنوات — يبحث دائماً عن المعلومة المختصرة المفيدة، وهذا ما يقوم عليه هذا البرنامج.'}
+      </p>
+      <p class="fs-13 muted mt-12" style="max-width:300px;text-align:center">
+        ${S.state.lang === 'en'
+          ? 'We started in Houston, Texas, and our aim is to reach every city in America.'
+          : 'بدايتنا كانت من Houston, Texas، وهدفنا الانتشار في كلّ المدن الأمريكية.'}
       </p>
       <div class="contact-box mt-20">
         <div class="cb-title">${t('contactUsTitle')}</div>
         <div class="hint" style="margin-bottom:8px">${t('contactUsSub')}</div>
-        <a class="contact-line" href="mailto:${S.SUPPORT_EMAIL}">${icon('mail', 18)}<span class="ltr">${S.SUPPORT_EMAIL}</span></a>
+        ${/* ⚠️ The address is NOT written out here any more — Rai's
+             decision: it is the first tile in the row below, beside the
+             site and the four accounts, so the block reads as one row of
+             icons instead of a line and then a row. It is still PUBLISHED
+             in full on «الخصوصية» and «الشروط» and «المساعدة», which is
+             where a legal page has to carry it. */''}
         ${S.SUPPORT_PHONE ? `<a class="contact-line" href="tel:${esc(S.SUPPORT_PHONE.replace(/[^0-9+]/g, ''))}">${icon('phone', 18)}<span class="ltr">${esc(S.SUPPORT_PHONE)}</span></a>` : ''}
-        ${/* ⚠️ On «عن التطبيق» ALONE. Not privacy, not terms: a legal page
+        ${/* ⚠️ On «من نحن» ALONE. Not privacy, not terms: a legal page
              carries a published address for complaints, not marketing
              accounts, and a follow row above «طلبات إزالة المحتوى» reads
              wrong. And not in the drawer either — it is 112 over for a
              member and 195 for a visitor after 255, and another row adds
-             to that; Rai's answer to question 4 was to leave it. */''}
+             to that; Rai's answer to question 4 was to leave it.
+             ⚠️ The «سنرد خلال يومَي عمل» promise moved OUT of this block
+             with this batch and is still published, unchanged, by
+             `contactBlock` on «الخصوصية» و«الشروط» — a legal page has to
+             carry it, and «من نحن» is not one. */''}
         ${socialRowHtml()}
       </div>
       <span class="muted fs-12 mt-16">${t('version')} ${APP_VERSION} · est. 2026</span>

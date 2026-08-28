@@ -326,7 +326,13 @@ ok('member profile: zero drawer-style link rows', profRows === 0, profRows + ' r
 const pt = await txt();
 // "المفضلة" survives as a stat label, which the brief asks for — what must be
 // gone is the link ROW, asserted above by the zero .dr-item count.
-for (const gone of ['الإعدادات', 'المساعدة', 'عن التطبيق', 'الخصوصية', 'الشروط', 'تسجيل الخروج']) {
+/* «عن التطبيق» became «من نحن» in this batch, and the old string then
+   appears NOWHERE in the rendered app — measured: zero occurrences across
+   `js/` and `index.html`, the one match left being a code comment. So the
+   check for it could not fail any more, whatever the profile screen did.
+   This is the same shape as v9's `!st.myBusinessId` in 270: a green that
+   guards nothing is worse than a red. */
+for (const gone of ['الإعدادات', 'المساعدة', 'من نحن', 'الخصوصية', 'الشروط', 'تسجيل الخروج']) {
   ok('profile no longer repeats "' + gone + '"', !pt.includes(gone));
 }
 ok('profile shows the name', pt.includes('رامي البي'));

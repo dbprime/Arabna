@@ -116,7 +116,7 @@ ok('2.6 the sponsored rows carry them', await page.evaluate(() =>
 await at('#/home');
 await page.click('#hMenu'); await page.waitForTimeout(400);
 await page.click('[data-toggle="help"]'); await page.waitForTimeout(400);
-ok('2.7 «ابعث عربنا لصديقك» is in the drawer', await page.evaluate(() => !!document.querySelector('#drShareApp')));
+ok('2.7 «شارك عربنا مع صديق» is in the drawer', await page.evaluate(() => !!document.querySelector('#drShareApp')));
 await page.click('#drShareApp'); await page.waitForTimeout(600);
 ok('2.8 …and it shares the app, with no hash', await page.evaluate(() =>
   !!window.__copied && !/#/.test(window.__copied)), await page.evaluate(() => window.__copied));

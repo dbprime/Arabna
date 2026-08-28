@@ -808,21 +808,36 @@ let openGroup = null;          // remembered while the drawer is on screen
     ⚠️ `rel="noopener noreferrer"` is not decoration — without `noopener` the
     opened page gets `window.opener` and can redirect ours from under us. */
 export function socialRowHtml() {
-  return `<div class="social-row">${SOCIAL.map(sx => sx.url
-    ? `<a class="soc" href="${esc(sx.url)}" target="_blank" rel="noopener noreferrer"
-         aria-label="${esc(sx.id)}">${icon(sx.icon, 21)}</a>`
-    : `<span class="soc soc-soon" aria-disabled="true"
-         title="${t('soon')}" aria-label="${esc(sx.id)} — ${t('soon')}">${icon(sx.icon, 21)}</span>`
-  ).join('')}</div>` + soonLineHtml();
+  return `<div class="social-row">${SOCIAL.map(sx => {
+    /* the one address, read from where it lives — never a second copy */
+    const url = sx.mail ? (S.SUPPORT_EMAIL ? 'mailto:' + S.SUPPORT_EMAIL : '') : sx.url;
+    /* ⚠️ the platform's own mark is a filled shape, so it takes
+       `iconFilled`; every other row stays on the file's one-stroke idiom.
+       It is drawn one pixel smaller because a filled glyph reads heavier
+       than a stroked one at the same box — measured beside the other five. */
+    const g = sx.filled ? iconFilled(sx.icon, 20) : icon(sx.icon, 21);
+    /* a mail link opens the mail app, not a tab — `target="_blank"` on it
+       leaves an empty window behind on a desktop browser */
+    const tab = /^https:/.test(url) ? ' target="_blank" rel="noopener noreferrer"' : '';
+    return url
+      ? `<a class="soc" href="${esc(url)}"${tab} aria-label="${esc(sx.name || sx.id)}">${g}</a>`
+      : `<span class="soc soc-soon" aria-disabled="true"
+           title="${t('soon')}" aria-label="${esc(sx.name || sx.id)} — ${t('soon')}">${g}</span>`;
+  }).join('')}</div>` + soonLineHtml();
 }
 
 /* The word has to be SEEN, not hovered. `title` never appears on a phone,
    so a dimmed icon with nothing beside it reads as a broken icon — which
    is the very thing the dimming was there to prevent. The line is built
    FROM the registry, so connecting WhatsApp removes it by itself and a
-   fifth account added tomorrow joins it with no code here. */
+   seventh account added tomorrow joins it with no code here.
+   ⚠️ The mail row has no `url` of its own — it is built from
+   `SUPPORT_EMAIL` — so the test has to ask the SAME question the row
+   itself asks, or the address would be announced as «قريباً» while its
+   icon works. One source of truth, read twice the same way. */
 function soonLineHtml() {
-  const soon = SOCIAL.filter(sx => !sx.url).map(sx => esc(sx.name || sx.id));
+  const soon = SOCIAL.filter(sx => !(sx.mail ? S.SUPPORT_EMAIL : sx.url))
+    .map(sx => esc(sx.name || sx.id));
   return soon.length
     ? `<div class="social-soon">${soon.join(' \u00B7 ')} — ${t('soon')}</div>`
     : '';
