@@ -960,7 +960,6 @@ export function openDrawer() {
   const root = $('#drawer');
   const member = S.isMember();
   const u = S.state.user;
-  const tierLabel = S.tier() === 2 ? t('tier2') : S.tier() === 1 ? t('tier1') : t('guest');
   /** unread badge, hidden at zero, capped at 9+ */
   const badge = (n) => n > 0 ? `<span class="dr-badge">${n > 9 ? '+9' : n}</span>` : '';
 
@@ -987,6 +986,18 @@ export function openDrawer() {
   const item = (ico, label, route, count = 0, accent = false, h) =>
     `<button class="dr-item ${accent ? 'dr-accent' : ''}" data-route="${route}">${tile(ico, h)}<span>${label}</span>
       ${badge(count)}</button>`;
+
+  /* ⚠️ AN ALWAYS-OPEN SECTION IS A TITLE, NOT A DISABLED BUTTON. Its rows
+     never fold, so it carries no arrow — and a `<button>` that does
+     nothing stays in the keyboard order and is announced as a control,
+     which is the rule already written for the rows that wait on the
+     server. It is a plain element, and the arrow's 34px of displacement
+     goes with it: an ordinary row's text starts at the same place. */
+  const section = (label, rows, ico, h) => `
+    <div class="dr-group open" data-group="sections">
+      <div class="dr-title">${ico ? tile(ico, h) : ''}<span>${label}</span></div>
+      ${rows}
+    </div>`;
 
   // A group head carries no route: it toggles its own group and nothing else.
   const group = (id, label, rows, ico, h) => `
@@ -1057,7 +1068,15 @@ export function openDrawer() {
       <div class="drawer-head">
         <img data-logo="stacked" src="${logoSrc('stacked')}" alt="ARABNA عربنا" />
         <div style="font-weight:700">${esc(u.name)}</div>
-        <div class="drawer-user">${esc(u.email)} · ${tierLabel}</div>
+        ${/* ⚠️ THE TIER IS GONE FROM THIS LINE — Rai's decision, the email
+             stands alone. And it is gone from the DRAWER ONLY: `S.tier()`
+             is untouched, because it is the gate on posting, messaging,
+             claiming and buying any advertisement. What left is a line
+             that was displayed, not a condition that governs.
+             ⚠️ And `tierLabel` was computed for this one place, so its
+             definition went with it: a variable that is worked out and
+             never read is what makes a file longer than its job. */''}
+        <div class="drawer-user">${esc(u.email)}</div>
         ${/* Rai's decision: two buttons UNDER THE NAME. Sign-out was the last
              row of a drawer that scrolls, so it was the first thing to fall off
              the bottom — and «حسابي» was a GROUP whose six leaves are now the
@@ -1108,7 +1127,15 @@ export function openDrawer() {
            realestate 202 · lawyers 232 · sweets 348 · auto 128 · worship 266 */''}
       ${item('settings', t('settings'), '#/settings', 0, false, 232)}
       ${member ? item('bell', t('notifications'), '#/notifications', unread, false, 348) : ''}
-      ${group('sections', t('grpSections'), sections, 'grid', 128)}
+      ${/* ⚠️ «تصنيفات عربنا» NO LONGER FOLDS — Rai's decision. Its contents
+           are fixed and are what the drawer is for, so it is open always
+           and carries no arrow. «المساعدة والقوانين» keeps folding, and
+           its arrow moves to the end of the row instead: five legal rows
+           read once in a lifetime, and opening them always adds a length
+           nobody reads. The difference between the two heads becomes
+           honest — one is always open so it has no arrow, one folds so
+           its arrow sits where it displaces nothing. */''}
+      ${section(t('grpSections'), sections, 'grid', 128)}
       ${/* ⚠️ 'gold', NOT A HUE. This is the one paid row in the drawer, and
            the gold is what says so. Giving it a hue out of the twenty-one
            would have made it one row among many — which is the exact thing
@@ -1126,10 +1153,16 @@ export function openDrawer() {
   $$('#drawer [data-toggle]').forEach(btn => btn.addEventListener('click', () => {
     const id = btn.dataset.toggle;
     openGroup = openGroup === id ? null : id;
+    /* ⚠️ FOLDABLE GROUPS ONLY. «تصنيفات عربنا» is a `.dr-group open` with
+       no `.dr-head` in it any more, so the old sweep would have stripped
+       its `open` class the moment «المساعدة» was tapped — and then thrown
+       on `null.setAttribute`, taking the drawer down with it. */
     $$('#drawer .dr-group').forEach(g => {
+      const head = g.querySelector('.dr-head');
+      if (!head) return;
       const on = g.dataset.group === openGroup;
       g.classList.toggle('open', on);
-      g.querySelector('.dr-head').setAttribute('aria-expanded', String(on));
+      head.setAttribute('aria-expanded', String(on));
     });
   }));
 

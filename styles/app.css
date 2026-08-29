@@ -435,9 +435,21 @@ ul { margin: 0; padding: 0; list-style: none; }
 .add-row.secondary .a-ico { width: 34px; height: 34px; flex: 0 0 34px; border-radius: 10px; }
 
 /* ---------- buttons ---------- */
+/* ⚠️ `height: auto` + `min-height`, and this is the CLASS not one button.
+   A fixed height does not grow when the label wraps, so a two-line label
+   spills out of its box TOP AND BOTTOM at once — `align-items: center`
+   splits the overflow across both sides. Measured on `.btn-sm` at 177px
+   wide: the box stayed 40px with the text outside it, and 92px once the
+   height was free.
+   ⚠️ THE ENGLISH SCREEN IS WHY IT HID: «Edit profile» is short and fits,
+   «تعديل الملف الشخصي» is longer and falls out — so shortening the word
+   would have hidden the fault until the next long one.
+   ⚠️ AND `align-items` IS NOT TOUCHED: centring a single line is correct,
+   and the fault was in the fixed height, never in the centring. The
+   vertical padding keeps the shape of a one-line button unchanged. */
 .btn {
   display: inline-flex; align-items: center; justify-content: center; gap: 8px;
-  height: 52px; padding: 0 20px;
+  height: auto; min-height: 52px; padding: 14px 20px;
   border-radius: var(--r-md);
   font-weight: 700; font-size: .96875rem;
   transition: transform .12s var(--ease), opacity .18s var(--ease);
@@ -451,7 +463,7 @@ ul { margin: 0; padding: 0; list-style: none; }
 .btn-plain { background: transparent; border: 0; color: var(--muted); box-shadow: none; }
 .btn-danger { background: var(--danger-bg); border: 1px solid var(--danger-line); color: var(--danger-ink); }
 .btn-block { width: 100%; }
-.btn-sm { height: 40px; padding: 0 15px; font-size: .84375rem; border-radius: 10px; }
+.btn-sm { height: auto; min-height: 40px; padding: 10px 15px; font-size: .84375rem; border-radius: 10px; }
 
 /* ---------- inputs ---------- */
 .field { margin-bottom: 14px; }
@@ -936,6 +948,20 @@ html[dir="rtl"] .drawer-panel { --drawer-off: 100%; }
 .sheet-title { font-size: 1.1875rem; font-weight: 700; margin-bottom: 4px; }
 .sheet-sub { font-size: .84375rem; color: var(--muted); margin-bottom: 16px; }
 
+/* ---------- a long review does not eat the screen ----------
+   Two lines, then «اقرأ المزيد». `-webkit-line-clamp` is the clamp the
+   project already uses (`.list-row.premium .row-title`), so no second
+   truncation idiom is invented. */
+.rv-text.clamped {
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.rv-more {
+  background: none; border: 0; padding: 4px 0 0;
+  font-size: .8125rem; font-weight: 700; color: var(--gold-bright);
+  text-decoration: underline;
+}
+
 /* ---------- the greeting card ----------
    Its own root, not `#sheet`: `render()` empties the sheet on every
    navigation, so a card opened from the boot sequence would be wiped
@@ -968,8 +994,14 @@ html[dir="rtl"] .drawer-panel { --drawer-off: 100%; }
 }
 /* the mark is a file and takes its own width from its ratio */
 .greet-logo { height: 15px; width: auto; display: block; margin: 0 auto 16px; }
-.greet-title { font-family: var(--font-display); font-size: 1.42rem; font-weight: 600; line-height: 1.55; margin-bottom: 10px; }
-.greet-body { font-size: .79rem; line-height: 1.85; color: var(--text-2); margin-bottom: 18px; }
+/* ⚠️ 1.41875rem AND .7875rem, NOT 1.42 AND .79 — and this is a debt from
+   V.07.0, named rather than quietly corrected. `v28 · 2.3` asserts that
+   every rem in this file maps back to an exact one-decimal px, which is
+   what made the V.03.5 px→rem migration provable; these two came straight
+   out of the design table as rem and broke it. 22.7/16 and 12.6/16 keep
+   the invariant, and the rendered difference is 0.02px. */
+.greet-title { font-family: var(--font-display); font-size: 1.41875rem; font-weight: 600; line-height: 1.55; margin-bottom: 10px; }
+.greet-body { font-size: .7875rem; line-height: 1.85; color: var(--text-2); margin-bottom: 18px; }
 .greet-cta { margin-bottom: 8px; }
 @media (prefers-reduced-motion: reduce) {
   .greet-card, .greet-scrim { transition: none; }
@@ -1335,6 +1367,23 @@ input[inputmode="tel"], input[type="email"], input[inputmode="decimal"], #zipIn 
 .drawer-panel > .dr-item,
 .drawer-panel > .dr-group { border-block-end: 1px solid var(--line-soft); }
 .dr-head { width: 100%; font-weight: 700; }
+/* ⚠️ THE ARROW GOES TO THE END OF THE ROW, not between the tile and the
+   text. Sitting there it pushed the label 34px further in than an
+   ordinary row's — measured: an ordinary row's label starts at 328, a
+   group head's at 294.
+   ⚠️ AND IT NEEDS `order`, NOT A MARGIN ALONE. `.dr-item` is a flex row
+   and the arrow precedes the label in the markup, so `margin-inline-start:
+   auto` pushed the arrow AND EVERYTHING AFTER IT — measured, the label
+   went to 228, further out than it started. `order: 1` moves the arrow to
+   the end of the line and the auto margin then pins it there. */
+.dr-head .grp-arrow { order: 1; margin-inline-start: auto; }
+/* A head that never folds is a SECTION TITLE, not a disabled button: it
+   carries no arrow, is not focusable, and is not announced as a control. */
+.dr-title {
+  display: flex; align-items: center; gap: 14px;
+  padding: 16px 18px; width: 100%;
+  font-size: .9375rem; font-weight: 700; text-align: start;
+}
 .dr-head .grp-arrow { transition: transform .2s var(--ease); }
 .dr-group.open .dr-head .grp-arrow { transform: rotate(180deg); }
 /* An open head is marked by a faint ground and the turned arrow, not by

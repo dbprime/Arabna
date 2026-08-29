@@ -7,7 +7,7 @@ ARABNA · عربنا — a mobile-first web app for the Arab community in the U.
 **business directory + marketplace + events + magazine**, Arabic-first with a full English toggle.
 ("Classifieds / الإعلانات الشخصية" is now "Marketplace / السوق" — the old `#/classifieds`
 routes still resolve so shared links keep working.)
-Current version: **V.07.0 (prototype)**. Owner: Rai Elby (@dbprime). Deploys to Vercel (team DB Prime).
+Current version: **V.07.1 (prototype)**. Owner: Rai Elby (@dbprime). Deploys to Vercel (team DB Prime).
 
 ## Hard rules (from the product brief)
 1. **One repository, one Vercel project.** No duplicates, no stray preview projects.
@@ -5966,6 +5966,152 @@ than by reading:** `addInitScript` runs before **every** navigation, so
 seeding unconditionally rewrote `seenGreetings` back to empty on the very
 reload item 1.7 depends on — the suite would have reported the app failing
 to remember while the harness was erasing the memory. It seeds once now.
+
+## V.07.1 — five things Rai saw on his own phone
+
+All five are interface, all five are local, and not one waits for the
+server.
+
+### The button did not grow with its label — and it is the CLASS
+He saw «تعديل الملف الشخصي» standing outside its box on «حسابي». The
+fault is not that button:
+
+```
+.btn    height: 52px    ← fixed
+.btn-sm height: 40px    ← fixed
+```
+
+**A fixed height does not grow when the label wraps, so the text spills
+out top AND bottom at once** — `align-items: center` splits the overflow
+across both sides. Measured on `.btn-sm` at 177px wide: **the box stayed
+40px with the text outside it, and became 92px once the height was free.**
+
+- ⚠️ **The English screen is why it stayed hidden for so long.** «Edit
+  profile» is short and fits; the Arabic is longer and falls out. **So
+  shortening the word would have hidden the fault until the next long
+  one** — the fix is `height: auto` + `min-height` on the class.
+- ⚠️ **`align-items` is NOT touched.** Centring a single line is correct;
+  the fault was the fixed height, never the centring. The vertical padding
+  keeps a one-line button exactly as it was — measured, `.btn` 52 and
+  `.btn-sm` 40, unchanged.
+- ⚠️ **And `.btn` is on every screen in the app, which is why this batch
+  runs the full net** rather than its own suites. A batch that touches
+  every screen is not measured by the suites it happens to name.
+
+### A long review ate the screen
+An eight-line review filled the page and the two under it got one line
+each that nobody scrolled to. Two lines, then «اقرأ المزيد» — measured
+**48px clamped, 333px open**.
+
+- **`-webkit-line-clamp: 2`**, which the project already uses on
+  `.list-row.premium .row-title`, so no second truncation idiom is
+  invented.
+- ⚠️ **The button is drawn only when there is something to read**:
+  `scrollHeight` is measured against `clientHeight` while the text is
+  clamped, so a short review gets no button at all. **A button that opens
+  two lines onto two lines is a small lie.**
+- ⚠️ **The open/shut state lives on the page, not in `state`.** Whatever
+  was opened stays open until the screen is left, and no storage key is
+  added for something that belongs to one moment.
+- It is mounted **after** the reviews are in the DOM: an unattached node
+  measures zero, and every button would have been drawn.
+
+### The eye meant three things, and one of them left
+In `js/screens/profile.js` alone the same drawing carried «show the
+password», «hide / republish a listing» and «open the page» — and only
+the third was wrong: **an eye over a business reads as VIEWS.** Both wrong
+ones were bare icons with no text and no `aria-label`, so a screen reader
+said nothing about them at all.
+
+```
+«تقييماتي»   building + «صفحة المحل»
+«إعلاناتي»   bag      + «افتح الإعلان»
+```
+
+- ⚠️ **They move down into the button row.** One button alone above the
+  card and two below it read as two different groups, and they are actions
+  on the same thing.
+- ⚠️ **The hide/republish eye is correct and is not touched.** Two eyes in
+  one row meaning two things was the fault, not the icon.
+- **The whole row is deliberately not made tappable**: the card carries
+  «حذف», and a large surface that opens something with a delete button
+  inside it is a mis-tap waiting to happen.
+
+### The tier leaves the drawer line, and nothing else
+`«a@b.c · حساب مؤكد بالهاتف»` becomes `«a@b.c»`.
+
+⚠️ **From the DRAWER only.** `S.tier()` is untouched — it is the gate on
+posting, contacting a seller, claiming a business and buying any
+advertisement. **What left is a line that was displayed, not a condition
+that governs**, and the suite asserts `tier()` still answers 2.
+`tierLabel` was computed for that one place, so its definition went with
+it; the identical name on `#/profile` is that screen's own and stays.
+
+### The arrow displaced the label — and it was two heads, not one
+```
+                        the tile ends   the label starts   the gap
+an ordinary row              372              328            44
+a group head                 372              294            78
+```
+The arrow sat **between the tile and the label**, so a head's text started
+**34px further in**. And the answer is not one answer, because the two
+heads do not behave alike:
+
+- **«تصنيفات عربنا» stops folding.** Its contents are fixed and are what
+  the drawer is for, so it is a **section title**, always open, with no
+  arrow. ⚠️ **A non-focusable element, never a disabled button** — a
+  button that does nothing stays in the tab order and is announced as a
+  control, which is the rule already written for the rows waiting on the
+  server.
+- **«المساعدة والقوانين» keeps folding** and its arrow moves to the **end
+  of the row**, where it displaces nothing. Five legal rows read once in a
+  lifetime; opening them always adds a length nobody reads. **The
+  difference between the two heads becomes honest: one is always open so
+  it has no arrow, one folds so its arrow sits out of the way.**
+- ⚠️ **`order: 1`, not a margin alone.** `.dr-item` is a flex row and the
+  arrow precedes the label in the markup, so `margin-inline-start: auto`
+  pushed the arrow **and everything after it** — measured, the label went
+  to **228, further out than it started**. `order` moves the arrow to the
+  end of the line and the auto margin then pins it there.
+- ⚠️ **And the accordion needed a guard.** Its sweep walks every
+  `.dr-group`, and the section is one with no `.dr-head` in it any more —
+  without the guard, tapping «المساعدة» stripped the section's own `open`
+  class and then threw on `null.setAttribute`, taking the drawer down.
+- **`openGroup` is untouched**: it governs one group instead of two, and
+  the logic is not rebuilt because the count of what it governs fell.
+
+**Measured after — all three labels start in the same place**, in both
+languages (Arabic 328, English 62), and the arrow is at the far end.
+
+**And the drawer's height, measured rather than guessed** — the section
+being always open is a real cost, and it is written here rather than
+discovered later:
+
+```
+            folded (sections always open)    with «المساعدة» open too
+member              974 / 844                        1224
+visitor            1049 / 844                        1299
+```
+
+⚠️ **So the drawer now scrolls even folded**, which the never-scrolls rule
+did not allow. `.drawer-panel` is `overflow-y: auto` and reaches its end,
+so no row is out of reach — but the promise is spent, and **which row goes
+is still the owner's decision, open since V.03.2**.
+
+### `test_v51` — 41 assertions, and both teeth proven
+```
+put the fixed height back   → 1.1 and 1.2 red (the box stays 40 with the text outside)
+put the eye back            → 3.1, 3.4 and 3.6 red (bare unlabelled icons)
+```
+
+### And a debt from V.07.0, paid here and named
+`v28 · 2.3` asserts that **every rem in the stylesheet maps back to an
+exact one-decimal px** — the invariant that made the V.03.5 px→rem
+migration provable. The greeting card's `1.42rem` and `.79rem` came
+straight out of the design table as rem and broke it. They are
+**`1.41875rem` and `.7875rem`** now — 22.7/16 and 12.6/16 — and the
+rendered difference is **0.02px**. Verified: 26 distinct rem values, none
+failing the round trip, zero px font-sizes.
 
 ## Known open items
 - **The header image is still far larger than its box.** V.04.7 replaced

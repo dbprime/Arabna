@@ -1100,6 +1100,11 @@ export function ListingScreen(root, params) {
     onConfirm: () => { S.deleteReply(btn.dataset.delreply); toast(t('done'), 'ok'); go('#/directory/' + b.id); },
   })));
 
+  /* ⚠️ AFTER the reviews are in the DOM, never before: the button is drawn
+     only when `scrollHeight` really exceeds the clamped box, and an
+     unattached node measures zero. */
+  mountReviewClamps(root);
+
   $$('[data-editrev]').forEach(btn => btn.addEventListener('click', () => {
     openReviewSheet(b.id, () => go('#/directory/' + b.id));
   }));
@@ -1246,7 +1251,10 @@ export function reviewHtml(r, isOwner = false) {
       <span class="avatar">${esc((r.user || '?')[0])}</span>
       <div><b class="fs-13">${esc(r.user)}</b><div class="fs-12 muted">${esc(L(r.when))} · ${stars(r.rating)}</div></div>
     </div>
-    <p>${esc(L(r.text))}</p>
+    ${/* ⚠️ CLAMPED TO TWO LINES, with «اقرأ المزيد» under it. An eight-line
+         review filled the screen and the two reviews below it got one line
+         each that nobody scrolled to. */''}
+    <p class="rv-text clamped">${esc(L(r.text))}</p>
     ${reply ? `<div class="owner-reply">
       <div class="or-head">${icon('briefcase', 14)} ${t('ownerReply')}</div>
       <p>${esc(reply.text)}</p>
@@ -1263,6 +1271,37 @@ export function reviewHtml(r, isOwner = false) {
       <button class="mini-btn gold" data-reply="${r.id}">${icon('message', 15)} ${t('replyToReview')}</button>
     </div>` : ''}
   </div>`;
+}
+
+/**
+ * «اقرأ المزيد», wired once over whatever reviews are on the screen.
+ *
+ * ⚠️ THE BUTTON IS ONLY DRAWN WHEN THERE IS SOMETHING TO READ:
+ * `scrollHeight` is measured against `clientHeight` while the text is
+ * clamped, so a two-line review gets no button at all. A button that
+ * opens two lines onto two lines is a small lie.
+ *
+ * ⚠️ AND THE OPEN/SHUT STATE LIVES ON THE PAGE, NOT IN `state`. Whatever
+ * was opened stays open until the screen is left, and no storage key is
+ * added for something that belongs to one moment.
+ */
+export function mountReviewClamps(root) {
+  $$('.rv-text', root).forEach(p => {
+    if (p.dataset.clampWired) return;
+    p.dataset.clampWired = '1';
+    /* a hair of tolerance: sub-pixel line heights make a clamped
+       two-line paragraph measure one pixel over its own box */
+    if (p.scrollHeight <= p.clientHeight + 2) { p.classList.remove('clamped'); return; }
+    const btn = document.createElement('button');
+    btn.className = 'rv-more';
+    btn.type = 'button';
+    btn.textContent = t('readMore');
+    btn.addEventListener('click', () => {
+      const open = p.classList.toggle('clamped') === false;
+      btn.textContent = t(open ? 'readLess' : 'readMore');
+    });
+    p.insertAdjacentElement('afterend', btn);
+  });
 }
 
 /**

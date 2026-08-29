@@ -689,7 +689,11 @@ export function MyAdsScreen(root) {
               <!-- somebody who has just posted wants to send it to a
                    WhatsApp group now, not open it and hunt for a button -->
               <button class="mini-btn" data-share="${c.id}" aria-label="${t('share')}">${icon('share', 15)}</button>
-              <button class="mini-btn" data-route="#/marketplace/${c.id}">${icon('eye', 15)}</button>
+              ${/* ⚠️ `bag` and a word, not a second eye: the eye two buttons
+                   to the left is «أخفِ / أعِد نشر», which is correct and is
+                   NOT touched. Two eyes in one row meaning two different
+                   things is the fault, not the icon. */''}
+              <button class="mini-btn" data-route="#/marketplace/${c.id}">${icon('bag', 15)} ${t('openListing')}</button>
             </div>
           </div>
         </div>`).join('') : emptyState('bag', t('emptyMyAdsTitle'), t('emptyMyAdsSub'), t('post'), '#/post')}
@@ -735,13 +739,20 @@ export function MyReviewsScreen(root) {
     ? `<div class="pad mt-16">${mine.map(r => {
         const b = S.businessById(r.bizId);
         return `<div class="card" style="padding:14px;margin-bottom:10px">
-          <div class="row-between">
-            <div><b class="fs-13">${esc(b ? L(b.name) : r.bizId)}</b>
-              <div class="fs-12 muted">${esc(L(r.when))} · ${stars(r.rating)}</div></div>
-            <button class="mini-btn" data-route="#/directory/${r.bizId}">${icon('eye', 15)}</button>
-          </div>
+          ${/* ⚠️ THE EYE IS GONE FROM HERE. In this file alone the same
+               drawing carried three meanings — «show the password», «hide
+               / republish a listing», and «open the page» — and only the
+               third was wrong: an eye over a business reads as VIEWS. It
+               was a bare icon with no text and no `aria-label` either, so
+               a screen reader said nothing at all about it.
+               ⚠️ AND IT MOVES DOWN INTO THE BUTTON ROW. One button alone
+               above the card and two below it read as two different
+               groups, and they are actions on the same thing. */''}
+          <div><b class="fs-13">${esc(b ? L(b.name) : r.bizId)}</b>
+            <div class="fs-12 muted">${esc(L(r.when))} · ${stars(r.rating)}</div></div>
           <p class="fs-13 mt-8" style="margin:8px 0 0">${esc(L(r.text))}</p>
           <div class="row-actions mt-8">
+            <button class="mini-btn" data-route="#/directory/${r.bizId}">${icon('building', 15)} ${t('bizPage')}</button>
             <button class="mini-btn gold" data-edit="${r.bizId}">${icon('edit', 15)} ${t('editReview')}</button>
             <button class="mini-btn" data-del="${r.id}">${icon('trash', 15)} ${t('delete')}</button>
           </div>

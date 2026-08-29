@@ -429,6 +429,10 @@ export const STRINGS = {
        the Hijri new year, Easter, a launch — and the moment the interface
        says «العيد» the next occasion needs a second tool. */
     greetThanks: 'شكراً',
+    readMore: 'اقرأ المزيد',
+    readLess: 'اقرأ أقل',
+    bizPage: 'صفحة المحل',
+    openListing: 'افتح الإعلان',
     greetTitle: 'التهاني',
     greetSub: 'بطاقة تظهر مرة واحدة عند فتح البرنامج، ضمن تاريخين، ثم تنتهي بنفسها.',
     greetNew: 'تهنئة جديدة',
@@ -2082,6 +2086,10 @@ export const STRINGS = {
     ramDateFrom: 'First of Ramadan',
     ramDateEid: 'Eid al-Fitr',
     greetThanks: 'Thank you',
+    readMore: 'Read more',
+    readLess: 'Read less',
+    bizPage: 'Business page',
+    openListing: 'Open listing',
     greetTitle: 'Greetings',
     greetSub: 'A card shown once when the app opens, between two dates, then it ends by itself.',
     greetNew: 'New greeting',
