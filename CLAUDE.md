@@ -7,7 +7,7 @@ ARABNA · عربنا — a mobile-first web app for the Arab community in the U.
 **business directory + marketplace + events + magazine**, Arabic-first with a full English toggle.
 ("Classifieds / الإعلانات الشخصية" is now "Marketplace / السوق" — the old `#/classifieds`
 routes still resolve so shared links keep working.)
-Current version: **V.06.7 (prototype)**. Owner: Rai Elby (@dbprime). Deploys to Vercel (team DB Prime).
+Current version: **V.06.8 (prototype)**. Owner: Rai Elby (@dbprime). Deploys to Vercel (team DB Prime).
 
 ## Hard rules (from the product brief)
 1. **One repository, one Vercel project.** No duplicates, no stray preview projects.
@@ -5536,6 +5536,108 @@ touching suites, both builds: 3 · 5 · 7 · 20 · 37 · 42 · 46 · 47 — all 
 
 ⚠️ **The full net is not run here** — Rai's rule of 28 August: once at the
 end of a group, and this group is **315 · 325 · 326**.
+
+## V.06.8 — the pending number, and a copy of your own data
+
+### The typo locked itself in
+Saving a new number wrote it **straight onto the account** and cleared
+`phoneVerified` — dropping it out of tier 2. And `#/auth/phone` then
+checked what you typed against the number **on file**. So somebody who
+saved a typo **could not verify their real number**: to get back in they
+had to retype the mistake.
+
+⚠️ **That is narrower than it sounds, and therefore worse.** Tier 2 gates
+posting, contacting a seller, claiming a business and buying any
+advertisement — so one slip of a finger closed all four, and the way out
+was the very thing they had got wrong.
+
+**Rai's decision: the number is parked exactly as the address is.** Measured
+after:
+
+```
+saved a typo   pending 7135559999 · phone still 7135550123 · verified · tier 2
+typed the NEW  accepted — no mismatch   ← refused before this batch
+the code       phone becomes the new one · verified · pending cleared
+put the old back   the change cancels itself
+emptied the field  phone '' · verified false · nothing left waiting
+```
+
+- ⚠️ **The promotion lives in `confirmPhone` and only there**, exactly as
+  `confirmEmail`'s does — the one function never called without a correct
+  code.
+- ⚠️ **`phoneTail()` reads the PENDING number first.** Without it the
+  mismatch message names the tail of the **old** number while the screen
+  asks for the new one — contradicting itself, and it is the very message
+  V.06.6 had just repaired.
+- ⚠️ **Emptying the field is a removal, not a change waiting on a code.**
+  There is nothing to verify, so dropping the mark is right.
+- **And the guard in `auth.js` is the whole item.** Without that one line
+  the parked number is decoration and the lock stays exactly where it was.
+
+### `exportBackup()` is not a person's copy of their data
+The privacy page promises the reader a copy **in so many words**, and there
+was no button for it anywhere in the app.
+
+⚠️ **And the function that exists is the wrong one.** `exportBackup()` dumps
+the whole state — **and the whole state carries the admin panel's password
+hash and salt and its action log.** Handing that out as somebody's personal
+data publishes a credential.
+
+- `exportMyData()` **names what it includes**, never what it excludes, so a
+  key added to the state tomorrow is left out by default — the same shape
+  as `KEEPS_ON_SIGN_OUT`, for the same reason. Measured: no `pwHash`, no
+  `pwSalt`, no `adminAuth`, no `adminLog`.
+- **A second button inside the delete sheet, above the delete**, because
+  that is the last moment the data exists.
+
+### A place held, never half a feature invented
+«تسجيل الخروج من كلّ الأجهزة» is a row that does not press, with the reason
+beside it. ⚠️ **A `<span>`, not a disabled `<a>`** — an anchor with no
+`href` stays in the tab order and a screen reader still calls it a link,
+promising what it cannot do. ⚠️ **And the words are READ, not hovered**:
+`title` never appears on a phone, which is V.05.8's lesson. Nothing is
+invented around it: no device list, no last-seen date.
+
+### «Empty» was the one refusal that took a toast
+Every other refusal on these screens puts a red line under its own field
+and leaves it there; **empty** took a message that names no field and is
+gone in under three seconds. ⚠️ **The difference was never importance — it
+was place.** The empty phone and the two unticked boxes now say so where
+they happened. **No new string**: `required` already existed, and `310`
+had already given `field-err` to the other boxes.
+
+### Two items write nothing, and that is the finding
+- **The age question (item 7) is already built.** The `age18` box sits under
+  the terms box on the sign-up screen and **is mandatory** — the button
+  checks both. So nothing is written for it. ⚠️ **What was actually missing
+  was only that its refusal could not be seen**, which is the item above.
+- **The badge's search priority (item 9) is not written, and the reason is
+  measured**: the ranking chain it would sit on is itself broken. `isPaid`
+  is the **third** tiebreak, after city and after a decimal rating that
+  practically never ties — so it is a dead condition; a new subscriber with
+  no ratings yet sinks below every free listing that has one; `pinSponsored`
+  lifts exactly **one** row however many have paid; and the day coordinates
+  arrive the order becomes pure distance, with `isPaid` not in it at all.
+  ⚠️ **So writing «verified above subscribed» on top of a chain where
+  «subscribed» does not work would make both orderings decoration.** The
+  chain is fixed once, with both in it, and that needs Rai's decision on
+  the model first. **No promise is made that does not work** — the rule that
+  turned «قريباً» into a readable line in V.05.8.
+
+### `test_v48` — 28 assertions
+⚠️ Undoing the parking and the pending-first guard turns **four items red**,
+and `1.4` reads **`false / 1`**: the account out of tier 2 from a typo,
+which is the fault in one line.
+
+### And the group closes — the full net, run once for all three
+```
+92 runs · 46 suites · 5,456 assertions · zero red · zero crash
+```
+This is the first run under Rai's 28 August rule in its intended shape:
+`315` and `325` ran their touching suites only, and the net ran **once**
+at the end of **315 · 325 · 326** instead of three times. It grew from 43
+suites to 46 across the group (`v46`, `v47`, `v48`) and from 5,284
+assertions to 5,456.
 
 ## Known open items
 - **The header image is still far larger than its box.** V.04.7 replaced

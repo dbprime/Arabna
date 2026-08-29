@@ -3014,8 +3014,11 @@ export function touchPendingVerify() {
 
 /** the last three digits of the number on file, and nothing more */
 export function phoneTail() {
-  const d = String((state.user && state.user.phone) || '').replace(/\D/g, '');
-  return d.slice(-3);
+  /* ⚠️ The PENDING number first: without it the message names the tail of
+     the OLD number while asking for the new one — the very message `315`
+     had just repaired. */
+  const n = pendingPhone() || (state.user && state.user.phone) || '';
+  return String(n).replace(/\D/g, '').slice(-3);
 }
 /** the same person, however they punctuated it */
 export function samePhone(a, b) {
@@ -3108,8 +3111,21 @@ export function confirmEmail() {
   state.user.emailVerified = true;
   save();
 }
+/** the number waiting on a code, or null — never shown as the account's */
+export function pendingPhone() {
+  return (state.user && state.user.pendingPhone) || null;
+}
+export function cancelPhoneChange() {
+  if (state.user) { delete state.user.pendingPhone; save(); }
+}
 export function confirmPhone(phone) {
-  if (state.user) { state.user.phone = phone; state.user.phoneVerified = true; save(); }
+  if (!state.user) return;
+  /* the promotion lives here and ONLY here, exactly as `confirmEmail`'s
+     does: this is the one function never called without a correct code. */
+  state.user.phone = phone || state.user.pendingPhone || state.user.phone;
+  state.user.phoneVerified = true;
+  delete state.user.pendingPhone;
+  save();
 }
 /* What survives signing out: the device's own preferences, the admin
    panel's work (it is unlocked by a device password, not by an account),
@@ -3177,12 +3193,31 @@ export function updateProfile({ name, email, phone }) {
   } else if (email === u.email) {
     delete u.pendingEmail;
   }
+  /* ⚠️ THE NUMBER IS PARKED LIKE THE ADDRESS, and Rai's decision here is
+     the same argument written for the email: a typo DROPS THE ACCOUNT OUT
+     OF TIER 2, and with it posting, contacting a seller, claiming a
+     business and buying any advertisement.
+     ⚠️ And the fault is narrower than it looks, which makes it worse:
+     `#/auth/phone` checks the typed number against the one ON FILE, so
+     somebody who saved a typo COULD NOT VERIFY THEIR REAL NUMBER — they
+     had to retype the mistake. The error locked itself in. */
+  let phonePending = false;
   if (phone !== undefined && phone !== u.phone) {
-    u.phone = phone;
-    u.phoneVerified = false;
+    if (!phone) {
+      /* ⚠️ Emptying the field is a REMOVAL, not a change waiting on a
+         code: there is nothing to verify, so dropping the mark is right. */
+      u.phone = '';
+      u.phoneVerified = false;
+      delete u.pendingPhone;
+    } else {
+      u.pendingPhone = phone;
+      phonePending = true;
+    }
+  } else if (phone !== undefined && phone === u.phone) {
+    delete u.pendingPhone;              // undoing it cancels it
   }
   save();
-  return Object.assign({}, u, { emailPending });
+  return Object.assign({}, u, { emailPending, phonePending });
 }
 /** the address waiting on a code, or null — never shown as the account's */
 export function pendingEmail() {
@@ -4953,6 +4988,41 @@ export function toDataFile(list, startIndex = 1) {
  * Everything the owner has entered, as one JSON file. After 300 shops go in
  * by hand this is a company asset, and one mistake could erase weeks.
  */
+/**
+ * The reader's OWN copy of their data — the privacy page promises it in so
+ * many words, and there was no button anywhere in the app for it.
+ *
+ * ⚠️ AND IT IS NOT `exportBackup()`. That one dumps the whole state, and
+ * the whole state carries the ADMIN PANEL'S PASSWORD HASH AND SALT and its
+ * action log. An operator's backup and a person's copy of their own data
+ * are two different documents, and handing out the first as the second
+ * publishes a credential.
+ * ⚠️ So this names what it INCLUDES, never what it excludes: a key added
+ * to the state tomorrow is left out by default, which is the safe
+ * direction — the same shape as `KEEPS_ON_SIGN_OUT`, for the same reason.
+ */
+export function exportMyData() {
+  const u = state.user || {};
+  /* the password's own trace never leaves, in either form */
+  const { pwHash, pwSalt, ...person } = u;
+  return JSON.stringify({
+    app: 'ARABNA', exportedAt: new Date().toISOString(),
+    profile: person,
+    listings: (state.extraClassifieds || []).filter(c => (state.myListings || []).includes(c.id)),
+    reviews: state.reviews || [],
+    saved: state.saved || [],
+    savedEvents: state.savedEvents || [],
+    messages: state.messages || [],
+    receipts: state.receipts || [],
+    subscription: state.subscription || null,
+    ads: state.myAds || [],
+    requests: state.claims || [],
+    businesses: state.myBusinessIds || [],
+    blocked: state.blocked || [],
+    notifications: state.extraNotifs || [],
+  }, null, 2);
+}
+
 export function exportBackup() {
   return JSON.stringify({
     app: 'ARABNA', version: 'V.02.1', exportedAt: new Date().toISOString(),

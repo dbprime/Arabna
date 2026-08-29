@@ -190,7 +190,12 @@ export function EditProfileScreen(root) {
              opening the screen. It is a RULE now, stated ahead of the
              typing; `phoneChangedReverify` stays exactly as it is, for the
              toast after a save, which is where it is true. */''}
-        <div class="hint">${u.phoneVerified ? t('verified') : t('phoneNotVerified')} — ${t('phoneChangeRule')}</div></div>
+        <div class="hint">${S.pendingPhone()
+          ? `<span class="ink-danger">${t('phonePending').replace('{p}', esc(fmtPhone(S.pendingPhone())))}</span>`
+          : `${u.phoneVerified ? t('verified') : t('phoneNotVerified')} — ${t('phoneChangeRule')}`}</div>
+        ${/* drawn on the SAME condition as the line, so the two cannot
+             say different things — the shape the address already uses */''}
+        ${S.pendingPhone() ? `<button class="mini-btn" id="pCancelPhone">${icon('x', 15)} ${t('phoneCancelChange')}</button>` : ''}</div>
 
       <button class="btn btn-gold btn-block mt-8" id="pSave">${icon('check', 19)} ${t('saveChanges')}</button>
 
@@ -231,6 +236,13 @@ export function EditProfileScreen(root) {
     if (input) input.classList.toggle('input-err', !!msg);
     return !msg;
   };
+
+  const cp = $('#pCancelPhone');
+  if (cp) cp.addEventListener('click', () => {
+    S.cancelPhoneChange();
+    toast(t('phoneChangeCancelled'), 'ok');
+    EditProfileScreen(root);
+  });
 
   const cx = $('#pCancelEmail');
   if (cx) cx.addEventListener('click', () => {
@@ -277,8 +289,12 @@ export function EditProfileScreen(root) {
       go('#/auth/email');
       return;
     }
-    toast(phoneChanged ? t('phoneChangedReverify') : t('profileSaved'), phoneChanged ? 'err' : 'ok');
-    go(phoneChanged ? '#/auth/phone' : '#/profile');
+    /* ⚠️ The message says the NEW number is waiting on a code — not merely
+       that «you changed your number», which was true of a change that had
+       already taken effect and is no longer what happens. */
+    const pend = r && r.phonePending;
+    toast(pend ? t('phoneChangeSent') : t('profileSaved'), pend ? 'ok' : 'ok');
+    go(pend ? '#/auth/phone' : '#/profile');
   });
 
   const bb = $('#badgeBtn');
@@ -427,6 +443,18 @@ function hubSub(key) {
   if (key === 'receipts')      { const n = S.receipts().length; return n ? String(n) : ''; }
   if (key === 'blockedTitle')  { const n = (S.state.blocked || []).length; return n ? String(n) : ''; }
   return '';
+}
+
+/* Hand the reader a file. The admin panel has its own copy of this and it
+   is private to that module; duplicating six lines beats exporting a DOM
+   helper out of a screen. */
+function download(name, text, mime) {
+  const blob = new Blob([text], { type: (mime || 'application/json') + ';charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = name;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 2000);
 }
 
 function initialOf(name) {
@@ -919,6 +947,29 @@ export function SettingsScreen(root) {
         <button class="mini-btn" data-route="#/blocked">${icon(document.documentElement.dir === 'rtl' ? 'chevronL' : 'chevronR', 15)}</button>
       </div>
 
+      ${/* ⚠️ THE PRIVACY PAGE PROMISES THIS IN SO MANY WORDS and there was
+           no button for it anywhere. It is NOT the admin's backup: that
+           one dumps the whole state, and the whole state carries the
+           panel's password hash and its action log. */''}
+      <div class="dr-group-label">${t('myData')}</div>
+      <div class="setting-row">
+        <span class="s-txt"><b>${t('downloadMyData')}</b><span>${t('downloadMyDataSub')}</span></span>
+        <button class="mini-btn" id="dlData">${icon('file', 15)}</button>
+      </div>
+
+      ${/* ⚠️ A PLACE HELD, never half a feature invented. The row does not
+           press and the sentence under it says why — and it is a <span>,
+           not a disabled <a>: an anchor with no href stays in the tab order
+           and a screen reader still calls it a link, promising what it
+           cannot do. And the word is READ, not hovered: `title` never
+           appears on a phone (the V.05.8 lesson).
+           ⚠️ Nothing is invented around it: no device list, no last-seen
+           date. */''}
+      <div class="setting-row" style="opacity:.42">
+        <span class="s-txt"><b>${t('signOutEverywhere')}</b><span>${t('worksWithServer')}</span></span>
+        <span class="mini-btn" aria-disabled="true">${icon('lock', 15)}</span>
+      </div>
+
       <div class="dr-group-label">${t('deleteAccount')}</div>
       <div class="setting-row" style="border:none">
         <span class="s-txt"><b>${t('deleteAccount')}</b><span>${t('deleteAccountSub')}</span></span>
@@ -1000,6 +1051,12 @@ export function SettingsScreen(root) {
     }));
   }));
 
+  const dl = $('#dlData');
+  if (dl) dl.addEventListener('click', () => {
+    download('arabna-my-data-' + new Date().toISOString().slice(0, 10) + '.json', S.exportMyData());
+    toast(t('done'), 'ok');
+  });
+
   const del = $('#delAcc');
   if (del) del.addEventListener('click', () => {
     const d = S.deletionSummary();
@@ -1016,7 +1073,10 @@ export function SettingsScreen(root) {
           <span class="s-txt"><b>${label}</b></span><span class="muted">${n}</span></div>`).join('')
         : `<div class="hint">${t('deleteNothingElse')}</div>`}
       <div class="list-note" style="margin-inline:0">${icon('alert', 18)}<span>${t('deleteNoUndo')}</span></div>
-      <button class="btn btn-danger btn-block mt-12" id="delGo">${t('delete')}</button>
+      ${/* ⚠️ ABOVE the delete button, not below it: this is the last moment
+           the data exists. */''}
+      <button class="btn btn-ghost btn-block mt-12" id="delDl">${icon('file', 18)} ${t('downloadBeforeDelete')}</button>
+      <button class="btn btn-danger btn-block mt-8" id="delGo">${t('delete')}</button>
       <button class="btn btn-plain btn-block mt-8" id="delNo">${t('cancel')}</button>
     `, (panel) => {
       panel.querySelector('#delGo').addEventListener('click', () => {
@@ -1024,6 +1084,10 @@ export function SettingsScreen(root) {
         closeSheet();
         toast(t('deleteConfirm'), 'ok');
         go('#/home');
+      });
+      panel.querySelector('#delDl').addEventListener('click', () => {
+        download('arabna-my-data-' + new Date().toISOString().slice(0, 10) + '.json', S.exportMyData());
+        toast(t('done'), 'ok');
       });
       panel.querySelector('#delNo').addEventListener('click', () => closeSheet());
     });

@@ -66,6 +66,9 @@ export function SignUpScreen(root) {
         <input type="checkbox" id="agree2" class="check-gold" />
         <span class="s-txt"><b style="font-weight:500;font-size:.78125rem">${t('age18')}</b></span>
       </label>
+      ${/* one box for both ticks: they are refused together and the reader
+           needs one sentence, not two identical ones */''}
+      <div class="field-err" id="e_agree"></div>
 
       <button class="btn btn-gold btn-block mt-12" id="suBtn">${t('createAccount')}</button>
       <button class="btn btn-ghost btn-block mt-8" data-route="#/auth/signin">${t('haveAccount')}</button>
@@ -113,7 +116,13 @@ export function SignUpScreen(root) {
     ok = (pass ? !checkPass() : setErr('sPass', t('required'))) && ok;
     ok = setErr('sPass2', !pass2 ? t('required') : pass2 !== pass ? t('passwordsDontMatch') : '') && ok;
     if (!ok) { $('.input-err') && $('.input-err').focus(); return; }
-    if (!$('#agree1').checked || !$('#agree2').checked) { toast(t('required'), 'err'); return; }
+    /* ⚠️ EVERY OTHER refusal on this screen puts a red message under its
+       own field and leaves it there; «empty» alone took a toast that names
+       no field and is gone in 2.8 seconds. The difference was never in
+       importance — it was in PLACE. `field-err` already exists and `310`
+       applied it to the other boxes, so nothing new is written here. */
+    const boxErr = setErr('agree', (!$('#agree1').checked || !$('#agree2').checked) ? t('required') : '');
+    if (!boxErr) return;
 
     e.target.innerHTML = `<span class="spinner"></span>`;
     await S.signUp({ name: first + ' ' + last, email, password: pass, phone });
@@ -294,11 +303,22 @@ export function PhoneVerifyScreen(root) {
 
   $('#sendBtn').addEventListener('click', async (e) => {
     const phone = $('#phIn').value.trim();
-    if (!phone) { toast(t('required'), 'err'); return; }
+    if (!phone) {
+      /* the same rule as the sign-up boxes above: «empty» was the one
+         refusal on this screen that took a toast instead of a line */
+      $('#phIn').classList.add('input-err');
+      msg.innerHTML = `<div class="err-msg">${icon('alert', 15)}<span>${t('required')}</span></div>`;
+      return;
+    }
     /* The number was given at sign-up. Re-typing it is the check that the
        person holds the account — and the message names only the last three
        digits, which is enough to jog a memory and not enough to leak one. */
-    const onFile = S.state.user && S.state.user.phone;
+    /* ⚠️ THE PENDING NUMBER FIRST. This line compared only against the
+       number ON FILE, so somebody who saved a typo could not verify their
+       REAL number — they had to retype the mistake. The error locked
+       itself in, and that is the whole of item 8: without this line the
+       parked number is decoration. */
+    const onFile = S.pendingPhone() || (S.state.user && S.state.user.phone);
     if (onFile && !S.samePhone(onFile, phone)) {
       $('#phIn').classList.add('input-err');
       /* ⚠️ `.err-msg` is `display:flex; gap:5px`, so a bare text node and a
