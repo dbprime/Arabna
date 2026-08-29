@@ -17,7 +17,7 @@ import { DirectoryScreen, ListingScreen, AddBusinessScreen, ClaimScreen, Subscri
 import { MarketplaceScreen, ListingDetailScreen, PostScreen, BoostScreen, MessagesScreen } from './screens/marketplace.js';
 import { NewcomerScreen, MagazineScreen, ArticleScreen } from './screens/magazine.js';
 import { ReceiptsScreen, ReceiptScreen } from './screens/receipts.js';
-import { ProfileScreen, EditProfileScreen, ChangePasswordScreen, SavedScreen, MyAdsScreen,
+import { ProfileScreen, EditProfileScreen, ChangePasswordScreen, SavedScreen, MyAdsScreen, MyRequestsScreen,
          MyBusinessScreen, MyReviewsScreen, SettingsScreen, NotificationsScreen,
          HelpScreen, AboutScreen, PrivacyScreen, TermsScreen, BlockedScreen } from './screens/profile.js';
 import { SignUpScreen, SignInScreen, EmailVerifyScreen, PhoneVerifyScreen, ForgotScreen } from './screens/auth.js';
@@ -87,6 +87,7 @@ const ROUTES = [
   { re: /^#\/saved$/,             screen: SavedScreen,       nav: 'profile' },
   { re: /^#\/my-ads$/,            screen: MyAdsScreen,       nav: 'profile' },
   { re: /^#\/my-reviews$/,        screen: MyReviewsScreen,   nav: 'profile' },
+  { re: /^#\/my-requests$/,       screen: MyRequestsScreen,  nav: 'profile' },
   { re: /^#\/my-business$/,       screen: MyBusinessScreen,  nav: 'profile' },
   { re: /^#\/settings$/,          screen: SettingsScreen,    nav: 'profile' },
   { re: /^#\/blocked$/,           screen: BlockedScreen,     nav: 'profile' },

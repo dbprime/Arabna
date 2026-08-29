@@ -185,8 +185,16 @@ const go = async (p, h) => { await p.evaluate(x => { location.hash = x; }, h); a
   const { ctx, p } = await fresh();
   await signUp(p);
   await go(p, '#/profile');
-  const before = await p.evaluate(() =>
-    [...document.querySelectorAll('#app button.list-row')].map(e => e.dataset.route).slice(-1)[0]);
+  /* CHANGED in V.06.7: this read the LAST hub row, and V.06.7 reordered
+     the hub — three duplicated rows left it and three doors joined it — so
+     the last row is «المحظورون» now. The row is found by its ROUTE, which
+     is what the check was ever about; reading a position was fragile the
+     day it was written and this batch is what exposed it. */
+  const subRow = p => p.evaluate(() =>
+    [...document.querySelectorAll('#app button.list-row')]
+      .map(e => e.dataset.route)
+      .find(r => r === '#/subscribe' || r === '#/my-subscription'));
+  const before = await subRow(p);
   ok('6.1 with no subscription it offers the sales page', before === '#/subscribe', String(before));
   /* ⚠️ ownership first — `startSubscription` refuses a business this
      account does not own, which is the V.03.3 rule and stays. */
@@ -195,8 +203,7 @@ const go = async (p, h) => { await p.evaluate(x => { location.hash = x; }, h); a
     window.__S.startSubscription({ businessId: 'b1', plan: 'monthly' });
   });
   await go(p, '#/home'); await go(p, '#/profile');
-  const after = await p.evaluate(() =>
-    [...document.querySelectorAll('#app button.list-row')].map(e => e.dataset.route).slice(-1)[0]);
+  const after = await subRow(p);
   ok('6.2 …and with one it goes straight to it', after === '#/my-subscription', String(after));
   ok('6.3 …one definition, read by both screens',
      await p.evaluate(() => window.__S.subscriptionRoute() === '#/my-subscription'));

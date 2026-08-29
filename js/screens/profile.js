@@ -72,13 +72,27 @@ export function ProfileScreen(root) {
         <div class="i-txt"><b>${joined}</b><span>${t('joinedOn')}</span></div></div>
     </div>
 
-    ${!u.phoneVerified ? `
-    <div class="pad mt-16">
-      <div class="list-note">${icon('shield', 18)}
-        <span>${t('verifyPhoneToPost')}</span>
-        <button class="mini-btn gold" data-route="#/auth/phone" style="margin-inline-start:auto">${t('verifyBtn')}</button>
-      </div>
-    </div>` : ''}
+    ${/* ⚠️ THE VERIFIED NUMBER IS THE GATE ON EVERYTHING THAT EARNS: posting,
+         contacting a seller, claiming a business, buying any advertisement.
+         Somebody who reaches tier 2 is the only possible customer there is,
+         so the step is named rather than left to be discovered.
+         ⚠️ No badges, no points, no progress ring — a standing decision.
+         ⚠️ And a finished step DISAPPEARS rather than standing struck
+         through, and the whole block goes when the last one does. */''}
+    ${(() => {
+      const steps = [];
+      if (!u.phoneVerified) steps.push([t('stepVerifyPhone'), '#/auth/phone', t('verifyBtn')]);
+      if (!S.avatarView()) steps.push([t('stepAddPhoto'), '#/profile/edit', t('addBtn')]);
+      if (!S.myBusinesses().length) steps.push([t('stepAddBusiness'), '#/claim', t('addBtn')]);
+      if (!steps.length) return '';
+      return `<div class="pad mt-16">
+        <div class="dr-group-label">${t('completeAccount')}</div>
+        ${steps.map(([label, route, cta]) => `<div class="list-note" style="margin-bottom:8px">${icon('shield', 18)}
+          <span>${label}</span>
+          <button class="mini-btn gold" data-route="${route}" style="margin-inline-start:auto">${cta}</button>
+        </div>`).join('')}
+      </div>`;
+    })()}
 
     <div class="stat-row mt-16">
       <button class="stat" data-route="#/my-ads"><b>${S.myActiveListings().length}</b><span>${t('activeListings')}</span></button>
@@ -99,11 +113,14 @@ export function ProfileScreen(root) {
          read from ACCOUNT_LINKS so there is one list and not two menus. */''}
     <div class="pad mt-20">
       <div class="dr-group-label">${t('grpMyAccount')}</div>
-      ${S.ACCOUNT_LINKS.map(l => `
-        <button class="list-row" data-route="${typeof l.route === 'function' ? l.route() : l.route}">
+      ${S.ACCOUNT_LINKS.map(l => {
+        const sub = hubSub(l.key);
+        return `<button class="list-row" data-route="${typeof l.route === 'function' ? l.route() : l.route}">
           <span class="row-ico">${icon(l.icon, 20)}</span>
-          <div class="row-main"><div class="row-title">${t(l.key)}</div></div>
-        </button>`).join('')}
+          <div class="row-main"><div class="row-title">${t(l.key)}</div>
+            ${sub ? `<div class="row-sub">${esc(sub)}</div>` : ''}</div>
+        </button>`;
+      }).join('')}
     </div>
     <div style="height:20px"></div>`;
 
@@ -372,6 +389,46 @@ export function passwordField(id, label) {
     ⚠️ `[0]` is right here and is NOT `Intl.Segmenter`'s case: this is one
     character being DISPLAYED, while V.05.9's lesson was about STORING a
     whole emoji. A single Arabic letter is not a compound cluster. */
+/**
+ * What each hub row says about itself, under its own name.
+ *
+ * ⚠️ ZERO IS NEVER PRINTED. «0 رسالة» is noise in a row this narrow, and
+ * its absence is the signal — the same rule that took the buyers' button
+ * off a listing with no messages.
+ * ⚠️ And every number here comes from a function that already existed;
+ * this batch counts nothing new.
+ */
+function hubSub(key) {
+  if (key === 'myBusiness') {
+    const mine = S.myBusinesses();
+    if (!mine.length) return '';
+    const more = mine.length > 1 ? ' +' + (mine.length - 1) : '';
+    const paid = S.businessPlan(mine[0]) === 'paid' ? ' · ' + t('planPaid') : '';
+    return L(mine[0].name) + more + paid;
+  }
+  if (key === 'myMessages') {
+    /* ⚠️ CONVERSATIONS, not «unread»: a message record carries no read
+       state at all — measured, there is no such field — and a count the
+       app does not have is a number invented on the screen. */
+    const n = S.messageThreads().length;
+    return n ? arCount(n, [t('conversation1'), t('conversation2'), t('conversation3'), t('conversation11')]) : '';
+  }
+  if (key === 'myRequests') {
+    const n = S.pendingRequests();
+    return n ? `${n} ${t('reqWaiting')}` : '';
+  }
+  if (key === 'subscription') {
+    const sb = S.subscription();
+    if (!sb) return '';
+    if (sb.status === 'trial') return t('subTrial');
+    return sb.currentPeriodEnd ? `${t('renewsOn')} ${fmtDate(sb.currentPeriodEnd)}` : '';
+  }
+  if (key === 'notifications') { const n = S.unreadCount(); return n ? String(n) : ''; }
+  if (key === 'receipts')      { const n = S.receipts().length; return n ? String(n) : ''; }
+  if (key === 'blockedTitle')  { const n = (S.state.blocked || []).length; return n ? String(n) : ''; }
+  return '';
+}
+
 function initialOf(name) {
   return (String(name || '').trim()[0] || '?').toUpperCase();
 }
@@ -458,6 +515,56 @@ export function wirePasswordToggles(root) {
     one was open, send the user to the step they are missing instead of
     painting an empty list — and resume them here afterwards. */
 function memberOnly(hash) { return S.requireTier(1, hash, go); }
+
+/* ---------------------------- MY REQUESTS ----------------------------
+   ⚠️ A WHOLE HOLE, not a missing subtitle. Somebody who pressed «هذا
+   نشاطي» raised a record into the admin queue and then SAW NOTHING: no
+   row, no status, not even an acknowledgement that it was sent. The
+   notification when the decision comes is the only word there is, and a
+   missed notification is the whole story missed.
+
+   Measured before this: `state.claims` and `approvedClaims()` appear in
+   `js/screens/` exactly ZERO times. The data was kept and no screen read
+   it.
+
+   ⚠️ And this builds NO new queue and no new admin screen — it READS the
+   one that already exists. The verification badge joins it, so a person
+   looks in one place for both.
+   ⚠️ The admin's written reason reaches the reader VERBATIM, and is never
+   reworded. (It is `307` that made a refusal ask for a reason at all;
+   before it, this screen would have shown empty ones.) */
+export function MyRequestsScreen(root) {
+  if (!memberOnly('#/my-requests')) return;
+  renderHeader({ simple: true, title: t('myRequests') });
+  const rows = S.myRequests();
+
+  root.innerHTML = !rows.length
+    ? emptyState('clock', t('reqNone'), t('reqNoneSub'), t('directoryTitle'), '#/directory')
+    : `<div class="pad mt-16">
+        ${rows.map(r => {
+          const biz = r.bizId ? S.businessById(r.bizId) : null;
+          const name = r.kind === 'badge' ? t('reqBadge')
+            : biz ? L(biz.name) : t('reqClaim');
+          const badge = r.status === 'approved' ? 'badge-verified'
+            : r.status === 'rejected' ? 'badge-free' : 'badge-pending';
+          const word = r.status === 'approved' ? t('reqApproved')
+            : r.status === 'rejected' ? t('reqRejected') : t('statusPending');
+          /* approved and about a business: the row opens the page it won */
+          const route = r.status === 'approved' && r.bizId ? `#/directory/${r.bizId}` : '';
+          return `<div class="list-row"${route ? ` data-route="${esc(route)}"` : ''}>
+            <span class="row-ico">${icon(r.kind === 'badge' ? 'shield' : 'briefcase', 20)}</span>
+            <div class="row-main">
+              <div class="row-title">${esc(name)} <span class="badge ${badge}">${word}</span></div>
+              <div class="row-sub">${esc(r.kind === 'badge' ? t('reqBadge') : t('reqClaim'))}${
+                r.when ? ' · ' + fmtDate(r.when) : ''}</div>
+              ${r.status === 'rejected' && r.reason
+                ? `<div class="err-msg">${icon('alert', 15)}<span>${esc(r.reason)}</span></div>` : ''}
+            </div>
+          </div>`;
+        }).join('')}
+      </div>`;
+  wireRoutes(root);
+}
 
 /* ------------------------------ SAVED ------------------------------ */
 export function SavedScreen(root) {

@@ -7,7 +7,7 @@ ARABNA · عربنا — a mobile-first web app for the Arab community in the U.
 **business directory + marketplace + events + magazine**, Arabic-first with a full English toggle.
 ("Classifieds / الإعلانات الشخصية" is now "Marketplace / السوق" — the old `#/classifieds`
 routes still resolve so shared links keep working.)
-Current version: **V.06.6 (prototype)**. Owner: Rai Elby (@dbprime). Deploys to Vercel (team DB Prime).
+Current version: **V.06.7 (prototype)**. Owner: Rai Elby (@dbprime). Deploys to Vercel (team DB Prime).
 
 ## Hard rules (from the product brief)
 1. **One repository, one Vercel project.** No duplicates, no stray preview projects.
@@ -5436,6 +5436,106 @@ the same six numbers the file measured, reproduced independently.
 ⚠️ **And the full net is not run here.** Rai's rule of 28 August: once at
 the end of a group, and this group is **315 · 325 · 326**. What ran is the
 suites this batch touches, on both builds.
+
+## V.06.7 — the account hub says what it holds
+
+Six frozen names, and **every number that would make them useful already
+sitting in `store.js` unread.** So this batch connects what was built far
+more than it builds.
+
+### «طلباتي» — the queue nobody read
+⚠️ **A whole hole, not a missing subtitle.** Somebody who pressed «هذا
+نشاطي» raised a record into the admin queue and then **saw nothing**: no
+row, no status, not even an acknowledgement that it was sent. The
+notification when the decision lands is the only word there is, and a
+missed notification is the whole story missed.
+
+**Measured before the batch: `state.claims` and `approvedClaims()` appear
+in `js/screens/` exactly ZERO times.** The data was kept and no screen ever
+read it.
+
+- **No new queue and no new admin screen** — this is a **reading** of the
+  one that exists. The verification badge joins it, so a person looks in
+  one place for both requests.
+- **The admin's written reason reaches the reader verbatim**, never
+  reworded. ⚠️ It is `307` that made a refusal ask for a reason at all;
+  before that this screen would have shown empty ones — which is why the
+  order of the two batches mattered.
+- An **approved** request opens the page it won.
+
+### The rows carry their state
+```
+نشاطي التجاري   مطعم الشام · مشترك
+رسائلي          محادثتان
+طلباتي          1 بانتظار الموافقة
+الاشتراك        يتجدّد 12 سبتمبر 2026
+الإشعارات       2
+```
+- ⚠️ **Zero is never printed.** «0 رسالة» is noise in a row this narrow and
+  **its absence is the signal** — the rule that took the buyers' button off
+  a listing with no messages. Measured: a fresh account's receipts row
+  carries no subtitle at all.
+- ⚠️ **The messages row counts CONVERSATIONS, not «unread».** A message
+  record carries **no read state** — measured, there is no such field — and
+  a count the app does not have is a number invented on a screen. The file
+  asked for unread; the model cannot answer it, and inventing one would be
+  the worse reading of the instruction.
+- **«محادثتان» is the Arabic dual**, through the existing `arCount`.
+- ⚠️ **And the subtitle is built in the SCREEN, not the store.** It needs
+  `L()` for a name and `fmtDate()` for a date, and `store.js` must not
+  import `i18n` or `ui` — the arrow has pointed one way since V.02.1. So
+  `ACCOUNT_LINKS` stays data and the screen renders it.
+
+### Three doors in, three rows out
+**In**: notifications, receipts and blocked — all three belong to the
+account, and two were buried inside Settings. ⚠️ **Nothing is moved**: the
+drawer's notifications row is the fast path and keeps its badge, and the
+rule forbids a screen that reprints an existing list, not two doors to one
+destination.
+
+**Out**: «إعلاناتي», «المفضّلة» and «تقييماتي» — ⚠️ **they are the three
+counters at the top of the very same screen, ten lines above**, so the
+reader met them twice. **The counters stay and the rows go: a counter
+carries a number and a row carries nothing, and the number is what makes
+tapping a decision.**
+
+**Seven rows, and the count was measured rather than argued**: at 390×844
+the screen is 1,716px on a new account and 1,556 once the setup steps are
+done. **It scrolls, which is what this screen is for** — «حسابي» is not
+the drawer and is not held to the drawer's never-scrolls rule.
+
+### «كمّل حسابك» — three steps where there was one
+```
+وثّق رقمك · حطّ صورتك · سجّل نشاطك
+```
+⚠️ **Not decoration.** The verified number is the gate on **everything that
+earns**: posting, contacting a seller, claiming a business, buying any
+advertisement. **Somebody who reaches tier 2 is the only possible customer
+there is**, so the step is named rather than left to be discovered.
+
+- **No badges, no points, no progress ring** — a standing decision.
+- **A finished step disappears** rather than standing struck through, and
+  the whole block goes with the last of them. Measured: 3 → 2 → 0.
+
+### `test_v47` — 27 assertions
+⚠️ Printing a zero and putting **one** duplicated row back turns **three
+items red**, each for its own reason. And `#/my-requests` joins **both** of
+`v37`'s lists — the walk and the known-routes table — because a new screen
+with no coverage is how a screen quietly breaks.
+
+**And the touching suites caught one reversal**, which is what they are
+for: `v46 · 6.1/6.2` read the **last** hub row to find the subscription,
+and this batch reordered the hub, so the last row is «المحظورون» now. **The
+check is right and its method was fragile** — it finds the row by its
+**route** now, which is what it was ever about. A comment names the
+reversal; nothing was softened, and `v46` is back to 31/31.
+
+```
+touching suites, both builds: 3 · 5 · 7 · 20 · 37 · 42 · 46 · 47 — all green
+```
+
+⚠️ **The full net is not run here** — Rai's rule of 28 August: once at the
+end of a group, and this group is **315 · 325 · 326**.
 
 ## Known open items
 - **The header image is still far larger than its box.** V.04.7 replaced

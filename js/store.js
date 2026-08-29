@@ -2448,13 +2448,52 @@ export function subscriptionRoute() {
   return subscription() ? '#/my-subscription' : '#/subscribe';
 }
 
+/** How many requests of this account's are still waiting on the admin —
+    a claim, or the verification badge. Read off the queues that already
+    exist: no new queue, and no new admin screen. */
+export function pendingRequests() {
+  if (!isLoggedIn()) return 0;
+  const claims = (state.claims || []).filter(c => c.status === 'pending').length;
+  const u = state.user;
+  return claims + (u && u.badge && u.badge.status === 'pending' ? 1 : 0);
+}
+
+/** every request this account has made, newest first, claims and badge alike */
+export function myRequests() {
+  if (!isLoggedIn()) return [];
+  const rows = (state.claims || []).map(c => ({
+    kind: 'claim', id: c.id, bizId: c.bizId, status: c.status,
+    when: c.when, reason: c.reason || '',
+  }));
+  const b = state.user && state.user.badge;
+  if (b && b.status) {
+    rows.push({ kind: 'badge', id: 'badge', bizId: null, status: b.status,
+                when: b.when || 0, reason: b.reason || '' });
+  }
+  return rows.sort((a, z) => (z.when || 0) - (a.when || 0));
+}
+
+/**
+ * The account hub's rows — icon, label and destination, and nothing else.
+ *
+ * ⚠️ The SUBTITLE is built in the screen, not here: it needs `L()` for a
+ * name and `fmtDate()` for a date, and `store.js` must not import `i18n`
+ * or `ui` — the arrow points one way and has since V.02.1.
+ *
+ * ⚠️ AND THREE ROWS LEFT THIS LIST. «إعلاناتي», «المفضّلة» and «تقييماتي»
+ * are the three counters at the top of the very same screen, ten lines
+ * above — the reader met them twice. The counters stay and the rows go,
+ * because a counter carries a number and a row carries nothing, and the
+ * number is what makes tapping a decision.
+ */
 export const ACCOUNT_LINKS = [
-  { icon: 'briefcase', key: 'myBusiness',   route: '#/my-business' },
-  { icon: 'bag',       key: 'myAds',        route: '#/my-ads' },
-  { icon: 'star',      key: 'myReviews',    route: '#/my-reviews' },
-  { icon: 'message',   key: 'myMessages',   route: '#/messages' },
-  { icon: 'heart',     key: 'savedFav',     route: '#/saved' },
-  { icon: 'crown',     key: 'subscription', route: subscriptionRoute },
+  { icon: 'briefcase', key: 'myBusiness',    route: '#/my-business' },
+  { icon: 'message',   key: 'myMessages',    route: '#/messages' },
+  { icon: 'clock',     key: 'myRequests',    route: '#/my-requests' },
+  { icon: 'crown',     key: 'subscription',  route: subscriptionRoute },
+  { icon: 'bell',      key: 'notifications', route: '#/notifications' },
+  { icon: 'file',      key: 'receipts',      route: '#/receipts' },
+  { icon: 'shield',    key: 'blockedTitle',  route: '#/blocked' },
 ];
 
 export function ownsBusiness(bizId) {
