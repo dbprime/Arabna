@@ -6129,8 +6129,18 @@ Measured on V.07.0 with «مفتوح الآن» chosen:
 
 ```
 the four subscribers   b1 open · b3 closed · b4 closed · b6 closed
-open free listings     176
+open free listings     87 at the hour this was measured
 ```
+
+⚠️ **AND THAT NUMBER IS NOT A CONSTANT — it is the hour it was taken in,
+and this is the correction, not «176 → 87».** Measured across the day on
+the same tree: **272 · 370 · 331 · 258 · 119** free-and-open at 10 · 14 ·
+18 · 20 · 22, and **87 late in the evening**. The first figure written
+here was 176, which was simply an earlier hour. **A number that moves
+every hour becomes wrong the moment it is written down as a fact** — so
+the range is written instead of a bare figure. ⚠️ **The argument does not
+move with it:** three closed subscribers above 87 open shops is the same
+argument as above 370.
 
 **The three closed subscribers were lifted above 176 open shops**, and
 `test_v8`'s «once a closed row appears, no open row may follow» fell at
