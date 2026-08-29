@@ -318,7 +318,16 @@ export function DirectoryScreen(root) {
     /* ⚠️ `336`: the sort the reader chose governs BOTH layers. `st.sort`
        is 'newest' when they have chosen nothing, and that default is not
        a choice — with it, `330`'s order stands exactly as it was. */
-    const pin = S.paidFirst(list, st.sort !== 'newest');
+    /* ⚠️ `336`: the sort the reader chose governs BOTH layers. `st.sort` is
+       'newest' when they have chosen nothing, and that default is not a
+       choice — with it, `330`'s order stands exactly as it was.
+       ⚠️ And «مفتوح الآن» passes its own key as the bucket: openness is
+       what the reader asked to order by, so the subscription is a tiebreak
+       inside it rather than a lift over it. «الأعلى تقييماً» and «الأقرب»
+       pass none — their keys are decimals that never tie, so a tiebreak
+       would never fire and the paid layer would vanish. */
+    const pin = S.paidFirst(list, st.sort !== 'newest',
+      st.sort === 'open' ? (x) => S.isOpenNow(x, now) : null);
     list = pin.list;
     const sponsored = new Set(pin.ids);
 

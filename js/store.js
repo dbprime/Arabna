@@ -1489,16 +1489,57 @@ export function regionNameOf(id) {
    not chosen, and theirs governs when they have — so the branches are not
    merged: one branch would mean either ignoring them always or giving up
    our own rule always. With no manual sort, `330`'s order stands untouched.
-   @param manualSort  true when the reader picked nearest / rated / open */
-export function paidFirst(list, manualSort) {
+   ⚠️ AND WITH «مفتوح الآن» THE OPENNESS IS THE PRIMARY KEY — Rai's
+   decision, and it settles a contradiction inside `336` itself: its item 2
+   asked for «no open row after the first closed one, in the whole list»
+   while its item 3 asked for the closed subscribers to sit above
+   everything else. Measured, the two cannot both hold: 1 subscriber is
+   open, 3 are closed, and 176 free listings are open — so item 3 puts a
+   closed shop second with 176 open ones beneath it, which is exactly what
+   item 2 forbids.
+   **Somebody who taps «مفتوح الآن» wants to go NOW, and a closed shop at
+   the top is no use to them whoever pays for it.** So the buckets are the
+   reader's own key and the subscription is the tiebreak INSIDE a bucket:
+   a closed subscriber leads every closed free listing and leads no open
+   one. Measured: the paid closed rows land at 178 · 179 · 180.
+
+   ⚠️ The promise it costs is named rather than hidden: «a subscriber never
+   falls below a free listing» becomes «never below a free listing IN THE
+   SAME SITUATION». What the $29 bought — the top of the default view — is
+   untouched, and the default is what almost every reader sees.
+
+   ⚠️ AND «الأعلى تقييماً» AND «الأقرب» GET NO BUCKETS, deliberately.
+   Their keys are decimals that practically never tie, so a tiebreak would
+   never fire and layer one would disappear — which is items 4 and 5 of
+   `336`, both of which ask for the two layers to survive. One bucket is
+   the plain partition; `groupOf` is what tells the two cases apart.
+
+   @param manualSort  true when the reader picked nearest / rated / open
+   @param groupOf     optional bucket key — the reader's own primary key.
+                      Absent means one bucket, i.e. a plain partition. */
+export function paidFirst(list, manualSort, groupOf) {
   if (!inCoverage()) return { list, ids: [] };
   const paid = list.filter(isPaid);
   if (!paid.length) return { list, ids: [] };
 
   if (manualSort) {
-    const ids = paid.map(b => b.id);
-    const seen = new Set(ids);
-    return { list: paid.concat(list.filter(b => !seen.has(b.id))), ids };
+    /* ⚠️ A STABLE PARTITION INSIDE EACH BUCKET, never a second sorter. The
+       list arrives already ordered by the reader's choice, `Map` keeps its
+       buckets in the order they were first met, and the two halves keep
+       the order they came in — so the reader's sort applies inside both
+       layers with no comparison written twice. */
+    const buckets = new Map();
+    list.forEach(b => {
+      const k = groupOf ? groupOf(b) : 0;
+      if (!buckets.has(k)) buckets.set(k, { paid: [], rest: [] });
+      (isPaid(b) ? buckets.get(k).paid : buckets.get(k).rest).push(b);
+    });
+    const out = [], ids = [];
+    buckets.forEach(v => {
+      v.paid.forEach(b => { out.push(b); ids.push(b.id); });
+      v.rest.forEach(b => out.push(b));
+    });
+    return { list: out, ids };
   }
 
   const known = [], unknown = [];

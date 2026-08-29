@@ -7,7 +7,7 @@ ARABNA · عربنا — a mobile-first web app for the Arab community in the U.
 **business directory + marketplace + events + magazine**, Arabic-first with a full English toggle.
 ("Classifieds / الإعلانات الشخصية" is now "Marketplace / السوق" — the old `#/classifieds`
 routes still resolve so shared links keep working.)
-Current version: **V.07.1 (prototype)**. Owner: Rai Elby (@dbprime). Deploys to Vercel (team DB Prime).
+Current version: **V.07.2 (prototype)**. Owner: Rai Elby (@dbprime). Deploys to Vercel (team DB Prime).
 
 ## Hard rules (from the product brief)
 1. **One repository, one Vercel project.** No duplicates, no stray preview projects.
@@ -6112,6 +6112,104 @@ straight out of the design table as rem and broke it. They are
 **`1.41875rem` and `.7875rem`** now — 22.7/16 and 12.6/16 — and the
 rendered difference is **0.02px**. Verified: 26 distinct rem values, none
 failing the round trip, zero px font-sizes.
+
+## V.07.2 — the sort the reader chose governs both layers
+
+⚠️ **This file CLOSES the group `330` + `335`.** The group's net was red
+at `v8` from the day `330` landed, and it does not close until the full
+net is green on both builds with this in it.
+
+### The hole was in `330`'s specification, not in what was built from it
+`330 · 2` said the manual sort «governs layer two», and said nothing about
+what it does INSIDE layer one — while `330 · 1` said layer one is ordered
+by distance, without condition. **So layer one was ordered by distance
+whatever the reader chose, exactly as written.**
+
+Measured on V.07.0 with «مفتوح الآن» chosen:
+
+```
+the four subscribers   b1 open · b3 closed · b4 closed · b6 closed
+open free listings     176
+```
+
+**The three closed subscribers were lifted above 176 open shops**, and
+`test_v8`'s «once a closed row appears, no open row may follow» fell at
+the first row.
+
+⚠️ **And it never reached the public.** All four subscribers are
+`demo: true`, there are **zero non-demo subscribers**, and `paidFirst`
+returns on its first line when nothing is paid. So the fault showed on
+the owner's device with the demo data on, and in the suites — which is
+why there was no rollback and the fix went forward in place.
+
+### Two items of `336` could not both be true, and Rai chose
+Its item 2 asked for «no open row after the first closed one, **in the
+whole list**»; its item 3 asked for the closed subscribers to stand above
+everything else. **With one open subscriber, three closed ones and 176
+open free listings, item 3 puts a closed shop second with 176 open ones
+beneath it — which is precisely what item 2 forbids.**
+
+> **Rai's decision: with «مفتوح الآن» the openness is the primary key and
+> the subscription is a tiebreak inside it.**
+
+**Somebody who taps «مفتوح الآن» wants to go now, and a closed shop at the
+top is no use to them whoever pays for it.**
+
+- ⚠️ **The promise it costs is named, not hidden.** «A subscriber never
+  falls below a free listing» becomes «never below a free listing **in the
+  same situation**»: a closed subscriber leads every closed free listing
+  and leads no open one. Measured — the first closed row in the list is a
+  subscriber. **What the $29 bought — the top of the default view — is
+  untouched, and the default is what almost every reader sees.**
+- ⚠️ **«الأعلى تقييماً» and «الأقرب» get no buckets, deliberately.** Their
+  keys are decimals that practically never tie, so a tiebreak would never
+  fire and layer one would disappear — which is `336`'s items 4 and 5,
+  both of which ask for the two layers to survive. One bucket is the plain
+  partition; `groupOf` is what tells the two cases apart.
+
+### A stable partition inside each bucket, never a second sorter
+The list reaches `paidFirst` **already ordered by the reader's choice** —
+`directory.js` did that — so `Map` keeps the buckets in the order they
+were first met and `filter` keeps each half in the order it arrived.
+**The reader's sort therefore applies inside both layers with no
+comparison written twice.** A rule written twice has two versions two
+batches later; that is `esc()`'s own lesson.
+
+```
+manual sort   → buckets (openness, or one bucket), paid first inside each
+no manual sort → 330's rule, untouched: distance, then city → verified → rating
+```
+
+⚠️ **The default is not a choice, which is why the branches are not
+merged.** Our rule governs when the reader has not chosen and theirs
+governs when they have; one branch would mean either ignoring them always
+or giving up our own rule always. **Measured, and this is the guard that
+matters most:** `newest` returns `b3 b1 b4 b6 b2 b5 b7 b8 b9 b10` —
+identical to V.07.0. *A fix that corrects a case few readers chose and
+changes the one nobody chose is not a fix.*
+
+### The first ten rows under «مفتوح الآن», measured
+```
+ 1  b1   subscriber  open   [إعلان مموّل]
+ 2  b8   free        open
+ 3  b13  free        open
+ 4  b14  free        open
+ 5  b15  free        open
+ 6  b25  free        open
+ 7  b17  free        open
+ 8  b26  free        open
+ 9  b31  free        open
+10  b32  free        open
+```
+All four subscribers keep their mark and their distance line. The closed
+subscribers sit at the head of the closed group, above every closed free
+listing.
+
+### `test_v8` was not touched, and that was the condition
+It is **129 passed, 0 failed**. ⚠️ **The easy «fix» here was to soften the
+assertion until it accepted what the app did — and that is not a fix, it
+is erasing the witness.** The item measured something real and fell
+because it was right.
 
 ## Known open items
 - **The header image is still far larger than its box.** V.04.7 replaced
