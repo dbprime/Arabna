@@ -608,6 +608,34 @@ prayer and mass              read each file's own header — it says what it cov
 **If you do not know which one covers your change, run three, not
 forty-eight** — and the full set at the end catches what you missed.
 
+### `main` IS PRODUCTION — so nothing reaches it before the net is green
+Rai's rule of 29 August, and it exists because two true things were being
+treated as one.
+
+**Measured:** the Vercel project is wired to `main`, and **every push to
+`main` publishes to the public site as production** — the last fourteen
+deployments are all `target: production`. So pushing V.07.0 to `main`
+before the full net had finished **published it to everybody** while it
+was still being tested.
+
+**The argument it was pushed under is right, and only half of it:**
+«work must not sit uncommitted in a container that gets reclaimed» — true.
+**But saving is not publishing, and here they are the same button.**
+
+> **1. Push to the WORK BRANCH immediately, exactly as now.** Nothing is
+> lost, and the branch gets its own preview URL — that works today and is
+> measured.
+>
+> **2. Nothing is pushed to `main`, or merged into it, until the full net
+> is green on BOTH builds.**
+>
+> **3. So production moves at GROUP boundaries only, not with every
+> batch** — and that is intended, not a side effect.
+>
+> **4. ⚠️ And if a net goes red AFTER production is already standing on
+> that commit, it is reported at once and BY THE NAME OF THE ITEM. It is
+> never fixed in silence, and the decision to roll back is Rai's alone.**
+
 ### The full net runs once per GROUP, and the closing file says so at its head
 Rai's decision of 28 August: the full net is about fifty minutes, and
 running it after every batch pays that four times inside one group. So a
