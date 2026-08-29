@@ -589,6 +589,35 @@ prayer and mass              read each file's own header — it says what it cov
 **If you do not know which one covers your change, run three, not
 thirty-seven** — and the full set at the end catches what you missed.
 
+### The full net runs once per GROUP, and the closing file says so at its head
+Rai's decision of 28 August: the full net is about fifty minutes, and
+running it after every batch pays that four times inside one group. So a
+batch runs **only the suites it touches**, and the net runs **once, at the
+end of the group**.
+
+> **The rule was not cancelled, its place moved.** «A batch is not finished
+> when its own suite is green» became **«a GROUP is not finished when its
+> suites are green»** — the same guarantee, paid once instead of four
+> times. And a red at the end is attributed **by reading** which batch
+> touched which file — every batch names its files at its head — never by
+> guessing.
+
+⚠️ **AND THE FILE THAT CLOSES A GROUP SAYS SO INSIDE ITSELF, AT ITS HEAD.**
+Rai's rule from 29 August, and he writes it in the head rather than the
+tail so it is read before the work starts, not after it is done.
+
+**Why it has to be written in the file and not carried in anybody's head:**
+a session that does not know it is holding the last batch of a group runs
+the touching suites, reports green, and **the group closes having never
+been tested whole** — which is precisely the failure the group rule was
+invented to prevent. The first group ran this way (`307`+`308`, then
+`315`+`325`+`326`) only because the closing file happened to be named in
+conversation; that is not a mechanism.
+
+**So: no group is closed, and no report says a group is finished, until the
+full net has been green on BOTH builds.** If the closing file does not say
+it closes the group, ask before assuming it does.
+
 ### Never wait on a file with a loop
 No `until grep … do sleep`, and no waiting for a marker to appear in a
 file. **Run the command in the foreground and read its output**, or run it
