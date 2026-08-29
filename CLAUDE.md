@@ -7,7 +7,7 @@ ARABNA · عربنا — a mobile-first web app for the Arab community in the U.
 **business directory + marketplace + events + magazine**, Arabic-first with a full English toggle.
 ("Classifieds / الإعلانات الشخصية" is now "Marketplace / السوق" — the old `#/classifieds`
 routes still resolve so shared links keep working.)
-Current version: **V.06.4 (prototype)**. Owner: Rai Elby (@dbprime). Deploys to Vercel (team DB Prime).
+Current version: **V.06.5 (prototype)**. Owner: Rai Elby (@dbprime). Deploys to Vercel (team DB Prime).
 
 ## Hard rules (from the product brief)
 1. **One repository, one Vercel project.** No duplicates, no stray preview projects.
@@ -5198,6 +5198,92 @@ the confirmation is there and names the event.
 ```
 
 ⚠️ **The arithmetic: 5,194 + 70 (`v45` × 2) + 2 (`v3` × 2).**
+
+## V.06.5 — the second wave, and the sweep that should have run the first time
+
+⚠️ **This is `307`'s completion, and the reason it was needed is my own
+mistake, written here rather than smoothed over.** `307` came from a
+session auditing the **admin panel**, so its sweep stopped at that panel;
+I widened it to `js/screens/profile.js` and stopped there too. **The sweep
+had to cover `js/` entirely, and it did not.** So `ui.js` and
+`directory.js` went on printing fields a human types.
+
+### Three, and every one of them executed
+Measured on the running app before a line was changed, and all three
+**ran** on the single-file build:
+
+```
+the advertiser's slide   #/marketplace   node YES · CODE RAN
+a reviewer's name        a shop's page   node YES · CODE RAN
+a shop's phone           a shop's page   node YES · CODE RAN
+```
+
+- **The slide is the worst of them.** It stands above Home and above every
+  section — the most-seen surface in the app — and its three fields are
+  **the buyer's own words, typed into `#/advertise`.** ⚠️ **The link and
+  the colour on the line above were already escaped**, so the rule was
+  applied to two fields of one element and missed on three.
+- ⚠️ **`adShareBtn(L(a.name), a.link)` on the next line is correctly left
+  alone** — it escapes both arguments itself. **It was read before it was
+  touched**, which is what the spec asked for.
+- **The reviewer's name is today this device's own**, so the harm is small
+  now — and the day the server lands it is **somebody else's name printed
+  on your screen**, the same family exactly. A line is not deferred
+  because its damage is. ⚠️ **The review's own text below it was already
+  escaped**: the field somebody noticed and the field nobody did, in one
+  card.
+- **The initial in the avatar is escaped too.** One character carries no
+  attack — but leaving one of four out makes the rule an exception, and an
+  exception is what gets forgotten.
+
+### And four more the file itself had cleared
+The spec listed seven places and named `prayer.js`, `mass.js`, `home.js`
+and the rest as clean. **Sweeping `js/` for every field a human types
+turned up four it had passed over:**
+
+- ⚠️ **A MOSQUE'S NAME on `#/prayer`** — and since V.04.0 **a stranger can
+  add a mosque through the door on that very screen.** The one place in
+  the app where an unknown person's text and a screen nobody may advertise
+  on meet.
+- **`cityOf(biz)` in `distLabelHtml`** — the city parsed out of a business
+  address, printed on every distance line in the app.
+- **The «similar businesses» sheet** — the same name and address as the
+  rows above it, escaped there and not here.
+- ⚠️ **`toast()` builds its body with `innerHTML`, and `home.js` feeds it
+  the city that comes back from the REVERSE-GEOCODER** — somebody else's
+  server, which V.03.6 names as the same category of trust as a user's own
+  typing. Escaped at the two call sites, where the untrusted value is,
+  rather than inside `toast`, whose every other caller passes `t()`.
+
+**`mass.js` really is clean** — its feast names come from `t()`. So does
+`sponsoredRows` in `ui.js`, which escapes correctly and was not touched;
+the comment above it says an unescaped field in a row printing people's
+names is the same hole six months later by our own hand, **and the slide
+below it in the same file was exactly that.**
+
+### The suite grew rather than a new one appearing
+`test_v45` goes **35 → 44**, since `308`'s own instruction is to extend it
+while it is open. ⚠️ **Teeth proven again**: undoing the slide title's
+`esc` and the mosque name's turned **their own two items red** and made
+CSP log the refusal on the module build — each item fails for its own
+reason, not as a group.
+
+### The net, run once for the group
+```
+86 runs · 43 suites · 5,284 assertions · zero red · zero crash
+```
+⚠️ **The arithmetic: 5,266 + 18 (`v45` × 2).** Nothing else moved, which is
+what an escaping pass should look like — it changes what is printed, not
+what is counted.
+
+### And the process rule Rai changed on 28 August
+> **The full net is no longer run per batch — once at the end of a
+> group.** The group here is **307 + 308**. The guarantee is unchanged and
+> the sentence moved: «a batch is not finished when its own suite is
+> green» is now **«a GROUP is not finished when its suites are green»**,
+> paid once instead of four times. A red at the end is attributed **by
+> reading** which batch touched which file — each batch names its files at
+> its head — never by guessing.
 
 ## Known open items
 - **The header image is still far larger than its box.** V.04.7 replaced

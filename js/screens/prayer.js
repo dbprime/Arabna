@@ -14,7 +14,7 @@
    ============================================================ */
 
 import { t, arCount, icon, $, $$, go, renderHeader, openSheet, closeSheet, toast, onMinute, fmtTime,
-         wireRoutes } from '../ui.js';
+         wireRoutes, esc } from '../ui.js';
 import * as S from '../store.js';
 import { askForLocation } from './home.js';
 import { feastsBlockHtml, suggestWorshipHtml, mountSuggestWorship } from './mass.js';
@@ -261,7 +261,7 @@ function draw(root) {
             <button class="list-row" data-route="#/directory/${m.id}">
               <span class="row-ico">${icon('mosque', 20)}</span>
               <span class="row-main">
-                <span class="row-title">${S.state.lang === 'en' ? (m.name.en || m.name.ar) : (m.name.ar || m.name.en)}</span>
+                <span class="row-title">${esc(S.state.lang === 'en' ? (m.name.en || m.name.ar) : (m.name.ar || m.name.en))}</span>
                 <span class="row-sub">${jumuahLine(m)}</span>
               </span>
             </button>`).join('')}

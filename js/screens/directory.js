@@ -884,7 +884,7 @@ function halalNearbyBlock(b) {
       ${list.map(x => `<div class="list-row" data-route="#/directory/${x.id}">
         <span class="row-ico">${icon(catIcon(x.cat), 20)}</span>
         <div class="row-main">
-          <div class="row-title">${L(x.name)}${bizBadgeHtml(x)}</div>
+          <div class="row-title">${esc(L(x.name))}${bizBadgeHtml(x)}</div>
           <div class="row-sub">${distLabelHtml(x)}${openBadgeSlotHtml(x)}</div>
         </div>
       </div>`).join('')}
@@ -1029,7 +1029,7 @@ export function ListingScreen(root, params) {
       </div>
 
       ${b.phone
-        ? `<div class="info-row"><span class="i-ico">${icon('phone', 21)}</span><div class="i-txt"><b class="ltr">${b.phone}</b><span>${t('phoneLabel')}</span></div></div>`
+        ? `<div class="info-row"><span class="i-ico">${icon('phone', 21)}</span><div class="i-txt"><b class="ltr">${esc(b.phone)}</b><span>${t('phoneLabel')}</span></div></div>`
         : b.address
           ? `<div class="info-row"><span class="i-ico">${icon('phone', 21)}</span><div class="i-txt"><b class="muted">${t('noPhoneUseMap')}</b><span>${t('phoneLabel')}</span></div></div>`
           : ''}
@@ -1212,7 +1212,7 @@ function similarBlock(b, paid) {
       ${list.map(x => `<div class="list-row" data-route="#/directory/${x.id}">
         <span class="row-ico">${icon(catIcon(x.cat), 20)}</span>
         <div class="row-main">
-          <div class="row-title">${L(x.name)}${bizBadgeHtml(x)}</div>
+          <div class="row-title">${esc(L(x.name))}${bizBadgeHtml(x)}</div>
           <div class="row-sub">${distLabelHtml(x)}${openBadgeSlotHtml(x)}</div>
         </div>
       </div>`).join('')}
@@ -1253,8 +1253,17 @@ export function reviewHtml(r, isOwner = false) {
   const reply = r.id ? S.replyFor(r.id) : null;
   return `<div class="review" data-rev="${r.id || ''}">
     <div class="review-head">
-      <span class="avatar">${(r.user || '?')[0]}</span>
-      <div><b class="fs-13">${r.user}</b><div class="fs-12 muted">${esc(L(r.when))} · ${stars(r.rating)}</div></div>
+      ${/* ⚠️ Today `r.user` is the name on this device, so the harm is
+           small — and the day the server lands it is SOMEBODY ELSE'S name
+           printed on your screen, which is this exact family of fault. A
+           line is not deferred because its damage is.
+           ⚠️ And the single letter is escaped too: one character carries no
+           attack, but leaving one of the four out makes the rule an
+           exception, and an exception is what gets forgotten.
+           ⚠️ The review's own TEXT below is already escaped — the field
+           somebody noticed and the field nobody did, in one card. */''}
+      <span class="avatar">${esc((r.user || '?')[0])}</span>
+      <div><b class="fs-13">${esc(r.user)}</b><div class="fs-12 muted">${esc(L(r.when))} · ${stars(r.rating)}</div></div>
     </div>
     <p>${esc(L(r.text))}</p>
     ${reply ? `<div class="owner-reply">
@@ -1659,8 +1668,8 @@ export function openSimilarSheet(hits, onProceed) {
     ${rest.length ? `<div class="hint mt-12">${t('similarAlso')}</div>
       ${rest.map(h => `<div class="list-row" style="margin-top:6px" data-sim="${h.biz.id}">
         <span class="row-ico">${icon(catIcon(h.biz.cat), 20)}</span>
-        <div class="row-main"><div class="row-title">${L(h.biz.name)}</div>
-          <div class="row-sub"><span class="ltr">${h.biz.address || ''}</span></div></div>
+        <div class="row-main"><div class="row-title">${esc(L(h.biz.name))}</div>
+          <div class="row-sub"><span class="ltr">${esc(h.biz.address || '')}</span></div></div>
       </div>`).join('')}` : ''}
 
     <button class="btn btn-gold btn-block mt-16" id="simClaim">${icon('briefcase', 19)} ${t('similarMine')}</button>

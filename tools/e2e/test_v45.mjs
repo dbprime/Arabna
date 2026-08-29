@@ -304,6 +304,70 @@ const pwned = p => p.evaluate(() => ({
   await ctx.close();
 }
 
+/* ---- 12. the SECOND wave: the two files the first pass never opened ----
+   `307` closed `admin.js`, `profile.js` and `advertise.js`. It should have
+   swept `js/` entirely and did not — so `ui.js` and `directory.js` were
+   still printing fields a human types, and three more turned up in files
+   the spec itself had called clean. All of them EXECUTED on the
+   single-file build before this. */
+{
+  /* the advertiser's own slide — the most-seen surface in the app, above
+     Home and above every section, and its words come from the buyer */
+  const { ctx, p } = await open({
+    lang: 'ar', user: ACCOUNT,
+    myAds: [{ id: 'aS', product: 'market', status: 'live', price: 79, endsAt: NOW + 9e8,
+              bizName: PAY, tagline: PAY, ctaText: PAY, link: '#/home', created: NOW }],
+  }, '#/marketplace');
+  const r = await pwned(p);
+  ok('12.1 the sponsored slide does not execute the buyer’s words', !r.ran);
+  ok('12.2 …and no node reaches the page', !r.node);
+  ok('12.3 …it is printed as text', r.text);
+  await ctx.close();
+}
+{
+  /* the reviewer's name — today this device's own, and somebody else's the
+     day the server lands. A line is not deferred because its damage is. */
+  const { ctx, p } = await open({
+    lang: 'ar', user: ACCOUNT,
+    reviews: [{ id: 'rX', bizId: 'b1', user: PAY, rating: 5, text: 'ok',
+                when: { ar: 'الآن', en: 'now' } }],
+  }, '#/directory/b1');
+  const r = await pwned(p);
+  ok('12.4 a reviewer’s name does not execute', !r.ran);
+  ok('12.5 …and the initial beside it is escaped too', !r.node);
+  await ctx.close();
+}
+{
+  /* a shop's phone, on the business page's contact block */
+  const { ctx, p } = await open({
+    lang: 'ar', user: ACCOUNT,
+    extraBusinesses: [{ id: 'zP', name: { ar: 'محل', en: 'Shop' }, cat: 'restaurants',
+                        phone: PAY, address: '1 Main St, Houston, TX 77001' }],
+  }, '#/directory/zP');
+  const r = await pwned(p);
+  ok('12.6 a shop’s phone does not execute', !r.ran);
+  ok('12.7 …and prints as text', r.text && !r.node);
+  await ctx.close();
+}
+{
+  /* ⚠️ A MOSQUE'S NAME, on `#/prayer` — and since V.04.0 a STRANGER can
+     add a mosque through the door on that very screen. `308` listed
+     `prayer.js` as clean; it was not. */
+  const { ctx, p } = await open({
+    lang: 'ar', user: ACCOUNT,
+    geoGranted: true, geo: { lat: 29.7604, lng: -95.3698, at: NOW },
+    location: { zip: '77002', city: 'Houston', state: 'TX' },
+    extraBusinesses: [{ id: 'zM', name: { ar: PAY, en: PAY }, cat: 'worship',
+                        address: '2 Main St, Houston, TX 77002',
+                        lat: 29.7605, lng: -95.3699,
+                        attributes: ['wkMosque'] }],
+  }, '#/prayer');
+  const r = await pwned(p);
+  ok('12.8 a mosque’s name does not execute', !r.ran);
+  ok('12.9 …and no node reaches the prayer screen', !r.node);
+  await ctx.close();
+}
+
 ok('11.1 no console errors anywhere in the batch', errors.length === 0, errors.slice(0, 3).join(' | '));
 console.log(`\n${pass} passed, ${fail} failed`);
 await browser.close();

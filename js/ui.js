@@ -507,9 +507,15 @@ export function sectionSlider(ads, { product, sectionName }) {
     return `<div class="slider"><div class="slider-track" id="secTrack">
         ${ads.map((a, i) => `<div class="slide ${i === 0 ? 'active' : ''}" data-route="${esc(a.link || '#/home')}" style="background:${esc(a.color)}">
           <span class="slide-badge">${t('sponsored')}</span>
-          <div class="slide-title">${L(a.name)}</div>
-          <div class="slide-sub">${L(a.tag)}</div>
-          <div class="slide-cta">${L(a.cta)} ${icon(document.documentElement.dir === 'rtl' ? 'chevronL' : 'chevronR', 15)}</div>
+          ${/* ⚠️ THESE THREE ARE THE BUYER'S OWN WORDS, typed into the form
+               on `#/advertise` — and this slide stands above Home and above
+               every section, so it is the most-seen surface in the app. The
+               link and the colour on the line above were escaped and these
+               were not: the rule was applied to two fields of the same
+               element and missed on three. */''}
+          <div class="slide-title">${esc(L(a.name))}</div>
+          <div class="slide-sub">${esc(L(a.tag))}</div>
+          <div class="slide-cta">${esc(L(a.cta))} ${icon(document.documentElement.dir === 'rtl' ? 'chevronL' : 'chevronR', 15)}</div>
           <div class="slide-icon">${icon(a.icon, 86)}</div>
           ${adShareBtn(L(a.name), a.link)}
         </div>`).join('')}
@@ -1559,7 +1565,7 @@ export function distLabelHtml(biz) {
   const d = S.distanceTo(biz);
   if (d != null) return `<span>${icon('mapPin', 13)} ${fmtMiles(d)} ${t('miles')}</span>`;
   const city = S.cityOf(biz);
-  return city ? `<span>${icon('mapPin', 13)} ${city}</span>` : '';
+  return city ? `<span>${icon('mapPin', 13)} ${esc(city)}</span>` : '';
 }
 
 /**

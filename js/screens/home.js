@@ -968,7 +968,7 @@ export function askForLocation(after, why) {
          does that before it asks anybody anything — so this only decides
          what to say and when to repaint. Nothing is announced twice. */
       onOk: (r) => {
-        if (!r.naming) toast(`${t('locSetTo')}: ${r.city || regionAllLabel()}`, 'ok');
+        if (!r.naming) toast(`${t('locSetTo')}: ${esc(r.city || regionAllLabel())}`, 'ok');
         if (after) after(); else window.dispatchEvent(new HashChangeEvent('hashchange'));
       },
       /* A refusal is not a dead end: the city list is one tap behind it.
@@ -1128,7 +1128,7 @@ export function openLocationSheet() {
     panel.querySelector('#applyLoc').addEventListener('click', () => {
       S.setUserLocation(picked);
       closeSheet();
-      toast(`${t('locSetTo')}: ${picked.city || regionAllLabel()}`, 'ok');
+      toast(`${t('locSetTo')}: ${esc(picked.city || regionAllLabel())}`, 'ok');
       window.dispatchEvent(new HashChangeEvent('hashchange'));
     });
   });
