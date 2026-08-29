@@ -1,6 +1,6 @@
 /* ======================= AUTH & VERIFICATION ======================= */
 import { t, arCount, icon, $, $$, go, back, renderHeader, toast, wireRoutes, logoSrc,
-         openSheet, closeSheet } from '../ui.js';
+         openSheet, closeSheet, esc } from '../ui.js';
 import * as S from '../store.js';
 import { passwordField, passwordChecklist, wirePasswordField,
          wirePasswordToggles, TermsScreen, PrivacyScreen } from './profile.js';
@@ -301,8 +301,14 @@ export function PhoneVerifyScreen(root) {
     const onFile = S.state.user && S.state.user.phone;
     if (onFile && !S.samePhone(onFile, phone)) {
       $('#phIn').classList.add('input-err');
-      msg.innerHTML = `<div class="err-msg">${icon('alert', 15)} ${
-        t('phoneMismatch').replace('{last}', '<span class="ltr">' + S.phoneTail() + '</span>')}</div>`;
+      /* ⚠️ `.err-msg` is `display:flex; gap:5px`, so a bare text node and a
+         `<span>` beside it become TWO flex items with five pixels between
+         them: «ينتهي بـ 123» instead of «ينتهي بـ123», and the ـ is a
+         joiner that means the two touch. Text and tag go in ONE span, so
+         the flex row is the icon and the sentence — which is also what
+         keeps any tag put in an `.err-msg` in future from coming apart. */
+      msg.innerHTML = `<div class="err-msg">${icon('alert', 15)}<span>${
+        t('phoneMismatch').replace('{last}', '<span class="ltr">' + esc(S.phoneTail()) + '</span>')}</span></div>`;
       return;
     }
     const btn = e.target;

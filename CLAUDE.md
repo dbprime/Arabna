@@ -7,7 +7,7 @@ ARABNA · عربنا — a mobile-first web app for the Arab community in the U.
 **business directory + marketplace + events + magazine**, Arabic-first with a full English toggle.
 ("Classifieds / الإعلانات الشخصية" is now "Marketplace / السوق" — the old `#/classifieds`
 routes still resolve so shared links keep working.)
-Current version: **V.06.5 (prototype)**. Owner: Rai Elby (@dbprime). Deploys to Vercel (team DB Prime).
+Current version: **V.06.6 (prototype)**. Owner: Rai Elby (@dbprime). Deploys to Vercel (team DB Prime).
 
 ## Hard rules (from the product brief)
 1. **One repository, one Vercel project.** No duplicates, no stray preview projects.
@@ -5284,6 +5284,158 @@ what is counted.
 > paid once instead of four times. A red at the end is attributed **by
 > reading** which batch touched which file — each batch names its files at
 > its head — never by guessing.
+
+## V.06.6 — the account section, and a sign-out that cleared nothing
+
+### `225` came back through a second door
+```js
+export const state = Object.assign({}, DEFAULTS, load() || {});
+```
+`Object.assign` copies **references**. So on a device with nothing saved
+yet — **the first session of every new user** — `state.saved` **is**
+`DEFAULTS.saved`, and the first `push` writes into the defaults
+themselves. `signOut` then does exactly the right thing with
+`JSON.parse(JSON.stringify(DEFAULTS))`: **a deep copy of defaults that are
+no longer default.**
+
+Measured in the browser with no reload at all:
+
+```
+before signOut   saved 2 · reviews 1 · messages 1 · readNotifs 1
+after  signOut   saved 2 · reviews 1 · messages 1 · readNotifs 1
+on disk          saved 2 · reviews 1 · messages 1
+tier()           0        ← so the app LOOKS signed out
+```
+
+**The next visitor on that phone opens «المفضّلة» and finds two shops** —
+the exact leak V.05.2 was written to close.
+
+- ⚠️ **It disappears after one reload**, because `load()` returns fresh
+  objects from `JSON.parse`. **That is why no suite ever saw it**: every
+  suite seeds `localStorage` and reloads, which is the one path that hides
+  it. So `test_v46` drives the app through its own `signUp` in a single
+  session and never seeds a signed-in state.
+- ⚠️ **And the surviving keys were not random**, which is what made it
+  invisible: what is edited **in place** survived (`saved`, `reviews`,
+  `messages`, `readNotifs`, `notifPrefs`) and what is **reassigned** was
+  cleared. Signing out looked like it half-worked, not like a bug.
+- ⚠️ **The comment above `signOut` describes this danger word for word** —
+  «without it the state's arrays ARE `DEFAULTS`'s arrays» — and then guards
+  the reset alone, while the poisoning happens earlier, at construction.
+- **It is fixed at the construction, not in `signOut`.** Patching the reset
+  would leave `deleteAccount` and every restore written after today exposed
+  to the same thing. `DEFAULTS` is pure data, so the JSON round-trip is
+  correct and is **the same one `signOut` already uses — one pattern, not
+  two.**
+
+### Deleting an account cleared LESS than signing out of one
+`signOut` was rebuilt in V.05.2 around a list of what **stays**, so every
+key added afterwards is cleared by default. `deleteAccount` still named
+what it cleared, one by one, and fell behind:
+
+```
+cardOnFile      survived a DELETION while an ordinary sign-out removes it
+hiddenListings · notifPrefs · readNotifs · pendingVerify   all survived
+```
+
+⚠️ **The card is the heavy one** — the privacy page promises deletion in so
+many words. It calls `signOut()` itself now rather than a copy of it, and
+**the order is binding**: `receipts` are in the keep-list, so the reset
+leaves them and the identity is stripped **after** it. Reversed, the names
+come back. **The receipts are still never deleted** — separating the person
+from the transaction, not erasing that money was taken.
+
+### Six rows, six widths
+`.list-row` carries no `width`. Everywhere else it is a `<div>` and fills
+its parent; in the account hub it is a **button**, correctly, because it is
+an action — and a flex button sizes to its **content**:
+
+```
+222 · 158 · 164 · 157 · 163 · 168      inside a parent of 390
+```
+
+**One line — `button.list-row { width: 100% }` — and all six are 362.**
+⚠️ **The button stays a button**, for the screen reader and for the
+keyboard pass; the fault was in the style, not the tag. And the rule covers
+every `button.list-row` written from here on, **not the six that exist
+today** — a class, not an incident.
+
+### A typo in an email address waited for ever
+`updateProfile` wrote `pendingEmail` and **never cleared it in any case**,
+while `cancelEmailChange` had existed since V.05.7 with **nothing in the
+project calling it** — measured across `js/`: zero.
+
+```
+a@b.com → saved typo@b.com   →  pending = typo@b.com
+then a@b.com typed back      →  pending = typo@b.com   ← unchanged
+```
+
+⚠️ **And this is not stale text.** Any later visit to the code screen with
+the right code calls `confirmEmail()` and **moves the account onto the
+wrong address.** Retyping the old one now cancels it, and a button in the
+edit screen does it explicitly — **drawn on the same condition as the line
+above it**, so the two can never disagree. `confirmEmail` is untouched: the
+promotion living there alone is the guard.
+
+### The edit screen accepted what sign-up refuses
+Sign-up runs `validName` and `validEmail`; the edit screen checked only for
+emptiness. **Measured by typing and saving:** «123» saved, «not-an-email»
+saved — and the screen then said «we sent a code to not-an-email». The same
+two functions now run there, **with the message under its own field** as in
+sign-up, never a toast. **No new string**: the three were already there.
+
+### Six more, each small and each measured
+- **An empty name took the whole screen down** — `u.name[0].toUpperCase()`
+  threw and **nothing rendered at all**. Reachable today, not in theory.
+  ⚠️ `[0]` is right here and is **not** `Intl.Segmenter`'s case: this is one
+  character being *displayed*, while V.05.9's lesson was about *storing* a
+  whole emoji.
+- **Your own number was printed raw while every shop's is formatted** —
+  `7135550123` against `(713) 555-0142`, and the form asks for
+  `(713) 000-0000`, demanding a shape it would not then show. Formatted for
+  **display only**; `samePhone` and `phoneTail` still see what was typed.
+- **The subscription row always went to the sales page** while Settings
+  branched correctly. `ACCOUNT_LINKS` accepts a **function or a string**
+  now, and `subscriptionRoute()` in `store.js` is the **one** definition
+  both screens read. The cost was one extra tap, not a dead end — the sales
+  page already recognises a subscriber.
+- **The phone hint announced an event that had not happened**, drawn before
+  the field was touched. It is a rule now; `phoneChangedReverify` stays for
+  the toast after a save, where it is true.
+- **«حذف الحساب» promised a review that does not happen** — measured:
+  deletion is immediate. **The text is corrected and the review is not
+  added**: immediate deletion is what the app stores require.
+- **`.err-msg` is `display:flex; gap:5px`**, so a bare text node and a tag
+  beside it became two flex items five pixels apart: «ينتهي بـ 123» where
+  the ـ means the two touch. ⚠️ **A class, not an incident** — the template
+  would have taken apart any tag put in an `.err-msg` in future.
+- **A card could be added and never removed**, and until this batch it
+  survived deleting the account. One box that changes its action with the
+  state, not two buttons.
+- **Three selectors searched the whole page** rather than `root`. ⚠️ **And
+  the reason the source file gave is wrong, corrected here**: it claimed
+  another `data-share` was mounted at the root. Searched `js/`: `data-share`
+  exists **only in this file**. So the item is right as hygiene against a
+  future collision, **not as a fault today** — and no reason is written that
+  was not measured.
+
+### Item 6 is not in this batch, by its own instruction
+The sign-in screen calls `signUp()` with any address typed and then
+`confirmEmail()` at once, so **any password — including an empty one — signs
+somebody in**, and an existing account's name, verified number and tier are
+replaced without a word. `checkUserPassword()` exists in `store.js` and
+nothing calls it there. **The file says explicitly that no line is written
+for this before Rai's word, and the rest lands without it.** Recorded in
+`docs/الحالة.md` rather than left to be rediscovered.
+
+### `test_v46` — 31 assertions, and the teeth are the point
+⚠️ Undoing **the deep copy** and **the one CSS line** turned **six items
+red**, and the widths came back as **222 · 158 · 164 · 157 · 163 · 168** —
+the same six numbers the file measured, reproduced independently.
+
+⚠️ **And the full net is not run here.** Rai's rule of 28 August: once at
+the end of a group, and this group is **315 · 325 · 326**. What ran is the
+suites this batch touches, on both builds.
 
 ## Known open items
 - **The header image is still far larger than its box.** V.04.7 replaced

@@ -130,7 +130,20 @@ const DEFAULTS = {
   mapsApp: null,             // 'google' · 'apple' · 'waze' · null = ask each time
 };
 
-export const state = Object.assign({}, DEFAULTS, load() || {});
+/* ⚠️ A DEEP COPY, and the shallow one was the fault. `Object.assign({}, …)`
+   copies references, so on a device with nothing saved yet — the FIRST
+   session of every new user — `state.saved` IS `DEFAULTS.saved`, and the
+   first `push` writes into the defaults themselves. `signOut` then deep
+   copies defaults that are no longer default, and clears nothing.
+   ⚠️ It disappears after one reload, because `load()` returns fresh
+   objects from `JSON.parse` — which is why no suite ever saw it, and why a
+   manual check that seeds localStorage and reloads never sees it either.
+   ⚠️ And the keys that survived were not random: what is edited IN PLACE
+   survived (`saved`, `reviews`, `messages`, `readNotifs`, `notifPrefs`)
+   and what is reassigned was cleared, so signing out LOOKED like it worked.
+   `DEFAULTS` is pure data, so the JSON round-trip is correct here, and it
+   is the same one `signOut` already uses — one pattern, not two. */
+export const state = Object.assign(JSON.parse(JSON.stringify(DEFAULTS)), load() || {});
 
 /* Changing the default is not enough: anybody who opened the app before
    this fix has `["c1"]` written into their own localStorage, and it
@@ -2426,13 +2439,22 @@ export function pendingBizPhotos() {
    two menus saying different things — the same reason ATTRIBUTES is a
    registry and not a set of fields.
    ============================================================ */
+/** Where the subscription row goes — ONE definition, because the settings
+    screen already branched correctly and the hub's row was a fixed string,
+    so a subscriber tapping «الاشتراك» in one place landed on the sales page
+    and in the other on their own subscription. Two conditions written twice
+    are two conditions that part company two batches later. */
+export function subscriptionRoute() {
+  return subscription() ? '#/my-subscription' : '#/subscribe';
+}
+
 export const ACCOUNT_LINKS = [
   { icon: 'briefcase', key: 'myBusiness',   route: '#/my-business' },
   { icon: 'bag',       key: 'myAds',        route: '#/my-ads' },
   { icon: 'star',      key: 'myReviews',    route: '#/my-reviews' },
   { icon: 'message',   key: 'myMessages',   route: '#/messages' },
   { icon: 'heart',     key: 'savedFav',     route: '#/saved' },
-  { icon: 'crown',     key: 'subscription', route: '#/subscribe' },
+  { icon: 'crown',     key: 'subscription', route: subscriptionRoute },
 ];
 
 export function ownsBusiness(bizId) {
@@ -3108,6 +3130,13 @@ export function updateProfile({ name, email, phone }) {
   if (email && email !== u.email) {
     u.pendingEmail = email;
     emailPending = true;
+  /* ⚠️ AND UNDOING IT CANCELS IT. The pending address was written and never
+     cleared, so a typo waited for ever: retyping the real address left the
+     wrong one parked, and any later visit to the code screen with the right
+     code would have moved the account ONTO it. `cancelEmailChange` has
+     existed since V.05.7 and nothing in the project called it. */
+  } else if (email === u.email) {
+    delete u.pendingEmail;
   }
   if (phone !== undefined && phone !== u.phone) {
     u.phone = phone;
@@ -4229,21 +4258,21 @@ export function deleteAccount() {
   const mine = state.myListings || [];
   state.extraClassifieds = (state.extraClassifieds || []).filter(c => !mine.includes(c.id));
   state.messages = (state.messages || []).filter(m => !mine.includes(m.listingId) && m.from !== 'me');
+
+  /* ⚠️ DELETING AN ACCOUNT LEFT MORE BEHIND THAN SIGNING OUT OF ONE.
+     `signOut` was rebuilt in V.05.2 around a list of what STAYS, so every
+     key added afterwards is cleared by default; this one still named what
+     it cleared, one by one, and fell behind — measured: the CARD ON FILE
+     survived a deletion while an ordinary sign-out removes it, and so did
+     `hiddenListings`, `notifPrefs`, `readNotifs` and `pendingVerify`.
+     So it calls the SAME function rather than a copy of it, and the order
+     below is binding: `receipts` is in the keep-list, so the reset does
+     not touch them and the identity is stripped AFTER it. Reversed, the
+     names would come back. */
+  signOut();
+
   state.myListings = [];
-  state.reviews = [];
-  state.reviewReplies = {};
-  state.saved = [];
-  state.savedEvents = [];
-  state.myAds = [];
-  state.adStats = {};
-  state.subscription = null;
-  state.myBusinessIds = [];
-  state.myPendingBusinesses = [];
   state.extraBusinesses = (state.extraBusinesses || []).filter(b => !b.claimed);
-  state.claims = [];
-  state.blocked = [];
-  state.extraNotifs = [];
-  state.draft = null;
 
   /* The receipts stay, stripped of who paid.
      Deleting an account is an app-store requirement and the user's right,

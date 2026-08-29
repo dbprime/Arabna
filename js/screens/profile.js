@@ -2,7 +2,7 @@
 import { t, arCount, L, icon, $, $$, go, renderHeader, toast, wireRoutes, emptyState, confirmSheet,
          openSheet, closeSheet,
          fmtMoney, priceLabel, statusBadgeHtml, stars, logoSrc, shareItem,
-         mapChoices, esc, bizBadgeHtml, avatarHtml, socialRowHtml } from '../ui.js';
+         mapChoices, esc, bizBadgeHtml, avatarHtml, socialRowHtml, fmtPhone } from '../ui.js';
 import { SUBSCRIPTION_PRICE, CATEGORIES, APP_VERSION } from '../data.js';
 import * as S from '../store.js';
 import { catIcon } from './home.js';
@@ -38,7 +38,7 @@ export function ProfileScreen(root) {
 
   root.innerHTML = `
     <div class="pad mt-16 center-col">
-      ${av ? avatarHtml(av, 66) : `<div class="avatar" style="width:66px;height:66px;font-size:1.5rem">${esc(u.name[0].toUpperCase())}</div>`}
+      ${av ? avatarHtml(av, 66) : `<div class="avatar" style="width:66px;height:66px;font-size:1.5rem">${esc(initialOf(u.name))}</div>`}
       <b style="font-size:1.125rem;margin-top:10px">${esc(u.name)}
         ${S.hasBadge() ? `<span class="badge-check" title="${t('verifiedBadge')}">${icon('check', 12)}</span>` : ''}</b>
       <span class="badge ${S.tier() === 2 ? 'badge-verified' : 'badge-free'} mt-8">${tierLabel}</span>
@@ -48,10 +48,18 @@ export function ProfileScreen(root) {
     <div class="pad mt-16">
       <div class="info-row"><span class="i-ico">${icon('mail', 21)}</span>
         <div class="i-txt"><b class="ltr">${esc(u.email)}</b><span>${t('email')}</span></div></div>
+      ${/* ⚠️ Somebody who started changing their address and walked away had
+           no way of knowing but to open the edit screen. Same condition and
+           the SAME STRING the edit screen uses — no new key, and the two
+           cannot drift apart. */''}
+      ${S.pendingEmail() ? `<div class="hint" style="margin:-6px 0 10px">
+        <span class="ink-danger">${t('emailPending').replace('{e}', esc(S.pendingEmail()))}</span>
+        <button class="mini-btn mt-8" data-route="#/auth/email">${icon('mail', 15)} ${t('enterCode')}</button>
+      </div>` : ''}
 
       <div class="info-row"><span class="i-ico">${icon('phone', 21)}</span>
         <div class="i-txt">
-          <b class="ltr">${esc(u.phone || '—')}</b>
+          <b class="ltr">${esc(u.phone ? fmtPhone(u.phone) : '—')}</b>
           <span>${u.phone
             ? (u.phoneVerified
                 ? `<span class="ok-inline">${icon('check', 12)} ${t('verified')}</span>`
@@ -92,7 +100,7 @@ export function ProfileScreen(root) {
     <div class="pad mt-20">
       <div class="dr-group-label">${t('grpMyAccount')}</div>
       ${S.ACCOUNT_LINKS.map(l => `
-        <button class="list-row" data-route="${l.route}">
+        <button class="list-row" data-route="${typeof l.route === 'function' ? l.route() : l.route}">
           <span class="row-ico">${icon(l.icon, 20)}</span>
           <div class="row-main"><div class="row-title">${t(l.key)}</div></div>
         </button>`).join('')}
@@ -139,18 +147,33 @@ export function EditProfileScreen(root) {
       </div>
 
       <div class="field"><label class="label">${t('fullName')}</label>
-        <input class="input" id="pName" value="${esc(u.name)}" /></div>
+        <input class="input" id="pName" value="${esc(u.name)}" />
+        ${/* ⚠️ The same two rules sign-up uses, and the message UNDER ITS
+             OWN FIELD as it is there — never a toast, which names no field
+             and is gone before the reader looks up from the keyboard.
+             «123» and «not-an-email» were both saved before this, and the
+             screen then said «we sent a code to not-an-email». */''}
+        <div class="field-err" id="e_pName"></div></div>
       <div class="field"><label class="label">${t('email')}</label>
         <input class="input" id="pEmail" type="email" value="${esc(u.email)}" />
+        <div class="field-err" id="e_pEmail"></div>
         ${/* ⚠️ The rule is said BEFORE the typing, not after: somebody who
              knows a code is coming is not ambushed by a screen they did not
              ask for. */''}
         <div class="hint">${S.pendingEmail()
           ? `<span class="ink-danger">${t('emailPending').replace('{e}', esc(S.pendingEmail()))}</span>`
-          : t('emailChangeNeedsCode')}</div></div>
+          : t('emailChangeNeedsCode')}</div>
+        ${/* ⚠️ Drawn on the SAME condition that draws the line above, so the
+             two can never say different things. */''}
+        ${S.pendingEmail() ? `<button class="mini-btn" id="pCancelEmail">${icon('x', 15)} ${t('emailCancelChange')}</button>` : ''}</div>
       <div class="field"><label class="label">${t('phoneNumber')}</label>
         <input class="input" id="pPhone" inputmode="tel" value="${esc(u.phone || '')}" />
-        <div class="hint">${u.phoneVerified ? t('verified') : t('phoneNotVerified')} — ${t('phoneChangedReverify')}</div></div>
+        ${/* ⚠️ This line was drawn ALWAYS, before the field was touched:
+             «you changed your number, we need to verify the new one» on
+             opening the screen. It is a RULE now, stated ahead of the
+             typing; `phoneChangedReverify` stays exactly as it is, for the
+             toast after a save, which is where it is true. */''}
+        <div class="hint">${u.phoneVerified ? t('verified') : t('phoneNotVerified')} — ${t('phoneChangeRule')}</div></div>
 
       <button class="btn btn-gold btn-block mt-8" id="pSave">${icon('check', 19)} ${t('saveChanges')}</button>
 
@@ -184,11 +207,28 @@ export function EditProfileScreen(root) {
     $$('#avPick .av-opt').forEach(o => o.setAttribute('aria-pressed', 'false'));
   });
 
+  /* the same shape sign-up uses: the message under its own field */
+  const setErr = (id, msg) => {
+    const box = $('#e_' + id), input = $('#' + id);
+    if (box) box.textContent = msg || '';
+    if (input) input.classList.toggle('input-err', !!msg);
+    return !msg;
+  };
+
+  const cx = $('#pCancelEmail');
+  if (cx) cx.addEventListener('click', () => {
+    S.cancelEmailChange();
+    toast(t('emailChangeCancelled'), 'ok');
+    EditProfileScreen(root);
+  });
+
   $('#pSave').addEventListener('click', () => {
     const name = $('#pName').value.trim();
     const email = $('#pEmail').value.trim();
     const phone = $('#pPhone').value.trim();
-    if (!name || !email) { toast(t('required'), 'err'); return; }
+    let fine = setErr('pName', !name ? t('required') : !S.validName(name) ? t('lettersOnly') : '');
+    fine = setErr('pEmail', !email ? t('required') : !S.validEmail(email) ? t('badEmail') : '') && fine;
+    if (!fine) return;
 
     const phoneChanged = phone !== (u.phone || '');
     const r = S.updateProfile({ name, email, phone });
@@ -324,6 +364,18 @@ export function passwordField(id, label) {
    did nothing. A list that shows SOME of the conditions is worse than no
    list: it says «you are done» when you are not. Every condition the
    submit is allowed to refuse on has to be visible while typing. */
+/** ⚠️ `u.name[0]` threw on an empty name and took the WHOLE SCREEN with
+    it — «Cannot read properties of undefined», nothing rendered at all.
+    And an empty name is reachable today, not in theory: the sign-in screen
+    derives one from the address, and the edit form used to save a name the
+    rule refuses.
+    ⚠️ `[0]` is right here and is NOT `Intl.Segmenter`'s case: this is one
+    character being DISPLAYED, while V.05.9's lesson was about STORING a
+    whole emoji. A single Arabic letter is not a compound cluster. */
+function initialOf(name) {
+  return (String(name || '').trim()[0] || '?').toUpperCase();
+}
+
 const PW_ROWS = [
   ['len', 'pwReqLen'], ['upper', 'pwReqUpper'], ['lower', 'pwReqLower'],
   ['digit', 'pwReqDigit'], ['symbol', 'pwReqSymbol'],
@@ -515,10 +567,10 @@ export function MyAdsScreen(root) {
   $$('[data-adrenew]').forEach(b => b.addEventListener('click', () => {
     S.renewAd(b.dataset.adrenew); toast(t('adRenewed'), 'ok'); go('#/my-ads');
   }));
-  $$('[data-renew]').forEach(b => b.addEventListener('click', () => {
+  $$('[data-renew]', root).forEach(b => b.addEventListener('click', () => {
     S.renewClassified(b.dataset.renew); toast(t('renewed'), 'ok'); go('#/my-ads');
   }));
-  $$('[data-share]').forEach(b => b.addEventListener('click', () => {
+  $$('[data-share]', root).forEach(b => b.addEventListener('click', () => {
     const c = S.classifiedById(b.dataset.share);
     if (!c) return;
     // the link somebody receives opens the listing itself
@@ -562,7 +614,7 @@ export function MyReviewsScreen(root) {
       }).join('')}</div>`
     : emptyState('star', t('emptyRevTitle'), t('emptyRevSub'), t('directoryTitle'), '#/directory');
 
-  $$('[data-edit]').forEach(b => b.addEventListener('click', () =>
+  $$('[data-edit]', root).forEach(b => b.addEventListener('click', () =>
     openReviewSheet(b.dataset.edit, () => go('#/my-reviews'))));
   $$('[data-del]').forEach(b => b.addEventListener('click', () => confirmSheet({
     title: t('delete'), sub: t('myReviews'), confirmText: t('delete'), danger: true,
@@ -723,8 +775,14 @@ export function SettingsScreen(root) {
       ${sw('reviews', t('notifReviews'), p.reviews)}
 
       <div class="dr-group-label">${t('paymentMethods')}</div>
-      <div class="setting-row"><span class="s-txt"><b>${S.state.cardOnFile || t('noPayment')}</b><span>Stripe</span></span>
-        <button class="mini-btn gold" id="addCard">${icon('plus', 15)}</button></div>
+      ${/* ⚠️ One box that changes its action with the state, not two
+           buttons: the card could be added and there was nothing anywhere
+           that took it off again — and until this batch it survived even
+           deleting the account. */''}
+      <div class="setting-row"><span class="s-txt"><b>${esc(S.state.cardOnFile || t('noPayment'))}</b><span>Stripe</span></span>
+        ${S.state.cardOnFile
+          ? `<button class="mini-btn" id="delCard">${icon('trash', 15)} ${t('delete')}</button>`
+          : `<button class="mini-btn gold" id="addCard">${icon('plus', 15)}</button>`}</div>
 
       <div class="dr-group-label">${t('subscription')}</div>
       ${(() => {
@@ -736,7 +794,7 @@ export function SettingsScreen(root) {
         const line = sub ? `${fmtMoney(sub.price)} ${sub.plan === 'yearly' ? t('year') : t('month')}`
                          : `${fmtMoney(SUBSCRIPTION_PRICE)} ${t('month')}`;
         return `<div class="setting-row"><span class="s-txt"><b>${label}</b><span>${line}</span></span>
-          <button class="mini-btn" data-route="${sub ? '#/my-subscription' : '#/subscribe'}">${icon(document.documentElement.dir === 'rtl' ? 'chevronL' : 'chevronR', 15)}</button></div>`;
+          <button class="mini-btn" data-route="${S.subscriptionRoute()}">${icon(document.documentElement.dir === 'rtl' ? 'chevronL' : 'chevronR', 15)}</button></div>`;
       })()}
 
       ${/* Receipts sit here rather than in the drawer: they belong to
@@ -809,6 +867,13 @@ export function SettingsScreen(root) {
      condition that drew them. */
   const card = $('#addCard');
   if (card) card.addEventListener('click', () => { S.state.cardOnFile = 'VISA •••• 4242'; S.save(); toast(t('done'), 'ok'); go('#/settings'); });
+  const delCard = $('#delCard');
+  if (delCard) delCard.addEventListener('click', () => confirmSheet({
+    title: t('removeCard'),
+    sub: t('removeCardAsk').replace('{card}', S.state.cardOnFile || ''),
+    confirmText: t('delete'), danger: true,
+    onConfirm: () => { S.state.cardOnFile = null; S.save(); toast(t('done'), 'ok'); go('#/settings'); },
+  }));
   /* Deletion says what it takes with it and then actually takes it —
      signing out and calling it deleted would be a lie the stores ask
      about directly. */

@@ -751,6 +751,14 @@ ul { margin: 0; padding: 0; list-style: none; }
 }
 .list-row.premium { border-color: var(--gold-wash-4); background: linear-gradient(140deg, var(--surface-2), var(--surface)); }
 .list-row:active { transform: scale(0.99); }
+/* ⚠️ `.list-row` is a <div> everywhere else, so it fills its parent. In the
+   account hub it is a BUTTON — correctly, because it is an action — and a
+   flex button sizes to its CONTENT, so six rows came out at six widths
+   (222 · 158 · 164 · 157 · 163 · 168 inside a 390 parent). The fault is in
+   the style, not in the tag: the button stays a button, for the screen
+   reader and for the keyboard pass. And this covers every
+   `button.list-row` written from here on, not the six that exist today. */
+button.list-row { width: 100%; }
 .row-ico {
   width: 54px; height: 54px; flex: 0 0 54px;
   border-radius: 12px; display: grid; place-items: center;

@@ -2041,6 +2041,24 @@ export function appLink(hash = '') {
  * `stopPropagation` before anything else, exactly as the dropdown's first
  * outside tap only closes and does not also press the shop underneath.
  */
+/**
+ * The account's own number, formatted for READING only — what is stored is
+ * never touched, and neither is `samePhone` nor `phoneTail`, which compare
+ * the last ten digits and must go on seeing exactly what was typed.
+ *
+ * ⚠️ Every shop's number in the directory is stored already formatted, so
+ * the app showed `(713) 555-0142` for a shop and `7135550123` for YOU — and
+ * the edit form asks for `(713) 000-0000`, so it demanded a shape it would
+ * not then display. Anything that is not a plain ten- or eleven-digit US
+ * number is returned untouched rather than mangled into one.
+ */
+export function fmtPhone(v) {
+  const d = String(v || '').replace(/\D/g, '');
+  const ten = d.length === 11 && d[0] === '1' ? d.slice(1) : d;
+  if (ten.length !== 10) return String(v || '');
+  return `(${ten.slice(0, 3)}) ${ten.slice(3, 6)}-${ten.slice(6)}`;
+}
+
 export function adShareBtn(title, link) {
   return `<button class="ad-share" data-adshare="${esc(link || '')}"
     data-adtitle="${esc(title || '')}" aria-label="${t('share')}"
