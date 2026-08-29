@@ -1,6 +1,6 @@
 /* ======================= ADVERTISE PURCHASE FLOW ======================= */
 import { t, icon, $, $$, go, renderHeader, toast, wireRoutes, fmtMoney,
-         openSheet, closeSheet, showsPrices, wirePriceGates } from '../ui.js';
+         openSheet, closeSheet, showsPrices, wirePriceGates, esc } from '../ui.js';
 import { AD_PRODUCTS, CATEGORIES } from '../data.js';
 import * as S from '../store.js';
 import { mountPhotoPicker } from './marketplace.js';
@@ -252,8 +252,8 @@ export function AdvertiseScreen(root, params) {
       shell.innerHTML = `${paintSteps()}
         <div class="pad mt-16">
           <div class="section-title">${t('adContent')}</div>
-          <div class="field mt-12"><label class="label">${t('adBizName')}</label><input class="input" id="aName" value="${content.bizName}" /></div>
-          <div class="field"><label class="label">${t('adTagline')}</label><input class="input" id="aTag" value="${content.tagline}" /></div>
+          <div class="field mt-12"><label class="label">${t('adBizName')}</label><input class="input" id="aName" value="${esc(content.bizName)}" /></div>
+          <div class="field"><label class="label">${t('adTagline')}</label><input class="input" id="aTag" value="${esc(content.tagline)}" /></div>
           <div class="field"><label class="label">${t('adCtaText')}</label><input class="input" id="aCta" placeholder="${t('call')}" value="${content.ctaText}" /></div>
           <div class="field"><label class="label">${t('photosLabel')}</label><div id="adPh"></div></div>
           <button class="btn btn-gold btn-block mt-12" id="next3">${t('reviewOrder')}</button>
@@ -282,7 +282,7 @@ export function AdvertiseScreen(root, params) {
             ${product.perCat ? `<div class="info-row"><span class="i-ico">${icon('grid', 21)}</span>
               <div class="i-txt"><b>${t((CATEGORIES.find(c => c.id === adCat) || {}).key || 'catAll')}</b><span>${t('adWhichCat')}</span></div></div>` : ''}
             <div class="info-row" style="border:none"><span class="i-ico">${icon('megaphone', 21)}</span>
-              <div class="i-txt"><b>${content.bizName}</b><span>${content.tagline || '—'}</span></div></div>
+              <div class="i-txt"><b>${esc(content.bizName)}</b><span>${esc(content.tagline || '—')}</span></div></div>
           </div>
 
           <div class="row-between mt-16" style="padding:0 4px">

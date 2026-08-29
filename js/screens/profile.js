@@ -419,11 +419,11 @@ export function SavedScreen(root) {
     : `<div class="pad mt-16">
         ${biz.map(b => `<div class="list-row" data-route="#/directory/${b.id}">
             <span class="row-ico">${icon(catIcon(b.cat), 20)}</span>
-            <div class="row-main"><div class="row-title">${L(b.name)}</div>
-              <div class="row-sub">${icon('mapPin', 13)} <span class="ltr">${b.address}</span></div></div></div>`).join('')}
+            <div class="row-main"><div class="row-title">${esc(L(b.name))}</div>
+              <div class="row-sub">${icon('mapPin', 13)} <span class="ltr">${esc(b.address)}</span></div></div></div>`).join('')}
         ${cls.map(c => `<div class="list-row" data-route="#/marketplace/${c.id}">
             <span class="row-ico">${icon(c.icon || 'image', 24)}</span>
-            <div class="row-main"><div class="row-title">${L(c.title)}</div>
+            <div class="row-main"><div class="row-title">${esc(L(c.title))}</div>
               <div class="row-sub gold"><span class="ltr">${priceLabel(c.price)}</span></div></div></div>`).join('')}
       </div>`;
   wireRoutes(root);
@@ -448,7 +448,7 @@ function adOrderCard(o) {
 
   return `<div class="q-card">
     <div class="q-head">
-      <b>${o.bizName}</b>
+      <b>${esc(o.bizName)}</b>
       <span class="badge ${o.status === 'live' ? 'badge-verified' : o.status === 'rejected' ? 'badge-pending' : 'badge-pending'}">${
         o.status === 'live' ? t('statusLive') : o.status === 'rejected' ? t('statusRejected') : t('statusPending')}</span>
     </div>
@@ -487,7 +487,7 @@ export function MyAdsScreen(root) {
       ${mine.length ? mine.map(c => `
         <div class="list-row">
           <span class="row-ico" style="overflow:hidden;padding:0">${c.photos && c.photos.length
-            ? `<img src="${c.photos[c.mainPhoto || 0] || c.photos[0]}" style="width:100%;height:100%;object-fit:cover" alt="" />`
+            ? `<img src="${esc(c.photos[c.mainPhoto || 0] || c.photos[0])}" style="width:100%;height:100%;object-fit:cover" alt="" />`
             : icon(c.icon || 'image', 24)}</span>
           <div class="row-main">
             <div class="row-title">${esc(L(c.title))} ${c.boosted ? `<span class="badge badge-boost">${t('boosted')}</span>` : ''} ${statusBadgeHtml(c, true)}</div>
@@ -974,7 +974,7 @@ export function BlockedScreen(root) {
       <div class="list-note" style="margin-inline:0">${icon('shield', 18)}<span>${t('blockedWhat')}</span></div>
       ${list.length ? list.map(b => `
         <div class="setting-row">
-          <span class="s-txt"><b>${b.label}</b><span>${fmtDate(b.when)}</span></span>
+          <span class="s-txt"><b>${esc(b.label)}</b><span>${fmtDate(b.when)}</span></span>
           <button class="mini-btn gold" data-unblock="${b.key}">${t('unblock')}</button>
         </div>`).join('')
         : emptyState('shield', t('blockedNone'), t('blockedNoneSub'))}

@@ -1753,6 +1753,7 @@ export function scanDirectoryDuplicates() {
  * deleted from the file, so they are tombstoned instead.
  */
 export function mergeBusinesses(keepId, dropId) {
+  logAdminAction(keepId, 'merge', dropId, keepId);
   if (!keepId || !dropId || keepId === dropId) return false;
   const keep = businessById(keepId), drop = businessById(dropId);
   if (!keep || !drop) return false;
@@ -1841,6 +1842,7 @@ export function demoTotal() {
  * not in localStorage.
  */
 export function purgeDemoData() {
+  logAdminAction('—', 'purgeDemoData', '', '');
   const demoIds = BUSINESSES.filter(b => b.demo).map(b => b.id);
   state.demoPurged = true;
   state.showDemo = false;
@@ -1889,11 +1891,13 @@ export function pendingBusinesses() {
 }
 
 export function approvePendingBusiness(id) {
+  logAdminAction(id, 'approveBusiness', '', '');
   applyBusinessEdit(id, { status: 'live' });
   notifyKeys('bizOkTitle', 'bizOkBody', '#/directory/' + id, 'checkCircle');
   save();
 }
 export function rejectPendingBusiness(id, reason) {
+  logAdminAction(id, 'rejectBusiness', '', reason || '');
   applyBusinessEdit(id, { status: 'rejected' });
   notifyKeys('bizNoTitle', 'bizNoBody', '#/directory', 'alert', reason);
   save();
@@ -2382,9 +2386,20 @@ export function approveBizPhoto(bizId, url) {
   state.bizPhotos = Object.assign({}, state.bizPhotos, { [bizId]: list });
   save();
 }
-export function rejectBizPhoto(bizId, url) {
+export function rejectBizPhoto(bizId, url, reason) {
+  logAdminAction(bizId, 'rejectPhoto', '', reason || '');
   const list = bizPhotos(bizId).filter(p => p.url !== url);
   state.bizPhotos = Object.assign({}, state.bizPhotos, { [bizId]: list });
+  /* ⚠️ This one sent NOTHING at all — the photo simply vanished from the
+     owner's page with no word. A silent removal reads as the app losing
+     the picture, which is worse than a refusal. */
+  const why = String(reason || '').trim();
+  pushNotif({ icon: 'alert', route: `#/directory/${bizId}`,
+    title: { ar: 'صورة نشاطك لم تُعتمد', en: 'A photo on your listing was not approved' },
+    body: why
+      ? { ar: `سبب الرفض: ${why}`, en: `Reason: ${why}` }
+      : { ar: 'الصورة خالفت شروط المحتوى وتم حذفها. تقدر ترفع صورة ثانية.',
+          en: 'The photo broke the content rules and was removed. You can upload another.' } });
   save();
 }
 export function pendingBizPhotos() {
@@ -2449,6 +2464,7 @@ export function requestClaim(bizId, details) {
   return rec;
 }
 export function approveClaim(id) {
+  logAdminAction(id, 'approveClaim', '', '');
   const c = (state.claims || []).find(x => x.id === id);
   if (!c) return;
   c.status = 'approved'; c.decided = Date.now();
@@ -2515,6 +2531,25 @@ function recordAdminEdit(bizId, patch) {
     .filter(r => r.from !== r.to);
   if (!rows.length) return;
   state.adminLog = (state.adminLog || []).concat(rows).slice(-ADMIN_LOG_MAX);
+}
+
+/**
+ * ⚠️ The log was built to answer «who changed my phone number?» and it
+ * recorded FIELD EDITS AND NOTHING ELSE — so «who deleted the event?» and
+ * «who merged the two shops?» had no answer at all, which is the same
+ * question it exists for. One line per action in the SAME log, never a
+ * second one: two logs is two places to look and one of them goes stale.
+ *
+ * The shape is unchanged — `{at, bizId, field, from, to}` — with `field`
+ * carrying the action's name. It is written in `store.js` and not in the
+ * panel, for the V.03.3 reason: a record kept by a screen is missing the
+ * moment anything that is not that screen does the same thing.
+ */
+export function logAdminAction(subject, action, from, to) {
+  state.adminLog = (state.adminLog || [])
+    .concat([{ at: now(), bizId: subject || '—', field: action,
+               from: logValue(from), to: logValue(to) }])
+    .slice(-ADMIN_LOG_MAX);
 }
 
 /** newest first, for the panel */
@@ -3117,12 +3152,20 @@ export function approveAvatar() {
     title: { ar: 'تم اعتماد صورتك', en: 'Your photo was approved' },
     body: { ar: 'صورة ملفك الشخصي صارت ظاهرة.', en: 'Your profile photo is now visible.' } });
 }
-export function rejectAvatar() {
+export function rejectAvatar(reason) {
+  logAdminAction('—', 'rejectAvatar', '', reason || '');
   if (state.user) { state.user.avatar = null; save(); }
+  /* One report can be malicious, and the person on the other end is owed
+     the sentence that explains it — the same rule the marketplace queue
+     has followed since V.02.9. The written reason replaces the general
+     line rather than sitting beside it. */
+  const why = String(reason || '').trim();
   pushNotif({ icon: 'alert', route: '#/profile',
     title: { ar: 'صورتك لم تُعتمد', en: 'Your photo was not approved' },
-    body: { ar: 'الصورة خالفت شروط المحتوى وتم حذفها. تقدر ترفع صورة ثانية.',
-            en: 'The photo broke the content rules and was removed. You can upload another.' } });
+    body: why
+      ? { ar: `سبب الرفض: ${why}`, en: `Reason: ${why}` }
+      : { ar: 'الصورة خالفت شروط المحتوى وتم حذفها. تقدر ترفع صورة ثانية.',
+          en: 'The photo broke the content rules and was removed. You can upload another.' } });
 }
 /* ---- the ready-made marks and the emoji ----
    Rai's decision, reversing my recommendation: the pictures live in
@@ -3304,6 +3347,7 @@ export function renewClassified(id) {
 
 /* ---- moderation decisions (admin panel) ---- */
 export function approveClassified(id) {
+  logAdminAction(id, 'approveListing', '', '');
   const c = state.extraClassifieds.find(x => x.id === id);
   if (!c) return;
   c.status = 'live';
@@ -3318,6 +3362,7 @@ export function approveClassified(id) {
  * so a rejection is never silent.
  */
 export function rejectClassified(id, reason) {
+  logAdminAction(id, 'rejectListing', '', reason || '');
   const c = state.extraClassifieds.find(x => x.id === id);
   if (!c) return;
   const why = String(reason || '').trim();
@@ -3510,6 +3555,8 @@ export function updateEvent(id, patch, admin = false) {
   return eventById(id);
 }
 export function deleteEvent(id) {
+  const ev = eventById(id);
+  logAdminAction(id, 'deleteEvent', ev ? (ev.title && (ev.title.ar || ev.title.en)) || '' : '', '');
   const before = state.extraEvents.length;
   state.extraEvents = state.extraEvents.filter(e => e.id !== id);
   if (state.extraEvents.length === before && !state.hiddenEvents.includes(id)) {
@@ -3519,12 +3566,14 @@ export function deleteEvent(id) {
   save();
 }
 export function approveEvent(id) {
+  logAdminAction(id, 'approveEvent', '', '');
   updateEvent(id, { status: 'live' }, true);
   pushNotif({ icon: 'calendar', route: '#/events/' + id,
     title: { ar: 'تم اعتماد فعاليتك', en: 'Your event was approved' },
     body: { ar: 'فعاليتك صارت ظاهرة في قسم الفعاليات.', en: 'Your event is now listed in Events.' } });
 }
 export function rejectEvent(id, reason) {
+  logAdminAction(id, 'rejectEvent', '', reason || '');
   const why = String(reason || '').trim();
   pushNotif({ icon: 'alert', route: '#/events',
     title: { ar: 'فعاليتك لم تُعتمد', en: 'Your event was not approved' },
@@ -3581,6 +3630,7 @@ export function reportCount(refId) {
  * remaining days with it. The owner is told, and told why.
  */
 export function adminHideListing(id, reason) {
+  logAdminAction(id, 'hideListing', '', reason || '');
   // the same list «أخفِ الإعلان» uses, so it works on a seed listing too
   hideClassified(id);
   (state.flags || []).filter(f => f.refId === id).forEach(f => resolveFlag(f.id));
@@ -3596,6 +3646,7 @@ export function adminHideListing(id, reason) {
 
 /** …and the permanent one, which asks for a reason and delivers it */
 export function adminDeleteListing(id, reason) {
+  logAdminAction(id, 'deleteListing', '', reason || '');
   pushNotif({
     icon: 'alert',
     title: strOf('adminRemovedTitle'),
@@ -3714,6 +3765,7 @@ let bizSeq = 0;
  * it go too, or they would attach to whatever takes the id next.
  */
 export function deleteBusiness(id) {
+  logAdminAction(id, 'deleteBusiness', '', '');
   if (!id) return false;
   const wasExtra = (state.extraBusinesses || []).some(b => b.id === id);
   state.extraBusinesses = (state.extraBusinesses || []).filter(b => b.id !== id);
@@ -4016,6 +4068,10 @@ export function addCashOrder({ kind, bizId = null, product = '', cat = '',
                                receivedBy = '', reference = '', note = '',
                                bizName = '', tagline = '', ctaText = '' }) {
   if (!CASH_METHODS.includes(method)) return null;
+  /* ⚠️ Money handed over in person is the one action that leaves no trace
+     anywhere else — no card statement, no gateway record — so who issued it
+     and for how much belongs in the log beside everything else. */
+  logAdminAction(bizId || '—', 'cashOrder', receivedBy || '', String(amount || 0));
   const t0 = now();
   const endsAt = t0 + (Number(days) || 30) * DAY_MS;
   const receipt = addReceipt({
@@ -4089,6 +4145,7 @@ export function addAdOrder(order) {
   return rec;
 }
 export function approveAd(id) {
+  logAdminAction(id, 'approveAd', '', '');
   const a = state.myAds.find(x => x.id === id);
   if (a) {
     a.status = 'live';
@@ -4097,6 +4154,7 @@ export function approveAd(id) {
   save();
 }
 export function rejectAd(id, reason) {
+  logAdminAction(id, 'rejectAd', '', reason || '');
   const a = state.myAds.find(x => x.id === id);
   if (a) {
     a.status = 'rejected';

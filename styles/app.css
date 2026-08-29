@@ -760,7 +760,12 @@ ul { margin: 0; padding: 0; list-style: none; }
 .row-main { flex: 1; min-width: 0; }
 .row-title { font-size: 1.1rem; font-weight: 700; font-family: var(--font-display); display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
 .row-sub { font-size: .78125rem; color: var(--muted); margin-top: 2px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
-.row-actions { display: flex; gap: 7px; margin-top: 9px; }
+/* ⚠️ `wrap`, because these buttons were CUT and not scrolled to: measured
+   at 390px in English, the last two ran to 397 while the page's own
+   scrollWidth stayed 390 — so the part past the edge could not be reached
+   at all. A row somebody chooses from must not run off the edge; the
+   magazine's chips answered it the same way. */
+.row-actions { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 9px; }
 .mini-btn {
   height: 38px; padding: 0 13px; border-radius: 10px;
   display: inline-flex; align-items: center; gap: 5px;
@@ -2602,3 +2607,11 @@ input[inputmode="tel"], input[type="email"], input[inputmode="decimal"], #zipIn 
 .dr-tile-gold svg { color: var(--on-gold) !important; }
 /* the arrow keeps its own size beside a tile */
 .dr-head .grp-arrow { flex: 0 0 20px; }
+
+/* A two-column grid whose children have a minimum width of their own — a
+   native date input is the case that forced this — becomes one column on a
+   narrow screen instead of being cut at the edge. Opt-in, so no existing
+   `.action-grid` (two buttons, which shrink happily) changes at all. */
+@media (max-width: 400px) {
+  .action-grid.stack-narrow { grid-template-columns: 1fr; }
+}

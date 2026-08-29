@@ -545,7 +545,17 @@ ok('admin can feature an event', await page.evaluate((id) => {
   const e = (s.extraEvents || []).find(x => x.id === id);
   return !!(e && e.featured);
 }, proposed.id));
+/* CHANGED in V.06.4: deleting an event now opens a confirmation naming it,
+   the same shape deleting a BUSINESS has had since V.02.9 — it used to
+   fire on the first tap. So the tap has to be answered, and until it is,
+   the sheet's own scrim sits over the tab bar (which is how this surfaced:
+   the settings-tab click below timed out rather than this line failing). */
 await page.locator(`[data-evdel="${proposed.id}"]`).click(); await page.waitForTimeout(450);
+ok('deleting an event asks first, and names it', await page.evaluate(() => {
+  const p = document.querySelector('.sheet-panel');
+  return !!p && !/\{title\}/.test(p.innerText);
+}));
+await page.locator('#cfmYes').click(); await page.waitForTimeout(450);
 ok('admin can delete an event', await page.evaluate((id) => {
   const s = JSON.parse(localStorage.getItem('arabna.v1'));
   return !(s.extraEvents || []).some(x => x.id === id);
@@ -556,6 +566,10 @@ await page.locator('#aTabs .tab[data-t="set"]').click(); await page.waitForTimeo
 /* V.03.4: `NewAdmin#2026` is refused, and correctly — PW_ALWAYS contains
    «admin» and matches it as a substring, which is exactly the word not to
    build the admin panel's own password out of. */
+/* CHANGED in V.06.4: the form reads the CURRENT password too. It used to
+   take the new one and its confirmation alone, so anybody reaching an open
+   panel could replace it in silence and lock its owner out. */
+await page.fill('#apCur', 'Arabna@2026!');
 await page.fill('#apNew', 'Sh@mi-Katy!9'); await page.fill('#apConf', 'Sh@mi-Katy!9');
 await page.click('#apSave'); await page.waitForTimeout(500);
 /* V.03.6 reversed what "stored" means, and that is the whole point of the

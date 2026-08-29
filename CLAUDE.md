@@ -7,7 +7,7 @@ ARABNA · عربنا — a mobile-first web app for the Arab community in the U.
 **business directory + marketplace + events + magazine**, Arabic-first with a full English toggle.
 ("Classifieds / الإعلانات الشخصية" is now "Marketplace / السوق" — the old `#/classifieds`
 routes still resolve so shared links keep working.)
-Current version: **V.06.3 (prototype)**. Owner: Rai Elby (@dbprime). Deploys to Vercel (team DB Prime).
+Current version: **V.06.4 (prototype)**. Owner: Rai Elby (@dbprime). Deploys to Vercel (team DB Prime).
 
 ## Hard rules (from the product brief)
 1. **One repository, one Vercel project.** No duplicates, no stray preview projects.
@@ -5038,6 +5038,166 @@ the method, not the reason.
 **84 runs · 5,194 assertions · zero red · zero crash** — unchanged, because
 `v27` reworded two items and added none. `chk_i18n` goes 1753 → **1754**:
 one new key, intended and measured.
+
+## V.06.4 — what survived `esc()` executed, and a refusal with no reason
+
+### The hole needed no panel, and the file it was reported in was the wrong one
+Measured before a line was changed. An ordinary member — **no staff access,
+no permission of any kind** — saves a marketplace listing whose title
+**somebody else wrote**, and opens «المفضّلة»:
+
+```
+index.html              the node entered the page · the code did NOT run
+index-single-file.html  the node entered the page · window.__pwn === 1
+```
+
+- ⚠️ **The single-file build is the one that decides**, and this file
+  already says why: it runs under `script-src 'self' 'unsafe-inline' data:
+  blob:` — the condition of that build existing, not a choice — so there is
+  **no second layer in it. Whatever escapes `esc()` executes.**
+- ⚠️ **The spec called this «the widest of what remains» and then filed it
+  under «admin panel fixes».** It is not an admin fault at all: the panel is
+  one door into it, and the one that needs no account is «المفضّلة».
+- ⚠️ **And the line seventy rows above it in the same file writes
+  `esc(L(c.title))` correctly.** «إعلاناتي» escapes and its neighbour
+  «المفضّلة» does not — the rule applied on one screen and forgotten on the
+  next, which is exactly why V.03.6's pass fixing «the four reported
+  places» was not enough. **`js/screens/admin.js` is not closed until every
+  `${` in it has been read**, and this batch read them.
+
+**Twenty-six places were named and ten more were found by reading the
+rest**, all of them carrying user or external text:
+
+```
+named   profile.js  5   ·  admin.js 19  ·  advertise.js 2 (inside an attribute)
+found   a photo URL inside src="…"        4 in admin.js + 1 in profile.js
+        the reported item's own title     the waiting-list date the buyer typed
+        the verification provider's ref
+        five importer values straight out of the pasted CSV
+```
+
+⚠️ **A photo URL sits inside `src="…"`**, so a value carrying a quote closes
+the attribute — V.03.6 wrapped the others and missed these five.
+⚠️ **And `esc()` escapes the apostrophe too**, so it is right inside either
+kind of quote — which is what the two `value="${…}"` fields in
+`advertise.js` needed.
+
+### A refusal with no reason, and an action with no question
+The panel's own rule, written since V.02.9: *both outcomes ask for a
+reason, an empty one is refused, and the reason reaches its owner
+verbatim.* The marketplace tab obeyed it. Five other places did not.
+
+- **`rejectAd(id, '')` — with the empty string written into the code.**
+  Measured: a $149 order refused with no sheet, no question, and a
+  notification containing no word of explanation. **And that buyer paid.**
+- **`rejectPendingBusiness(id, '')`** the same.
+- **Refusing a report** called `rejectClassified(f.refId)` **with no reason
+  argument at all**, taking somebody's listing down on the strength of a
+  report that may itself be malicious.
+- **`rejectAvatar()` and `rejectBizPhoto()`** — the first sent a general
+  line, and **the second sent nothing whatsoever**: the photo simply
+  vanished from the owner's page, which reads as the app losing the picture
+  rather than refusing it. Both take a reason now, and both notify.
+- **Deleting an event fired on the first tap** while its sibling — deleting
+  a business — has named the record in a confirmation since V.02.9.
+
+### The most dangerous action in the panel was the only one that did not ask
+`mergeBusinesses(keep, drop)` moves reviews, favourites, ownership and tags
+and then **deletes the other record, with no undo.** The manual form has
+always confirmed; the two buttons did not.
+
+⚠️ **And the sweep's button is the worse of the two**: its results include
+`likely` and `weak` — matches that are **not certain by design** — and each
+one sat beside a button that merged on the first tap. `confirmMerge` is
+written once and both call it. ⚠️ **It takes the repaint as an argument**,
+because `paint` lives inside `AdminScreen` and a module-level helper cannot
+see it.
+
+### The panel had no lock, and its password did not guard itself
+`setAdminUnlocked(false)` **appeared nowhere in `js/`.** The documented
+answer — «a reload asks again» — is true and beside the point: the app
+ships a manifest and is **installed**, so it is not reloaded in practice
+and the panel stayed open for the session. And `adminUnlocked()` is what
+permits editing **any** listing, so this was never a question about a
+screen.
+
+- ⚠️ **The lock clears BOTH**: `unlocked` is a module variable in
+  `admin.js` and `adminSession` lives in `store.js`. Clearing one leaves
+  the other holding a door open.
+- ⚠️ **A button, never a timer.** A lock that falls on its own halfway
+  through a queue is a nuisance people work around.
+- **The change-password form read the new password and its confirmation and
+  not the current one**, so anybody reaching an open panel could replace it
+  in silence and lock its owner out. It goes through `checkAdmin` now, and
+  a wrong current password says so under its own field.
+
+### 514 in one `<select>`, on a 390px screen
+The same wall the directory tab hit, and the sentence written there applies
+word for word. **The difference is that a mistake here costs money**: a
+receipt issued against the wrong shop, and **a receipt is never edited
+after issue** — correcting it means a second receipt with a negative
+amount. It reuses `adminSearchBusinesses`, so the two cannot drift.
+
+⚠️ **The options are filtered IN PLACE rather than by repainting the tab**:
+the operator has already typed an amount, a name and a reference into the
+same form, and a repaint on every keystroke would wipe them.
+
+### Three controls were cut, not scrolled to
+Measured at 390px, and the correction matters more than the numbers:
+
+```
+settings · ar   #ramEid starts at left −19        page scrollWidth 390
+settings · en   #ramEid ends at right 409         page scrollWidth 390
+events   · en   two .mini-btn end at right 397    page scrollWidth 390
+```
+
+⚠️ **The page does not scroll horizontally**, so the part past the edge
+**cannot be reached at all** — this is clipping, not overflow, which makes
+it heavier rather than lighter. The two date fields stack under 400px
+(`stack-narrow`, opt-in, so no other `.action-grid` moves) and the event
+buttons wrap. After: nothing outside 0–390 in either language.
+
+### The number the state file carried was wrong
+```
+everyBusiness()   514      needsGeoList()   514      with lat/lng   0
+```
+`docs/الحالة.md` said «480 of 514, and the 34 that have them are the
+development seeds». **The 34 are ZIP centres and city points in
+`js/data.js`, not businesses** — counted, not assumed. The panel was
+honest; the document was not, and **the document is the one read first in
+every session.** The filter that would narrow nothing is **hidden, never
+deleted**: the day the two numbers part it returns by itself.
+
+### And the log answers more than «who changed my phone number?»
+`state.adminLog` recorded field edits and nothing else, so «who deleted the
+event?» and «who merged the two shops?» had no answer — the same question
+it exists for. `logAdminAction` writes **one line per action into the same
+log**, same shape, `field` carrying the action's name. ⚠️ **Written in
+`store.js` and not in the panel**, for the V.03.3 reason: a record kept by
+a screen is missing the moment anything that is not that screen does the
+same thing. Approve, reject, delete, merge, the cash order and the demo
+purge all leave a line.
+
+### `test_v45` — 35 assertions, and each proven in both directions
+Putting **one** `esc` back and taking **one** merge confirmation out turned
+**four items red** and made CSP itself log the refusal on the module build.
+The suite is in `run.sh`.
+
+**And the full net caught what the batch's own suite could not**: `v3`
+**crashed on both builds** — it taps `data-evdel` and then asserts the
+event is gone, and this batch put a confirmation in the way, whose scrim
+then swallowed the click on the settings tab six lines later. So the crash
+surfaced as a TimeoutError on a line that had nothing to do with it. Its
+sibling assertion — the password change — needed the current password for
+the same reason. **Both were updated with a comment naming the reversal and
+neither was softened**: `v3` went **116 → 117**, gaining an assertion that
+the confirmation is there and names the event.
+
+```
+86 runs · 43 suites · 5,266 assertions · zero red · zero crash
+```
+
+⚠️ **The arithmetic: 5,194 + 70 (`v45` × 2) + 2 (`v3` × 2).**
 
 ## Known open items
 - **The header image is still far larger than its box.** V.04.7 replaced

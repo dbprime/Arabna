@@ -192,7 +192,16 @@ function panelView(root) {
       toast(t('eventRejected'), 'ok'); paint();
     }));
     $$('#aBody [data-evdel]').forEach(b => b.addEventListener('click', () => {
-      S.deleteEvent(b.dataset.evdel); toast(t('eventDeleted'), 'ok'); paint();
+      /* The sibling action — deleting a business — has opened a confirmation
+         naming the record since V.02.9. Same shape, with the event's title. */
+      const id = b.dataset.evdel;
+      const ev = S.eventById(id);
+      confirmSheet({
+        title: t('adminDelEvent'),
+        sub: t('adminDelEventAsk').replace('{title}', ev ? L(ev.title) : id),
+        confirmText: t('delete'), danger: true,
+        onConfirm: () => { S.deleteEvent(id); toast(t('eventDeleted'), 'ok'); paint(); },
+      });
     }));
     $$('#aBody [data-evfeat]').forEach(b => b.addEventListener('click', () => {
       const ev = S.eventById(b.dataset.evfeat);
@@ -204,7 +213,12 @@ function panelView(root) {
       S.approveAvatar(); toast(t('done'), 'ok'); paint();
     }));
     $$('#aBody [data-avno]').forEach(b => b.addEventListener('click', () => {
-      S.rejectAvatar(); toast(t('itemRejected'), 'ok'); paint();
+      /* The photo queue stands in the SAME screen as the ownership requests,
+         which have carried a reason box all along. */
+      askReason({
+        title: t('rejectReason'), sub: t('rejectReasonPlaceholder'), confirmText: t('reject'), danger: true,
+        onGo: (why) => { S.rejectAvatar(why); toast(t('itemRejected'), 'ok'); paint(); },
+      });
     }));
     $$('#aBody [data-bgok]').forEach(b => b.addEventListener('click', () => {
       S.approveBadge(); toast(t('done'), 'ok'); paint();
@@ -214,7 +228,16 @@ function panelView(root) {
     }));
     // --- ad orders and the waiting list ---
     $$('#aBody [data-adno]').forEach(b => b.addEventListener('click', () => {
-      S.rejectAd(b.dataset.adno, ''); toast(t('itemRejected'), 'ok'); paint();
+      /* ⚠️ THIS BUYER PAID. An empty reason written into the code sent the
+         refusal with no word in it. The panel's own rule since V.02.9 is
+         that a refusal asks for a reason, refuses an empty one, and the
+         reason reaches its owner verbatim — the marketplace tab obeyed it
+         and these three did not. */
+      const id = b.dataset.adno;
+      askReason({
+        title: t('rejectReason'), sub: t('rejectReasonPlaceholder'), confirmText: t('reject'), danger: true,
+        onGo: (why) => { S.rejectAd(id, why); toast(t('itemRejected'), 'ok'); paint(); },
+      });
     }));
     $$('#aBody [data-wlrm]').forEach(b => b.addEventListener('click', () => {
       S.removeFromWaitlist(b.dataset.wlrm); toast(t('done'), 'ok'); paint();
@@ -279,7 +302,10 @@ function panelView(root) {
     }));
     $$('#aBody [data-bpno]').forEach(b => b.addEventListener('click', () => {
       const [id, url] = b.dataset.bpno.split('|');
-      S.rejectBizPhoto(id, url); toast(t('itemRejected'), 'ok'); paint();
+      askReason({
+        title: t('rejectReason'), sub: t('rejectReasonPlaceholder'), confirmText: t('reject'), danger: true,
+        onGo: (why) => { S.rejectBizPhoto(id, url, why); toast(t('itemRejected'), 'ok'); paint(); },
+      });
     }));
     // --- business verification ---
     $$('#aBody [data-bvok]').forEach(b => b.addEventListener('click', () => {
@@ -372,11 +398,19 @@ function panelView(root) {
       S.approvePendingBusiness(b.dataset.bizok); toast(t('done'), 'ok'); paint();
     }));
     $$('#aBody [data-bizno]').forEach(b => b.addEventListener('click', () => {
-      S.rejectPendingBusiness(b.dataset.bizno, ''); toast(t('itemRejected'), 'ok'); paint();
+      const id = b.dataset.bizno;
+      askReason({
+        title: t('rejectReason'), sub: t('rejectReasonPlaceholder'), confirmText: t('reject'), danger: true,
+        onGo: (why) => { S.rejectPendingBusiness(id, why); toast(t('itemRejected'), 'ok'); paint(); },
+      });
     }));
     $$('#aBody [data-bizmerge]').forEach(b => b.addEventListener('click', () => {
-      S.mergeBusinesses(b.dataset.into, b.dataset.bizmerge);
-      toast(t('mergeDone'), 'ok'); paint();
+      /* ⚠️ MERGING MOVES REVIEWS, FAVOURITES, OWNERSHIP AND TAGS AND THEN
+         DELETES THE OTHER RECORD. THERE IS NO UNDO. The manual form has
+         asked since it was built; these two buttons fired on the first tap
+         — the most dangerous action in the panel was the only one that did
+         not ask. Same `confirmSheet`, same «drop → keep» line. */
+      confirmMerge(b.dataset.into, b.dataset.bizmerge, paint);
     }));
 
     /* After 486 records arrived from two separate files, "is anything in
@@ -410,11 +444,11 @@ function panelView(root) {
           <div class="hint" style="margin:10px 0">${pairs.length} ${pairs.length === 1 ? t('dupScanFound') : t('dupScanPairs')}</div>
           ${pairs.slice(0, 40).map((p, i) => `
             <div class="q-card">
-              <div class="q-head"><b>${L(p.a.name)}</b>
+              <div class="q-head"><b>${esc(L(p.a.name))}</b>
                 <span class="conf-tag ${p.confidence}">${t(p.confidence === 'certain' ? 'confCertain' : p.confidence === 'likely' ? 'confLikely' : 'confWeak')}</span></div>
-              <div class="row-sub"><span class="ltr">${p.a.address || '—'} · ${p.a.phone || '—'}</span></div>
-              <div class="q-head" style="margin-top:8px"><b>${L(p.b.name)}</b></div>
-              <div class="row-sub"><span class="ltr">${p.b.address || '—'} · ${p.b.phone || '—'}</span></div>
+              <div class="row-sub"><span class="ltr">${esc(p.a.address || '—')} · ${esc(p.a.phone || '—')}</span></div>
+              <div class="q-head" style="margin-top:8px"><b>${esc(L(p.b.name))}</b></div>
+              <div class="row-sub"><span class="ltr">${esc(p.b.address || '—')} · ${esc(p.b.phone || '—')}</span></div>
               <div class="action-grid" style="margin:10px 0 0">
                 <button class="btn btn-ghost btn-sm" data-pairsee="${p.a.id}">${icon('eye', 16)} ${t('view')}</button>
                 <button class="btn btn-danger btn-sm" data-pairmerge="${p.b.id}" data-into="${p.a.id}">${icon('refresh', 16)} ${t('mergeDuplicates')}</button>
@@ -422,11 +456,12 @@ function panelView(root) {
             </div>`).join('')}` : `<div class="ok-msg">${t('dupScanNone')}</div>`;
         out.querySelectorAll('[data-pairsee]').forEach(x =>
           x.addEventListener('click', () => go('#/directory/' + x.dataset.pairsee)));
+        /* ⚠️ THE SWEEP'S BUTTON IS THE MORE DANGEROUS OF THE TWO: its
+           results include `likely` and `weak` — matches that are NOT
+           certain by design — and each one sat beside a button that merged
+           on the first tap. */
         out.querySelectorAll('[data-pairmerge]').forEach(x =>
-          x.addEventListener('click', () => {
-            S.mergeBusinesses(x.dataset.into, x.dataset.pairmerge);
-            toast(t('mergeDone'), 'ok'); paint();
-          }));
+          x.addEventListener('click', () => confirmMerge(x.dataset.into, x.dataset.pairmerge, paint)));
       }, 30);
     });
 
@@ -534,15 +569,52 @@ function panelView(root) {
       });
     });
 
+    const cq = $('#cshQ');
+    if (cq) cq.addEventListener('input', () => {
+      const all = S.allBusinesses();
+      const hits = S.adminSearchBusinesses(all, cq.value);
+      const sel = $('#cshBiz');
+      const keep = sel.value;
+      sel.innerHTML = `<option value="">—</option>` + cashOptsHtml(hits);
+      // a chosen shop that still matches stays chosen
+      if (keep && hits.some(b => b.id === keep)) sel.value = keep;
+      const note = $('#cshCount');
+      if (note) note.textContent = cq.value.trim()
+        ? t('adminDirCount').replace('{n}', Math.min(hits.length, 600)).replace('{total}', all.length)
+        : '';
+    });
+
     const apw = $('#apSave');
     const checkAdminPw = $('#apNew') ? wirePasswordField('apNew', 'e_apNew') : () => '';
     if (apw) apw.addEventListener('click', async () => {
+      const cur = $('#apCur') ? $('#apCur').value : '';
       const a = $('#apNew').value, b2 = $('#apConf').value;
+      const curErr = $('#e_apCur');
+      if (curErr) curErr.textContent = '';
+      /* the current one first: a wrong new password is the reader's typo,
+         a wrong current one is somebody who should not be here */
+      if (!await S.checkAdmin(S.adminUser(), cur)) {
+        if (curErr) curErr.textContent = t('adminPassWrong');
+        return;
+      }
       if (checkAdminPw()) return;                 // named under the field
       if (a !== b2) { toast(t('passwordsDontMatch'), 'err'); return; }
       await S.setAdminPass(a);
       toast(t('adminPassChanged'), 'ok');
       paint();
+    });
+
+    const lockBtn = $('#admLock');
+    if (lockBtn) lockBtn.addEventListener('click', () => {
+      /* ⚠️ BOTH, and this is the whole of it: `unlocked` is a module
+         variable in this file and `adminSession` lives in `store.js`.
+         Clearing one leaves the other holding a door open — the screen
+         would ask again while `ownerOnly` still let an edit through, or
+         the reverse. */
+      S.setAdminUnlocked(false);
+      unlocked = false;
+      toast(t('adminLocked'), 'ok');
+      go('#/admin');
     });
     wirePasswordToggles(body);
     // --- flags raised by the app (reports, free-section edits, scanned DMs) ---
@@ -552,11 +624,23 @@ function panelView(root) {
       paint();
     }));
     $$('#aBody [data-flagdel]').forEach(b => b.addEventListener('click', () => {
-      const f = S.state.flags.find(x => x.id === b.dataset.flagdel);
-      if (f && f.kind !== 'message' && S.classifiedById(f.refId)) S.rejectClassified(f.refId);
-      S.resolveFlag(b.dataset.flagdel);
-      toast(t('itemRejected'), 'ok');
-      paint();
+      const fid = b.dataset.flagdel;
+      const f = S.state.flags.find(x => x.id === fid);
+      /* ⚠️ This one took a listing down through `rejectClassified` with NO
+         REASON ARGUMENT AT ALL, so its owner was told the listing was
+         refused and nothing more — on the strength of somebody else's
+         report, which may itself be malicious. */
+      const kill = f && f.kind !== 'message' && S.classifiedById(f.refId);
+      if (!kill) { S.resolveFlag(fid); toast(t('itemRejected'), 'ok'); paint(); return; }
+      askReason({
+        title: t('rejectReason'), sub: t('rejectReasonPlaceholder'), confirmText: t('reject'), danger: true,
+        onGo: (why) => {
+          S.rejectClassified(f.refId, why);
+          S.resolveFlag(fid);
+          toast(t('itemRejected'), 'ok');
+          paint();
+        },
+      });
     }));
     // --- paid ad orders ---
     $$('#aBody [data-adok]').forEach(b => b.addEventListener('click', () => {
@@ -623,7 +707,7 @@ function queueHtml() {
     ${pending.map(c => `
       <div class="list-row">
         <span class="row-ico" style="overflow:hidden;padding:0">${c.photos && c.photos.length
-          ? `<img src="${c.photos[c.mainPhoto || 0] || c.photos[0]}" style="width:100%;height:100%;object-fit:cover" alt="" />`
+          ? `<img src="${esc(c.photos[c.mainPhoto || 0] || c.photos[0])}" style="width:100%;height:100%;object-fit:cover" alt="" />`
           : icon(c.icon || 'image', 24)}</span>
         <div class="row-main">
           <div class="row-title">${esc(L(c.title))}
@@ -644,7 +728,7 @@ function queueHtml() {
     ${events.map(e => `
       <div class="list-row">
         <span class="row-ico" style="overflow:hidden;padding:0">${e.photo
-          ? `<img src="${e.photo}" style="width:100%;height:100%;object-fit:cover" alt="" />`
+          ? `<img src="${esc(e.photo)}" style="width:100%;height:100%;object-fit:cover" alt="" />`
           : icon('calendar', 24)}</span>
         <div class="row-main">
           <div class="row-title">${esc(L(e.title))}<span class="badge badge-pending">${t('statusPending')}</span></div>
@@ -661,9 +745,9 @@ function queueHtml() {
 
     ${avatar ? `<div class="dr-group-label">${t('queueAvatars')}</div>
       <div class="list-row">
-        <span class="row-ico" style="overflow:hidden;padding:0"><img src="${avatar.url}" style="width:100%;height:100%;object-fit:cover" alt="" /></span>
+        <span class="row-ico" style="overflow:hidden;padding:0"><img src="${esc(avatar.url)}" style="width:100%;height:100%;object-fit:cover" alt="" /></span>
         <div class="row-main">
-          <div class="row-title">${(S.state.user && S.state.user.name) || ''}
+          <div class="row-title">${esc((S.state.user && S.state.user.name) || '')}
             <span class="badge badge-pending">${t('statusPending')}</span></div>
           <div class="row-sub">${t('profilePhoto')}</div>
           <div class="row-actions">
@@ -677,9 +761,9 @@ function queueHtml() {
       <div class="list-row">
         <span class="row-ico">${icon('check', 24)}</span>
         <div class="row-main">
-          <div class="row-title">${(S.state.user && S.state.user.name) || ''}
+          <div class="row-title">${esc((S.state.user && S.state.user.name) || '')}
             <span class="badge badge-pending">${t('statusPending')}</span></div>
-          <div class="row-sub">${t('verifiedBadge')} · ${S.state.user && S.state.user.email}</div>
+          <div class="row-sub">${t('verifiedBadge')} · ${esc((S.state.user && S.state.user.email) || '')}</div>
           <div class="row-actions">
             <button class="mini-btn gold" data-bgok="1">${icon('check', 15)} ${t('approve')}</button>
             <button class="mini-btn" data-bgno="1">${icon('x', 15)} ${t('reject')}</button>
@@ -692,9 +776,9 @@ function queueHtml() {
       <div class="list-row">
         <span class="row-ico ${f.risk === 'high' ? 'ink-danger' : 'gold'}">${icon(f.kind === 'message' ? 'message' : 'alert', 24)}</span>
         <div class="row-main">
-          <div class="row-title">${f.item ? L(f.item) : t(f.kind === 'contact-attempts' ? 'contactAttemptReport' : 'report')}
+          <div class="row-title">${f.item ? esc(L(f.item)) : t(f.kind === 'contact-attempts' ? 'contactAttemptReport' : 'report')}
             <span class="badge badge-free flag-pill">${f.risk}</span></div>
-          <div class="row-sub">${L(f.reason)}</div>
+          <div class="row-sub">${esc(L(f.reason))}</div>
           <div class="row-actions">
             <button class="mini-btn gold" data-flagok="${f.id}">${icon('check', 15)} ${t('approve')}</button>
             <button class="mini-btn" data-flagdel="${f.id}">${icon('x', 15)} ${t('reject')}</button>
@@ -714,7 +798,7 @@ function eventsHtml() {
       ${all.length ? all.map(e => `
         <div class="list-row">
           <span class="row-ico" style="overflow:hidden;padding:0">${e.photo
-            ? `<img src="${e.photo}" style="width:100%;height:100%;object-fit:cover" alt="" />`
+            ? `<img src="${esc(e.photo)}" style="width:100%;height:100%;object-fit:cover" alt="" />`
             : icon(e.icon || 'calendar', 24)}</span>
           <div class="row-main">
             <div class="row-title">${esc(L(e.title))}
@@ -782,7 +866,12 @@ function setHtml() {
           computed date with another computed date. */''}
     <div class="label mt-16">${t('ramDatesTitle')}</div>
     <div class="hint" style="margin-bottom:10px">${t('ramDatesSub')}</div>
-    <div class="action-grid">
+    ${/* ⚠️ `stack-narrow`, not `action-grid` alone: a native date input has a
+         minimum width of its own, so two of them side by side at 390px put
+         the second one at left −19 in Arabic and right 409 in English —
+         and the PAGE did not scroll, so the clipped half was unreachable
+         rather than merely off-screen. */''}
+    <div class="action-grid stack-narrow">
       <div class="field"><label class="label" for="ramFrom">${t('ramDateFrom')}</label>
         <input class="input ltr" id="ramFrom" type="date" value="${esc(S.ramadanDates().from)}" /></div>
       <div class="field"><label class="label" for="ramEid">${t('ramDateEid')}</label>
@@ -843,8 +932,26 @@ function setHtml() {
       <button class="btn btn-ghost btn-sm" id="clockReset">${t('subTestReset')}</button>
     </div>` : ''}
 
+    ${/* ⚠️ THE PANEL HAD NO LOCK. `setAdminUnlocked(false)` appeared
+         nowhere in `js/`, and the documented answer — «a reload asks for
+         the password again» — is true and beside the point: the app ships
+         a manifest and is INSTALLED, so it is not reloaded in practice and
+         the panel stayed open for the whole session. And `adminUnlocked()`
+         is what permits editing ANY listing, so this was never a question
+         about a screen. A button that is pressed, never a timer: a lock
+         that falls on its own halfway through a queue is a nuisance people
+         work around. */''}
+    <div class="section-title mt-20">${t('adminLockTitle')}</div>
+    <div class="hint" style="margin-bottom:10px">${t('adminLockSub')}</div>
+    <button class="btn btn-ghost btn-block" id="admLock">${icon('lock', 19)} ${t('adminLock')}</button>
+
     <div class="section-title mt-20">${t('changePassword')}</div>
     <div class="hint" style="margin-bottom:10px">${t('adminUser')}: <b class="gold ltr">${esc(S.adminUser())}</b></div>
+    ${/* ⚠️ The form read the new password and its confirmation and NOT the
+         current one, so anybody reaching an open panel could replace it in
+         silence and lock its owner out. */''}
+    ${passwordField('apCur', t('currentPassword'))}
+    <div class="field-err" id="e_apCur"></div>
     ${passwordField('apNew', t('newPassword'))}
     ${/* The panel is the FIRST place this rule belongs, not the last:
          whoever gets in sees everything and can change everything. */''}
@@ -853,6 +960,14 @@ function setHtml() {
     ${passwordField('apConf', t('confirmPassword'))}
     <button class="btn btn-gold btn-block" id="apSave">${icon('lock', 19)} ${t('changePassword')}</button>
   </div>`;
+}
+
+/* The options are rebuilt IN PLACE rather than by repainting the tab: the
+   operator has already typed an amount, a name and a reference into the
+   same form, and a repaint on every keystroke would wipe them. */
+function cashOptsHtml(list) {
+  return list.slice(0, 600).map(b =>
+    `<option value="${esc(b.id)}">${esc(L(b.name))}${b.phone ? ' — ' + esc(b.phone) : ''}</option>`).join('');
 }
 
 function catKeyOf(catId) {
@@ -884,7 +999,7 @@ function magHtml() {
     <div class="mt-12">
       ${all.slice(0, 6).map(a => `<div class="list-row" data-route="#/magazine/${a.id}">
         <span class="row-ico">${icon(a.icon || 'newspaper', 24)}</span>
-        <div class="row-main"><div class="row-title">${L(a.title)}</div>
+        <div class="row-main"><div class="row-title">${esc(L(a.title))}</div>
           <div class="row-sub">${L(a.date)} ${a.sponsored ? '· ' + t('sponsoredStory') : ''}</div></div></div>`).join('')}
     </div>
   </div>`;
@@ -907,9 +1022,16 @@ function cashDueHtml() {
 }
 
 /** Issued HERE and nowhere else — see addCashOrder() in store.js. */
+/** ⚠️ 514 records in one `<select>` with no search, on a 390px screen —
+    the same wall the directory tab hit, and the sentence written there
+    applies word for word: «514 records with no search means a particular
+    one cannot be reached at all». THE DIFFERENCE IS THAT A MISTAKE HERE
+    COSTS MONEY: a receipt issued against the wrong shop, and a receipt is
+    never edited after issue — correcting it means a second receipt with a
+    negative amount. `adminSearchBusinesses` is the same one the directory
+    tab uses, so the two cannot drift into two ideas of a match. */
 function cashFormHtml() {
-  const opts = S.allBusinesses().slice(0, 600)
-    .map(b => `<option value="${b.id}">${esc(L(b.name))}</option>`).join('');
+  const opts = cashOptsHtml(S.allBusinesses());
   return `<div class="section-title mt-20">${t('cashOrder')}<small>${t('cashOrderSub')}</small></div>
     <div class="field"><label class="label">${t('cashKind')}</label>
       <select class="select" id="cshKind">
@@ -917,7 +1039,9 @@ function cashFormHtml() {
         <option value="ad">${t('cashKindAd')}</option>
       </select></div>
     <div class="field"><label class="label">${t('cashBiz')}</label>
-      <select class="select" id="cshBiz"><option value="">—</option>${opts}</select></div>
+      <input class="input" id="cshQ" placeholder="${t('adminDirSearch')}" />
+      <select class="select mt-8" id="cshBiz"><option value="">—</option>${opts}</select>
+      <div class="hint" id="cshCount" style="margin-top:6px"></div></div>
     <div class="action-grid">
       <div class="field"><label class="label">${t('cashAmount')}</label>
         <input class="input ltr" id="cshAmt" inputmode="decimal" value="29" /></div>
@@ -968,9 +1092,9 @@ function adsHtml() {
       <div class="list-row">
         <span class="row-ico">${icon('megaphone', 24)}</span>
         <div class="row-main">
-          <div class="row-title">${o.bizName}
+          <div class="row-title">${esc(o.bizName)}
             <span class="badge ${o.status === 'live' ? 'badge-verified' : 'badge-pending'}">${o.status === 'live' ? t('statusLive') : t('statusPending')}</span></div>
-          <div class="row-sub">${prodName(o.product)}${o.cat ? ' · ' + t(dirCatKey(o.cat)) : ''} · ${esc(fmtMoney(o.price))} · ${o.tagline || ''}</div>
+          <div class="row-sub">${prodName(o.product)}${o.cat ? ' · ' + t(dirCatKey(o.cat)) : ''} · ${esc(fmtMoney(o.price))} · ${esc(o.tagline || '')}</div>
           <div class="row-sub muted">${t('adImpressions')} ${S.adStats(o.id).impressions} · ${t('adClicks')} ${S.adStats(o.id).clicks}</div>
           ${o.status !== 'live' ? `<div class="row-actions">
             <button class="mini-btn gold" data-adok="${o.id}">${icon('check', 15)} ${S.state.lang === 'en' ? 'Approve & go live' : 'اعتماد ونشر'}</button>
@@ -984,7 +1108,7 @@ function adsHtml() {
       <div class="q-card">
         <div class="q-head"><b>${esc(w.name)}</b><span class="muted fs-12">${prodName(w.product)}</span></div>
         <div class="row-sub"><span class="ltr">${esc(w.phone)}</span></div>
-        ${w.preferred ? `<div class="row-sub">${t('waitlistWhen')}: ${w.preferred}</div>` : ''}
+        ${w.preferred ? `<div class="row-sub">${t('waitlistWhen')}: ${esc(w.preferred)}</div>` : ''}
         <button class="btn btn-ghost btn-sm btn-block mt-8" data-wlrm="${w.id}">${icon('check', 16)} ${t('waitlistRemove')}</button>
       </div>`).join('') : `<div class="hint">${t('waitlistEmpty')}</div>`}
   </div>`;
@@ -1003,7 +1127,7 @@ function claimsHtml() {
         <div class="info-row" style="border:none;padding:8px 0 0">
           <div class="i-txt"><b>${esc(c.name)} — ${t('role' + c.role[0].toUpperCase() + c.role.slice(1))}</b>
           <span class="ltr">${esc(c.phone)}</span></div></div>
-        ${c.proof ? `<p class="fs-13 muted" style="margin:6px 0 0">${c.proof}</p>` : ''}
+        ${c.proof ? `<p class="fs-13 muted" style="margin:6px 0 0">${esc(c.proof)}</p>` : ''}
         <div class="reject-box"><input class="input" id="why-${c.id}" placeholder="${t('rejectReasonPlaceholder')}" /></div>
         <div class="row-actions mt-8">
           <button class="mini-btn gold" data-clok="${c.id}">${icon('check', 15)} ${t('approve')}</button>
@@ -1070,7 +1194,7 @@ function verifyHtml() {
       const b = S.businessById(v.bizId);
       return `<div class="card" style="padding:13px;margin:0 14px 10px">
         <div class="row-title">${esc(b ? L(b.name) : v.bizId)}</div>
-        <div class="row-sub">${t('verifyRef')}: <span class="ltr">${v.ref || '—'}</span></div>
+        <div class="row-sub">${t('verifyRef')}: <span class="ltr">${esc(v.ref || '—')}</span></div>
         <div class="list-note" style="margin:8px 0 0">${icon('shield', 18)}<span>${t('verifyNoImages')}</span></div>
         <div class="reject-box"><input class="input" id="why-${v.bizId}" placeholder="${t('rejectReasonPlaceholder')}" /></div>
         <div class="row-actions mt-8">
@@ -1093,7 +1217,7 @@ function repeatsHtml() {
       <div class="list-row">
         <span class="row-ico">${icon(ev.icon || 'calendar', 20)}</span>
         <div class="row-main">
-          <div class="row-title">${L(ev.title)}</div>
+          <div class="row-title">${esc(L(ev.title))}</div>
           <div class="row-sub">${t('evNextEdition')} ${fmtEventDate(nextAt, false)}
             · ${ev.repeat.kind === 'hijri' ? t('evRepeatHijri') : t('evRepeatGreg')}</div>
           <div class="row-actions">
@@ -1144,17 +1268,24 @@ function dirBrowseHtml() {
         ${CATEGORIES.filter(c => !c.route).map(c =>
           `<option value="${c.id}" ${dirCat === c.id ? 'selected' : ''}>${t(c.key)} — ${all.filter(b => b.cat === c.id).length}</option>`).join('')}
       </select></div>
-    <label class="consent-row" style="margin-bottom:10px">
+    ${/* ⚠️ MEASURED: `needsGeoList()` is 514 and `everyBusiness()` is 514 —
+         not one listing has coordinates, so this filter narrows nothing and
+         its box is an option that does nothing, which the project's own
+         rule forbids. It is HIDDEN, never deleted: the day the coordinates
+         arrive the two numbers part and it comes back by itself, with no
+         line written. (The count above it stays visible either way — the
+         gap is a number somebody has to work through.) */''}
+    ${S.needsGeoList().length < all.length ? `<label class="consent-row" style="margin-bottom:10px">
       <input type="checkbox" id="dirGeo" ${dirGeoOnly ? 'checked' : ''} />
       <span>${t('adminOnlyGeo')} — ${S.needsGeoList().length}</span>
-    </label>
+    </label>` : ''}
     <div class="hint" style="margin-bottom:8px">${t('adminDirCount')
       .replace('{n}', list.length).replace('{total}', all.length)}</div>
 
     ${rows.length ? rows.map(b => `
       <div class="setting-row">
-        <span class="s-txt"><b>${L(b.name)}</b>
-          <span class="muted fs-12 ltr">${b.phone || b.address || b.id}</span></span>
+        <span class="s-txt"><b>${esc(L(b.name))}</b>
+          <span class="muted fs-12 ltr">${esc(b.phone || b.address || b.id)}</span></span>
         <button class="mini-btn" data-bizopen="${b.id}" aria-label="${t('adminOpen')}">${icon('eye', 15)}</button>
         <button class="mini-btn gold" data-bizedit="${b.id}" aria-label="${t('adminEdit')}">${icon('edit', 15)}</button>
         <button class="mini-btn" data-bizdel="${b.id}" aria-label="${t('adminDelBiz')}">${icon('trash', 15)}</button>
@@ -1362,6 +1493,18 @@ function mktCatKey(id) {
 }
 
 /** hide and delete both ask for a reason, and the reason reaches the owner */
+/** The merge confirmation, written once because two buttons ask it and a
+    second copy is two shapes of the same question a batch from now. */
+function confirmMerge(keep, drop, repaint) {
+  const kb = S.businessById(keep), db = S.businessById(drop);
+  confirmSheet({
+    title: t('mergeDuplicates'),
+    sub: `${esc(db ? L(db.name) : drop)} → ${esc(kb ? L(kb.name) : keep)}`,
+    confirmText: t('mergeDrop'), danger: true,
+    onConfirm: () => { S.mergeBusinesses(keep, drop); toast(t('mergeDone'), 'ok'); repaint(); },
+  });
+}
+
 function askReason({ title, sub, confirmText, danger, onGo }) {
   openSheet(`
     <div class="sheet-title">${title}</div>
@@ -1482,7 +1625,7 @@ function dirHtml() {
       <button class="btn btn-ghost btn-sm" id="ncOff">${icon('briefcase', 18)} ${t('nonCommercialUnmark')}</button>
     </div>
     ${marked.length ? `<div class="mt-12">
-      ${marked.map(b => `<div class="setting-row"><span class="s-txt"><b>${L(b.name)}</b>
+      ${marked.map(b => `<div class="setting-row"><span class="s-txt"><b>${esc(L(b.name))}</b>
         <span class="muted fs-12">${t(dirCatKey(b.cat))}</span></span>
         <button class="mini-btn" data-ncoff="${b.id}">${icon('x', 15)}</button></div>`).join('')}
     </div>` : `<div class="hint" style="margin-top:8px">${t('nonCommercialCount')}: 0</div>`}
@@ -1490,9 +1633,9 @@ function dirHtml() {
     <div class="section-title mt-20">${t('mergeDuplicates')}</div>
     <div class="hint" style="margin-bottom:10px">${t('mergePick')}</div>
     <div class="field"><label class="label">${t('mergeKeep')}</label>
-      <select class="select" id="mgKeep">${all.map(b => `<option value="${b.id}">${L(b.name)} — ${b.phone || b.address || '—'}</option>`).join('')}</select></div>
+      <select class="select" id="mgKeep">${all.map(b => `<option value="${esc(b.id)}">${esc(L(b.name))} — ${esc(b.phone || b.address || '—')}</option>`).join('')}</select></div>
     <div class="field"><label class="label">${t('mergeDrop')}</label>
-      <select class="select" id="mgDrop">${all.map(b => `<option value="${b.id}">${L(b.name)} — ${b.phone || b.address || '—'}</option>`).join('')}</select></div>
+      <select class="select" id="mgDrop">${all.map(b => `<option value="${esc(b.id)}">${esc(L(b.name))} — ${esc(b.phone || b.address || '—')}</option>`).join('')}</select></div>
     <button class="btn btn-danger btn-block" id="mgGo">${icon('refresh', 19)} ${t('mergeDuplicates')}</button>
 
     <div class="mt-16">
@@ -1534,7 +1677,7 @@ function showImport(result, repaint) {
     return;
   }
   if (result.fatal === 'columns') {
-    out.innerHTML = `<div class="err-msg">${icon('alert', 15)} ${t('importMissingCols')}: <b class="ltr">${result.missing.join(', ')}</b></div>`;
+    out.innerHTML = `<div class="err-msg">${icon('alert', 15)} ${t('importMissingCols')}: <b class="ltr">${esc(result.missing.join(', '))}</b></div>`;
     return;
   }
 
@@ -1542,13 +1685,13 @@ function showImport(result, repaint) {
   const problem = (e) => {
     const label = { required: t('importRequired'), unknown: t('importUnknownCat'),
                     badPhone: t('importBadPhone'), badHours: t('importBadHours') }[e.code] || e.code;
-    return `${e.field}: ${label}${e.got ? ` (${e.got})` : ''}`;
+    return `${esc(e.field)}: ${label}${e.got ? ` (${esc(e.got)})` : ''}`;
   };
   const caution = (w) => {
     const label = { noNameAr: t('importWarnNoNameAr'), noHours: t('importWarnNoHours'),
                     noDesc: t('importWarnNoDesc'), unknownAttr: t('importWarnUnknownAttr'),
                     noPhone: t('importWarnNoPhone'), noAddress: t('importWarnNoAddress') }[w.code] || w.code;
-    return `${label}${w.got ? `: ${w.got}` : ''}`;
+    return `${label}${w.got ? `: ${esc(w.got)}` : ''}`;
   };
 
   const render = () => {
@@ -1577,7 +1720,7 @@ function showImport(result, repaint) {
               <b>${esc(r.biz.name.en || r.biz.name.ar || '—')}</b>
               <span class="ltr muted fs-12">${esc(r.biz.phone || '—')}</span>
               ${r.biz.nonCommercial ? `<span class="imp-tag">${t('importNcTag')}</span>` : ''}
-              ${r.biz.entryPrice ? `<span class="ltr muted fs-12">${r.biz.entryPrice}</span>` : ''}
+              ${r.biz.entryPrice ? `<span class="ltr muted fs-12">${esc(r.biz.entryPrice)}</span>` : ''}
               ${r.errors.length ? `<div class="imp-why err">${icon('alert', 12)} ${r.errors.map(problem).join(' · ')}</div>` : ''}
               ${r.warnings.length ? `<div class="imp-why warn">${icon('info', 12)} ${r.warnings.map(caution).join(' · ')}</div>` : ''}
               ${!r.errors.length && r.dupOf ? `<div class="imp-why dup">
@@ -1585,7 +1728,7 @@ function showImport(result, repaint) {
                   ? 'confCertain' : r.dupOf.confidence === 'likely' ? 'confLikely' : 'confWeak')}</span>
                 ${r.dupOf.kind === 'file'
                   ? `${t('importDupFile')} #${r.dupOf.line}`
-                  : `${t('importDupDir')}: ${L(r.dupOf.name)}`}</div>` : ''}
+                  : `${t('importDupDir')}: ${esc(L(r.dupOf.name))}`}</div>` : ''}
             </div>
           </div>`).join('')}
       </div>
