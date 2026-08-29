@@ -1466,10 +1466,40 @@ export function regionNameOf(id) {
  * DISTANCE — a directory that sells the top without saying so loses trust
  * worth more than the subscription.
  */
-export function paidFirst(list) {
+/* ⚠️ AND THE SORT THE READER CHOSE GOVERNS BOTH LAYERS — the fix of `336`,
+   and the hole was in the specification of `330`, not in what was built
+   from it: it said the manual sort «governs layer two» and said nothing
+   about what it does INSIDE layer one, so layer one was ordered by
+   distance unconditionally, as written. Measured on V.07.0 with «مفتوح
+   الآن» chosen: b1 open, b3/b4/b6 closed, and those three were lifted
+   above 254 open shops — a reader who asked for what is open now met a
+   closed shop at the top.
+
+   ⚠️ A STABLE PARTITION, NEVER A SECOND SORTER. The list arrives here
+   already ordered by the reader's choice — `directory.js` did that — and
+   `filter` preserves that order, so [paid] then [the rest] applies the
+   reader's sort inside both layers with no comparison written twice. A
+   rule written twice has two versions two batches later; that is `esc()`'s
+   own lesson.
+
+   ⚠️ And the two promises hold together: a subscriber NEVER falls below a
+   free listing, and the reader's choice is honoured inside the layer.
+
+   ⚠️ The default is not a choice. Our rule governs when the reader has
+   not chosen, and theirs governs when they have — so the branches are not
+   merged: one branch would mean either ignoring them always or giving up
+   our own rule always. With no manual sort, `330`'s order stands untouched.
+   @param manualSort  true when the reader picked nearest / rated / open */
+export function paidFirst(list, manualSort) {
   if (!inCoverage()) return { list, ids: [] };
   const paid = list.filter(isPaid);
   if (!paid.length) return { list, ids: [] };
+
+  if (manualSort) {
+    const ids = paid.map(b => b.id);
+    const seen = new Set(ids);
+    return { list: paid.concat(list.filter(b => !seen.has(b.id))), ids };
+  }
 
   const known = [], unknown = [];
   paid.forEach(b => {

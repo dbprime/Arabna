@@ -315,7 +315,10 @@ export function DirectoryScreen(root) {
        from the ordering AND from the lift together, so the promise broke
        in the widest kind of search there is. Layer one applies to it; its
        layer two stays unordered, exactly as it was. */
-    const pin = S.paidFirst(list);
+    /* ⚠️ `336`: the sort the reader chose governs BOTH layers. `st.sort`
+       is 'newest' when they have chosen nothing, and that default is not
+       a choice — with it, `330`'s order stands exactly as it was. */
+    const pin = S.paidFirst(list, st.sort !== 'newest');
     list = pin.list;
     const sponsored = new Set(pin.ids);
 
