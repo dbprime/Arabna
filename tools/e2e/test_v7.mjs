@@ -236,9 +236,15 @@ ok('Directory left with it', !d.routes.includes('#/directory'));
    bottom-bar tab — the same rule that took «الدليل» and «السوق» out.
    The count is kept as a NUMBER on purpose: a leaf added or lost without
    a decision behind it turns this line red, which is the whole job. */
+/* ⚠️ REVERSED in V.07.1: the head is a `.dr-title`, not a `.dr-item`, so
+   the six leaves are six — the count is kept as a NUMBER for the same
+   reason as before: a leaf added or lost without a decision turns it red. */
 ok('the sections group is six leaves', await page.evaluate(() =>
-  document.querySelectorAll('.dr-group[data-group="sections"] .dr-item').length) === 7,  // head + 6
-   await page.evaluate(() => document.querySelectorAll('.dr-group[data-group="sections"] .dr-item').length) + ' incl. head');
+  document.querySelectorAll('.dr-group[data-group="sections"] .dr-item').length) === 6,
+   await page.evaluate(() => document.querySelectorAll('.dr-group[data-group="sections"] .dr-item').length) + ' leaves');
+ok('…under a head that is not a button', await page.evaluate(() =>
+  !!document.querySelector('.dr-group[data-group="sections"] .dr-title')
+  && !document.querySelector('.dr-group[data-group="sections"] .dr-head')));
 ok('…prayer times among them', await page.evaluate(() =>
   [...document.querySelectorAll('.dr-group[data-group="sections"] [data-route]')]
     .some(b => b.dataset.route === '#/prayer')));
@@ -246,7 +252,11 @@ ok('…and the newcomer\'s guide', await page.evaluate(() =>
   [...document.querySelectorAll('.dr-group[data-group="sections"] [data-route]')]
     .some(b => b.dataset.route === '#/newcomer')));
 ok('no chevron on any row', d.chevrons === 0, d.chevrons + ' chevrons');
-ok('the group arrow survives — it is the fold indicator', d.grpArrows >= 2, d.grpArrows + ' arrows');
+/* ⚠️ ONE arrow now, not two: the arrow IS the fold indicator, so the group
+   that no longer folds must not carry one — and the one that does keeps
+   it, moved to the end of its row where it displaces no label. */
+ok('the arrow survives on the group that folds, and only there',
+   d.grpArrows === 1, d.grpArrows + ' arrows');
 ok('no separator inside a group', d.rowBorders === 0, d.rowBorders + ' row borders');
 ok('separators only between blocks', d.blockBorders >= 3, d.blockBorders + ' block borders');
 ok('panel is 86% capped at 360', d.width === Math.min(360, Math.round(390 * 0.86)), d.width + 'px');
@@ -286,12 +296,15 @@ ok('«كل التصنيفات» is out of the drawer, and the old wording never 
    !dtxt.includes('كل التصنيفات') && !dtxt.includes('كل الأقسام'));
 
 /* the open group: faint ground, not gold text, plus the vertical rule */
-await page.click('#drawer [data-toggle="sections"]'); await page.waitForTimeout(400);
+/* ⚠️ REVERSED in V.07.1: «تصنيفات عربنا» no longer folds, so it has no
+   `[data-toggle]` to click. The accordion is asserted on «المساعدة
+   والقوانين», the one group that still folds. */
+await page.click('#drawer [data-toggle="help"]'); await page.waitForTimeout(400);
 const opened = await page.evaluate(() => {
-  const head = document.querySelector('.dr-group[data-group="sections"] .dr-head');
-  const inner = document.querySelector('.dr-group[data-group="sections"] .dr-sub-inner');
+  const head = document.querySelector('.dr-group[data-group="help"] .dr-head');
+  const inner = document.querySelector('.dr-group[data-group="help"] .dr-sub-inner');
   const bar = getComputedStyle(inner, '::before');
-  const sub = document.querySelector('.dr-group[data-group="sections"] .dr-sub .dr-item');
+  const sub = document.querySelector('.dr-group[data-group="help"] .dr-sub .dr-item');
   const cs = getComputedStyle(sub);
   return {
     headColour: getComputedStyle(head).color,
@@ -370,7 +383,18 @@ const folded = await page.evaluate(() => {
   const p = document.querySelector('.drawer-panel');
   return { s: p.scrollHeight, c: p.clientHeight };
 });
-ok('member drawer fits with every group folded', folded.s <= folded.c + 2, folded.s + ' / ' + folded.c);
+/* ⚠️ V.07.1: THE «FOLDED IT DOES NOT SCROLL» HALF IS SPENT, and it is
+   recorded rather than quietly relaxed. «تصنيفات عربنا» stops folding by
+   Rai's decision, so its six rows are always drawn — member 974 against
+   844, visitor 1049. What is still owed, and is what actually protects
+   the reader, is that the panel REACHES ITS END so no row is out of
+   reach; that is asserted here instead. Which row goes is still Rai's
+   call, open since V.03.2. */
+ok('member drawer: every row is reachable with the groups folded',
+   await page.evaluate(() => { const p = document.querySelector('.drawer-panel');
+     p.scrollTop = 1e6;
+     return p.scrollTop >= p.scrollHeight - p.getBoundingClientRect().height - 1; }),
+   folded.s + ' / ' + folded.c);
 /* V.03.5: measured against a real row rather than a frozen 40. The base
    moved 16 -> 17, so every row in here is 6.25% taller and a hard pixel
    would have failed for the arithmetic rather than for the fault it
@@ -389,8 +413,13 @@ const rowH = await page.evaluate(() => {
   const r = document.querySelector('.drawer-panel .dr-item');
   return r ? Math.round(r.getBoundingClientRect().height) : 44;
 });
-ok('…and an open group overflows by no more than three rows',
-   fitInfo.s - fitInfo.c <= rowH * 3, (fitInfo.s - fitInfo.c) + 'px over, one row is ' + rowH);
+/* V.07.1: SIX rows, not three — the always-open section adds its own to
+   the group that is open beside it. Measured: 380 over for a member with
+   «المساعدة» open, and a row is 67. The bound is RAISED with the
+   measurement that raised it, never removed: it is a hard ceiling on a
+   known gap and it has now caught the same growth four times. */
+ok('…and an open group overflows by no more than six rows',
+   fitInfo.s - fitInfo.c <= rowH * 6, (fitInfo.s - fitInfo.c) + 'px over, one row is ' + rowH);
 const badge = await page.evaluate(() => {
   const r = Array.from(document.querySelectorAll('.drawer-panel > .dr-item'))
     .find(x => x.dataset.route === '#/notifications');

@@ -269,15 +269,30 @@ ok('6.3 «إعلانات مميّزة» took their place', dr.featured && dr.rou
    and the version line's bottom landed exactly on the viewport's 844. NO
    ROW IS EVER OUT OF REACH. The promise that matters is «folded, it does
    not scroll», and that is 0 for both roles in both themes. */
+/* ⚠️ RAISED in V.07.1 from 191 to 260: «تصنيفات عربنا» stops folding by
+   Rai's decision, so its six rows are always drawn. The ceiling stays a
+   NUMBER and stays a watchdog — it is raised with the measurement that
+   raised it, never removed. */
 ok('6.4 the drawer overflow with a group open does not grow past the known gap',
-   dr.height - dr.box <= 191, (dr.height - dr.box) + 'px over, one row is ' + dr.row);
+   dr.height - dr.box <= 260, (dr.height - dr.box) + 'px over, one row is ' + dr.row);
 /* …and the rule still holds where it is most often read */
-await page.evaluate(() => { const g = document.querySelector('.dr-group.open');
+/* ⚠️ the FOLDING group, not just the first open one: the always-open
+   section carries `.dr-group open` with no `.dr-head` inside it, so the
+   old selector picked it and threw on `null.click()`. */
+await page.evaluate(() => { const g = [...document.querySelectorAll('.dr-group.open')]
+    .find(x => x.querySelector('.dr-head'));
   if (g) g.querySelector('.dr-head').click(); });
 await page.waitForTimeout(400);
-ok('6.4b …and folded it does not scroll at all', await page.evaluate(() => {
+/* ⚠️ AND THE PROMISE THIS ONE GUARDED IS SPENT. «Folded it does not
+   scroll» was true while every group folded; with a section always open
+   the panel is 974 against 844 for a member. What is still owed — and is
+   what actually protects the reader — is that the panel reaches its end,
+   so no row is unreachable. That is asserted instead, and the old
+   sentence is not quietly left passing on a changed drawer. */
+ok('6.4b …and folded, every row is still reachable', await page.evaluate(() => {
   const pn = document.querySelector('.drawer-panel');
-  return pn.scrollHeight <= pn.getBoundingClientRect().height + 1;
+  pn.scrollTop = 1e6;
+  return pn.scrollTop >= pn.scrollHeight - pn.getBoundingClientRect().height - 1;
 }));
 await page.evaluate(() => { const f = [...document.querySelectorAll('.dr-item')].find(x => /مميّزة/.test(x.textContent)); f && f.click(); });
 await page.waitForTimeout(700);

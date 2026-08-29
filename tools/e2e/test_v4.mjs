@@ -407,20 +407,48 @@ ok('home and directory both out of the drawer', !dr.hasHome && !dr.hasDirectory)
 ok('personal rows have left the drawer for the hub', dr.personal.length === 0,
    dr.personal.join(', ') || 'none, as intended');
 ok('two collapsible groups', dr.groups === 2, dr.groups + ' groups');
-ok('all groups start collapsed', dr.openGroups === 0);
-ok('drawer needs no scrolling', dr.height <= dr.panelH, `${dr.height}px content / ${dr.panelH}px panel`);
+/* ⚠️ REVERSED in V.07.1 (`345`), Rai's decision: «تصنيفات عربنا» no longer
+   folds. Its contents are fixed and are what the drawer is for, so it is a
+   SECTION TITLE — always open, no arrow, and not a button, because a
+   button that does nothing stays in the tab order and is announced as a
+   control. That arrow was also pushing every group head's label 34px
+   further in than an ordinary row's (294 against 328).
+   ⚠️ So «all groups start collapsed» is not the rule any more: exactly ONE
+   group folds, «المساعدة والقوانين», and it starts collapsed. And the
+   drawer no longer fits folded — measured, member 974 and visitor 1049
+   against 844. That cost is written into CLAUDE.md rather than hidden, and
+   `.drawer-panel` scrolls the whole way so no row is out of reach. */
+ok('the one folding group starts collapsed', dr.openGroups === 1,
+   dr.openGroups + ' open — the always-open section is one of them');
+ok('the drawer scrolls the whole way, so no row is out of reach',
+   await page.evaluate(() => { const pn = document.querySelector('.drawer-panel');
+     pn.scrollTop = 1e6;
+     return pn.scrollTop >= pn.scrollHeight - pn.getBoundingClientRect().height - 1; }),
+   `${dr.height}px content / ${dr.panelH}px panel`);
 ok('language row stays outside any group', dr.lang);
 
-// accordion: one open at a time
-await page.click('[data-toggle="sections"]'); await page.waitForTimeout(400);
-ok('a group opens on tap', await page.evaluate(() => document.querySelectorAll('.dr-group.open').length === 1));
-ok('aria-expanded is set', await page.evaluate(() =>
-  document.querySelector('[data-toggle="sections"]').getAttribute('aria-expanded') === 'true'));
+/* ⚠️ REVERSED in V.07.1: «تصنيفات عربنا» no longer folds, so it has no
+   `[data-toggle]` to click. The accordion is asserted on «المساعدة
+   والقوانين», the one group that still folds. */
+// the one folding group opens and shuts, and leaves the section alone
 await page.click('[data-toggle="help"]'); await page.waitForTimeout(400);
-ok('opening another group closes the first', await page.evaluate(() => {
-  const open = Array.from(document.querySelectorAll('.dr-group.open'));
-  return open.length === 1 && open[0].dataset.group === 'help';
-}));
+ok('the folding group opens on tap', await page.evaluate(() =>
+  !!document.querySelector('.dr-group[data-group="help"].open')));
+ok('aria-expanded is set', await page.evaluate(() =>
+  document.querySelector('[data-toggle="help"]').getAttribute('aria-expanded') === 'true'));
+/* ⚠️ «opening another group closes the first» CANNOT be measured with one
+   folding group left — its subject is gone, not relaxed. `openGroup` in
+   ui.js still enforces one-at-a-time and comes back the day a second
+   group folds. What replaces it is the thing that broke when the section
+   stopped folding: the accordion's sweep must not strip the always-open
+   section, and must not throw on its missing head. */
+ok('…and the always-open section is untouched by it', await page.evaluate(() =>
+  !!document.querySelector('.dr-group[data-group="sections"].open')));
+await page.click('[data-toggle="help"]'); await page.waitForTimeout(400);
+ok('tapping it again shuts it', await page.evaluate(() =>
+  !document.querySelector('.dr-group[data-group="help"].open')
+  && !!document.querySelector('.dr-group[data-group="sections"].open')));
+await page.click('[data-toggle="help"]'); await page.waitForTimeout(400);
 ok('every moved destination is still reachable', await page.evaluate(() => {
   const routes = Array.from(document.querySelectorAll('.drawer-panel [data-route]')).map(a => a.dataset.route);
   // الدليل and السوق are reached from the bottom bar, not from here — and
