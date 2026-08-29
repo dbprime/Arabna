@@ -544,6 +544,22 @@ V.04.0**.
 **Reports keep their status line and are never deleted.** The read report
 is what proves the item was seen, and when.
 
+## The report names the file it closed, and the net when a group closes
+Rai's rule of 29 August, and it is the twin of the one above it: a session
+that says «خلصت» and nothing else leaves a reader who cannot tell **which**
+file was landed — and the numbering is the one thing a fresh session has no
+way to recover.
+
+> **Every report ends by saying it is finished AND naming the number of the
+> file it finished.** «خلصت الملفّ `330`.» Not «خلصت» alone.
+>
+> **And the report that closes a GROUP adds that the full net was run** —
+> on both builds, with its numbers. A group's closing file says so at its
+> own head (the rule above); the closing report has to say it too, or the
+> only record that the net ever ran lives in a terminal nobody kept.
+
+It costs one line and it is the line that places a report months later.
+
 ## The version number is part of the batch, not a step after it
 > **`APP_VERSION` in `js/data.js` is raised inside the batch that changes
 > the app, and a batch is not closed while that number disagrees with the
