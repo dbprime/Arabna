@@ -151,7 +151,16 @@ await page.evaluate(() => {
   localStorage.setItem(k, JSON.stringify(s));
 });
 await page.reload(); await page.waitForTimeout(800);
-await go(page, '#/directory');
+/* CHANGED in V.06.9: the DIRECTORY's sponsored band is gone, because
+   every subscriber now stands at the top of the results themselves — the
+   band drew two rotated subscribers with a third lifted under them, so
+   all three were the same shops twice on one screen, which the comment
+   beside it forbade in as many words.
+   ⚠️ The rule this block guards did not go anywhere: «two rows, never
+   three, each labelled, above the results» still governs the sections
+   that still HAVE a band, so the check moves to one of them rather than
+   being deleted. What the directory owes instead is asserted below. */
+await go(page, '#/marketplace');
 const spon = await page.evaluate(() => {
   const rows = [...document.querySelectorAll('#sponRows .list-row.spon')];
   return { n: rows.length,
@@ -159,26 +168,50 @@ const spon = await page.evaluate(() => {
            ids: rows.map(r => r.dataset.route),
            aboveResults: (() => {
              const s = document.querySelector('#sponRows');
-             const l = document.querySelector('#dirList');
-             return s && l && s.getBoundingClientRect().top < l.getBoundingClientRect().top;
+             const l = document.querySelector('#mktList') || document.querySelector('#dirList');
+             return !!s && (!l || s.getBoundingClientRect().top < l.getBoundingClientRect().top);
            })() };
 });
-ok('4.1 two sponsored rows, and never three', spon.n === 2, String(spon.n));
+ok('4.1 at most two sponsored rows, and never three', spon.n <= 2, String(spon.n));
 ok('4.2 each one says it is paid for', spon.labelled);
 ok('4.3 …and they sit above the ordinary results', spon.aboveResults);
-/* They keep their own place in the list — a business lifted into the band
-   must not vanish from the directory, and the count has to keep adding up.
-   What must not happen is the same shop twice in ONE VIEWPORT, so the pin
-   at the top of the results is what skips them. */
-ok('4.4 …and they are still in the list, in their own place', await page.evaluate((ids) => {
-  const rows = [...document.querySelectorAll('#dirList .list-row')].map(r => r.dataset.route);
+
+await go(page, '#/directory');
+/* ⚠️ And the directory's own promise, which replaced the band: the money
+   still buys the position and the row still says so. */
+const dir = await page.evaluate(() => {
+  const rows = [...document.querySelectorAll('#dirList .list-row')].slice(0, 3);
+  const routes = [...document.querySelectorAll('#dirList [data-route]')].map(e => e.dataset.route);
+  return { band: !!document.querySelector('#sponRows'),
+           marked: rows.length > 0 && rows.every(r => /إعلان مموّل|Sponsored/.test(r.textContent)),
+           dupes: routes.length - new Set(routes).size };
+});
+ok('4.1b the directory has no band any more', !dir.band);
+ok('4.1c …the subscribers lead the results and are labelled there', dir.marked);
+ok('4.1d …and no shop is on the screen twice', dir.dupes === 0, String(dir.dupes));
+/* CHANGED with 4.1: these two read `spon.ids` — which are the
+   MARKETPLACE's band rows now — against the directory's list, which would
+   compare two different screens. What each one guards is kept, pointed at
+   the screen it belongs to.
+   ⚠️ 4.5's original subject is GONE rather than relaxed: it asserted that
+   the single pinned row never repeated a band row, and the directory has
+   no band to repeat. The rule underneath it — the same shop must not be on
+   one screen twice — is 4.1d above, and it is now stronger: it counts
+   every route on the screen, not just the pinned one. */
+ok('4.4 a band row is still in its own section’s list', await page.evaluate(async (ids) => {
+  location.hash = '#/marketplace';
+  await new Promise(r => setTimeout(r, 900));
+  const rows = [...document.querySelectorAll('#sponRows .list-row.spon')].map(r => r.dataset.route);
   return ids.every(id => rows.includes(id));
 }, spon.ids));
-ok('4.5 …but the pin at the top never repeats one of them', await page.evaluate((ids) => {
-  const pinned = [...document.querySelectorAll('#dirList .list-row')]
-    .filter(r => r.querySelector('.badge-sponsored')).map(r => r.dataset.route);
-  return !pinned.some(r => ids.includes(r));
-}, spon.ids));
+ok('4.5 …and in the directory every subscriber appears exactly once',
+   await page.evaluate(async () => {
+     location.hash = '#/directory';
+     await new Promise(r => setTimeout(r, 1000));
+     const marked = [...document.querySelectorAll('#dirList .list-row')]
+       .filter(r => r.querySelector('.badge-sponsored')).map(r => r.dataset.route);
+     return marked.length === new Set(marked).size;
+   }));
 /* V.04.4: the window paints forty, so this reads the count the screen
    publishes rather than the DOM's length. The question is unchanged —
    lifting two into the sponsored band must not remove them from the
@@ -190,19 +223,49 @@ ok('4.6 …and the directory still holds every listing', await page.evaluate(asy
 }));
 
 /* a chosen category narrows them to that category */
+/* CHANGED in V.06.9: this read `#sponRows` on the directory, which no
+   longer draws one — so it returned true on an empty list and asserted
+   nothing at all. A check that passes vacuously is worse than a red one,
+   because it is trusted.
+   ⚠️ The promise is unchanged — «somebody who opened «مطاعم» wants a
+   restaurant» — and the directory keeps it through the ordering now
+   instead of through a band: every LABELLED row on a category page must
+   be of that category. Asserted on the rows that actually exist. */
 await go(page, '#/directory?cat=restaurants');
 ok('4.7 a chosen category narrows them to it', await page.evaluate(async () => {
   const S = await import('/js/store.js');
-  const rows = [...document.querySelectorAll('#sponRows .list-row.spon')].map(r => r.dataset.route.split('/').pop());
-  if (!rows.length) return true;
+  const rows = [...document.querySelectorAll('#dirList .list-row')]
+    .filter(r => r.querySelector('.badge-sponsored'))
+    .map(r => (r.dataset.route || '').split('/').pop());
+  if (!rows.length) return false;                 // never vacuous again
   return rows.every(id => (S.allBusinesses().find(b => b.id === id) || {}).cat === 'restaurants');
 }));
 
 /* ============ 5 — Back gets the same order ============ */
+/* CHANGED in V.06.9, and for the same reason as 4.1: the ROTATION these
+   two measure is a property of the band, and the directory has no band.
+   Both keep their subject and move to a screen that still rotates.
+   ⚠️ And the directory owes something in the band's place, so it is
+   asserted rather than dropped — 5.3 below. Its order is arithmetic now
+   (distance, then city and rating), so «Back gets the same order» is no
+   longer a seed that has to survive; it is a computation that has to
+   repeat, which is a stronger promise and is checked as such. */
 console.log('--- Back ---');
-await go(page, '#/directory');
+/* ⚠️ The seed file carries exactly ONE boosted listing, so the band on
+   this screen has nothing to rotate — «a fresh visit brings different
+   ones» would be red on inventory, not on behaviour. Four are boosted
+   here, the same way block 4 makes four subscribers above, so what is
+   measured is the rotation and not the seed data. */
+await page.evaluate(() => {
+  const k = 'arabna.v1';
+  const s = JSON.parse(localStorage.getItem(k) || '{}');
+  s.boosted = ['c1', 'c2', 'c3', 'c6'];
+  localStorage.setItem(k, JSON.stringify(s));
+});
+await page.reload(); await page.waitForTimeout(900);
+await go(page, '#/marketplace');
 const before = await page.evaluate(() => [...document.querySelectorAll('#sponRows .list-row.spon')].map(r => r.dataset.route));
-await page.click('#dirList .list-row'); await page.waitForTimeout(700);
+await page.click('#clGrid .cl-card'); await page.waitForTimeout(700);
 await page.goBack(); await page.waitForTimeout(900);
 const after = await page.evaluate(() => [...document.querySelectorAll('#sponRows .list-row.spon')].map(r => r.dataset.route));
 ok('5.1 coming back shows the very same two, in the same order',
@@ -212,11 +275,33 @@ ok('5.1 coming back shows the very same two, in the same order',
 let changed = false;
 for (let n = 0; n < 6 && !changed; n++) {
   await go(page, '#/home');
-  await go(page, '#/directory');
+  await go(page, '#/marketplace');
   const now = await page.evaluate(() => [...document.querySelectorAll('#sponRows .list-row.spon')].map(r => r.dataset.route));
   if (JSON.stringify(now) !== JSON.stringify(before)) changed = true;
 }
 ok('5.2 …but a fresh visit brings different ones', changed);
+
+/* ⚠️ NEW in V.06.9 — what the directory owes in the band's place. The
+   money still buys the position, and the position must not move under a
+   reader who opened a shop and came back. Nothing rotates here: the same
+   input has to give the same order every time it is asked. */
+await go(page, '#/directory');
+const dirBefore = await page.evaluate(() => [...document.querySelectorAll('#dirList .list-row')]
+  .filter(r => r.querySelector('.badge-sponsored')).map(r => r.dataset.route));
+await page.click('#dirList .list-row'); await page.waitForTimeout(700);
+await page.goBack(); await page.waitForTimeout(900);
+const dirAfter = await page.evaluate(() => [...document.querySelectorAll('#dirList .list-row')]
+  .filter(r => r.querySelector('.badge-sponsored')).map(r => r.dataset.route));
+await go(page, '#/home');
+await go(page, '#/directory');
+const dirFresh = await page.evaluate(() => [...document.querySelectorAll('#dirList .list-row')]
+  .filter(r => r.querySelector('.badge-sponsored')).map(r => r.dataset.route));
+ok('5.3 the directory\u2019s paid rows come back in the very same order',
+   dirBefore.length > 0 && JSON.stringify(dirBefore) === JSON.stringify(dirAfter),
+   dirBefore.join(',') + ' vs ' + dirAfter.join(','));
+ok('5.4 \u2026and a fresh visit does not reshuffle them either',
+   JSON.stringify(dirFresh) === JSON.stringify(dirBefore),
+   dirFresh.join(','));
 
 /* ============ 6 — the rotation is even, not merely random ============ */
 console.log('--- fairness ---');

@@ -7,7 +7,7 @@ ARABNA · عربنا — a mobile-first web app for the Arab community in the U.
 **business directory + marketplace + events + magazine**, Arabic-first with a full English toggle.
 ("Classifieds / الإعلانات الشخصية" is now "Marketplace / السوق" — the old `#/classifieds`
 routes still resolve so shared links keep working.)
-Current version: **V.06.8 (prototype)**. Owner: Rai Elby (@dbprime). Deploys to Vercel (team DB Prime).
+Current version: **V.06.9 (prototype)**. Owner: Rai Elby (@dbprime). Deploys to Vercel (team DB Prime).
 
 ## Hard rules (from the product brief)
 1. **One repository, one Vercel project.** No duplicates, no stray preview projects.
@@ -5667,6 +5667,134 @@ This is the first run under Rai's 28 August rule in its intended shape:
 at the end of **315 · 325 · 326** instead of three times. It grew from 43
 suites to 46 across the group (`v46`, `v47`, `v48`) and from 5,284
 assertions to 5,456.
+
+## V.06.9 — whoever pays is on top, and among them the nearest first
+
+⚠️ **This batch does not close its group.** The group is **`330` then
+`335`**, and `335` is the closer — so the full net runs with that one, and
+what ran here is the suites this batch touches. (`330` says so at its own
+head, which is the rule Rai set on 29 August.)
+
+### The chain did not deliver what it promised, and the four reasons were all in the code
+Measured on V.06.3 — a search with four new subscribers and five rated free
+listings put **three paid shops at 8, 9 and 10**, under five free ones and
+under the upgrade card:
+
+```
+pinSponsored lifted exactly ONE row, however many had paid
+isPaid was the THIRD tiebreak, behind a decimal rating that never ties
+   — a dead condition
+a new subscriber rated 0 sank below every free listing with any rating
+and once coordinates arrive the order becomes pure DISTANCE with isPaid
+   not in it at all — so a subscriber's place would get WORSE the day the
+   data got BETTER
+```
+
+**Rai's decision changes the model, not a number in it**: two layers where
+there was a chain.
+
+```
+layer one   every active subscription, ordered by distance
+layer two   everything else, exactly as the existing logic builds it
+```
+
+- ⚠️ **A subscriber with no coordinates sinks INSIDE the layer, never out
+  of it. They paid.** That is `byNearest`'s own rule — the unknown comes
+  after the known and is never dropped.
+- ⚠️ **Layer one applies inside the coverage only.** A reader in Dallas
+  gets no Houston subscriber lifted for them: the money bought the readers
+  of *this* region. That gate was `pinSponsored`'s and is carried over
+  rather than lost with it.
+- ⚠️ **The loose search is in the model now.** It was excluded from the
+  ordering **and** from the lift together, so the promise broke in the
+  widest kind of search there is. Layer one applies to it; its layer two
+  stays unordered, as before.
+- **`isPaid` is deleted from the end of the old chain** — the subscribers
+  do not live in that list any more, and leaving it would suggest it does
+  something.
+- **`paidFirst` is one exported definition** so the suite reads it directly
+  instead of re-implementing the ordering.
+
+⚠️ **AND THE MEASUREMENT THAT HAS TO BE SAID BEFORE ANY OF IT: 0 of 514
+listings have coordinates today.** So the «nearest» half computes nothing
+yet and layer one falls entirely to its fallback — the reader's city, then
+the rating. **That is correct and intended**; the decision completes itself
+the day the coordinates batch (`160`) lands. The suite seeds coordinates to
+prove the machinery works, and measured from a **shuffled** input it comes
+back `3.45 · 6.91 · 17.27 · 27.64`.
+
+### The sponsored strip above the directory is gone
+It drew two rotated subscribers with a third lifted under them — and every
+subscriber now leads the list anyway, so **all three were the same shops
+twice on one screen**. ⚠️ The comment that used to sit beside it said
+exactly that: «one advertiser three times on one screen reads as a bug».
+
+- **`#sponRows` stays in events, the marketplace and the magazine** — their
+  pools are different and none was touched.
+- **`pinSponsored` is deleted, not left behind**: a dead export reads in
+  every later session as though it works. And the imports it left behind —
+  `sponsoredRows`, `historyKey`, `distText` — go with it. ⚠️ **The import
+  line is read before anything new is asked for**, which is the lesson
+  `307` paid for when `esc()` was requested in a file that did not import
+  it.
+
+### The mark stays, and that is a condition
+Every row of layer one keeps its «إعلان مموّل» mark **and its full distance
+line**. ⚠️ **The money buys the position, not the right to hide how far
+away the shop is** — a directory that sells the top without saying so loses
+trust worth more than the subscription.
+
+**And a consequence said out loud**: in a category thick with subscribers
+the whole first screen would be marked. Today there are **four subscribers
+in the entire directory** (measured), so the effect is theoretical. If that
+number grows, a cap on layer one is Rai's decision, not this batch's.
+
+### The badge, and two decisions that could not both hold literally
+«Verified above subscribed» was decided on the **old single list**, where
+both lived in one order. In a two-layer model a subscriber is a layer
+above, so the verified cannot precede them without dissolving the layer.
+
+⚠️ **So verification is a tiebreak INSIDE each layer** — a verified shop
+leads an unverified one *in its own situation*, and never jumps a layer.
+**This is a reading of the two decisions together, not a new one**, and it
+is written here so Rai can overturn this one item without the file being
+rebuilt. **And paying still verifies nobody**: the badge follows review.
+
+### `test_v49` — 19 assertions
+⚠️ Reverting to the single-row lift turns **six items red**, and `2.1`
+prints the old fault in one line: **`27.64 · 3.45 · 17.27 · 6.91`** — the
+shuffled input straight through, unordered.
+
+**Two older suites reversed, each rewritten with a comment naming it:**
+`v21`'s band block moves to a section that still has a band and gains three
+assertions about what the directory owes instead; ⚠️ **and `v21 · 4.5`'s
+subject is gone rather than relaxed** — it asserted the single pin never
+repeated a band row, and there is no band to repeat; the rule underneath
+(no shop twice on one screen) is asserted **more strongly** now, over every
+route on the screen rather than the one pinned row. `v40 · 2.6` points at
+the marketplace, where a band still exists.
+
+### And the eleven the touching suites found — every one attributed by reading
+The nine suites this batch touches came back with **three red**, and none
+of them was a fault in the app: each was an older assertion written against
+the single-row model. **All of them were re-run and re-measured rather than
+guessed at**, and each carries a comment naming its reversal.
+
+| suite | asserted | now |
+|---|---|---|
+| v15 · 6.18 | «the reader's own city leads the list», reading every `.list-row` | ⚠️ **the subscription upsell IS a `.list-row`** — it is sized like a business row and carries the class. With one row lifted it sat at position 6 and fell outside the window **by luck**; with every subscriber lifted it moved into it, and «Katy» was asserted of a card that names no city. Listing rows only, which is what 6.24 and 6.36 already read |
+| v15 · 6.36b | «anything above it is the one labelled ad» | everything above the first free listing is labelled **and nothing below it is** — the rule the count was standing in for |
+| v15 · 6.39 | «only one place is sold at the top» | ⚠️ the batch's own decision, reversed: the labelled rows are **exactly** the paid ones (no free shop wears the badge, no paid shop leads without it) and they are **contiguous**, so the sold band has a bottom edge somebody can see. Proven: reverting to the single lift prints `badgeIsPaid:false` |
+| v15 · 6.40 | the count is 1 | the count is **> 0** — 6.40 was always about the SCOPE, and 6.40b (nobody in Dallas) is the half with the teeth |
+| v34 · 1.1–5.2 | `.spon .row-sub` on the directory | ⚠️ **the row Rai photographed still exists on the very screen he photographed** — only its class moved, from a band row to a labelled result. The `.spon` reader stays for the marketplace, the magazine and events. **1.2, 1.4 and 2.1 were passing vacuously** on an empty list, which is worse than red |
+| v21 · 4.7 | the band narrows to the chosen category — on a screen with no band | it returned `true` on an empty list and asserted nothing. **Every labelled row on `?cat=restaurants` must be a restaurant**, and an empty list is now a FAIL, never vacuous |
+| v21 · 5.1 · 5.2 | the band's seed survives Back and rotates on a fresh visit | moved to the marketplace, and ⚠️ **four listings are boosted there first** — the seed file carries exactly **one**, so a pool of one could not rotate and 5.2 would have been red on inventory rather than on behaviour |
+| v21 · 5.3 · 5.4 (new) | — | what the directory owes in the band's place: its paid rows come back **in the very same order**, and a fresh visit does not reshuffle them. ⚠️ Nothing rotates here any more — the order is arithmetic, so «Back gets the same order» stops being a seed that must survive and becomes a computation that must repeat, which is the stronger promise |
+
+⚠️ **Two of the eleven were checks that PASSED while measuring nothing** —
+`v21 · 4.7` and three of `v34`'s. A green that asserts an empty list is
+worse than a red one, because it is trusted; both now fail on an empty
+list by construction.
 
 ## Known open items
 - **The header image is still far larger than its box.** V.04.7 replaced

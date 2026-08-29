@@ -46,6 +46,18 @@ const mods = () => page.evaluate(async () => {
 const seen = () => page.evaluate(() => document.querySelector('#app').innerText);
 const sponSubs = () => page.evaluate(() => [...document.querySelectorAll('.spon .row-sub')]
   .map(x => x.textContent.replace(/\s+/g, ' ').trim()));
+/* CHANGED in V.06.9: the rows the directory SELLS are no longer a `.spon`
+   band above the results — every subscriber stands at the top of the
+   results themselves, labelled there. So the row this suite was written
+   about still exists on the very screen Rai photographed; only its class
+   moved. The `.spon` reader stays for the marketplace, the magazine and
+   events, which still draw a band. */
+const dirSponSubs = () => page.evaluate(() => [...document.querySelectorAll('#dirList .list-row')]
+  .filter(r => r.querySelector('.badge-sponsored'))
+  .map(r => r.querySelector('.row-sub').textContent.replace(/\s+/g, ' ').trim()));
+const dirSponIcons = () => page.evaluate(() => [...document.querySelectorAll('#dirList .list-row')]
+  .filter(r => r.querySelector('.badge-sponsored'))
+  .reduce((n, r) => n + r.querySelectorAll('.row-sub svg').length, 0));
 
 await page.goto(BASE + '#/home'); await page.waitForTimeout(1000); await mods();
 
@@ -54,21 +66,19 @@ await page.goto(BASE + '#/home'); await page.waitForTimeout(1000); await mods();
    ====================================================================== */
 console.log('--- the sponsored row ---');
 await go('#/directory');
-ok('1.1 there are sponsored rows to measure', (await sponSubs()).length > 0, String((await sponSubs()).length));
+ok('1.1 there are sponsored rows to measure', (await dirSponSubs()).length > 0, String((await dirSponSubs()).length));
 ok('1.2 AR: the pin is an icon, not its source', !/<svg|viewBox|stroke-width/.test(await seen()),
-   (await sponSubs()).join(' | '));
-ok('1.3 AR: …and the icon really is drawn',
-   await page.evaluate(() => [...document.querySelectorAll('.spon .row-sub svg')].length) > 0);
-ok('1.4 AR: the line reads as a place', (await sponSubs()).every(s => s.length > 0 && !s.includes('<')),
-   (await sponSubs()).join(' | '));
+   (await dirSponSubs()).join(' | '));
+ok('1.3 AR: …and the icon really is drawn', await dirSponIcons() > 0);
+ok('1.4 AR: the line reads as a place', (await dirSponSubs()).every(s => s.length > 0 && !s.includes('<')),
+   (await dirSponSubs()).join(' | '));
 
 await page.click('#hMenu'); await page.waitForTimeout(450);
 await page.click('#drLang'); await page.waitForTimeout(700);
 await go('#/directory');
 ok('2.1 EN: the pin is an icon, not its source', !/<svg|viewBox|stroke-width/.test(await seen()),
-   (await sponSubs()).join(' | '));
-ok('2.2 EN: …and the icon really is drawn',
-   await page.evaluate(() => [...document.querySelectorAll('.spon .row-sub svg')].length) > 0);
+   (await dirSponSubs()).join(' | '));
+ok('2.2 EN: …and the icon really is drawn', await dirSponIcons() > 0);
 await page.click('#hMenu'); await page.waitForTimeout(450);
 await page.click('#drLang'); await page.waitForTimeout(700);
 
@@ -111,10 +121,9 @@ await page.evaluate(() => {
   S.save();
 });
 await go('#/home'); await go('#/directory');
-const withMiles = await sponSubs();
+const withMiles = await dirSponSubs();
 ok('5.1 the line becomes a distance in miles', withMiles.some(s => /\d/.test(s) && /ميل|mi/.test(s)), withMiles.join(' | '));
-ok('5.2 …and the pin is still beside it',
-   await page.evaluate(() => [...document.querySelectorAll('.spon .row-sub svg')].length) > 0);
+ok('5.2 …and the pin is still beside it', await dirSponIcons() > 0);
 ok('5.3 …and it is still not markup', !/<svg/.test(await seen()));
 
 /* a sponsored business with no city and no distance falls back to the

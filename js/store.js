@@ -1306,20 +1306,67 @@ export function regionNameOf(id) {
 }
 
 /**
- * A paid listing leads the results, for every reader inside the region and
- * for nobody outside it. The subscription buys the place, not the right to
- * hide how far away the shop is: what is pinned here is labelled «إعلان
- * مموّل» and carries exactly the same distance line as every other row —
- * real miles where both points exist, the area name where they do not.
+ * TWO LAYERS, not a chain of tiebreaks — Rai's decision: «whoever pays is
+ * always on top, and among them by how near they are to the reader».
+ *
+ * The chain this replaces did not deliver that, and the four reasons were
+ * all in the code: `pinSponsored` lifted exactly ONE row however many had
+ * paid; `isPaid` was the THIRD tiebreak, behind a decimal rating that
+ * practically never ties, so it was a dead condition; a new subscriber
+ * with no ratings yet sank below every free listing that had one; and the
+ * day coordinates arrive the order becomes pure distance with `isPaid` not
+ * in it at all — so a subscriber's position would get WORSE as the data
+ * got better. Measured on V.06.3: three subscribers landed at 8, 9 and 10,
+ * under five free listings and under the upgrade card.
+ *
+ *   layer one   every active subscription, ordered by distance
+ *   layer two   everything else, in the order the caller already built
+ *
+ * ⚠️ Inside layer one: real miles first for whoever has coordinates, then
+ * the rest — the reader's own city, then the rating. A subscriber with no
+ * coordinates SINKS INSIDE THE LAYER RATHER THAN LEAVING IT. They paid.
+ * That is `byNearest`'s own rule: the unknown comes after the known and is
+ * never dropped.
+ *
+ * ⚠️ Layer one applies INSIDE THE COVERAGE ONLY. A reader in Dallas gets
+ * no Houston subscriber lifted for them — the money bought the readers of
+ * this region. That gate was `pinSponsored`'s and is carried over, not
+ * dropped.
+ *
+ * ⚠️ MEASURED, and said before anything is built on it: 0 of 514 listings
+ * have coordinates today, so the «nearest» half computes nothing yet and
+ * layer one falls entirely to its fallback. That is correct and intended;
+ * the decision completes itself the day the coordinates batch lands.
+ *
+ * ⚠️ And every row of layer one keeps its «إعلان مموّل» mark and its full
+ * distance line. THE MONEY BUYS THE POSITION, NOT THE RIGHT TO HIDE THE
+ * DISTANCE — a directory that sells the top without saying so loses trust
+ * worth more than the subscription.
  */
-export function pinSponsored(list, n = 1, skip = []) {
+export function paidFirst(list) {
   if (!inCoverage()) return { list, ids: [] };
-  const avoid = new Set(skip);
-  const paid = list.filter(b => isPaid(b) && !avoid.has(b.id)).slice(0, n);
+  const paid = list.filter(isPaid);
   if (!paid.length) return { list, ids: [] };
-  const ids = paid.map(b => b.id);
+
+  const known = [], unknown = [];
+  paid.forEach(b => {
+    const d = distanceTo(b);
+    if (d == null) unknown.push(b); else known.push({ b, d });
+  });
+  known.sort((x, y) => x.d - y.d);
+  /* ⚠️ Verification is a tiebreak INSIDE a layer, never a jump over one.
+     «Verified above subscribed» was decided on the old single list; in a
+     two-layer model a subscriber is a layer above, so the two decisions
+     cannot both hold literally. This is the reading that keeps both: a
+     verified shop leads an unverified one IN ITS OWN SITUATION. */
+  unknown.sort((a, b) => (sameCity(b) - sameCity(a))
+                      || (businessVerified(b) - businessVerified(a))
+                      || (ratingFor(b).avg - ratingFor(a).avg));
+  const top = known.map(x => x.b).concat(unknown);
+
+  const ids = top.map(b => b.id);
   const seen = new Set(ids);
-  return { list: paid.concat(list.filter(b => !seen.has(b.id))), ids };
+  return { list: top.concat(list.filter(b => !seen.has(b.id))), ids };
 }
 
 /** listings still waiting for coordinates — the admin queue and its export */

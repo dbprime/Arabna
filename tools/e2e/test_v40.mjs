@@ -107,7 +107,11 @@ const tapped = await page.evaluate((h) => ({ same: location.hash === h, copied: 
 ok('2.4 the tap does not open the advertiser', tapped.same);
 ok('2.5 …it shares the advertiser\'s own link', /#\//.test(tapped.copied || ''), tapped.copied);
 
-await at('#/directory');
+/* CHANGED in V.06.9: the DIRECTORY has no sponsored band any more — every
+   subscriber leads the results themselves, so the band was the same shops
+   twice on one screen. The share mark on a band row is unchanged and is
+   asserted where a band still exists. */
+await at('#/marketplace');
 ok('2.6 the sponsored rows carry them', await page.evaluate(() =>
   document.querySelectorAll('.list-row.spon .ad-share').length > 0));
 

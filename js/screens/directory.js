@@ -4,8 +4,8 @@ import { t, L, icon, $, $$, go, back, renderHeader, openSheet, closeSheet, confi
          openFilterSheet, activeFilterCount, sectionNote, replaceHash, goAfterDone,
          pickerBtn, setPickerValue, openDropdown, closeDropdown,
          showsPrices, priceGate, wirePriceGates,
-         openBadgeHtml, openBadgeSlotHtml, onMinute, distLabelHtml, distText, cityChipLabel, fmtMiles, attrChipsHtml, fmtDay, fmtTime, bizBadgeHtml,
-         sponsoredRows, historyKey, esc, outsideBoxHtml, mountOutsideBox } from '../ui.js';
+         openBadgeHtml, openBadgeSlotHtml, onMinute, distLabelHtml, cityChipLabel, fmtMiles, attrChipsHtml, fmtDay, fmtTime, bizBadgeHtml,
+         esc, outsideBoxHtml, mountOutsideBox } from '../ui.js';
 import { CATEGORIES, SUBSCRIPTION_PRICE, DAY_KEYS } from '../data.js';
 import * as S from '../store.js';
 import { catIcon, startSlider, repaintCityChips, mountSearchHint } from './home.js';
@@ -108,7 +108,6 @@ export function DirectoryScreen(root) {
          as removable pills, because that is state, not a control. -->
     <div id="pills"></div>
     <div id="catSlider"></div>
-    <div id="sponRows"></div>
     <div id="dirNote"></div>
     ${/* above the first row, and the listings stay exactly where they are:
          somebody in Dallas visiting next month has every right to read
@@ -292,49 +291,31 @@ export function DirectoryScreen(root) {
          and a subscriber ahead of a free listing at the same rating —
          that is the ranking the $29 pays for, and it survives here
          without letting a paid shop in another city lead the screen. */
+      /* ⚠️ `isPaid` is GONE from the end of this chain. It was the third
+         tiebreak, behind a decimal rating that practically never ties, so
+         it was a dead condition — and the subscribers no longer live in
+         this list at all, they are lifted into their own layer below.
+         Leaving it here would suggest it does something. */
       list = canRank ? S.byNearest(list)
         : list.sort((a, b) => (S.sameCity(b) - S.sameCity(a))
-                           || (S.ratingFor(b).avg - S.ratingFor(a).avg)
-                           || (S.isPaid(b) - S.isPaid(a)));
+                           || (S.ratingFor(b).avg - S.ratingFor(a).avg));
     }
 
-    /* A subscriber leads — inside the reader's own city once we know which
-       one that is, and everywhere only while we do not. Whatever is pinned
-       is labelled and keeps its distance line: the money buys the position,
-       not the right to hide how far away the shop is. */
-    /* Two sponsored rows above the results, from the chosen category —
-       somebody who opened «مطاعم» wants a restaurant. Whatever the strip
-       above is already showing is left out, and so is whatever lands here:
-       one advertiser three times on one screen reads as a bug. */
-    const key = historyKey();
-    const stripIds = (st.cat === 'all' ? [] : S.catSliderAds(st.cat)).map(a => a.id);
-    const sponPool = list.filter(b => S.isPaid(b));
-    const sponTop = S.rotate(sponPool, 2, key, stripIds);
-    $('#sponRows').innerHTML = sponsoredRows(sponTop.map(b => {
-      /* `sub` is a TEXT field — the row escapes it, and it must. Handing
-         it `distLabelHtml` printed the pin's own `<svg …>` under the name
-         of every sponsored business here, on the most-opened screen in
-         the app and in the two rows we sell. The icon comes from the row
-         instead, and only when there is a place for it to mark: a pin
-         over a category name would be an icon hanging on nothing. */
-      const where = distText(b);
-      return {
-        id: b.id,
-        route: '#/directory/' + b.id,
-        icon: catIcon(b.cat),
-        title: L(b.name),
-        sub: where || t(catKey(b.cat)),
-        subIcon: where ? 'mapPin' : '',
-      };
-    }));
-    wireRoutes($('#sponRows'));
-    /* They stay in the list, in their own place — a business lifted into
-       the band must not vanish from the directory, and the count has to
-       keep adding up. What must not happen is the same shop twice in one
-       viewport, so the pin at the top of the results skips them. */
-    const above = sponTop.map(b => b.id);
+    /* ⚠️ THE SPONSORED STRIP ABOVE THE RESULTS IS GONE FROM THIS SCREEN,
+       and it is the two-layer model that removed it. It drew two rows
+       chosen by rotation out of the subscribers, with a third lifted under
+       them — and every subscriber now stands at the top of the list
+       anyway, so all three were the same shops twice on one screen. The
+       comment that used to sit here said it in as many words: «one
+       advertiser three times on one screen reads as a bug».
+       ⚠️ `#sponRows` stays in events, the marketplace and the magazine —
+       their pools are different and none of them was touched. */
 
-    const pin = found.mode === 'loose' ? { list, ids: [] } : S.pinSponsored(list, 1, above);
+    /* ⚠️ AND THE LOOSE SEARCH IS IN THE MODEL NOW. It used to be excluded
+       from the ordering AND from the lift together, so the promise broke
+       in the widest kind of search there is. Layer one applies to it; its
+       layer two stays unordered, exactly as it was. */
+    const pin = S.paidFirst(list);
     list = pin.list;
     const sponsored = new Set(pin.ids);
 

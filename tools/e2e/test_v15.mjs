@@ -229,9 +229,16 @@ ok('6.15 picking a city needs no permission', await page.evaluate(() => window._
 ok('6.16 the chip now names the city', (await page.textContent('[data-loc]')).trim() === 'Katy');
 const st1 = await ls();
 ok('6.17 the choice is saved', st1.location.city === 'Katy' && st1.geo === null, JSON.stringify(st1.location));
-/* the sponsored row is pinned above the ordering on purpose (6.40), so
-   what is being checked here is the order of everything under it */
-const top3 = await page.evaluate(() => [...document.querySelectorAll('#dirList .list-row')]
+/* the subscribers are lifted above the ordering on purpose (6.39), so
+   what is being checked here is the order of everything under them.
+   ⚠️ CHANGED in V.06.9, and the reason is worth keeping: this read every
+   `.list-row` in `#dirList`, and the SUBSCRIPTION UPSELL is one — it is
+   sized like a business row and carries the class. With one row lifted it
+   sat at position 6 and fell outside the window by luck; with every
+   subscriber lifted it moved into it, and «Katy» was asserted of a card
+   that names no city. The selector now reads listing rows only, which is
+   what 6.24 and 6.36 already do and what the check always meant. */
+const top3 = await page.evaluate(() => [...document.querySelectorAll('#dirList .list-row[data-route^="#/directory/"]')]
   .filter(r => !r.querySelector('.badge-sponsored')).slice(0, 3)
   .map(r => r.textContent.replace(/\s+/g, ' ').trim()));
 ok('6.18 the reader\'s own city leads the list', top3.every(r => /Katy/.test(r)), top3[0].slice(0, 40));
@@ -308,7 +315,16 @@ const ordered = await page.evaluate(() => [...document.querySelectorAll('#dirLis
   .map(r => ({ id: r.dataset.route, ad: !!r.querySelector('.badge-sponsored') })));
 const firstOrganic = ordered.find(r => !r.ad);
 ok('6.36 "nearest" puts the only measured listing first', firstOrganic.id === '#/directory/b30', firstOrganic.id);
-ok('6.36b anything above it is the one labelled ad', ordered.indexOf(firstOrganic) <= 1 && ordered.filter(r => r.ad).length <= 1);
+/* CHANGED in V.06.9: it used to be ONE lifted row, so «at most one thing
+   above the first free listing» was the whole rule. Every subscriber is
+   lifted now — so the rule becomes the stronger one it was standing in
+   for: everything above the first free listing is labelled, and nothing
+   below it is. A reader must never meet a paid row they were not told
+   about, however many there are. */
+ok('6.36b everything above it is labelled, and nothing below it is',
+   ordered.slice(0, ordered.indexOf(firstOrganic)).every(r => r.ad)
+   && ordered.slice(ordered.indexOf(firstOrganic)).every(r => !r.ad),
+   String(ordered.indexOf(firstOrganic)));
 
 /* h. the sponsored slot: Greater Houston, and what it may not hide */
 await page.evaluate(() => {
@@ -325,7 +341,24 @@ const lead = await page.evaluate(() => {
 });
 ok('6.37 a paid listing in the reader\'s city leads', /إعلان مموّل/.test(lead), lead.slice(0, 50));
 ok('6.38 it is labelled, and keeps its area line', /إعلان مموّل/.test(lead) && /Houston|ميل/.test(lead));
-ok('6.39 only one place is sold at the top', await page.evaluate(() => document.querySelectorAll('#dirList .badge-sponsored').length) === 1);
+/* ⚠️ CHANGED in V.06.9 — the decision this whole batch is: the top of the
+   directory is not ONE sold place, it is every subscriber, ordered among
+   themselves by distance. So «only one» is reversed, and what replaces it
+   is the promise that actually protects the reader: the labelled rows are
+   exactly the paid ones — no free shop wears the badge, and no paid shop
+   leads without it — and they are contiguous at the top, so the sold band
+   has a bottom edge somebody can see. */
+const sold = await page.evaluate(async () => {
+  const S = await import('/js/store.js');
+  const rows = [...document.querySelectorAll('#dirList .list-row[data-route^="#/directory/"]')]
+    .map(r => ({ id: r.dataset.route.split('/').pop(), ad: !!r.querySelector('.badge-sponsored') }));
+  const paid = rows.filter(r => S.isPaid(S.businessById(r.id)));
+  return { n: rows.filter(r => r.ad).length,
+           badgeIsPaid: rows.every(r => r.ad === paid.some(p => p.id === r.id)),
+           contiguous: rows.findIndex(r => !r.ad) === rows.filter(r => r.ad).length };
+});
+ok('6.39 the sold rows are exactly the paid ones, and they lead together',
+   sold.n > 0 && sold.badgeIsPaid && sold.contiguous, JSON.stringify(sold));
 await page.evaluate(() => {
   const s = JSON.parse(localStorage.getItem('arabna.v1'));
   s.location = { zip: '', city: 'Katy', state: 'TX' }; s.geo = null;
@@ -336,7 +369,10 @@ await go('#/directory');
 /* the scope Rai settled on: Greater Houston, not Texas. A Houston
    advertiser is worth showing to a reader in Katy — and worth nothing to
    one in Dallas. */
-ok('6.40 a Houston advertiser reaches a reader in Katy', await page.evaluate(() => document.querySelectorAll('#dirList .badge-sponsored').length) === 1);
+/* CHANGED in V.06.9 with 6.39: the count is no longer one. What 6.40 has
+   always been about is the SCOPE — that the advertiser reaches Katy at
+   all — and 6.40b below is the half that gives it teeth. */
+ok('6.40 a Houston advertiser reaches a reader in Katy', await page.evaluate(() => document.querySelectorAll('#dirList .badge-sponsored').length) > 0);
 await page.evaluate(() => {
   const s = JSON.parse(localStorage.getItem('arabna.v1'));
   s.location = { zip: '', city: 'Dallas', state: 'TX' }; s.geo = null;
