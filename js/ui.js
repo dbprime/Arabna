@@ -611,6 +611,70 @@ export function closeSheet() {
   if (sheetOnClose) { const f = sheetOnClose; sheetOnClose = null; f(); }
 }
 
+/** is a sheet standing on the screen right now? */
+export function sheetOpen() {
+  const root = $('#sheet');
+  return !!root && root.classList.contains('open');
+}
+
+/* ---------------- the greeting card ----------------------------------
+ * ⚠️ IT DOES NOT LIVE IN `#sheet`, and that is not a preference.
+ * `render()` calls `closeSheet()` as its first act on every navigation —
+ * including the very first paint at boot — so a card opened from the boot
+ * sequence would be wiped before anybody saw it. Measured before it was
+ * written. Its own root also makes «is a sheet open» a clean question
+ * rather than the card having to know about itself.
+ */
+export function greetingCardHtml(g) {
+  return `<div class="greet-scrim" data-gclose></div>
+    <div class="greet-card" role="dialog" aria-modal="true" aria-labelledby="greetTtl">
+      <div class="greet-frame">
+        ${/* ⚠️ THE NAME IS THE DRAWING, NEVER THE INTERFACE FONT — the mark
+             is what separates a card from عربنا from a card from any app.
+             `data-logo` is not decoration either: `applyTheme` rewrites the
+             src of every image carrying it, so flipping the theme with the
+             card open swaps this one too instead of leaving it on the
+             previous theme's file. */''}
+        ${/* the alt is the app's own, «ARABNA عربنا» — the wide lockup
+             carries both names and V.05.1 settled that every logo says what
+             its file shows. A screen reader sees no image at all. */''}
+        <img class="greet-logo" data-logo="wide" src="${logoSrc('wide')}" alt="ARABNA عربنا" />
+        <div class="greet-title" id="greetTtl">${esc(g.title)}</div>
+        <div class="greet-body">${esc(g.body)}</div>
+        ${g.cta && g.cta.label && g.cta.route
+          ? `<button class="btn btn-ghost btn-block greet-cta" data-groute="${esc(g.cta.route)}">${esc(g.cta.label)}</button>`
+          : ''}
+        <button class="btn btn-gold btn-block greet-ok" data-gclose>${t('greetThanks')}</button>
+      </div>
+    </div>`;
+}
+
+/**
+ * @param onClose  runs once, whichever way it was dismissed — the seen
+ *                 mark is written there, so it cannot be skipped by
+ *                 closing on the scrim instead of the button.
+ */
+export function openGreeting(g, onClose) {
+  const root = $('#greet');
+  if (!root) return false;
+  root.innerHTML = greetingCardHtml(g);
+  root.setAttribute('aria-hidden', 'false');
+  requestAnimationFrame(() => root.classList.add('open'));
+  let done = false;
+  const shut = () => {
+    if (done) return;
+    done = true;
+    root.classList.remove('open');
+    root.setAttribute('aria-hidden', 'true');
+    setTimeout(() => { root.innerHTML = ''; }, 320);
+    if (onClose) onClose();
+  };
+  root.querySelectorAll('[data-gclose]').forEach(el => el.addEventListener('click', shut));
+  const cta = root.querySelector('[data-groute]');
+  if (cta) cta.addEventListener('click', () => { const r = cta.dataset.groute; shut(); go(r); });
+  return true;
+}
+
 export function confirmSheet({ title, sub, confirmText, danger, onConfirm }) {
   openSheet(`
     <div class="sheet-title">${title}</div>

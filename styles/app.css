@@ -936,6 +936,45 @@ html[dir="rtl"] .drawer-panel { --drawer-off: 100%; }
 .sheet-title { font-size: 1.1875rem; font-weight: 700; margin-bottom: 4px; }
 .sheet-sub { font-size: .84375rem; color: var(--muted); margin-bottom: 16px; }
 
+/* ---------- the greeting card ----------
+   Its own root, not `#sheet`: `render()` empties the sheet on every
+   navigation, so a card opened from the boot sequence would be wiped
+   before it was seen. And it is CENTRED, not a bottom sheet — a
+   greeting is read, not chosen from.
+   ⚠️ No ornament, no ribbon, no medal. A frame, type and white space —
+   and whoever wants to add something to it later is adding it to a
+   design chosen for having none of that. */
+.greet-root { position: fixed; inset: 0; z-index: 190; pointer-events: none; display: flex; align-items: center; justify-content: center; padding: 20px; }
+.greet-root.open { pointer-events: auto; }
+.greet-scrim { position: absolute; inset: 0; background: var(--overlay); opacity: 0; transition: opacity .28s var(--ease); }
+.greet-root.open .greet-scrim { opacity: 1; }
+.greet-card {
+  position: relative;
+  width: 16.2rem; max-width: 100%;
+  background: var(--surface);
+  border: 1px solid var(--gold-wash-3);
+  border-radius: 22px;
+  box-shadow: var(--shadow-2);
+  opacity: 0; transform: scale(.94);
+  transition: opacity .28s var(--ease), transform .28s var(--ease);
+}
+.greet-root.open .greet-card { opacity: 1; transform: scale(1); }
+.greet-frame {
+  margin: .5rem;
+  border: 1px solid var(--gold-wash-3);
+  border-radius: 16px;
+  padding: 20px 16px 16px;
+  text-align: center;
+}
+/* the mark is a file and takes its own width from its ratio */
+.greet-logo { height: 15px; width: auto; display: block; margin: 0 auto 16px; }
+.greet-title { font-family: var(--font-display); font-size: 1.42rem; font-weight: 600; line-height: 1.55; margin-bottom: 10px; }
+.greet-body { font-size: .79rem; line-height: 1.85; color: var(--text-2); margin-bottom: 18px; }
+.greet-cta { margin-bottom: 8px; }
+@media (prefers-reduced-motion: reduce) {
+  .greet-card, .greet-scrim { transition: none; }
+}
+
 /* ---------- toast ---------- */
 .toast-root { position: fixed; inset-block-start: calc(var(--safe-top) + 14px); inset-inline: 0; z-index: 200; display: flex; flex-direction: column; align-items: center; gap: 8px; pointer-events: none; }
 .toast {

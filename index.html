@@ -82,6 +82,10 @@
 
   <div id="drawer" class="drawer-root" aria-hidden="true"></div>
   <div id="sheet" class="sheet-root" aria-hidden="true"></div>
+  <!-- ⚠️ The greeting has its own root, NOT `#sheet`: `render()` empties
+       the sheet on every navigation, the first paint at boot included, so
+       a card opened from the boot sequence would never be seen. -->
+  <div id="greet" class="greet-root" aria-hidden="true"></div>
   <div id="toast" class="toast-root" aria-live="polite"></div>
 
   <script type="module" src="js/app.js"></script>

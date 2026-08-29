@@ -3,7 +3,8 @@
    and the profile screen. Credentials live in store.js (V.02: a real staff
    account behind Supabase row-level security). */
 import { t, arCount, L, icon, $, $$, go, renderHeader, toast, wireRoutes, emptyState, fmtMoney, priceLabel,
-         confirmSheet, openSheet, closeSheet, esc } from '../ui.js';
+         confirmSheet, openSheet, closeSheet, esc,
+         greetingCardHtml, openGreeting } from '../ui.js';
 import { MAG_CATS, ARTICLES, CATEGORIES, AD_PRODUCTS, MARKET_CATS } from '../data.js';
 import * as S from '../store.js';
 import { passwordField, passwordChecklist, wirePasswordField,
@@ -323,6 +324,8 @@ function panelView(root) {
       toast(copy ? t('evDraftMade') : t('required'), copy ? 'ok' : 'err');
       paint();
     }));
+
+    wireGreetings(paint);
 
     const ramSave = $('#ramSave');
     if (ramSave) ramSave.addEventListener('click', () => {
@@ -844,6 +847,136 @@ function adminLogHtml() {
     }).join('')}`;
 }
 
+/* ---------------- greetings ------------------------------------------
+ * ⚠️ NOT «the Eid card». The tool is general — every occasion, and the
+ * launch itself — so no occasion is named anywhere in here.
+ */
+const GREET_MARK = { live: '●', soon: '○', over: '·', off: '◦' };
+const GREET_WORD = { live: 'greetLive', soon: 'greetSoon', over: 'greetOver', off: 'greetIsOff' };
+
+function greetingsHtml() {
+  const rows = S.greetings().slice().sort((a, b) => (a.from < b.from ? -1 : 1));
+  return `<div class="section-title mt-20">${t('greetTitle')}
+      <small>${t('greetSub')}</small></div>
+    <button class="btn btn-ghost btn-sm" id="greetNew">${t('greetNew')}</button>
+    ${rows.length ? rows.map(g => {
+      const st = S.greetingState(g);
+      return `<div class="setting-row">
+        <span class="s-txt"><b>${GREET_MARK[st]} ${esc(g.title)}</b>
+          <span class="muted fs-12">${t(GREET_WORD[st])} · <span class="ltr">${esc(g.from)} → ${esc(g.to)}</span></span></span>
+        ${/* ⚠️ «نسخ» is not decoration: last year's wording is this year's
+              wording and the difference is two dates, so next season's
+              greeting becomes a minute's work. */''}
+        <button class="mini-btn" data-gcopy="${esc(g.id)}" aria-label="${t('greetCopy')}">${icon('copy', 15)}</button>
+        <button class="mini-btn gold" data-gedit="${esc(g.id)}" aria-label="${t('greetEdit')}">${icon('edit', 15)}</button>
+        ${/* ⚠️ DELETE FOR WHAT HAS NOT BEGUN, STOP FOR WHAT HAS. Deleting a
+              live greeting throws its text away for no reason, and a typo
+              everybody is seeing has to stop NOW rather than on the day its
+              window ends. */''}
+        ${/* ⚠️ STOP/START IS A SWITCH, not a button with a glyph. The panel
+              already says on/off that way (Ramadan, the two order rows), and
+              there is no pause mark in `icons.js` — borrowing `x` for it
+              would make the close mark mean two things, which is the very
+              collision `xMark` was renamed to avoid. */''}
+        ${st === 'soon'
+          ? `<button class="mini-btn" data-gdel="${esc(g.id)}" aria-label="${t('greetDelete')}">${icon('trash', 15)}</button>`
+          : `<button class="switch ${g.off ? '' : 'on'}" data-goff="${esc(g.id)}" aria-label="${t(g.off ? 'greetStart' : 'greetStop')}"></button>`}
+      </div>`;
+    }).join('') : `<div class="hint mt-8">${t('greetNone')}</div>`}`;
+}
+
+/** the write form — one sheet, add and edit alike */
+function openGreetingForm(g, done) {
+  const v = g || { id: '', title: '', body: '', from: '', to: '', cta: null, off: false };
+  openSheet(`
+    <div class="sheet-title">${t('greetTitle')}</div>
+    <div class="sheet-sub">${t('greetPreviewNote')}</div>
+    <div class="field"><label class="label" for="gTitle">${t('greetFTitle')}</label>
+      <input class="input" id="gTitle" value="${esc(v.title)}" /></div>
+    <div class="field-err" id="e_gTitle"></div>
+    <div class="field"><label class="label" for="gBody">${t('greetFBody')}</label>
+      <textarea class="input" id="gBody" rows="4">${esc(v.body)}</textarea></div>
+    <div class="field-err" id="e_gBody"></div>
+    <div class="action-grid stack-narrow">
+      <div class="field"><label class="label" for="gFrom">${t('greetFFrom')}</label>
+        <input class="input ltr" id="gFrom" type="date" value="${esc(v.from)}" /></div>
+      <div class="field"><label class="label" for="gTo">${t('greetFTo')}</label>
+        <input class="input ltr" id="gTo" type="date" value="${esc(v.to)}" /></div>
+    </div>
+    <div class="field-err" id="e_gTo"></div>
+    <div class="label mt-12">${t('greetFCta')}</div>
+    <div class="action-grid stack-narrow">
+      <div class="field"><input class="input" id="gCtaL" placeholder="${t('greetFCtaLabel')}" value="${esc((v.cta && v.cta.label) || '')}" /></div>
+      <div class="field"><input class="input ltr" id="gCtaR" placeholder="${t('greetFCtaRoute')}" value="${esc((v.cta && v.cta.route) || '')}" /></div>
+    </div>
+    <button class="btn btn-ghost btn-block mt-8" id="gPrev">${t('greetPreview')}</button>
+    <button class="btn btn-gold btn-block mt-8" id="gSave">${t('save')}</button>
+  `, (panel) => {
+    const read = () => ({
+      id: v.id, off: v.off,
+      title: panel.querySelector('#gTitle').value,
+      body: panel.querySelector('#gBody').value,
+      from: panel.querySelector('#gFrom').value,
+      to: panel.querySelector('#gTo').value,
+      cta: { label: panel.querySelector('#gCtaL').value.trim(),
+             route: panel.querySelector('#gCtaR').value.trim() },
+    });
+    /* ⚠️ EVERY REFUSAL UNDER ITS OWN FIELD, never a toast: a toast names no
+       field and is gone before the reader looks up from the keyboard. */
+    const setErr = (id, msg) => { panel.querySelector('#e_' + id).textContent = msg || ''; };
+    const clearErrs = () => ['gTitle', 'gBody', 'gTo'].forEach(id => setErr(id, ''));
+
+    /* ⚠️ THE PREVIEW IS THE REAL CARD, not a sketch of it. This is the one
+       screen in the app everybody sees exactly once, and there is no
+       correcting it afterwards — so what is previewed is drawn by the same
+       function the launch draws. */
+    panel.querySelector('#gPrev').addEventListener('click', () => {
+      const d = read();
+      openGreeting({ title: d.title || ' ', body: d.body || ' ',
+                     cta: d.cta.label && d.cta.route ? d.cta : null }, null);
+    });
+
+    panel.querySelector('#gSave').addEventListener('click', () => {
+      clearErrs();
+      const r = S.saveGreeting(read());
+      if (r.ok) { closeSheet(); done(); return; }
+      if (r.err === 'title') return setErr('gTitle', t('required'));
+      if (r.err === 'body') return setErr('gBody', t('required'));
+      if (r.err === 'from' || r.err === 'to') return setErr('gTo', t('required'));
+      if (r.err === 'order') return setErr('gTo', t('greetErrOrder'));
+      /* ⚠️ and the clash names the other one — «تتقاطع مع أخرى» leaves
+         the operator hunting through a list for which. */
+      if (r.err === 'clash') return setErr('gTo', t('greetErrClash').replace('{n}', r.clash.title));
+    });
+  });
+}
+
+function wireGreetings(paint) {
+  const nb = $('#greetNew');
+  if (nb) nb.addEventListener('click', () => openGreetingForm(null, paint));
+  $$('#aBody [data-gedit]').forEach(b => b.addEventListener('click',
+    () => openGreetingForm(S.greetingById(b.dataset.gedit), paint)));
+  /* a copy is the same words with no id and no dates — the two things
+     that change */
+  $$('#aBody [data-gcopy]').forEach(b => b.addEventListener('click', () => {
+    const g = S.greetingById(b.dataset.gcopy);
+    if (g) openGreetingForm({ id: '', title: g.title, body: g.body, from: '', to: '', cta: g.cta, off: false }, paint);
+  }));
+  $$('#aBody [data-goff]').forEach(b => b.addEventListener('click', () => {
+    const g = S.greetingById(b.dataset.goff);
+    if (!g) return;
+    S.setGreetingOff(g.id, !g.off);
+    paint();
+  }));
+  $$('#aBody [data-gdel]').forEach(b => b.addEventListener('click', () => {
+    const g = S.greetingById(b.dataset.gdel);
+    if (!g) return;
+    confirmSheet({ title: t('greetDeleteAsk'), sub: g.title + ' — ' + t('greetDeleteSub'),
+      confirmText: t('greetDelete'), danger: true,
+      onConfirm: () => { S.deleteGreeting(g.id); paint(); } });
+  }));
+}
+
 /* ----------------------------- SETTINGS ----------------------------- */
 function setHtml() {
   const dc = S.demoCounts();
@@ -864,6 +997,8 @@ function setHtml() {
           printed as fact and the word is dropped — and clearing them puts
           the estimate back. Nothing else in the app may overrule a
           computed date with another computed date. */''}
+    ${greetingsHtml()}
+
     <div class="label mt-16">${t('ramDatesTitle')}</div>
     <div class="hint" style="margin-bottom:10px">${t('ramDatesSub')}</div>
     ${/* ⚠️ `stack-narrow`, not `action-grid` alone: a native date input has a

@@ -119,6 +119,20 @@ const DEFAULTS = {
      announced date the estimate has no business standing beside it. Empty
      strings, ISO 'YYYY-MM-DD' when set. */
   ramadanDates: { from: '', eid: '' },
+  /* THE GREETING IS GENERAL, and the word `greeting` is chosen for that
+     reason: Eid al-Fitr, Eid al-Adha, the Hijri new year, Easter,
+     Independence Day, a new section opening, the launch itself. ⚠️ NO
+     OCCASION IS EVER NAMED IN THE CODE — the moment one is, the tool
+     becomes «the Eid card» and the next occasion needs a second one.
+     { id, title, body, from, to, cta, off } — the dates are 'YYYY-MM-DD'. */
+  greetings: [],
+  /* ⚠️ AND THE TWO DO NOT BELONG IN THE SAME PLACE. `greetings` is the
+     panel's work and survives a sign-out with the rest of the operator's
+     keys; `seenGreetings` is this DEVICE's own trace — it is not carried
+     across accounts and it is not in `exportMyData`, because what a
+     phone has already displayed says nothing about the person holding
+     it. */
+  seenGreetings: [],
   /* The calculation method is a SETTING, never a constant. Houston holds a
      large Iraqi and Lebanese Shia community whose times genuinely differ,
      and one fixed set of times tells them the app is not for them. */
@@ -660,6 +674,115 @@ export function ramadanDates() {
 }
 export function setRamadanDates(from, eid) {
   state.ramadanDates = { from: (from || '').trim(), eid: (eid || '').trim() };
+  save();
+}
+
+/* ---------------- greetings ------------------------------------------
+ * One tool for every occasion. A card at the first launch inside its own
+ * dates, once per device, and it ends by itself.
+ */
+
+/**
+ * ⚠️ THE DAY KEY IS BUILT FROM THE LOCAL DATE, NEVER FROM `toISOString()`.
+ * That call returns UTC: a reader in Houston opening the app at 19:00 on
+ * 22 March reads 23 March there, so a greeting whose last day is the 22nd
+ * would vanish five hours early — and one starting on the 23rd would
+ * appear five hours before its day. The comparison is then a STRING
+ * compare, which is correct because 'YYYY-MM-DD' sorts in date order, and
+ * it is what keeps the whole question out of timezone arithmetic.
+ *
+ * It reads `now()` and not `Date.now()`, so the panel's test clock winds
+ * the greetings forward with everything else that is dated.
+ */
+export function todayKey(ms) {
+  const d = new Date(ms == null ? now() : ms);
+  const p = (n) => String(n).padStart(2, '0');
+  return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate());
+}
+
+export function greetings() { return state.greetings || []; }
+export function greetingById(id) { return greetings().find(g => g.id === id) || null; }
+export function greetingSeen(id) { return (state.seenGreetings || []).includes(id); }
+
+/** live = switched on, inside its dates, and not yet seen on this device */
+export function liveGreeting(day) {
+  const k = day || todayKey();
+  return greetings().find(g => !g.off && g.from <= k && k <= g.to && !greetingSeen(g.id)) || null;
+}
+
+/** the same window, ignoring whether it has been seen — what the panel shows */
+export function greetingState(g, day) {
+  const k = day || todayKey();
+  if (g.off) return 'off';
+  if (k < g.from) return 'soon';
+  if (k > g.to) return 'over';
+  return 'live';
+}
+
+export function markGreetingSeen(id) {
+  if (!id || greetingSeen(id)) return;
+  state.seenGreetings = (state.seenGreetings || []).concat(id);
+  save();
+}
+
+/**
+ * ⚠️ ONE LIVE AT A TIME, and the refusal names the other one. Two
+ * overlapping greetings are two cards stacked on one launch, and the
+ * second would never be read. Two windows overlap when each starts before
+ * the other ends — the string compare of the day keys again.
+ */
+export function greetingClash(from, to, ignoreId) {
+  return greetings().find(g => g.id !== ignoreId && from <= g.to && g.from <= to) || null;
+}
+
+/**
+ * Add or update. Returns { ok } or { ok: false, err, clash } — the panel
+ * puts the reason under the field that caused it, never in a toast.
+ */
+export function saveGreeting(g) {
+  const title = (g.title || '').trim();
+  const body = (g.body || '').trim();
+  const from = (g.from || '').trim();
+  const to = (g.to || '').trim();
+  if (!title) return { ok: false, err: 'title' };
+  if (!body) return { ok: false, err: 'body' };
+  if (!from) return { ok: false, err: 'from' };
+  if (!to) return { ok: false, err: 'to' };
+  if (to < from) return { ok: false, err: 'order' };
+  const clash = greetingClash(from, to, g.id);
+  if (clash) return { ok: false, err: 'clash', clash };
+  const rec = {
+    id: g.id || 'g' + Date.now().toString(36),
+    title, body, from, to,
+    cta: g.cta && g.cta.label && g.cta.route ? { label: g.cta.label, route: g.cta.route } : null,
+    off: !!g.off,
+  };
+  const list = greetings().slice();
+  const i = list.findIndex(x => x.id === rec.id);
+  if (i < 0) list.push(rec); else list[i] = rec;
+  state.greetings = list;
+  /* ⚠️ the log line BEFORE the save, or it is never written to disk —
+     `logAdminAction` builds the row and leaves the persisting to its
+     caller, the way every other action in this file does. */
+  logAdminAction(rec.title, i < 0 ? 'greetAdd' : 'greetEdit');
+  save();
+  return { ok: true, greeting: rec };
+}
+
+export function deleteGreeting(id) {
+  const g = greetingById(id);
+  state.greetings = greetings().filter(x => x.id !== id);
+  if (g) logAdminAction(g.title, 'greetDelete');
+  save();
+}
+
+/** ⚠️ Immediate, and that is the point: a typo in something everybody
+    sees once has to stop NOW, not on the day its window ends. */
+export function setGreetingOff(id, off) {
+  const g = greetingById(id);
+  if (!g) return;
+  g.off = !!off;
+  logAdminAction(g.title, off ? 'greetOff' : 'greetOn');
   save();
 }
 
@@ -3190,7 +3313,7 @@ const KEEPS_ON_SIGN_OUT = new Set([
   'adminAuth', 'adminLog', 'businessEdits', 'extraArticles', 'extraEvents',
   'hiddenEvents', 'eventEdits', 'bizPhotos', 'bizVerify', 'mergedBusinesses',
   'removedBusinesses', 'adWaitlist', 'adStats', 'bizStats', 'clockOffset',
-  'showDemo', 'demoPurged', 'seasons', 'ramadanDates', 'prayer',
+  'showDemo', 'demoPurged', 'seasons', 'ramadanDates', 'greetings', 'prayer',
   'worshipFixes', 'offers', 'flags',
   // an accounting record — unreadable while signed out, never erased
   'receipts',

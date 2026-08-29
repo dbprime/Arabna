@@ -3,10 +3,11 @@
    ============================================================ */
 
 import { setLang, bothPacks } from './i18n.js';
-import { state, registerStrings, runReminders, runSubscriptionCycle } from './store.js';
+import { state, registerStrings, runReminders, runSubscriptionCycle,
+         liveGreeting, markGreetingSeen } from './store.js';
 import { $, renderHeader, renderNav, hideNav, closeSheet, hideDrawer, drawerOwnsEntry, closeDropdown,
          mountScrollMemory, restoreScroll, historyKey, markShown, startClock, mountAdShare,
-         applyTheme, applyFontScale, mountThemeWatch } from './ui.js';
+         applyTheme, applyFontScale, mountThemeWatch, openGreeting, sheetOpen } from './ui.js';
 
 import { OffersScreen, HomeScreen, mountGeoRefresh } from './screens/home.js';
 import { CategoriesScreen } from './screens/categories.js';
@@ -168,6 +169,39 @@ function catchUp() {
   mountGeoRefresh();
 }
 
+/* ---------------- the greeting ---------------------------------------
+ * One card at the first launch inside its own dates, once per device.
+ *
+ * ⚠️ IT RUNS AFTER `render()`, NOT INSIDE `catchUp()`, and this is the one
+ * place this batch departs from its own file. `render()` calls
+ * `closeSheet()` as its first act — on the boot paint as much as on any
+ * navigation — so a card opened before it would be wiped before anybody
+ * saw it. Measured, not reasoned about. The appearance is already settled
+ * by then (`applyTheme` and `applyFontScale` ran in `catchUp`), which is
+ * what the file's «directly after applyTheme» was protecting.
+ *
+ * ⚠️ And it is given the route the app is ABOUT to show rather than
+ * reading `location.hash` for itself: at boot the hash may still be empty
+ * and `firstRoute()` is the only thing that knows where the app is going.
+ */
+const NO_GREET = /^#\/auth\//;
+function greetIfDue(route) {
+  try {
+    /* A sign-up stopped one step from finished resumes on the code
+       screen; a card over it costs somebody a step they were about to
+       finish. */
+    if (NO_GREET.test(route || '')) return;
+    /* ⚠️ Never two things in one launch. The greeting is not cancelled
+       when something else is standing there — it is POSTPONED, and it
+       comes back on the next launch, because it ends by a date and
+       nothing replaces it. */
+    if (sheetOpen()) return;
+    const g = liveGreeting();
+    if (!g) return;
+    openGreeting(g, () => markGreetingSeen(g.id));
+  } catch (e) { /* a broken greeting must never stop the app opening */ }
+}
+
 /**
  * A sign-up that got as far as the code screen resumes there. Closing the
  * app one step from finished and being dropped back at an empty form is
@@ -180,19 +214,18 @@ function firstRoute() {
   return '#/home';
 }
 
-window.addEventListener('DOMContentLoaded', () => {
+function boot() {
   setLang(state.lang || 'ar');
   catchUp();
-  location.hash = firstRoute();
+  const route = firstRoute();
+  location.hash = route;
   render();
-});
+  greetIfDue(route);
+}
+
+window.addEventListener('DOMContentLoaded', boot);
 
 // If DOM is already parsed (module executes after parsing), render immediately.
-if (document.readyState !== 'loading') {
-  setLang(state.lang || 'ar');
-  catchUp();
-  location.hash = firstRoute();
-  render();
-}
+if (document.readyState !== 'loading') boot();
 
 export { render, renderHeader };

@@ -7,7 +7,7 @@ ARABNA · عربنا — a mobile-first web app for the Arab community in the U.
 **business directory + marketplace + events + magazine**, Arabic-first with a full English toggle.
 ("Classifieds / الإعلانات الشخصية" is now "Marketplace / السوق" — the old `#/classifieds`
 routes still resolve so shared links keep working.)
-Current version: **V.06.9 (prototype)**. Owner: Rai Elby (@dbprime). Deploys to Vercel (team DB Prime).
+Current version: **V.07.0 (prototype)**. Owner: Rai Elby (@dbprime). Deploys to Vercel (team DB Prime).
 
 ## Hard rules (from the product brief)
 1. **One repository, one Vercel project.** No duplicates, no stray preview projects.
@@ -38,7 +38,7 @@ js/prayer.js          the prayer-time arithmetic — no API, no library
 js/feasts.js          Easter (both), the movable feasts, and the estimated Hijri dates
 js/synonyms.js        the search dictionary — expands the QUERY, never the data
 tools/synonyms.test.mjs  runs all 984 words against the real listings
-tools/e2e/               the Playwright suites, v3–v27, plus run.sh and the i18n check
+tools/e2e/               the Playwright suites, v3–v50, plus run.sh and the i18n check
 tools/build_single.py    generates index-single-file.html from the sources
 js/ui.js              toast / sheet / drawer / header / nav primitives
 js/icons.js           inline SVG icons
@@ -574,8 +574,11 @@ number that is not their build's, and the report cannot be placed.
 ## Testing: what is run, and when
 
 There are three gates, and **the session goes into the work, not into the
-tests**. The whole set is 37 suites × 2 builds and takes about twenty
-minutes; running it after every edit eats the session and leaves the work
+tests**. ⚠️ **The whole set is 48 suites × 2 builds and takes about fifty
+minutes** — the figure here read «37 suites, about twenty minutes» for
+eleven batches while the section below it already said fifty, and a file
+that contradicts itself is a file nobody can plan a session from.
+Running it after every edit eats the session and leaves the work
 unfinished — four calls is an hour and a half of testing before a line is
 written. And more parallelism does not help: the machine has two cores and
 `run.sh` already has both busy with the two builds, so the way out is
@@ -585,14 +588,14 @@ written. And more parallelism does not help: the machine has two cores and
 |---|---|---|
 | **after every change** | `tools/audit/quick.sh` | **~100s** — the static pass and all 41 screens in both languages |
 | **while working on one area** | `SUITES="33 37" tools/e2e/run.sh` | seconds to a minute — only what your change touches |
-| **once, at the end of a session** | `tools/audit/daily.sh` | **~20 min** — the second build, the four roles, the admin panel, everything |
+| **once, at the end of a GROUP** | `tools/audit/daily.sh` | **~50 min** — the second build, the four roles, the admin panel, everything |
 
 `quick.sh` is `index.html` only, on purpose: the single-file build comes
 from the same source, and a fault in it alone is rare and of a known kind
 (`esc()` and CSP), which `daily.sh` catches at the end. **Doubling the gate's
 time for a rare case removes the point of having a gate.** What it does not
 check: the second build · the four roles · the admin panel · the calendar ·
-the deep cases in the other thirty-six suites.
+the deep cases in the other forty-seven suites.
 
 **Which suites touch what**, for the middle row:
 
@@ -603,7 +606,7 @@ prayer and mass              read each file's own header — it says what it cov
 ```
 
 **If you do not know which one covers your change, run three, not
-thirty-seven** — and the full set at the end catches what you missed.
+forty-eight** — and the full set at the end catches what you missed.
 
 ### The full net runs once per GROUP, and the closing file says so at its head
 Rai's decision of 28 August: the full net is about fifty minutes, and
@@ -684,7 +687,7 @@ tools/audit/quick.sh               # the fast gate — ~100 seconds
 tools/audit/daily.sh               # everything, once at the end — ~20 minutes
 python3 tools/build_single.py > index-single-file.html
 ```
-1. `tools/e2e/` holds every suite, v3 to v39, one per batch, and `run.sh`
+1. `tools/e2e/` holds every suite, v3 to v50, one per batch, and `run.sh`
    runs all of them against **both** `index.html` and the generated
    `index-single-file.html`. A change is not finished until both are green.
 2. Check **both** languages (the AR/EN button in the header) and **both**
@@ -5811,6 +5814,130 @@ guessed at**, and each carries a comment naming its reversal.
 `v21 · 4.7` and three of `v34`'s. A green that asserts an empty list is
 worse than a red one, because it is trusted; both now fail on an empty
 list by construction.
+
+## V.07.0 — one tool for every occasion, and the date is the local one
+
+⚠️ **This file CLOSES its group.** The group is `330` then `335`, and this
+is the second — so the full net ran on both builds at the end of it, which
+is Rai's rule of 28 August and the head-of-file rule of the 29th.
+
+### It is a greeting, not «the Eid card»
+Rai asked for a button that puts a card in front of whoever opens the app,
+between two dates, «for any greeting». **So no occasion is named anywhere
+in the code, and the suite asserts that too** — the moment a label says
+«العيد», the Hijri new year needs a second tool, and Easter a third.
+
+**Measured before a line was written: a search of `js/` for any greeting
+returned zero.** No key, no screen, no text. The whole thing is new.
+
+```js
+greetings:     [ { id, title, body, from, to, cta, off } ]   // the panel's work
+seenGreetings: [ 'g1' ]                                      // this device's trace
+```
+
+- ⚠️ **The two do not live in the same place.** `greetings` joins the
+  operator's keys in `KEEPS_ON_SIGN_OUT`; `seenGreetings` does not, and is
+  **not in `exportMyData`** — which needed no code, because that function
+  names what it includes rather than what it excludes. **What a phone has
+  already displayed is not a fact about the person holding it.**
+- **Six rules, all in `store.js`**: once per device · the end date is
+  binding, so nothing shows after `to` even to somebody who never saw it ·
+  one live at a time, refused at the door · never two things in one launch ·
+  no HTML in the text · previewed before it is published.
+
+### The card cannot live in `#sheet`, and this was measured
+The file asked for it to open inside `catchUp()`, before `render()`.
+**`render()` calls `closeSheet()` as its very first act** — on the boot
+paint as much as on any navigation — so the card would have been wiped
+before anybody saw it. Proven by opening a sheet exactly where `catchUp()`
+stands: present, then gone by the first paint.
+
+- **It has its own root, `#greet`.** That also makes «is a sheet open» a
+  clean question instead of the card having to know about itself.
+- **It runs after `render()`, and is given the route the app is ABOUT to
+  show** rather than reading `location.hash`: at boot the hash may still be
+  empty and `firstRoute()` is the only thing that knows. The two boot paths
+  became one `boot()` so there is one sequence and not two copies.
+- ⚠️ **It is postponed, never cancelled.** If something else is standing
+  there the greeting waits for the next launch — it ends by a date and
+  nothing replaces it, so skipping it once costs nothing and skipping it
+  for good costs the whole occasion.
+- **And it does not open over the code screen.** `firstRoute()` returns
+  `#/auth/email` for a sign-up stopped one step from finished, and a card
+  over that costs somebody a step they were about to complete.
+- **A visitor sees it exactly as a member does.** It is not an account
+  feature.
+
+### The day key is local, and `toISOString()` is the fault it avoids
+That call returns UTC. A reader in Houston opening the app at **19:00 on
+22 March reads 23 March there** — so a greeting whose last day is the 22nd
+**vanishes five hours early**, and one starting on the 23rd appears five
+hours before its day.
+
+```
+todayKey(ms)              2027-03-22      ← the local date
+new Date(ms).toISOString()  2027-03-23      ← what the naive version says
+```
+
+- The comparison is then a **string** compare, which is correct because
+  `YYYY-MM-DD` sorts in date order — and it is what keeps the whole
+  question out of timezone arithmetic rather than solving it there.
+- It reads **`now()` and not `Date.now()`**, so the panel's test clock
+  winds the greetings forward with everything else that is dated.
+
+### The card: a frame, type, and the mark
+```
+card 16.2rem · radius 22px · --surface · border --gold-wash-3
+frame inset .5rem · radius 16px · 1px --gold-wash-3
+title 1.42rem / 600 / 1.55   ·   body .79rem / 1.85 / --text-2
+button full width · --gold on --on-gold
+```
+Measured at 390px: **275px**, which is 16.2rem at the app's 17px root.
+
+- ⚠️ **No ornament, no ribbon, no medal** — and whoever adds one later is
+  adding it to a design chosen for having none.
+- **The name is the drawing, never the interface font.** The mark is what
+  separates a card from عربنا from a card from any app. **No new image
+  file**: `logoSrc('wide')` is the lockup already in the repository in both
+  themes, which is what `080` had asked to be re-cut before those files
+  existed.
+- ⚠️ **`data-logo="wide"` is not decoration**: `applyTheme` rewrites the
+  `src` of every image carrying it, so flipping the theme with the card
+  open swaps this one too. Measured on both builds — and asserted as
+  **different bytes**, not a filename, because the single-file build inlines
+  every image as a data URI.
+
+### The panel: stop is a switch, and copy is a minute's work
+- ⚠️ **«نسخ» is not decoration.** Last year's wording is this year's
+  wording and the difference is two dates, so next season's greeting is a
+  minute's work rather than a rewrite.
+- ⚠️ **Delete for what has not begun, stop for what has.** Deleting a live
+  greeting throws its text away for nothing, and a typo everybody is
+  seeing has to stop **now**, not on the day its window ends.
+- ⚠️ **Stop/start is a SWITCH, not a button with a glyph.** The panel
+  already says on/off that way, and there is no pause mark in `icons.js` —
+  borrowing `x` for it would make the close mark mean two things, which is
+  the collision `xMark` was renamed to avoid in V.06.1. **`copy` is a new
+  icon** because `file` reads as «open», which is `eye`.
+- **Every refusal under its own field** (`field-err`, from `310`), and the
+  clash **names the greeting it collides with** — «تتقاطع مع أخرى» leaves
+  the operator hunting a list for which one.
+- ⚠️ **The preview is the real card**, drawn by the same function the
+  launch draws: this is the one screen everybody sees exactly once, and
+  there is no correcting it afterwards.
+- Add, edit, delete, stop and start all leave a line in `adminLog` — and
+  **the line is written before `save()`**, or it never reaches the disk.
+
+### `test_v50` — 38 assertions, and both teeth proven
+```
+remove the seenGreetings condition   → 1.7 and 1.8 red
+remove esc() from the card           → 6.2, 6.3 and 11.1 red (CSP logs the refusal)
+```
+⚠️ **And one of the failures was the harness, caught by measuring rather
+than by reading:** `addInitScript` runs before **every** navigation, so
+seeding unconditionally rewrote `seenGreetings` back to empty on the very
+reload item 1.7 depends on — the suite would have reported the app failing
+to remember while the harness was erasing the memory. It seeds once now.
 
 ## Known open items
 - **The header image is still far larger than its box.** V.04.7 replaced
