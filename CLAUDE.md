@@ -616,7 +616,7 @@ number that is not their build's, and the report cannot be placed.
 ## Testing: what is run, and when
 
 There are three gates, and **the session goes into the work, not into the
-tests**. ⚠️ **The whole set is 48 suites × 2 builds and takes about fifty
+tests**. ⚠️ **The whole set is 49 suites × 2 builds and takes about fifty
 minutes** — the figure here read «37 suites, about twenty minutes» for
 eleven batches while the section below it already said fifty, and a file
 that contradicts itself is a file nobody can plan a session from.
@@ -637,7 +637,7 @@ from the same source, and a fault in it alone is rare and of a known kind
 (`esc()` and CSP), which `daily.sh` catches at the end. **Doubling the gate's
 time for a rare case removes the point of having a gate.** What it does not
 check: the second build · the four roles · the admin panel · the calendar ·
-the deep cases in the other forty-seven suites.
+the deep cases in the other forty-eight suites.
 
 **Which suites touch what**, for the middle row:
 
@@ -648,7 +648,7 @@ prayer and mass              read each file's own header — it says what it cov
 ```
 
 **If you do not know which one covers your change, run three, not
-forty-eight** — and the full set at the end catches what you missed.
+forty-nine** — and the full set at the end catches what you missed.
 
 ### `main` IS PRODUCTION — so nothing reaches it before the net is green
 Rai's rule of 29 August, and it exists because two true things were being
