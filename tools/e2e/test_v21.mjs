@@ -179,15 +179,31 @@ ok('4.3 …and they sit above the ordinary results', spon.aboveResults);
 await go(page, '#/directory');
 /* ⚠️ And the directory's own promise, which replaced the band: the money
    still buys the position and the row still says so. */
-const dir = await page.evaluate(() => {
-  const rows = [...document.querySelectorAll('#dirList .list-row')].slice(0, 3);
+/* ⚠️ CHANGED in V.07.4 (`337`), and it is that batch's decision: the sold
+   band is bounded at `AD_SLOTS.dirTop` rows. It used to read the first
+   THREE rows and demand every one of them be labelled, which was right
+   while every subscriber was lifted; with the band bounded to two, the
+   third row is a free listing and must NOT carry the mark.
+   ⚠️ The promise underneath is unchanged and is what is measured now: the
+   money still buys the position, the rows still say so, and the band ends
+   where it says it ends. */
+const dir = await page.evaluate(async () => {
+  const D = await import('/js/data.js');
+  const rows = [...document.querySelectorAll('#dirList .list-row[data-route^="#/directory/"]')];
   const routes = [...document.querySelectorAll('#dirList [data-route]')].map(e => e.dataset.route);
+  const isAd = r => /إعلان مموّل|Sponsored/.test(r.textContent);
+  const n = rows.filter(isAd).length;
   return { band: !!document.querySelector('#sponRows'),
-           marked: rows.length > 0 && rows.every(r => /إعلان مموّل|Sponsored/.test(r.textContent)),
+           n, slots: D.AD_SLOTS.dirTop,
+           leads: n > 0 && rows.slice(0, n).every(isAd),
+           bounded: n <= D.AD_SLOTS.dirTop,
            dupes: routes.length - new Set(routes).size };
 });
 ok('4.1b the directory has no band any more', !dir.band);
-ok('4.1c …the subscribers lead the results and are labelled there', dir.marked);
+ok('4.1c …the sold rows lead the results and are labelled there', dir.leads,
+   dir.n + ' marked');
+ok('4.1c2 …and the band stops at the constant', dir.bounded,
+   dir.n + ' / ' + dir.slots);
 ok('4.1d …and no shop is on the screen twice', dir.dupes === 0, String(dir.dupes));
 /* CHANGED with 4.1: these two read `spon.ids` — which are the
    MARKETPLACE's band rows now — against the directory's list, which would
@@ -299,9 +315,19 @@ const dirFresh = await page.evaluate(() => [...document.querySelectorAll('#dirLi
 ok('5.3 the directory\u2019s paid rows come back in the very same order',
    dirBefore.length > 0 && JSON.stringify(dirBefore) === JSON.stringify(dirAfter),
    dirBefore.join(',') + ' vs ' + dirAfter.join(','));
-ok('5.4 \u2026and a fresh visit does not reshuffle them either',
-   JSON.stringify(dirFresh) === JSON.stringify(dirBefore),
-   dirFresh.join(','));
+/* ⚠️ REVERSED in V.07.4 (`337`), deliberately and by Rai's decision. This
+   asserted that a fresh visit gives the SAME rows — true while the order
+   was pure arithmetic and every subscriber was lifted. `337` bounds the
+   band to two rows and fills them BY ROTATION, precisely so that ten
+   subscribers are not eight people paying to be invisible. So a fresh
+   visit giving the same two would now be the fault, not the promise.
+   ⚠️ What must still hold, and is asserted instead: the rows do not move
+   WITHIN one visit and Back brings the same two — that is `5.3` above,
+   untouched — while a new visit may hand them on. Both halves are
+   measured in `test_v52` over six visits. */
+ok('5.4 \u2026and a fresh visit may hand them to the next advertiser',
+   dirFresh.length === dirBefore.length,
+   dirBefore.join(',') + ' -> ' + dirFresh.join(','));
 
 /* ============ 6 — the rotation is even, not merely random ============ */
 console.log('--- fairness ---');
