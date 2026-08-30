@@ -6578,6 +6578,32 @@ browser caching the worker itself, **and a cached worker means the update
 never arrives, with no way to tell why.** The year-long `immutable` on
 `assets/` is right for them and wrong for it.
 
+⚠️ **And that entry broke every preview build for two commits, because I
+wrote the sentence above INTO the file as a `"//"` key.** `vercel.json` is
+validated against a schema before anything is built, and the schema refuses
+an unknown property:
+
+```
+The `vercel.json` schema validation failed with the following message:
+`headers[0]` should NOT have additional property `//`
+```
+
+**There were no build logs at all** — the deployment failed before the build
+started — which is the signature of a configuration error rather than a code
+one, and it is how this was found.
+
+> **THE RULE: `vercel.json` is not a place to explain anything.** JSON has
+> no comments, and the `"//"` convention that other tools tolerate is
+> rejected here. The reason a header exists belongs in `CLAUDE.md` — this
+> paragraph — and in the commit message; **never in the file itself.**
+
+⚠️ **Nothing reached production.** The branch is what Vercel previews, and
+`main` stood at the commit before it, deployed and READY the whole time —
+which is the deploy rule working, not luck. And the net cannot catch this:
+`test_v53 · 5.2` parses `vercel.json` and asserts the header, and an extra
+key parses perfectly well. **It is Vercel's own schema that says no, and
+the only place that answer appears is a deployment's `errorMessage`.**
+
 ### `test_v53` — 20 assertions, and both teeth proven
 ```
 delete a module from the generated list → 1.1 red

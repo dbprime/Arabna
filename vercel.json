@@ -4,7 +4,6 @@
   "trailingSlash": false,
   "headers": [
     {
-      "//": "⚠️ The worker itself must never be cached. Nothing stopped the browser from caching sw.js — and a cached worker means the update NEVER ARRIVES, with no way to tell why. The year-long `immutable` below is right for assets/ and wrong for it.",
       "source": "/sw.js",
       "headers": [{ "key": "Cache-Control", "value": "no-cache" }]
     },
