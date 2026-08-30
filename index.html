@@ -78,6 +78,11 @@
     <header id="appHeader" class="app-header"></header>
     <main id="app" class="app-main"></main>
     <nav id="bottomNav" class="bottom-nav"></nav>
+    <!-- ⚠️ «أضِفه إلى شاشتك» sits ABOVE the bar and inside the phone, not in
+         the page flow: Home's fold is measured and sold — the paid slider
+         at 393px, «مميّز هذا الأسبوع» at 695 — and a strip in the flow
+         would push both down for one line that is shown once. -->
+    <div id="installBar" class="install-bar" hidden></div>
   </div>
 
   <div id="drawer" class="drawer-root" aria-hidden="true"></div>

@@ -142,6 +142,14 @@ const DEFAULTS = {
   adminLog: [],              // { at, bizId, field, from, to } — the panel's hand, never the owner's
   receipts: [],              // every amount taken, card or cash; survives deleteAccount
   mapsApp: null,             // 'google' · 'apple' · 'waze' · null = ask each time
+  /* «أضِفه إلى شاشتك» — THIS DEVICE'S OWN TRACE, never the account's.
+     `visits` counts launches, because the invite is not shown on the
+     first one: somebody who has just arrived does not want to install
+     anything yet. `invited` is set the moment it is displayed, so it is
+     shown ONCE and afterwards only found where it permanently lives —
+     a line that returns on every visit reads as an advertisement, gets
+     closed unread, and the app is disliked along with it. */
+  install: { visits: 0, invited: false, dismissed: false },
 };
 
 /* ⚠️ A DEEP COPY, and the shallow one was the fault. `Object.assign({}, …)`
@@ -3433,7 +3441,7 @@ export function confirmPhone(phone) {
 const KEEPS_ON_SIGN_OUT = new Set([
   // the device's own — 195 established these are not account property
   'lang', 'theme', 'fontScale', 'location', 'geo', 'geoAsked', 'geoDenied',
-  'geoGranted', 'area', 'mapsApp',
+  'geoGranted', 'area', 'mapsApp', 'install',
   // the admin panel's, and the operator's: not a reader's to lose
   'adminAuth', 'adminLog', 'businessEdits', 'extraArticles', 'extraEvents',
   'hiddenEvents', 'eventEdits', 'bizPhotos', 'bizVerify', 'mergedBusinesses',
@@ -4678,6 +4686,54 @@ export const SUPPORT_EMAIL = 'support@arabna.app';
    stores ask for. Put a working number in this one line and it reappears
    everywhere by itself; leave it empty and no dead link is printed. */
 export const SUPPORT_PHONE = '';
+
+/* ---------------- the store links ----------------
+ * ⚠️ SUPPORT_PHONE's pattern, to the letter, and not a second one
+ * invented beside it: empty until there is a real link, and empty means
+ * fall back to the web road. The day ARABNA is published, the owner puts
+ * the address in one of these two lines and the app changes by itself —
+ * the invite, the screen and the button all read them.
+ *
+ * ⚠️ AND NO STORE LINK IS WRITTEN BEFORE IT EXISTS. A button that opens
+ * a page the store does not have is worse than no button: the reader
+ * concludes the app is not really there. */
+export const PLAY_URL = '';
+export const APPSTORE_URL = '';
+
+/* ---------------- when the invite is due ----------------
+ * ⚠️ ONE PLACE DECIDES, so the strip and the permanent screen can never
+ * disagree about whether the reader has already been asked. */
+
+/** one launch. Called once at boot, before anything is drawn. */
+export function noteVisit() {
+  const i = state.install || (state.install = { visits: 0, invited: false, dismissed: false });
+  i.visits = (i.visits || 0) + 1;
+  save();
+  return i.visits;
+}
+export function installVisits() { return (state.install && state.install.visits) || 0; }
+export function installInvited() { return !!(state.install && state.install.invited); }
+export function installDismissed() { return !!(state.install && state.install.dismissed); }
+
+/* ⚠️ NOT ON THE FIRST VISIT. Somebody who arrived a minute ago has not
+   decided they want this app on their phone, and asking then is what
+   makes an invite read as an advertisement. The second launch, or the
+   moment they open a shop's page — which is somebody using the app for
+   what it is for. */
+export function installInviteDue(opened) {
+  if (installInvited()) return false;
+  return installVisits() >= 2 || !!opened;
+}
+/** shown once — set the moment it is drawn, not when it is answered */
+export function markInstallInvited() {
+  const i = state.install || (state.install = { visits: 0, invited: false, dismissed: false });
+  i.invited = true; save();
+}
+/** ⚠️ and a refusal is kept: whoever closed it is never shown it again */
+export function dismissInstall() {
+  const i = state.install || (state.install = { visits: 0, invited: false, dismissed: false });
+  i.invited = true; i.dismissed = true; save();
+}
 
 export function personKey(x) {
   if (!x) return '';

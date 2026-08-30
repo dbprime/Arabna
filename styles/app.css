@@ -983,6 +983,48 @@ html[dir="rtl"] .drawer-panel { --drawer-off: 100%; }
 .greet-root.open { pointer-events: auto; }
 .greet-scrim { position: absolute; inset: 0; background: var(--overlay); opacity: 0; transition: opacity .28s var(--ease); }
 .greet-root.open .greet-scrim { opacity: 1; }
+/* ---- «أضِفه إلى شاشتك» — one line, once, and it never covers the page ----
+   ⚠️ Every colour is a token and the ground is `--surface`, which follows
+   the theme, so the ink follows it too. `--muted` is deliberately NOT
+   used here: it is banned on tinted grounds by measurement, and this
+   strip sits on the card colour. */
+.install-bar {
+  position: absolute; inset-inline: 8px;
+  inset-block-end: calc(var(--nav-h) + 8px);
+  z-index: 120;
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 12px;
+  background: var(--surface);
+  border: 1px solid var(--gold-wash-3);
+  border-radius: 16px;
+  box-shadow: var(--shadow-2);
+}
+.install-bar .ib-ico { flex: 0 0 auto; color: var(--gold); display: flex; }
+.install-bar .ib-txt {
+  flex: 1 1 auto; min-width: 0;
+  font-size: .8125rem; line-height: 1.35; color: var(--text);
+}
+.install-bar .ib-go {
+  flex: 0 0 auto; padding: 7px 12px; border-radius: 999px;
+  background: var(--gold); color: var(--on-gold);
+  font-size: .8125rem; font-weight: 700; border: 0;
+}
+/* ⚠️ 44px of touch, and the glyph is smaller than the box it lives in:
+   a close button somebody misses is a strip they cannot get rid of. */
+.install-bar .ib-x {
+  flex: 0 0 auto; width: 32px; height: 32px; border: 0; background: none;
+  color: var(--text-2); display: flex; align-items: center; justify-content: center;
+}
+.inst-steps { counter-reset: instep; }
+.inst-step { display: flex; gap: 10px; align-items: flex-start; padding: 10px 0; }
+.inst-step .is-n {
+  flex: 0 0 26px; height: 26px; border-radius: 999px;
+  background: var(--gold-wash-2); color: var(--gold-bright);
+  display: flex; align-items: center; justify-content: center;
+  font-size: .8125rem; font-weight: 700;
+}
+.inst-step .is-t { flex: 1 1 auto; font-size: .9375rem; line-height: 1.5; color: var(--text); }
+
 .greet-card {
   position: relative;
   width: 16.2rem; max-width: 100%;

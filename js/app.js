@@ -4,11 +4,11 @@
 
 import { setLang, bothPacks } from './i18n.js';
 import { state, registerStrings, runReminders, runSubscriptionCycle,
-         liveGreeting, markGreetingSeen } from './store.js';
+         liveGreeting, markGreetingSeen, noteVisit } from './store.js';
 import { $, renderHeader, renderNav, hideNav, closeSheet, hideDrawer, drawerOwnsEntry, closeDropdown,
          mountScrollMemory, restoreScroll, historyKey, markShown, startClock, mountAdShare,
          applyTheme, applyFontScale, mountThemeWatch, openGreeting, sheetOpen,
-         mountServiceWorker } from './ui.js';
+         mountServiceWorker, mountInstallInvite, hideInstallInvite } from './ui.js';
 
 import { OffersScreen, HomeScreen, mountGeoRefresh } from './screens/home.js';
 import { CategoriesScreen } from './screens/categories.js';
@@ -20,12 +20,13 @@ import { MarketplaceScreen, ListingDetailScreen, PostScreen, BoostScreen, Messag
 import { NewcomerScreen, MagazineScreen, ArticleScreen } from './screens/magazine.js';
 import { ReceiptsScreen, ReceiptScreen } from './screens/receipts.js';
 import { ProfileScreen, EditProfileScreen, ChangePasswordScreen, SavedScreen, MyAdsScreen, MyRequestsScreen,
-         MyBusinessScreen, MyReviewsScreen, SettingsScreen, NotificationsScreen,
+         MyBusinessScreen, MyReviewsScreen, SettingsScreen, NotificationsScreen, InstallScreen,
          HelpScreen, AboutScreen, PrivacyScreen, TermsScreen, BlockedScreen } from './screens/profile.js';
 import { SignUpScreen, SignInScreen, EmailVerifyScreen, PhoneVerifyScreen, ForgotScreen } from './screens/auth.js';
 import { AdvertiseScreen } from './screens/advertise.js';
 import { PrayerScreen } from './screens/prayer.js';
 import { MassScreen } from './screens/mass.js';
+import { mountInstallPrompt } from './install.js';
 
 /* One module, fetched once and remembered. The panel repaints itself by
    re-entering the route, so this must not re-fetch on every paint. */
@@ -92,6 +93,7 @@ const ROUTES = [
   { re: /^#\/my-requests$/,       screen: MyRequestsScreen,  nav: 'profile' },
   { re: /^#\/my-business$/,       screen: MyBusinessScreen,  nav: 'profile' },
   { re: /^#\/settings$/,          screen: SettingsScreen,    nav: 'profile' },
+  { re: /^#\/install$/,           screen: InstallScreen,     nav: 'profile' },
   { re: /^#\/blocked$/,           screen: BlockedScreen,     nav: 'profile' },
   { re: /^#\/notifications$/,     screen: NotificationsScreen, nav: 'home' },
   { re: /^#\/help$/,              screen: HelpScreen,        nav: 'profile' },
@@ -150,6 +152,9 @@ function render() {
   const key = historyKey();
   markShown(key);
   if (!ALWAYS_TOP.test(hash)) restoreScroll(key);
+  /* ⚠️ Not on the boot paint: `boot()` runs the greeting first and calls
+     this itself afterwards, so a card and a strip never arrive together. */
+  if (booted) inviteIfDue(hash);
 }
 
 window.addEventListener('hashchange', render);
@@ -171,6 +176,12 @@ function catchUp() {
   /* ⚠️ Inside `catchUp`'s own try, and last: a service worker that fails
      to register must never stop the app opening. */
   mountServiceWorker();
+  /* ⚠️ ONE LAUNCH, COUNTED ONCE, and before anything is drawn — the
+     invite is deliberately not shown on the first one. */
+  try { noteVisit(); } catch (e) { /* never block boot */ }
+  /* Chrome fires `beforeinstallprompt` early and only once, so the
+     listener has to be standing before the first screen is painted. */
+  mountInstallPrompt();
 }
 
 /* ---------------- the greeting ---------------------------------------
@@ -188,6 +199,25 @@ function catchUp() {
  * reading `location.hash` for itself: at boot the hash may still be empty
  * and `firstRoute()` is the only thing that knows where the app is going.
  */
+/* ⚠️ NOT ON AN AUTH SCREEN and not on its own page: somebody one field
+   from finishing a sign-up does not need a second thing to read, and an
+   invitation printed on top of the page it opens is the app talking over
+   itself. */
+const NO_INVITE = /^#\/(auth|install)/;
+const BIZ_PAGE = /^#\/directory\/[^/]+$/;
+function inviteIfDue(route) {
+  try {
+    const hash = (route || location.hash || '#/home').split('?')[0];
+    if (NO_INVITE.test(hash)) { hideInstallInvite(); return; }
+    /* ⚠️ A greeting card is standing: never two things in one launch, and
+       the greeting is the one that expires by a date. */
+    if (sheetOpen()) return;
+    const greet = $('#greet');
+    if (greet && greet.classList.contains('open')) return;
+    mountInstallInvite(BIZ_PAGE.test(hash));
+  } catch (e) { /* an invite must never stop the app opening */ }
+}
+
 const NO_GREET = /^#\/auth\//;
 function greetIfDue(route) {
   try {
@@ -218,13 +248,29 @@ function firstRoute() {
   return '#/home';
 }
 
+let bootRan = false;
+let booted = false;
 function boot() {
+  /* ⚠️ TWO ENTRY POINTS, ONE BOOT — and it had been running TWICE since
+     the router was written. A module script is deferred: it executes
+     after parsing, so `readyState` is already past 'loading' and the
+     line at the foot of this file calls `boot()` — and then
+     `DOMContentLoaded` fires and calls it again. Everything it did was
+     idempotent, so nothing looked wrong; the launch counter added in
+     `425` is what made it visible, reading 2 on a first visit and
+     spending the invite before anybody had returned. */
+  if (bootRan) return;
+  bootRan = true;
   setLang(state.lang || 'ar');
   catchUp();
   const route = firstRoute();
   location.hash = route;
   render();
   greetIfDue(route);
+  /* after the greeting, and only then: whichever of the two is standing,
+     the reader meets one thing on a launch and not two */
+  inviteIfDue(route);
+  booted = true;
 }
 
 window.addEventListener('DOMContentLoaded', boot);

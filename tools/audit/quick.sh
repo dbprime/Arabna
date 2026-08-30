@@ -19,7 +19,7 @@ echo
 echo "--- static ---"
 node tools/audit/wiring.mjs . ; ST=$?
 echo
-echo "--- the 41 screens, both languages, on index.html ---"
+echo "--- the 42 screens, both languages, on index.html ---"
 BASE="$HOST/index.html" node tools/e2e/test_v37.mjs ; SM=$?
 echo
 echo "=== RESULT-QUICK ==="

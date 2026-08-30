@@ -7,7 +7,7 @@ ARABNA · عربنا — a mobile-first web app for the Arab community in the U.
 **business directory + marketplace + events + magazine**, Arabic-first with a full English toggle.
 ("Classifieds / الإعلانات الشخصية" is now "Marketplace / السوق" — the old `#/classifieds`
 routes still resolve so shared links keep working.)
-Current version: **V.07.5 (prototype)**. Owner: Rai Elby (@dbprime). Deploys to Vercel (team DB Prime).
+Current version: **V.07.6 (prototype)**. Owner: Rai Elby (@dbprime). Deploys to Vercel (team DB Prime).
 
 ## Hard rules (from the product brief)
 1. **One repository, one Vercel project.** No duplicates, no stray preview projects.
@@ -630,7 +630,7 @@ written. And more parallelism does not help: the machine has two cores and
 
 | when | what | measured |
 |---|---|---|
-| **after every change** | `tools/audit/quick.sh` | **~100s** — the static pass and all 41 screens in both languages |
+| **after every change** | `tools/audit/quick.sh` | **~100s** — the static pass and all 42 screens in both languages |
 | **while working on one area** | `SUITES="33 37" tools/e2e/run.sh` | seconds to a minute — only what your change touches |
 | **once, at the end of a GROUP** | `tools/audit/daily.sh` | **~50 min** — the second build, the four roles, the admin panel, everything |
 
@@ -6618,6 +6618,125 @@ about the code.**
 **What this batch does NOT do:** the 1,895 KB and 25 requests of the first
 load are another item. ⚠️ **A service worker makes the SECOND visit
 lighter, not the first, and nothing else is claimed.**
+
+## V.07.6 — «أضِفه إلى شاشتك»: an invite that knows where the reader stands
+
+### Why this is not a polish item
+Measured before a line was written: **zero** `beforeinstallprompt`, **zero**
+`display-mode` detection, **zero** text anywhere inviting anybody to add the
+app. The manifest was sound and the installed-app chrome has been built
+since V.01.7 — **so the app accepted being installed and nothing ever told
+the reader to install it.**
+
+⚠️ **And on iOS a web app gets NO notifications until it is on the home
+screen.** In a Safari tab the count is zero however the app is written.
+Most of this community carries an iPhone, so adding the app is not
+decoration — **it is the switch that turns the strongest feature on**, the
+day the alerts land.
+
+### The likeliest way in is the one way that cannot install
+**Facebook and Instagram open links in their own in-app browser, and
+«Add to Home Screen» does not exist there.** The commonest route into this
+app — a tap on a link in a Facebook post — is the single route where
+installing is impossible. ⚠️ **It is the same opponent as the directions
+fault in `342`**, the iOS in-app browser, twice over.
+
+So the screen detects it and says what to do: **«افتحه في Safari أوّلاً»
+with a copy-link button, and NO add-to-home steps at all** — printing steps
+that cannot work there is worse than printing nothing.
+
+### «ثبّته بضغطة» exists on Android and is impossible on iOS
+```
+Android · Chrome    a real button — beforeinstallprompt opens the system dialog
+iOS                 no API exists, and Apple publishes none on purpose
+```
+⚠️ **So a one-tap install button on an iPhone is a button that does nothing
+when pressed, and it is not built.** The request is answered where it can
+be answered and refused where it cannot — **and the community that needs it
+most is the one where it is impossible.** That is said, not worked around:
+what replaces it is the three numbered steps, the sentence «مرِّر للأسفل إن
+لم تجده» on step two (the thing everyone asks about), and the Facebook route
+solved first.
+
+### Six roads, and the screen changes rather than disappearing
+`installMode()` in the new `js/install.js` reads — never guesses:
+
+| what is true | what is offered |
+|---|---|
+| already installed | **nothing at all, not one line** |
+| iPhone · `APPSTORE_URL` set | «نزّله من App Store» |
+| iPhone · in-app browser | «افتحه في Safari أوّلاً» + copy link |
+| iPhone · real browser | the three Safari steps |
+| Android · `PLAY_URL` set | «نزّله من Google Play» |
+| Android · no link | the browser's own install dialog |
+| a desktop | one honest line, and no steps |
+
+⚠️ **It does not vanish the day the store opens — it CHANGES.** The web
+version outlives the store and people keep arriving by link.
+
+- **`PLAY_URL` and `APPSTORE_URL` are `SUPPORT_PHONE`'s pattern to the
+  letter**, beside it in `js/store.js`: **empty until there is a real
+  link**, and empty means fall back to the web road. One line on the day
+  the store opens and the app changes by itself. ⚠️ **No store link is
+  written before it exists** — a button opening a page the store does not
+  have is worse than no button.
+- **The iPad reports itself as a Mac** on iPadOS 13+, so `isIos()` also
+  reads `MacIntel` + touch points. Without it every iPad reader falls
+  through to «no road».
+- **The in-app list is a list of NAMES, not a guess**: each token is one a
+  product publishes in its own user-agent.
+
+### Shown once, and a refusal is kept
+```
+first visit           nothing — somebody who arrived a minute ago is not installing anything
+second launch         one line, once
+or a shop's page      which is somebody using the app for what it is for
+after that            only where it permanently lives
+```
+- **The line is not in Home's flow.** The fold there is measured and sold —
+  the paid slider at 393px — so the strip sits above the bar in its own
+  absolutely-placed root and moves nothing.
+- **Marked shown when it is DRAWN, not when it is answered**: scrolling past
+  it is being asked, and asking twice is the whole thing this avoids.
+- **A greeting card wins the launch.** `boot()` runs the greeting first and
+  calls the invite afterwards, so the reader meets one thing and never two.
+- ⚠️ **The trace is in `KEEPS_ON_SIGN_OUT`** — which phone this is has
+  nothing to do with who is signed in on it (V.04.8's rule).
+
+### Its permanent home is Settings, and that is a deliberate divergence
+The file says «صفحةٌ في حسابي». ⚠️ **`#/profile` for a visitor is a sign-up
+screen**, so the only door there would hide the page from exactly the people
+who need it — whoever has not signed up. It is a row in the **device** block
+of `#/settings`, which V.04.8 opened to everybody for this same reason.
+**Worth Rai's word if he wants it in both.**
+
+### And no promise is sold that is not built
+```
+said today        full screen · opens faster · works with no internet (since 420)
+NOT said          «تنبيهات الأذان» — not built
+```
+⚠️ Somebody who adds the app for an alert that never arrives **has been sold
+a promise nobody kept** — `337` and `415`'s rule. The reason is added the day
+the alerts land. Measured: **21 invite strings, zero naming a notification.**
+
+### ⚠️ And the counter found a fault older than the router's last three fixes
+**`boot()` had been running TWICE, since it was written.** A module script
+is deferred, so by the time it executes `readyState` is already past
+`'loading'` — the line at the foot of `app.js` calls `boot()`, and then
+`DOMContentLoaded` fires and calls it again.
+
+Everything `boot()` did was idempotent, so **nothing ever looked wrong**:
+two renders of the same screen, two `catchUp()`s whose work is one-shot
+keyed. The launch counter is what made it visible — **it read 2 on a first
+visit and spent the invite before anybody had returned.** One entry guard,
+and both entry points stay: whichever fires first owns the boot.
+
+### `test_v54` — 34 assertions, and four the net cannot reach
+⚠️ **Chromium does not emulate `display-mode`** (recorded here since
+V.01.7), it fires no real `beforeinstallprompt`, and there is no share
+sheet. So the share sheet, a real Facebook link on an iPhone, and the
+Android dialog are **checked by hand and written into the closing line.**
+**A test that does not run is said not to run; it is never claimed.**
 
 ## Known open items
 - **The header image is still far larger than its box.** V.04.7 replaced

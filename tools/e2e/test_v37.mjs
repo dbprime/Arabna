@@ -23,7 +23,7 @@ const ROUTES = [
   '#/directory', '#/directory/b1', '#/add-business', '#/claim', '#/my-subscription', '#/receipts',
   '#/subscribe', '#/newcomer', '#/magazine', '#/marketplace', '#/classifieds', '#/post',
   '#/messages', '#/profile', '#/profile/edit', '#/profile/password', '#/saved', '#/my-ads',
-  '#/my-reviews', '#/my-requests', '#/my-business', '#/settings', '#/blocked', '#/notifications', '#/help',
+  '#/my-reviews', '#/my-requests', '#/my-business', '#/settings', '#/install', '#/blocked', '#/notifications', '#/help',
   '#/about', '#/privacy', '#/terms', '#/auth/signup', '#/auth/signin', '#/auth/email',
   '#/auth/phone', '#/auth/forgot', '#/advertise', '#/admin',
 ];
@@ -43,7 +43,7 @@ const KNOWN = [
   /^#\/post$/, /^#\/boost\/.+$/, /^#\/messages$/, /^#\/messages\/.+$/, /^#\/profile$/,
   /^#\/profile\/edit$/, /^#\/profile\/password$/, /^#\/saved$/, /^#\/my-ads$/, /^#\/my-reviews$/,
   /^#\/my-requests$/,
-  /^#\/my-business$/, /^#\/settings$/, /^#\/blocked$/, /^#\/notifications$/, /^#\/help$/,
+  /^#\/my-business$/, /^#\/settings$/, /^#\/install$/, /^#\/blocked$/, /^#\/notifications$/, /^#\/help$/,
   /^#\/about$/, /^#\/privacy$/, /^#\/terms$/, /^#\/auth\/signup$/, /^#\/auth\/signin$/,
   /^#\/auth\/email$/, /^#\/auth\/phone$/, /^#\/auth\/forgot$/, /^#\/advertise(?:\/.+)?$/,
   /^#\/admin$/,

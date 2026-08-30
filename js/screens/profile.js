@@ -2,7 +2,9 @@
 import { t, arCount, L, icon, $, $$, go, renderHeader, toast, wireRoutes, emptyState, confirmSheet,
          openSheet, closeSheet,
          fmtMoney, priceLabel, statusBadgeHtml, stars, logoSrc, shareItem,
-         mapChoices, esc, bizBadgeHtml, avatarHtml, socialRowHtml, fmtPhone } from '../ui.js';
+         mapChoices, esc, bizBadgeHtml, avatarHtml, socialRowHtml, fmtPhone,
+         installStepsHtml, appLink } from '../ui.js';
+import { installMode, promptInstall, canPromptNative, mountInstallPrompt } from '../install.js';
 import { SUBSCRIPTION_PRICE, CATEGORIES, APP_VERSION } from '../data.js';
 import * as S from '../store.js';
 import { catIcon } from './home.js';
@@ -913,6 +915,20 @@ export function SettingsScreen(root) {
         <button class="mini-btn" id="mapsPref">${icon('navigation', 15)}</button>
       </div>
 
+      ${/* ⚠️ THE PERMANENT HOME OF «أضِفه إلى شاشتك», and it is in the DEVICE
+           block on purpose. Adding the app to a home screen is a fact
+           about this phone, not about an account — the V.04.8 rule — and
+           `#/profile` for a visitor is a sign-up screen, so putting the
+           only door there would hide it from exactly the people who need
+           it most: whoever has not signed up yet. Rai's file says «صفحةٌ
+           في حسابي»; this is that screen, reached from the settings a
+           visitor can already open. */''}
+      <div class="dr-group-label">${t('instTitle')}</div>
+      <div class="setting-row">
+        <span class="s-txt"><b>${t('instSettingsRow')}</b><span>${t('instWhy2')}</span></span>
+        <button class="mini-btn" data-route="#/install">${icon(document.documentElement.dir === 'rtl' ? 'chevronL' : 'chevronR', 15)}</button>
+      </div>
+
       ${S.isLoggedIn() ? `
       <div class="dr-group-label">${t('notifPrefs')}</div>
       ${sw('messages', t('notifMessages'), p.messages)}
@@ -1111,6 +1127,57 @@ function sw(key, label, on) {
 }
 
 /* --------------------------- NOTIFICATIONS --------------------------- */
+/* --------------------------- ADD IT TO YOUR SCREEN ---------------------------
+ * ⚠️ NO `memberOnly`, and that is the point. Adding the app to a home
+ * screen is a fact about the phone, not about an account — and whoever
+ * needs it most has not signed up yet.
+ *
+ * ⚠️ AND IT DOES NOT SELL A PROMISE. The reasons printed here are the ones
+ * that are true today: full screen, faster, and — since `420` — the
+ * directory works with no internet. THE ADHAN ALERT IS NOT NAMED, because
+ * it is not built; somebody who adds the app for a notification that never
+ * arrives has been sold a promise nobody kept. The reason is added the day
+ * the alerts land, not before.
+ */
+export function InstallScreen(root) {
+  renderHeader({ simple: true, title: t('instTitle') });
+  /* the browser hands the event over whenever it likes, so the screen
+     repaints itself if it arrives while the reader is standing here */
+  mountInstallPrompt(() => { if (root.isConnected) InstallScreen(root); });
+  const mode = installMode();
+
+  root.innerHTML = `
+    <div class="pad mt-16">
+      ${mode === 'installed' ? '' : `<p class="fs-15" style="line-height:1.6">${t('instLine')}</p>
+      <div class="mt-16">
+        <div class="inst-step"><span class="is-n">${icon('check', 14)}</span><span class="is-t">${t('instWhy1')}</span></div>
+        <div class="inst-step"><span class="is-n">${icon('check', 14)}</span><span class="is-t">${t('instWhy2')}</span></div>
+        <div class="inst-step"><span class="is-n">${icon('check', 14)}</span><span class="is-t">${t('instWhy3')}</span></div>
+      </div>`}
+      <div class="mt-20">${installStepsHtml()}</div>
+      <div style="height:20px"></div>
+    </div>`;
+
+  const goBtn = $('#instGo', root);
+  if (goBtn) goBtn.addEventListener('click', () => {
+    if (!canPromptNative()) return;
+    promptInstall().then(() => InstallScreen(root));
+  });
+  const copy = $('#instCopy', root);
+  /* ⚠️ The promise chain, never a bare try/catch around it: `writeText`
+     returns a promise, so a rejection escapes the catch and the toast
+     fires over an empty clipboard. That is the V.03.7 fault, and it is
+     worst here — the reader pastes nothing into their own browser. */
+  if (copy) copy.addEventListener('click', () => {
+    const link = appLink();
+    const ok = () => toast(t('linkCopied'), 'ok');
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(link).then(ok).catch(() => prompt(t('instCopyLink'), link));
+    } else { prompt(t('instCopyLink'), link); }
+  });
+  wireRoutes(root);
+}
+
 export function NotificationsScreen(root) {
   if (!memberOnly('#/notifications')) return;
   renderHeader({ simple: true, title: t('notifications') });

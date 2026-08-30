@@ -6,6 +6,8 @@ import { icon, iconFilled } from './icons.js';
 import { t, L, arCount, getLang, setLang } from './i18n.js';
 import { FREE_PRICE, APP_VERSION, CAT_HUE, CATEGORIES, SOCIAL } from './data.js';
 import * as S from './store.js';
+import { installMode, canInvite, promptInstall, canPromptNative,
+         mountInstallPrompt, outerBrowser } from './install.js';
 
 export const $ = (sel, root = document) => root.querySelector(sel);
 export const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
@@ -634,6 +636,78 @@ export function mountServiceWorker() {
     });
   }).catch(() => { /* an app that opens is worth more than one that caches */ });
   return true;
+}
+
+/* ---------------- «أضِفه إلى شاشتك» ----------------
+ * ⚠️ ONE LINE, ONCE, AND IT NEVER COVERS THE PAGE. A strip that returns on
+ * every visit is read as an advertisement, closed unread, and the app is
+ * disliked along with it — so it is shown a single time and afterwards
+ * lives only in Settings, where whoever wants it finds it.
+ *
+ * ⚠️ AND IT IS NOT IN HOME'S FLOW. The fold there is measured and sold —
+ * the paid slider at 393px — so the strip sits above the bar in its own
+ * absolutely-placed root and moves nothing.
+ */
+export function mountInstallInvite(opened) {
+  const bar = $('#installBar');
+  if (!bar) return false;
+  /* ⚠️ Never over somebody who already installed it, and never where
+     there is no road to offer: an invitation to install, read inside the
+     installed app, says the app does not know where it is. */
+  if (!canInvite()) return false;
+  if (!S.installInviteDue(opened)) return false;
+
+  bar.innerHTML = `<span class="ib-ico">${icon('plus', 20)}</span>
+    <span class="ib-txt">${t('instLine')}</span>
+    <button class="ib-go" id="ibGo">${t('instHow')}</button>
+    <button class="ib-x" id="ibX" aria-label="${t('instNotNow')}">${icon('x', 18)}</button>`;
+  bar.hidden = false;
+  /* ⚠️ MARKED WHEN IT IS DRAWN, not when it is answered. Somebody who
+     scrolls past it without touching it has been asked, and asking a
+     second time is the thing this whole item exists to avoid. */
+  S.markInstallInvited();
+  $('#ibGo', bar).addEventListener('click', () => { hideInstallInvite(); go('#/install'); });
+  $('#ibX', bar).addEventListener('click', () => { S.dismissInstall(); hideInstallInvite(); });
+  return true;
+}
+export function hideInstallInvite() {
+  const bar = $('#installBar');
+  if (!bar) return;
+  bar.hidden = true; bar.innerHTML = '';
+}
+
+/* the three product names are never translated — V.05.7's rule, and they
+   are what is written on the button the reader is looking for */
+export function installStepsHtml() {
+  const mode = installMode();
+  const b = esc(outerBrowser());
+  if (mode === 'installed') return `<div class="hint">${t('instInstalled')}</div>`;
+  if (mode === 'inapp') {
+    return `<div class="card pad">
+      <b>${t('instInappTitle').replace('{b}', b)}</b>
+      <p class="muted fs-13 mt-8">${t('instInappSub').replace(/\{b\}/g, b)}</p>
+      <button class="btn btn-gold mt-16" id="instCopy">${icon('copy', 18)} ${t('instCopyLink')}</button>
+    </div>`;
+  }
+  if (mode === 'play' || mode === 'appstore') {
+    const url = mode === 'play' ? S.PLAY_URL : S.APPSTORE_URL;
+    const label = mode === 'play' ? t('instBtnPlay') : t('instBtnStore');
+    return `<a class="btn btn-gold" href="${esc(url)}" target="_blank" rel="noopener">${label}</a>`;
+  }
+  if (mode === 'android') {
+    /* a real one-tap install: Chrome hands the page the event and the
+       page opens the system dialog. It exists here and nowhere else. */
+    return `<button class="btn btn-gold" id="instGo"${canPromptNative() ? '' : ' disabled'}>${t('instBtnNative')}</button>`;
+  }
+  if (mode === 'ios') {
+    return `<div class="card pad inst-steps">
+      <b>${t('instIosTitle').replace('{b}', b)}</b>
+      <div class="inst-step"><span class="is-n">1</span><span class="is-t">${t('instIos1')}</span></div>
+      <div class="inst-step"><span class="is-n">2</span><span class="is-t">${t('instIos2')}</span></div>
+      <div class="inst-step"><span class="is-n">3</span><span class="is-t">${t('instIos3')}</span></div>
+    </div>`;
+  }
+  return `<div class="hint">${t('instNoRoad')}</div>`;
 }
 
 /* ---------------- bottom sheet ---------------- */
