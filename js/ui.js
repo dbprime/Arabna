@@ -987,23 +987,20 @@ export function openDrawer() {
     `<button class="dr-item ${accent ? 'dr-accent' : ''}" data-route="${route}">${tile(ico, h)}<span>${label}</span>
       ${badge(count)}</button>`;
 
-  /* ⚠️ AN ALWAYS-OPEN SECTION IS A TITLE, NOT A DISABLED BUTTON. Its rows
-     never fold, so it carries no arrow — and a `<button>` that does
-     nothing stays in the keyboard order and is announced as a control,
-     which is the rule already written for the rows that wait on the
-     server. It is a plain element, and the arrow's 34px of displacement
-     goes with it: an ordinary row's text starts at the same place. */
-  const section = (label, rows, ico, h) => `
-    <div class="dr-group open" data-group="sections">
-      <div class="dr-title">${ico ? tile(ico, h) : ''}<span>${label}</span></div>
-      ${rows}
-    </div>`;
-
   // A group head carries no route: it toggles its own group and nothing else.
   const group = (id, label, rows, ico, h) => `
     <div class="dr-group ${openGroup === id ? 'open' : ''}" data-group="${id}">
+      ${/* ⚠️ NO ARROW ON EITHER HEAD — Rai's decision, and it is taken out of
+           the MARKUP, never hidden with a CSS rule: a stylesheet undoing
+           what the template just asked for is two sources of truth.
+           It sat between the tile and the label and pushed a head's text
+           34px further in than an ordinary row's (294 against 328).
+           ⚠️ AND THE HEAD STAYS A `<button>` WITH `data-toggle` AND
+           `aria-expanded`. It really folds, so it is a real control — it
+           is reached by keyboard and announced as expanded or collapsed
+           exactly as before. What left is a drawing, not a behaviour. */''}
       <button class="dr-item dr-head" data-toggle="${id}" aria-expanded="${openGroup === id}">
-        ${ico ? tile(ico, h) : ''}${icon('chevronD', 20, 'grp-arrow')}<span>${label}</span>
+        ${ico ? tile(ico, h) : ''}<span>${label}</span>
       </button>
       <div class="dr-sub"><div class="dr-sub-inner">${rows}</div></div>
     </div>`;
@@ -1127,15 +1124,16 @@ export function openDrawer() {
            realestate 202 · lawyers 232 · sweets 348 · auto 128 · worship 266 */''}
       ${item('settings', t('settings'), '#/settings', 0, false, 232)}
       ${member ? item('bell', t('notifications'), '#/notifications', unread, false, 348) : ''}
-      ${/* ⚠️ «تصنيفات عربنا» NO LONGER FOLDS — Rai's decision. Its contents
-           are fixed and are what the drawer is for, so it is open always
-           and carries no arrow. «المساعدة والقوانين» keeps folding, and
-           its arrow moves to the end of the row instead: five legal rows
-           read once in a lifetime, and opening them always adds a length
-           nobody reads. The difference between the two heads becomes
-           honest — one is always open so it has no arrow, one folds so
-           its arrow sits where it displaces nothing. */''}
-      ${section(t('grpSections'), sections, 'grid', 128)}
+      ${/* ⚠️ IT FOLDS, and starts folded. `345` made it a section title that
+           was always open — that was a misreading of Rai's words («take
+           the arrow off, and when somebody taps categories it opens»), and
+           it cost the one rule the drawer had kept through every batch:
+           measured, the panel went to 1049/844 for a visitor with nothing
+           touched. The arrow was the whole complaint and the arrow is
+           gone; the folding never was.
+           ⚠️ And the two heads are identical in form and behaviour —
+           «ما بيصير اتنين بيعملوا نفس الإشي وشكلهم مختلف». */''}
+      ${group('sections', t('grpSections'), sections, 'grid', 128)}
       ${/* ⚠️ 'gold', NOT A HUE. This is the one paid row in the drawer, and
            the gold is what says so. Giving it a hue out of the twenty-one
            would have made it one row among many — which is the exact thing
@@ -1153,16 +1151,10 @@ export function openDrawer() {
   $$('#drawer [data-toggle]').forEach(btn => btn.addEventListener('click', () => {
     const id = btn.dataset.toggle;
     openGroup = openGroup === id ? null : id;
-    /* ⚠️ FOLDABLE GROUPS ONLY. «تصنيفات عربنا» is a `.dr-group open` with
-       no `.dr-head` in it any more, so the old sweep would have stripped
-       its `open` class the moment «المساعدة» was tapped — and then thrown
-       on `null.setAttribute`, taking the drawer down with it. */
     $$('#drawer .dr-group').forEach(g => {
-      const head = g.querySelector('.dr-head');
-      if (!head) return;
       const on = g.dataset.group === openGroup;
       g.classList.toggle('open', on);
-      head.setAttribute('aria-expanded', String(on));
+      g.querySelector('.dr-head').setAttribute('aria-expanded', String(on));
     });
   }));
 

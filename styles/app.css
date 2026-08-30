@@ -1367,25 +1367,12 @@ input[inputmode="tel"], input[type="email"], input[inputmode="decimal"], #zipIn 
 .drawer-panel > .dr-item,
 .drawer-panel > .dr-group { border-block-end: 1px solid var(--line-soft); }
 .dr-head { width: 100%; font-weight: 700; }
-/* ⚠️ THE ARROW GOES TO THE END OF THE ROW, not between the tile and the
-   text. Sitting there it pushed the label 34px further in than an
-   ordinary row's — measured: an ordinary row's label starts at 328, a
-   group head's at 294.
-   ⚠️ AND IT NEEDS `order`, NOT A MARGIN ALONE. `.dr-item` is a flex row
-   and the arrow precedes the label in the markup, so `margin-inline-start:
-   auto` pushed the arrow AND EVERYTHING AFTER IT — measured, the label
-   went to 228, further out than it started. `order: 1` moves the arrow to
-   the end of the line and the auto margin then pins it there. */
-.dr-head .grp-arrow { order: 1; margin-inline-start: auto; }
-/* A head that never folds is a SECTION TITLE, not a disabled button: it
-   carries no arrow, is not focusable, and is not announced as a control. */
-.dr-title {
-  display: flex; align-items: center; gap: 14px;
-  padding: 16px 18px; width: 100%;
-  font-size: .9375rem; font-weight: 700; text-align: start;
-}
-.dr-head .grp-arrow { transition: transform .2s var(--ease); }
-.dr-group.open .dr-head .grp-arrow { transform: rotate(180deg); }
+/* ⚠️ THE ARROW IS GONE FROM THE MARKUP, and its rules go with it. Moving
+   it to the end of the row was `345`'s answer to its displacing the
+   label; taking it out of both heads is Rai's. Hiding it with a rule here
+   would have been two sources of truth, and LEAVING its rules behind is
+   the same debt as a dead export: read six months from now they say a
+   fold indicator exists. `grep grp-arrow js/` returns nothing. */
 /* An open head is marked by a faint ground and the turned arrow, not by
    turning gold — the accent is spent elsewhere. */
 .dr-group.open .dr-head { background: var(--wash-1); }
@@ -1720,7 +1707,6 @@ input[inputmode="tel"], input[type="email"], input[inputmode="decimal"], #zipIn 
 .dr-sub .dr-item svg { width: 18px; height: 18px; flex: 0 0 18px; color: color-mix(in srgb, var(--text) 42%, transparent); }
 @media (prefers-reduced-motion: reduce) {
   .dr-sub, .dr-sub-inner { transition: none; }
-  .dr-head .grp-arrow { transition: none; }
 }
 
 /* ---------- drawer: the visitor's invite card ----------
@@ -2702,7 +2688,6 @@ input[inputmode="tel"], input[type="email"], input[inputmode="decimal"], #zipIn 
 .dr-tile-gold { background: linear-gradient(145deg, var(--gold-bright), var(--gold)); }
 .dr-tile-gold svg { color: var(--on-gold) !important; }
 /* the arrow keeps its own size beside a tile */
-.dr-head .grp-arrow { flex: 0 0 20px; }
 
 /* A two-column grid whose children have a minimum width of their own — a
    native date input is the case that forced this — becomes one column on a

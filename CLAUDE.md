@@ -7,7 +7,7 @@ ARABNA · عربنا — a mobile-first web app for the Arab community in the U.
 **business directory + marketplace + events + magazine**, Arabic-first with a full English toggle.
 ("Classifieds / الإعلانات الشخصية" is now "Marketplace / السوق" — the old `#/classifieds`
 routes still resolve so shared links keep working.)
-Current version: **V.07.2 (prototype)**. Owner: Rai Elby (@dbprime). Deploys to Vercel (team DB Prime).
+Current version: **V.07.3 (prototype)**. Owner: Rai Elby (@dbprime). Deploys to Vercel (team DB Prime).
 
 ## Hard rules (from the product brief)
 1. **One repository, one Vercel project.** No duplicates, no stray preview projects.
@@ -6220,6 +6220,78 @@ It is **129 passed, 0 failed**. ⚠️ **The easy «fix» here was to soften the
 assertion until it accepted what the app did — and that is not a fix, it
 is erasing the witness.** The item measured something real and fell
 because it was right.
+
+## V.07.3 — the eight reds were right, and the app was wrong
+
+⚠️ **This is a correction of `345 · 5`, and the fault is in that file, not
+in what was built from it.** It read:
+
+> «تصنيفات عربنا» — Rai's decision: no arrow, its contents fixed.
+> `becomes a section title, not a button · no arrow · rows always shown`
+
+**Rai decided no such thing.** What he said was «take the arrow off, and
+when somebody taps categories it opens». **The folding was never in
+question; only the arrow was.** So it was built as written and the writing
+was wrong.
+
+### What it cost — measured
+```
+                                   before 345    after 345    now
+the drawer folded, visitor          844 / 844    1049 / 844   844 / 844
+…and with «المساعدة» open                   —    1299 / 844    1025
+```
+**The one rule the drawer had kept through every batch — «folded, it does
+not scroll» — was gone**, and a visitor met a scrolling panel before
+touching anything. ⚠️ **That is heavier than the eight red assertions
+themselves, and it is exactly what `v4`, `v5` and `v20` were guarding.**
+
+### And `345 · 5`'s own goal was already met without it
+The complaint was that the arrow displaced a head's label by 34px.
+Measured now, with the arrow gone from both heads and nothing else:
+
+```
+اللغة · الإعدادات · أعلن معنا     the label starts at 328
+تصنيفات عربنا                    328
+المساعدة والقوانين               328
+```
+
+**Taking the arrow out fixed the displacement on its own.** «Always open»
+was never needed for it and cost the rule above.
+
+### The correction
+- **Both heads fold, both start folded, and neither carries an arrow.**
+  They are identical in form and in behaviour — «ما بيصير اتنين بيعملوا
+  نفس الإشي وشكلهم مختلف».
+- ⚠️ **The arrow is removed from the MARKUP, never hidden with a CSS
+  rule** — a stylesheet undoing what the template just asked for is two
+  sources of truth. **And its own rules went with it**: leaving
+  `.grp-arrow` styled is the same debt as a dead export, since read six
+  months from now they say a fold indicator exists. `grep grp-arrow js/`
+  returns nothing.
+- ⚠️ **The head stays a `<button>` with `data-toggle` and
+  `aria-expanded`.** It really folds, so it is a real control — reached by
+  keyboard, announced as expanded or collapsed. **What was removed is a
+  drawing, not a behaviour.**
+- **`section()` is deleted, not left unused** — `group()` serves both, and
+  a dead export reads months later as though it works.
+- **The `!head` guard in the accordion sweep goes too**: its subject was
+  the headless group, and that group is gone.
+
+### Seven of the eight went green by themselves
+```
+v4 103/0 · v5 134/0 · v7 99/0 · v20 88/0 · v28 77/0
+```
+⚠️ **`v4`, `v5`, `v20` and `v28` are byte-identical to what they were
+before `345`** — nothing was softened and nothing stayed softened. **The
+eight reds were the net doing its job, and my first answer to them was to
+soften five suites, which is erasing the witness.** They were reverted
+wholesale.
+
+**Only `v7`'s «the group arrow survives» changed**, and it carries a
+comment naming the reversal: it guarded that the arrow is never deleted
+without a decision behind it, and the decision landed. It now asserts the
+inverse **with its teeth kept** — no head carries an arrow, *and* every
+head is still a `<button>` that folds.
 
 ## Known open items
 - **The header image is still far larger than its box.** V.04.7 replaced

@@ -74,12 +74,9 @@ ok('1.3 Back closes the drawer and stays put', !(await drawerOpen()) && (await h
    with the same group still expanded */
 await stack();
 await openDrawer();
-/* ⚠️ REVERSED in V.07.1: «تصنيفات عربنا» no longer folds, so it has no
-   `[data-toggle]` to click. The accordion is asserted on «المساعدة
-   والقوانين», the one group that still folds. */
-await page.evaluate(() => document.querySelector('#drawer [data-toggle="help"]').click());
+await page.evaluate(() => document.querySelector('#drawer [data-toggle="sections"]').click());
 await page.waitForTimeout(260);
-ok('1.4 the group opens', await groupOpen('help'));
+ok('1.4 the group opens', await groupOpen('sections'));
 await page.evaluate(() => document.querySelector('#drawer [data-route="#/events"]').click());
 await page.waitForTimeout(650);
 ok('1.5 the route opens and the drawer goes', (await hash()) === '#/events' && !(await drawerOpen()), await hash());

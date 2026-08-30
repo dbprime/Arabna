@@ -152,58 +152,31 @@ const visibleRows = await page.evaluate(() => Array.from(document.querySelectorA
    and it is the half of this line that must not move. */
 ok('member: six top-level rows, settings still standalone',
    visibleRows === 6, visibleRows + ' rows');
-/* ⚠️ REVERSED in V.07.1 (`345`), Rai's decision: «تصنيفات عربنا» no longer
-   folds. Its contents are fixed and are what the drawer is for, so it is a
-   SECTION TITLE — always open, no arrow, and not a button, because a
-   button that does nothing stays in the tab order and is announced as a
-   control. That arrow was also pushing every group head's label 34px
-   further in than an ordinary row's (294 against 328).
-   ⚠️ So «all groups start collapsed» is not the rule any more: exactly ONE
-   group folds, «المساعدة والقوانين», and it starts collapsed. And the
-   drawer no longer fits folded — measured, member 974 and visitor 1049
-   against 844. That cost is written into CLAUDE.md rather than hidden, and
-   `.drawer-panel` scrolls the whole way so no row is out of reach. */
-ok('member: the drawer scrolls to its end, so no row is lost',
-   await page.evaluate(() => { const pn = document.querySelector('.drawer-panel');
-     pn.scrollTop = 1e6;
-     return pn.scrollTop >= pn.scrollHeight - pn.getBoundingClientRect().height - 1; }),
-   d.panelScroll + ' / ' + d.panelBox);
+ok('member: drawer needs no scrolling', d.panelScroll <= d.panelBox + 2, d.panelScroll + ' / ' + d.panelBox);
 
 /* badge on the notifications row */
 ok('notifications row carries the unread badge', d.badge !== null, 'badge=' + d.badge);
 
 /* every group collapsed on open, heads never navigate */
-const collapsed = await page.evaluate(() =>
-  [...document.querySelectorAll('#drawer .dr-group.open')].filter(g => g.querySelector('.dr-head')).length);
-/* ⚠️ FOLDING groups only — the always-open section carries `.dr-group open`
-   with no `.dr-head` in it, and counting it made this read «1 open». */
-ok('every folding group is collapsed on open', collapsed === 0, collapsed + ' open');
+const collapsed = await page.evaluate(() => document.querySelectorAll('#drawer .dr-group.open').length);
+ok('all groups collapsed on open', collapsed === 0, collapsed + ' open');
 ok('no group head carries a route', !d.headsHaveRoute);
 
 /* REVERSED in V.05.5: the «حسابي» GROUP is deleted from the drawer — its six
    rows are the account hub on #/profile now, reached from the two buttons
    under the name. The accordion itself is unchanged and is asserted on the
    two groups that remain, which is what the check was ever about. */
-/* ⚠️ REVERSED in V.07.1: «تصنيفات عربنا» no longer folds, so it has no
-   `[data-toggle]` to click. The accordion is asserted on «المساعدة
-   والقوانين», the one group that still folds. */
 const beforeHead = await hash();
-await page.click('#drawer [data-toggle="help"]'); await page.waitForTimeout(320);
+await page.click('#drawer [data-toggle="sections"]'); await page.waitForTimeout(320);
 ok('head opens the group in place, does not navigate', (await hash()) === beforeHead);
-ok('the group actually opened', await page.evaluate(() => !!document.querySelector('.dr-group[data-group="help"].open')));
-ok('aria-expanded is true', await page.getAttribute('#drawer [data-toggle="help"]', 'aria-expanded') === 'true');
+ok('the group actually opened', await page.evaluate(() => !!document.querySelector('.dr-group[data-group="sections"].open')));
+ok('aria-expanded is true', await page.getAttribute('#drawer [data-toggle="sections"]', 'aria-expanded') === 'true');
 
 await page.click('#drawer [data-toggle="help"]'); await page.waitForTimeout(320);
-/* ⚠️ «only one open at a time» has one folding group left to measure it
-   with, so what is asserted is the half that can still be: shutting it
-   really shuts it, and the always-open section is not dragged shut with
-   it — which is exactly what the accordion's sweep got wrong. */
-ok('shutting it shuts only it',
-   await page.evaluate(() => !document.querySelector('.dr-group[data-group="help"].open')
-     && !!document.querySelector('.dr-group[data-group="sections"].open')));
-ok('head aria-expanded reset',
-   await page.getAttribute('#drawer [data-toggle="help"]', 'aria-expanded') === 'false');
-await page.click('#drawer [data-toggle="help"]'); await page.waitForTimeout(320);
+ok('only one group open at a time',
+   await page.evaluate(() => document.querySelectorAll('.dr-group.open').length) === 1);
+ok('previous head aria-expanded reset',
+   await page.getAttribute('#drawer [data-toggle="sections"]', 'aria-expanded') === 'false');
 /* …and the two buttons that replaced the group are in the head */
 ok('the head carries «حسابي» and sign-out',
    await page.locator('.dr-head-acts [data-route="#/profile"]').count() === 1 &&
@@ -258,12 +231,7 @@ for (const r of wanted) {
   const grp = ['#/my-business', '#/my-ads', '#/my-reviews', '#/messages', '#/saved', '#/subscribe'].includes(r) ? 'account'
             : ['#/directory', '#/marketplace', '#/events', '#/magazine'].includes(r) ? 'sections'
             : ['#/help', '#/about', '#/privacy', '#/terms'].includes(r) ? 'help' : null;
-  /* ⚠️ V.07.1: «تصنيفات عربنا» does not fold any more, so its leaves are
-     already on screen and there is no head to open. Only a group that
-     really carries a toggle is opened. */
-  if (grp && await page.locator(`#drawer [data-toggle="${grp}"]`).count()) {
-    await page.click(`#drawer [data-toggle="${grp}"]`); await page.waitForTimeout(300);
-  }
+  if (grp) { await page.click(`#drawer [data-toggle="${grp}"]`); await page.waitForTimeout(300); }
   await page.evaluate((route) => document.querySelector(`#drawer [data-route="${route}"]`).click(), r);
   await page.waitForTimeout(450);
   ok('leaf ' + r + ' lands on itself', (await hash()) === r, await hash());
@@ -465,14 +433,7 @@ d = await drawerMap();
 ok('EN member drawer is 6 rows too',
    (await page.evaluate(() => Array.from(document.querySelectorAll('.drawer-panel > *'))
      .filter(el => el.classList.contains('dr-item') || el.classList.contains('dr-group')).length)) === 6);
-/* ⚠️ V.07.1, the English twin of the Arabic one above: the always-open
-   section means the panel no longer fits, so what is asserted is that it
-   reaches its end and no row is out of reach. */
-ok('EN drawer: every row is reachable too',
-   await page.evaluate(() => { const p = document.querySelector('.drawer-panel');
-     p.scrollTop = 1e6;
-     return p.scrollTop >= p.scrollHeight - p.getBoundingClientRect().height - 1; }),
-   d.panelScroll + ' / ' + d.panelBox);
+ok('EN drawer still needs no scrolling', d.panelScroll <= d.panelBox + 2, d.panelScroll + ' / ' + d.panelBox);
 await closeDrawer();
 
 await go('#/magazine?cat=business');
