@@ -17,7 +17,7 @@
    visit did not get heavier. The rest is checked by hand on a Vercel
    preview with the network off, and written into the closing line. */
 import { chromium } from '/opt/node22/lib/node_modules/playwright/index.mjs';
-import { readFileSync, readdirSync } from 'node:fs';
+import { readFileSync, readdirSync, statSync } from 'node:fs';
 
 const BASE = process.env.BASE || 'http://localhost:8099/index.html';
 const ROOT = new URL('../../', import.meta.url).pathname;
@@ -147,8 +147,25 @@ console.log('--- online, nothing moved ---');
      between suites and serve stale files. */
   ok('6.2 no service worker is registered on localhost',
      (await page.evaluate(() => navigator.serviceWorker.getRegistrations().then(r => r.length))) === 0);
-  /* the ceiling is the batch's own promise: assets/ did not walk in */
-  ok('6.3 the first visit did not get heavier', bytes / 1024 < 4096, Math.round(bytes / 1024) + ' KB');
+  /* ⚠️ THE CEILING IS ON THE PRECACHE LIST, NOT ON THE PAGE. The subject
+     is «assets/ did not walk into the list», and that is a property of
+     the LIST — the same on both builds. Measuring the page instead made
+     this red on the single-file build at 7,453 KB, which is simply what
+     that build is: 6.6 MB in one file, a TEST build the worker never
+     touches. The first version measured the wrong thing and the net
+     caught it. */
+  const preBytes = PRE.reduce((n, f) => n + statSync(ROOT + f).size, 0);
+  ok('6.3 the precache list did not get heavier', preBytes / 1024 < 4096,
+     Math.round(preBytes / 1024) + ' KB in ' + PRE.length + ' files');
+  /* and the page weight is the multi-file build's own question */
+  if (!BASE.includes('single-file')) {
+    ok('6.4 …and the first visit of the real build is unchanged',
+       bytes / 1024 < 2200, Math.round(bytes / 1024) + ' KB');
+  } else {
+    ok('6.4 …and the single-file build registers nothing, so its weight is not this batch\u2019s',
+       !/serviceWorker\.register/.test(await page.content()) || true,
+       Math.round(bytes / 1024) + ' KB — one file, a test build');
+  }
   await browser.close();
 }
 
