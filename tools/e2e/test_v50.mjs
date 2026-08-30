@@ -35,13 +35,21 @@ const ACCOUNT = {
   name: 'رامي البي', email: 'a@b.c', emailVerified: true,
   phone: '7134669182', phoneVerified: true, joined: NOW - 9e8,
 };
-/* the day keys are built here the same way the app builds them, from the
-   LOCAL date, so the suite cannot pass by sharing the app's own bug */
-const key = (d) => {
-  const p = (n) => String(n).padStart(2, '0');
-  return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate());
-};
-const dayFrom = (n) => key(new Date(Date.now() + n * 864e5));
+/* ⚠️ THE DAY KEYS ARE BUILT IN THE BROWSER'S TIMEZONE, NOT THE
+   CONTAINER'S — and this suite is the one that forces them apart: it sets
+   `timezoneId: 'America/Chicago'` for the UTC check in block 5, while the
+   runner's own clock is UTC. Measured, they can be a whole day apart:
+   01:46 on the 30th in the container is 20:46 on the 29th in Chicago. So
+   a greeting seeded «today» by the container was «tomorrow» to the app
+   and was correctly not shown — the suite failed on its own arithmetic,
+   not on the feature.
+   ⚠️ It passed the day it was written because both sides were in the same
+   date at that hour. A test that is right only between certain hours is
+   the date twin of a flat `waitForTimeout`, and it is fixed the same way:
+   measure what the app measures, never a number of your own. */
+const TZ = 'America/Chicago';
+const fmt = new Intl.DateTimeFormat('en-CA', { timeZone: TZ });   // YYYY-MM-DD
+const dayFrom = (n) => fmt.format(new Date(Date.now() + n * 864e5));
 const TODAY = dayFrom(0), YESTERDAY = dayFrom(-1), TOMORROW = dayFrom(1);
 const card = (over = {}) => Object.assign({
   id: 'g1', title: 'كل عام وأنتم بخير',

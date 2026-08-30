@@ -58,12 +58,9 @@ const open = async (state, hash = '#/home') => {
   return { ctx, p };
 };
 const go = async (p, h) => { await p.evaluate(x => { location.hash = x; }, h); await p.waitForTimeout(900); };
-/* the LABEL is the LAST span in the row — the first one is the coloured
-   tile, and measuring that proves nothing at all */
-const labelEdge = `(el) => { const ss = [...el.querySelectorAll(':scope > span')];
-  const s = ss[ss.length - 1]; const r = document.createRange(); r.selectNodeContents(s);
-  const b = r.getBoundingClientRect();
-  return { text: s.textContent.trim(), start: Math.round(b.right), end: Math.round(b.left) }; }`;
+/* ⚠️ NO `eval` — the project bans it in `tools/e2e` and `script-src 'self'`
+   refuses it on the module build. The measurement is written inline in the
+   page function instead of being shipped as a source string. */
 
 /* ============ 1 — a button grows with its label ============ */
 console.log('--- the button is the class, not the word ---');
@@ -194,53 +191,69 @@ console.log('--- the drawer line ---');
 }
 
 /* ============ 5 — two heads, and the arrow that displaced the text ==== */
+/* ⚠️ REWRITTEN in V.07.3, and the correction is Rai's. `345 · 5` said
+   «تصنيفات عربنا» becomes a section title that is always open; he had
+   said «take the arrow off, and when somebody taps categories it opens».
+   The folding was never in question — and building it as written cost the
+   one rule the drawer had kept through every batch: measured, 1049/844
+   for a visitor with nothing touched.
+   ⚠️ The item's REAL subject survives untouched: the arrow displaced a
+   head's label by 34px, and taking it out of both heads fixed that on its
+   own. That is what is measured here — plus the rule that was nearly
+   lost. */
 console.log('--- the drawer heads ---');
 for (const [who, user] of [['member', MEMBER], ['visitor', null]]) {
   const { ctx, p } = await open({ lang: 'ar', user });
   await p.click('#hMenu'); await p.waitForTimeout(700);
-  const d = await p.evaluate((fn) => {
-    const lbl = eval('(' + fn + ')');
-    const sec = document.querySelector('.dr-title');
-    const help = document.querySelector('.dr-head');
+  const d = await p.evaluate(() => {
+    /* the LABEL is the LAST span in the row — the first is the coloured
+       tile, and measuring that proves nothing at all */
+    const lbl = (el) => {
+      const ss = [...el.querySelectorAll(':scope > span')];
+      const sp = ss[ss.length - 1];
+      const r = document.createRange(); r.selectNodeContents(sp);
+      const b = r.getBoundingClientRect();
+      return { text: sp.textContent.trim(), start: Math.round(b.right) };
+    };
+    const heads = [...document.querySelectorAll('#drawer .dr-head')];
     const plain = document.querySelector('.dr-item[data-route]');
-    const arrow = help.querySelector('.grp-arrow').getBoundingClientRect();
     const pan = document.querySelector('.drawer-panel');
-    return { plain: lbl(plain), section: lbl(sec), help: lbl(help),
-             arrowEnd: Math.round(arrow.right),
-             tag: sec.tagName, sectionArrow: !!sec.querySelector('.grp-arrow'),
-             open: sec.parentElement.classList.contains('open'),
-             rows: sec.parentElement.querySelectorAll('.dr-item').length,
-             tabbable: sec.matches('button, a, [tabindex]'),
+    return { plain: lbl(plain), heads: heads.map(lbl), headCount: heads.length,
+             realButtons: heads.every(h => h.tagName === 'BUTTON'
+               && h.hasAttribute('data-toggle') && h.hasAttribute('aria-expanded')),
+             arrows: document.querySelectorAll('#drawer .grp-arrow').length,
+             titles: document.querySelectorAll('#drawer .dr-title').length,
+             openGroups: document.querySelectorAll('#drawer .dr-group.open').length,
              foldedH: Math.round(pan.scrollHeight), viewH: Math.round(pan.clientHeight) };
-  }, labelEdge);
-  /* ⚠️ THE MEASUREMENT OF THE BATCH: all three labels start at the same
-     place. The head's used to start 34px further in. */
+  });
+  /* ⚠️ THE MEASUREMENT OF THE BATCH: all three labels start in the same
+     place. A head's used to start 34px further in — 294 against 328. */
   ok(`5.1 ${who}: an ordinary row's label starts at 328`, d.plain.start === 328, String(d.plain.start));
-  ok(`5.2 ${who}: the section title starts at the same place`, d.section.start === d.plain.start,
-     d.section.start + ' vs ' + d.plain.start);
-  ok(`5.3 ${who}: and so does the folding head`, d.help.start === d.plain.start,
-     d.help.start + ' vs ' + d.plain.start);
-  ok(`5.4 ${who}: the arrow is at the far end of its row`, d.arrowEnd < d.help.end,
-     d.arrowEnd + ' vs ' + d.help.end);
-  /* ⚠️ a section that never folds is a TITLE, not a disabled button: a
-     button that does nothing stays in the tab order and is announced as
-     a control */
-  ok(`5.5 ${who}: «تصنيفات عربنا» is not a button`, d.tag !== 'BUTTON', d.tag);
-  ok(`5.6 ${who}: …carries no arrow`, !d.sectionArrow);
-  ok(`5.7 ${who}: …is open, with all six rows showing`, d.open && d.rows === 6, String(d.rows));
-  ok(`5.8 ${who}: …and the keyboard cannot land on it`, !d.tabbable);
+  ok(`5.2 ${who}: both group heads start at the same place`,
+     d.headCount === 2 && d.heads.every(h => h.start === d.plain.start),
+     d.heads.map(h => h.start).join(' · ') + ' vs ' + d.plain.start);
+  ok(`5.3 ${who}: no head carries an arrow any more`, d.arrows === 0, d.arrows + ' arrows');
+  /* ⚠️ …and what was removed is a DRAWING, not a behaviour: both heads are
+     still real controls, reached by keyboard and announced as expanded or
+     collapsed. */
+  ok(`5.4 ${who}: …and both are still buttons that fold`, d.realButtons);
+  ok(`5.5 ${who}: nothing became an always-open title`, d.titles === 0, String(d.titles));
+  ok(`5.6 ${who}: both start folded`, d.openGroups === 0, d.openGroups + ' open');
+  /* ⚠️ AND THE RULE THAT `345` COST AND THIS RESTORES: folded, the drawer
+     does not scroll. It is 844/844 for both roles again. */
+  ok(`5.7 ${who}: folded, the drawer does not scroll`, d.foldedH <= d.viewH + 1,
+     d.foldedH + ' / ' + d.viewH);
 
-  await p.click('.dr-head'); await p.waitForTimeout(500);
+  await p.click('#drawer [data-toggle="sections"]'); await p.waitForTimeout(500);
   const after = await p.evaluate(() => ({
-    helpOpen: document.querySelector('.dr-head').parentElement.classList.contains('open'),
-    sectionOpen: document.querySelector('.dr-title').parentElement.classList.contains('open'),
+    opened: !!document.querySelector('.dr-group[data-group="sections"].open'),
+    rows: document.querySelectorAll('.dr-group[data-group="sections"] .dr-item[data-route]').length,
   }));
-  ok(`5.9 ${who}: «المساعدة» still folds`, after.helpOpen);
-  /* ⚠️ the accordion sweep walks every `.dr-group`, and the section is one
-     with no `.dr-head` in it — without the guard it stripped the section's
-     own `open` class and then threw on `null.setAttribute` */
-  ok(`5.10 ${who}: …and opening it does not close the section`, after.sectionOpen);
-  console.log(`     ${who} drawer: folded ${d.foldedH} / ${d.viewH}`);
+  ok(`5.8 ${who}: tapping the head opens it — the whole of what Rai asked`, after.opened);
+  ok(`5.9 ${who}: …onto its six leaves`, after.rows === 6, String(after.rows));
+  await p.click('#drawer [data-toggle="help"]'); await p.waitForTimeout(500);
+  ok(`5.10 ${who}: and one group is open at a time`,
+     await p.evaluate(() => document.querySelectorAll('#drawer .dr-group.open').length) === 1);
   await ctx.close();
 }
 
