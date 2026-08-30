@@ -11,7 +11,57 @@
 # belongs with the thing it protects.
 cd "$(dirname "$0")"
 HOST="${HOST:-http://localhost:8099}"
-SUITES="${SUITES:-3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40 41 42 43 44 45 46 47 48 49 50 51 52}"
+# ⚠️ THE LIST IS DERIVED FROM THE FILES, NEVER WRITTEN BY HAND.
+# It was a literal string, and nothing compared it against
+# `tools/e2e/test_v*.mjs` — so a suite file forgotten in it is never run,
+# while `run.sh` exits with zero FAIL and «ALLDONE» and the net reads
+# GREEN WITHOUT HAVING SEEN THE FILE. That is a check that lies, of the
+# same family as `test_v36`'s hand-written port, `test_v37`'s flat wait,
+# and `test_v50` computing the day in a timezone the browser was not in.
+#
+# ⚠️ And the measurement that makes it heavier than it looks: three
+# numbers were added to that string in ONE DAY — 50, 51 and 52, in three
+# separate batches, each by hand. Had one been forgotten nobody would have
+# noticed: the only figure that would have shown it is the run count in
+# the report — AND THAT FIGURE WAS ITSELF MISREAD THE SAME DAY, 48 for 49.
+# A guard whose only guard has already failed is not a guard.
+#
+# ⚠️ The pattern is deliberately strict — `test_v` then DIGITS ONLY then
+# `.mjs` — so a spare copy named `test_v9_old.mjs` cannot walk into the
+# net through the back door. And the sort is NUMERIC: a lexical sort puts
+# 10 before 9 and the report reads as though the run jumped.
+DERIVED=$(ls test_v*.mjs 2>/dev/null \
+  | sed -n 's/^test_v\([0-9][0-9]*\)\.mjs$/\1/p' | sort -n | tr '\n' ' ')
+DERIVED_N=$(echo $DERIVED | wc -w)
+# ⚠️ A derivation that fails SILENTLY is worse than a hand-written list,
+# because it is assumed safe: a pattern matching nothing would exit zero
+# with «ALLDONE», which is the very fault being fixed. The floor is
+# WRITTEN, not computed — a threshold derived from the thing it guards
+# always agrees with itself.
+if [ "$DERIVED_N" -lt 40 ]; then
+  echo "*** ABORT: derived only $DERIVED_N suite(s) from test_v<n>.mjs — the pattern is wrong ***"
+  exit 2
+fi
+# ⚠️ The manual override stays. Running three suites while you work is what
+# keeps a batch from paying the full fifty minutes, and deleting it would
+# slow every batch down. The derived list is the DEFAULT, nothing more.
+SUITES="${SUITES:-$DERIVED}"
+RUN_N=$(echo $SUITES | wc -w)
+# ⚠️ Printed in full, once, at the head: a stray file is seen in the first
+# line rather than fifty minutes later. And the COUNT is printed at both
+# ends, so the report carries the number instead of somebody counting the
+# lines by hand — which is exactly how «48» happened.
+#
+# ⚠️ AND IT PRINTS WHAT IS ACTUALLY RUNNING, not the derived default. The
+# first version printed «SUITES (50)» over a run of two, which is a report
+# lying about its own scope — the very fault this batch exists to remove.
+# When an override is in force the derived count is printed BESIDE it, so
+# a partial run can never be mistaken for a full net.
+if [ "$RUN_N" -eq "$DERIVED_N" ]; then
+  echo "SUITES ($RUN_N): $SUITES"
+else
+  echo "SUITES ($RUN_N of $DERIVED_N — PARTIAL, not the full net): $SUITES"
+fi
 # A suite that CRASHES prints no "passed," line at all, and counting only
 # `^FAIL` reported that as "0 FAIL" — which is how an aborted v15 once read
 # as green. The exit code is the truth; the counts are the detail.
@@ -45,6 +95,7 @@ run() {
 run index.html m &
 run index-single-file.html s &
 wait
+echo "SUITES ($RUN_N$([ "$RUN_N" -ne "$DERIVED_N" ] && echo " of $DERIVED_N — PARTIAL")) — a different number here means a run went missing"
 echo ALLDONE
 if [ -s "$BAD" ]; then
   echo "RED: $(wc -l < "$BAD" | tr -d ' ') suite run(s) failed — $(tr '\n' ' ' < "$BAD")"

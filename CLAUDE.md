@@ -616,10 +616,12 @@ number that is not their build's, and the report cannot be placed.
 ## Testing: what is run, and when
 
 There are three gates, and **the session goes into the work, not into the
-tests**. ⚠️ **The whole set is 50 suites × 2 builds and takes about fifty
-minutes** — the figure here read «37 suites, about twenty minutes» for
-eleven batches while the section below it already said fifty, and a file
-that contradicts itself is a file nobody can plan a session from.
+tests**. ⚠️ **The whole set is every `tools/e2e/test_v<n>.mjs` × 2 builds
+and takes about fifty minutes.** The count is deliberately NOT written
+here: `run.sh` derives the list from the files and prints the number at
+the head and the tail of every run. It was a hand-written figure and it
+dried out twice in a single day — 48 → 49 → 50 — **and correcting it each
+time is not a fix, it is the same fault living in the documentation.**
 Running it after every edit eats the session and leaves the work
 unfinished — four calls is an hour and a half of testing before a line is
 written. And more parallelism does not help: the machine has two cores and
@@ -637,7 +639,7 @@ from the same source, and a fault in it alone is rare and of a known kind
 (`esc()` and CSP), which `daily.sh` catches at the end. **Doubling the gate's
 time for a rare case removes the point of having a gate.** What it does not
 check: the second build · the four roles · the admin panel · the calendar ·
-the deep cases in the other forty-nine suites.
+the deep cases in every other suite.
 
 **Which suites touch what**, for the middle row:
 
@@ -648,7 +650,7 @@ prayer and mass              read each file's own header — it says what it cov
 ```
 
 **If you do not know which one covers your change, run three, not
-fifty** — and the full set at the end catches what you missed.
+the whole set** — and the full set at the end catches what you missed.
 
 ### `main` IS PRODUCTION — so nothing reaches it before the net is green
 Rai's rule of 29 August, and it exists because two true things were being
@@ -677,6 +679,42 @@ was still being tested.
 > **4. ⚠️ And if a net goes red AFTER production is already standing on
 > that commit, it is reported at once and BY THE NAME OF THE ITEM. It is
 > never fixed in silence, and the decision to roll back is Rai's alone.**
+
+### The suite list is derived from the files, never written by hand
+`SUITES` in `run.sh` was a literal string, and nothing compared it against
+`tools/e2e/test_v*.mjs`. **So a suite file forgotten in it is never run —
+while `run.sh` exits with zero FAIL and «ALLDONE», and the net reads GREEN
+without having seen the file.** A check that lies, of the same family as
+`test_v36`'s hand-written port and `test_v50` computing the day in a
+timezone the browser was not in.
+
+⚠️ **And the measurement that makes it heavier than it looks: three
+numbers went into that string in one day** — 50, 51 and 52, in three
+separate batches, each by hand. Had one been forgotten nobody would have
+noticed: the only figure that would have shown it is the run count in the
+report, **and that figure was itself misread the same day, 48 for 49. A
+guard whose only guard has already failed is not a guard.**
+
+> **The list is derived: `test_v` then DIGITS ONLY then `.mjs`, sorted
+> numerically. And no document writes its count — `run.sh` prints it at
+> the head and the tail of every run.**
+
+- **The strict pattern** keeps a spare copy named `test_v9_old.mjs` out of
+  the net; **the numeric sort** keeps 10 from preceding 9 and the report
+  from reading as though the run jumped.
+- ⚠️ **Three guards on the derivation itself, because a derivation that
+  fails silently is worse than a hand-written list — it is assumed safe.**
+  The list is printed in full at the head, the count at both ends, and the
+  script **aborts** below a floor of forty. **The floor is written, not
+  computed:** a threshold derived from the thing it guards always agrees
+  with itself.
+- ⚠️ **And the report names its own scope.** The first version printed
+  «SUITES (50)» over a run of two — a report lying about its own reach,
+  the very fault being removed. A partial run now prints
+  «PARTIAL, not the full net».
+- **The manual override stays** (`SUITES="8 33" tools/e2e/run.sh`):
+  running three while you work is what keeps a batch from paying fifty
+  minutes, and removing it would slow every batch down.
 
 ### The full net runs once per GROUP, and the closing file says so at its head
 Rai's decision of 28 August: the full net is about fifty minutes, and
