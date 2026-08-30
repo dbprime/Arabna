@@ -544,6 +544,48 @@ V.04.0**.
 **Reports keep their status line and are never deleted.** The read report
 is what proves the item was seen, and when.
 
+## The queue: `docs/الطابور.md` says what is next
+A new session's memory ends with the session, so it cannot know what has
+not arrived yet; the repository knows what landed and not what is waiting;
+and the owner has been carrying the order in his head. **The order is not
+a preference but a safety condition** — two files touching `js/store.js`
+in one batch conflict, and `168` out of turn deletes a function a file
+that has not arrived brings back to life.
+
+> **The queue is `docs/الطابور.md`.**
+>
+> **At the end of every batch report, after the closing line:** put an `x`
+> against the number that landed, **then write the next line exactly as it
+> stands in the file** — its number and its name — together with the
+> «الترتيب» line from that file's own head if you have it.
+>
+> ⚠️ **Never invent a number, never reorder, never add a line.** The queue
+> is written by whoever writes the files. The order satisfies a constraint
+> written at the head of each one («not to be sent with X»), and
+> reordering it without reading those constraints creates the very
+> conflict it prevents.
+>
+> ⚠️ **If a file arrives whose number is not in the queue, or is not the
+> next one in it:** say so in your first line, name what the next one is,
+> **then ask: shall I go on with this?** **Do not refuse, and do not carry
+> on without saying.** The owner may bring a file forward for a reason he
+> knows — the queue is a reminder, not a gate — but staying silent about
+> stepping outside it costs it its whole meaning.
+>
+> ⚠️ **A cancelled file is not executed even if it arrives.** Say that it
+> is cancelled, and name what replaced it.
+
+**A queue that guesses at the next file is worse than no queue** — the
+same rule as «a check that lies is worse than no check». And it is not
+`docs/الحالة.md`: that one says **what landed**, this one says **what has
+not landed yet and in what order**. Merging them makes the first grow
+until nobody reads it.
+
+**And it carries a version number and a date on its first line.** Whenever
+a file is cancelled or rebuilt under a new number, a new queue lands with
+a higher version — written by whoever writes the files, never edited by a
+session.
+
 ## The report names the file it closed, and the net when a group closes
 Rai's rule of 29 August, and it is the twin of the one above it: a session
 that says «خلصت» and nothing else leaves a reader who cannot tell **which**
