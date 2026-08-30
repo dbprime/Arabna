@@ -7,7 +7,7 @@ ARABNA · عربنا — a mobile-first web app for the Arab community in the U.
 **business directory + marketplace + events + magazine**, Arabic-first with a full English toggle.
 ("Classifieds / الإعلانات الشخصية" is now "Marketplace / السوق" — the old `#/classifieds`
 routes still resolve so shared links keep working.)
-Current version: **V.07.3 (prototype)**. Owner: Rai Elby (@dbprime). Deploys to Vercel (team DB Prime).
+Current version: **V.07.4 (prototype)**. Owner: Rai Elby (@dbprime). Deploys to Vercel (team DB Prime).
 
 ## Hard rules (from the product brief)
 1. **One repository, one Vercel project.** No duplicates, no stray preview projects.
@@ -6334,6 +6334,119 @@ comment naming the reversal: it guarded that the arrow is never deleted
 without a decision behind it, and the decision landed. It now asserts the
 inverse **with its teeth kept** — no head carries an arrow, *and* every
 head is still a `<button>` that folds.
+
+## V.07.4 — two sponsored rows, and the rest by distance
+
+⚠️ **This file closes its own group, and its group is itself.** It touches
+the ordering of the most-opened screen in the app, so the full net runs
+with it.
+
+### Rai's complaint, and the half of it that is a decision
+> «Katy is nearer than Houston — it should show me the nearer one, not the
+> further, even if it pays.»
+
+**Measured from `CITY_POINTS` itself: Richmond → Katy 14.6 miles, Richmond
+→ Houston 26.5.** ⚠️ **But the app could not have known it: 0 of 514
+listings carry coordinates**, so what he saw was not «the further before
+the nearer» by decision — it was file order, because there was nothing to
+order by. That is file `160` in the queue and this batch does not touch
+it.
+
+**His second remark is the decision:** does a payer at 26 miles precede a
+free shop at 14?
+
+### From «every subscriber on top» to two rows
+`330` gave layer one every active subscription. This bounds it:
+
+```
+the top two rows    sponsored · marked «إعلان مموّل»
+from the third down the nearest first, with no exception —
+                    nothing is lifted for having paid
+```
+
+⚠️ **Both promises hold together:** the paying shop gets a **guaranteed
+place at the top of the screen**, and the reader gets an **honest
+directory from the third row down**.
+
+- **`AD_SLOTS.dirTop` in `js/data.js`, and nowhere else.** Two numbers in
+  two files part company after two batches.
+- ⚠️ **The rows are CUT FROM the list, not added above it.** A subscriber
+  appears exactly once — showing it again in its place by distance is «one
+  shop twice on one screen», which is what the comment that deleted the
+  old band forbade in as many words. Measured: zero duplicates.
+
+**And the measurement that made the decision free today:**
+```
+subscribers now:  restaurants 1 · doctors 1 · lawyers 1 · auto 1
+```
+⚠️ **One in each.** So «every subscriber on top» and «two rows» are
+literally the same list right now, and the difference appears the day a
+category fills — restaurants holds **138**. A decision taken now at no
+cost, and paid for if deferred.
+
+### Who gets the two rows when ten have paid
+⚠️ **This is what makes the model fair to the payer or unfair to them.**
+Ten restaurants subscribe and there are two rows — do eight pay to be
+invisible?
+
+- **`rotate()` fills them**, and it is the function that already existed
+  and already served the sponsored band before `330` deleted it. A second
+  rotation function would be a rule written twice.
+- **It turns on the VISIT key**, not on plain randomness, so the rows do
+  not move under the reader's finger and Back brings the same two.
+  Measured: **five different pairs over six visits**, and identical
+  within one visit and across Back.
+
+### ⚠️ And the rotation turns INSIDE the reader's bucket, never across it
+`336` decided the reader's own sort governs both layers, and that has to
+survive here. Handing `rotate` every subscriber at once let it **wrap past
+the open ones and give both rows to closed shops while an open one was
+waiting** — measured, two visits in four before the fix. **That is the
+complaint this whole thread began with, shrunk into two rows.** The
+buckets are filled in the order the reader's sort left them, and the
+rotation is fair within each. Measured after: the open subscriber holds a
+row on **4 visits out of 4**.
+
+### The first ten rows, from Richmond, sorted by distance
+```
+ 1  b1   [مموّل] subscriber  26.5 mi
+ 2  b40          free        11.3
+ 3  b15          free        12.3
+ 4  b56          free        14.5
+ 5  b39          free        14.6
+ 6  b14          free        19.8
+ 7  b16          free        22.6
+ 8  b25          free        —
+ 9  b30          free        —
+10  b31          free        —
+```
+One sold row, then pure distance, then the ungeocoded — never dropped,
+only last. **Katy's 14.6 now leads Houston's 26.5 everywhere below the
+band**, which is the item that opened the file.
+
+### What the $29 is sold as
+⚠️ **`subFeatures` turned out to be a dead key — nothing reads it**, so
+editing it would have changed nothing on screen. The row the subscribe
+page actually prints is `planRank`, and it read «أولوية في ترتيب نتائج
+تصنيفك». It now reads **«مكان في الصفّين الأولين من تصنيفك»** with
+**«بالتناوب بين المشتركين — فلا يحتكرها أحد»** under it.
+
+**«الصفّان الأولان» without «بالتناوب» is «always first»**, which is not
+what is delivered once a category holds more than two — and a promise sold
+as something other than what is delivered is worse than not selling it.
+
+### `test_v52` — 23 assertions, and both teeth proven
+```
+remove the bound (every subscriber again)  → 2.1 2.2 2.3 3.1 4.2 6.1 red
+freeze the rotation                        → 6.1 red
+```
+⚠️ **And two of its own assertions were wrong first time and were
+corrected, not softened.** `4.2` asserted that a payer never precedes a
+nearer free shop *anywhere* — which is the opposite of the batch, since
+the two top rows are exactly the place the $29 buys; it now measures what
+is promised, that below the band distance decides and nothing else. And
+`8.1`'s helper took an id while it was handed a record, so every
+subscriber read as closed and the check measured nothing at all.
 
 ## Known open items
 - **The header image is still far larger than its box.** V.04.7 replaced

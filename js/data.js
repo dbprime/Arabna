@@ -91,7 +91,7 @@ export const CLASSIFIED_CATS = MARKET_CATS;
    hand-typed «0.1» while the project had reached V.03.6 — two literals,
    both stale, and a reader reporting a fault could not tell us which build
    they were on. Raise it here when CLAUDE.md's version line moves. */
-export const APP_VERSION = '0.7.3';
+export const APP_VERSION = '0.7.4';
 
 /* ============================================================
    Where the app lives outside itself
@@ -6510,6 +6510,14 @@ export const AD_SLOTS = {
   slider: 6, catSlider: 4, mini: 4,
   market: 4, events: 4, magazine: 4,
   story: 4, event: 3,
+  /* ⚠️ THE TOP OF THE DIRECTORY IS TWO ROWS, NOT «every subscriber».
+     `330` gave layer one every active subscription; Rai's decision of
+     29 August bounds it — the paying shop gets a guaranteed place at the
+     top of the screen, and the reader gets an honest directory from the
+     third row down, where nothing is lifted by having paid.
+     ⚠️ And the number lives HERE and only here: two numbers in two files
+     part company after two batches. */
+  dirTop: 2,
 };
 
 export const BOOST_PRICES = [

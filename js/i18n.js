@@ -846,7 +846,12 @@ export const STRINGS = {
     planVideo: 'فيديو للنشاط',
     planVerify: 'اطلب شارة «نشاط موثّق»',
     planVerifySub: 'بعد الموافقة',
-    planRank: 'أولوية في ترتيب نتائج تصنيفك',
+    /* ⚠️ ما يشتريه الـ$29 بالضبط: مكانٌ في الصفّين الأولين، بالتناوب بين
+       المشتركين — لا «الأول دائماً». عشرة مشتركين وصفّان، فالتناوب هو ما
+       يجعل النموذج عادلاً بدل أن يدفع ثمانيةٌ ولا يظهروا. ووعدٌ يُباع
+       بغير ما يُنفَّذ أسوأ من ألّا يُباع. */
+    planRank: 'مكان في الصفّين الأولين من تصنيفك',
+    planRankSub: 'بالتناوب بين المشتركين — فلا يحتكرها أحد',
     planFeatured: 'الظهور في «مميز هذا الأسبوع»',
     planOnlyYours: 'صفحتك لك وحدك',
     planOnlyYoursSub: 'لا يظهر على صفحتك أي محل آخر — الزائر يراك أنت وحدك',
@@ -2492,7 +2497,8 @@ export const STRINGS = {
     planVideo: 'Business video',
     planVerify: 'Apply for the “Verified business” badge',
     planVerifySub: 'After review',
-    planRank: 'Priority in your category results',
+    planRank: 'A place in your category\u2019s top two rows',
+    planRankSub: 'Rotating between subscribers, so nobody owns them',
     planFeatured: 'Appear in "Featured this week"',
     planOnlyYours: 'Your page, only yours',
     planOnlyYoursSub: 'No other businesses shown on your page',

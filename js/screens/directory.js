@@ -5,7 +5,7 @@ import { t, L, icon, $, $$, go, back, renderHeader, openSheet, closeSheet, confi
          pickerBtn, setPickerValue, openDropdown, closeDropdown,
          showsPrices, priceGate, wirePriceGates,
          openBadgeHtml, openBadgeSlotHtml, onMinute, distLabelHtml, cityChipLabel, fmtMiles, attrChipsHtml, fmtDay, fmtTime, bizBadgeHtml,
-         esc, outsideBoxHtml, mountOutsideBox } from '../ui.js';
+         historyKey, esc, outsideBoxHtml, mountOutsideBox } from '../ui.js';
 import { CATEGORIES, SUBSCRIPTION_PRICE, DAY_KEYS } from '../data.js';
 import * as S from '../store.js';
 import { catIcon, startSlider, repaintCityChips, mountSearchHint } from './home.js';
@@ -326,8 +326,14 @@ export function DirectoryScreen(root) {
        inside it rather than a lift over it. «الأعلى تقييماً» and «الأقرب»
        pass none — their keys are decimals that never tie, so a tiebreak
        would never fire and the paid layer would vanish. */
+    /* ⚠️ `337`: the two rows are filled by rotation, and the rotation turns
+       on the HISTORY ENTRY — the same key `scrollMemory` uses. So the rows
+       do not change under the reader while they look at them, Back brings
+       the same two, and a fresh visit gives the next advertisers their
+       turn. That is the version you can defend when a buyer asks how many
+       times they ran. */
     const pin = S.paidFirst(list, st.sort !== 'newest',
-      st.sort === 'open' ? (x) => S.isOpenNow(x, now) : null);
+      st.sort === 'open' ? (x) => S.isOpenNow(x, now) : null, historyKey());
     list = pin.list;
     const sponsored = new Set(pin.ids);
 
@@ -2118,7 +2124,10 @@ export function SubscribeScreen(root, params) {
            bought something they did not receive. «بعد المراجعة» is three
            words and it prevents all of that, so it is never dropped. */
         ['checkCircle', 'planVerify', 'planVerifySub'],
-        ['trendingUp', 'planRank', ''],
+        /* ⚠️ the sub-line is not decoration: «الصفّان الأولان» without
+           «بالتناوب» is «always first», which is not what is delivered
+           once a category holds more than two subscribers. */
+        ['trendingUp', 'planRank', 'planRankSub'],
         ['crown', 'planFeatured', ''],
         ['shield', 'planOnlyYours', 'planOnlyYoursSub'],
         ['trendingUp', 'planStats', ''],

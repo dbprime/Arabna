@@ -1514,13 +1514,67 @@ export function regionNameOf(id) {
    `336`, both of which ask for the two layers to survive. One bucket is
    the plain partition; `groupOf` is what tells the two cases apart.
 
+   ⚠️ AND IT IS TWO ROWS, NOT EVERY SUBSCRIBER — `337`, Rai's decision of
+   29 August. `330` lifted the whole layer; that was right while a category
+   held one subscriber and wrong the day it holds ten. `AD_SLOTS.dirTop`
+   bounds it, and **from the third row down nothing is lifted for having
+   paid** — the reader's own order runs untouched.
+
+   ⚠️ THE ROWS ARE CUT FROM THE LIST, NOT ADDED ABOVE IT. A subscriber
+   appears exactly ONCE: in its sponsored row. Showing it again in its
+   place by distance is «one shop twice on one screen», which is the very
+   thing the comment that deleted the old band forbade in as many words.
+
+   ⚠️ AND WHO GETS THE TWO ROWS WHEN TEN HAVE PAID: `rotate()`, which is
+   already written and already proven — it served the sponsored band
+   before `330` deleted it, and a second rotation function would be a rule
+   written twice. It turns on the VISIT key, not on plain randomness, so
+   the rows do not jump under the reader's finger while they are looking
+   at them, and Back shows the same two. Ten subscribers each get their
+   turn instead of eight of them paying to be invisible.
    @param manualSort  true when the reader picked nearest / rated / open
    @param groupOf     optional bucket key — the reader's own primary key.
-                      Absent means one bucket, i.e. a plain partition. */
-export function paidFirst(list, manualSort, groupOf) {
+                      Absent means one bucket, i.e. a plain partition.
+   @param key         the visit key the rotation turns on */
+export function paidFirst(list, manualSort, groupOf, key) {
   if (!inCoverage()) return { list, ids: [] };
   const paid = list.filter(isPaid);
   if (!paid.length) return { list, ids: [] };
+
+  const slots = AD_SLOTS.dirTop || 2;
+  if (paid.length > slots) {
+    /* ⚠️ The candidates are chosen in the order the reader's own sort left
+       them, so `336`'s rule is inherited here rather than restated: with
+       «مفتوح الآن» an open subscriber is earlier in `paid` than a closed
+       one, and a closed one cannot take a row while an open one is
+       waiting. `rotate` starts somewhere in that order and walks forward. */
+    /* ⚠️ THE ROTATION TURNS INSIDE THE BUCKET, NEVER ACROSS IT. `rotate`
+       walks a pool from a per-visit start and wraps around it, so handing
+       it every subscriber at once let it wrap past the open ones and give
+       both rows to closed shops while an open one was waiting — measured,
+       two visits in four. That is the complaint this whole thread began
+       with, shrunk into two rows. So the buckets are filled in the order
+       the reader's own sort left them, and the rotation is fair WITHIN
+       each: `336`'s rule inherited rather than restated. */
+    const top = [];
+    if (groupOf) {
+      const buckets = new Map();
+      paid.forEach(b => {
+        const k = groupOf(b);
+        if (!buckets.has(k)) buckets.set(k, []);
+        buckets.get(k).push(b);
+      });
+      for (const pool of buckets.values()) {
+        if (top.length >= slots) break;
+        top.push(...rotate(pool, slots - top.length, key));
+      }
+    } else {
+      top.push(...rotate(paid, slots, key));
+    }
+    const ids = top.map(b => b.id);
+    const seen = new Set(ids);
+    return { list: top.concat(list.filter(b => !seen.has(b.id))), ids };
+  }
 
   if (manualSort) {
     /* ⚠️ A STABLE PARTITION INSIDE EACH BUCKET, never a second sorter. The
