@@ -429,6 +429,8 @@ export const STRINGS = {
        the Hijri new year, Easter, a launch — and the moment the interface
        says «العيد» the next occasion needs a second tool. */
     greetThanks: 'شكراً',
+    swUpdate: 'في نسخة جديدة',
+    swUpdateGo: 'حدّث',
     readMore: 'اقرأ المزيد',
     readLess: 'اقرأ أقل',
     bizPage: 'صفحة المحل',
@@ -2091,6 +2093,8 @@ export const STRINGS = {
     ramDateFrom: 'First of Ramadan',
     ramDateEid: 'Eid al-Fitr',
     greetThanks: 'Thank you',
+    swUpdate: 'A new version is ready',
+    swUpdateGo: 'Update',
     readMore: 'Read more',
     readLess: 'Read less',
     bizPage: 'Business page',

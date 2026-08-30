@@ -7,7 +7,7 @@ ARABNA · عربنا — a mobile-first web app for the Arab community in the U.
 **business directory + marketplace + events + magazine**, Arabic-first with a full English toggle.
 ("Classifieds / الإعلانات الشخصية" is now "Marketplace / السوق" — the old `#/classifieds`
 routes still resolve so shared links keep working.)
-Current version: **V.07.4 (prototype)**. Owner: Rai Elby (@dbprime). Deploys to Vercel (team DB Prime).
+Current version: **V.07.5 (prototype)**. Owner: Rai Elby (@dbprime). Deploys to Vercel (team DB Prime).
 
 ## Hard rules (from the product brief)
 1. **One repository, one Vercel project.** No duplicates, no stray preview projects.
@@ -6485,6 +6485,113 @@ the two top rows are exactly the place the $29 buys; it now measures what
 is promised, that below the band distance decides and nothing else. And
 `8.1`'s helper took an id while it was handed a record, so every
 subscriber read as closed and the check measured nothing at all.
+
+## V.07.5 — the directory works with no internet
+
+⚠️ **The reason is not the store.** Somebody standing inside a supermarket
+with no signal wants a grocer's number: **the app opens and all 514
+listings are with them.** Google Play requires a service worker with a
+fetch handler and there is no way in without one — **but nothing here was
+built to please a reviewer; it is built to serve the reader.**
+
+**Measured before a line was written:** no service worker at all, and
+**with no internet the app did not open** — no error page, no line, the
+browser's own screen. First load 1,892 KB in 25 requests.
+
+### The precache list is computed, never written
+`tools/build_sw.py` walks the files and emits `js/sw-manifest.js` with the
+list and the version. ⚠️ **A hand-written list means a new module is added
+and not precached — so the app works online and dies offline, and nobody
+knows until a reader complains. That is `SUITES` in `395` to the letter.**
+
+- It reads `index.html`, `styles/app.css`, **every module under `js/`**,
+  `manifest.json`, and **the manifest's own icons read from the manifest**
+  — ⚠️ **measured: it lists SEVEN, not the six the batch file said.**
+  Deriving means the file decides.
+- ⚠️ **The build aborts below twenty files**, and the floor is **written,
+  not computed**: a pattern matching nothing would emit an empty array and
+  produce a «service worker» that caches nothing and is taken for one. A
+  threshold derived from the thing it guards always agrees with itself.
+- ⚠️ **The version comes from `js/data.js`** and goes into the cache name,
+  so **raising `APP_VERSION` is what invalidates the old cache** — one
+  number, one place, no second copy to drift.
+- **A classic script, not an ES module**: `sw.js` reaches it with
+  `importScripts`, which every browser that runs a worker supports. A
+  module worker is still uneven on Safari, and an app that will not
+  install on an iPhone is no use to this community.
+
+**Result: 33 files, 2,042 KB.**
+
+### What stays out, and what it costs
+```
+precached   index.html · styles/app.css · every js module · manifest.json
+            + the manifest's icons
+never       assets/ — 4 MB in 22 files, logo.png alone 812 KB
+never       index-single-file.html — 6.6 MB, a TEST build
+```
+⚠️ **Downloading 4 MB on somebody's mobile data before they ask is not
+caching, it is an assault on the reader.** The rest of `assets/` is cached
+**on first use**. Measured after: the first visit is **1,895 KB** — three
+kilobytes heavier, and that is the worker's own registration.
+
+### ⚠️ Three that never touch the cache
+```
+api.zippopotam.us · nominatim.openstreetmap.org · api.bigdatacloud.net
+```
+**A coordinate cached from yesterday is worse than no coordinate:** the
+reader has moved and the app insists they are where they were. These are
+**the same three written into `connect-src` in `vercel.json`** — read from
+there, never listed twice.
+
+### The update trap, which is what kills apps
+A worker serving from the cache means a reader can sit on an old build for
+ever, **and you cannot reach their phone.** And it is not solved by
+`skipWaiting()` on install: **that swaps the modules while the reader is
+inside a screen, so a new module is imported by an old build and it breaks
+in front of them.**
+
+> **The new version waits. One line — «في نسخة جديدة» — with a button, and
+> only when the reader presses does it take over and reload.**
+
+- **Shown with the existing `toast()`, extended with an optional action**
+  rather than a second component to keep in sync. An actionable toast does
+  not auto-dismiss — a prompt that vanishes in 2.4s cannot carry a tap.
+- **Old caches are deleted on `activate`**, or a stale one sits on the
+  reader's phone costing megabytes never used again.
+- The reload waits for `controllerchange`, not for the message.
+
+### ⚠️ https only — and that is what protects the net
+A service worker is allowed on `localhost` exactly as on https, **and the
+net runs fifty suites there.** Registered, it would live between suites
+and serve stale files — **and a red from an old cache is worse than a real
+red, because it does not reproduce and nobody can read it.** Google Play
+requires https anyway and production is https, so the reader loses
+nothing.
+
+> ⚠️ **And the cost is said plainly: the net does not cover the service
+> worker.** It is checked by hand on a Vercel preview with the network
+> off, and the result goes in the closing line. **A test that does not run
+> is said not to run; it is never claimed.**
+
+**And `/sw.js` is served `no-cache`** in `vercel.json`: nothing stopped the
+browser caching the worker itself, **and a cached worker means the update
+never arrives, with no way to tell why.** The year-long `immutable` on
+`assets/` is right for them and wrong for it.
+
+### `test_v53` — 20 assertions, and both teeth proven
+```
+delete a module from the generated list → 1.1 red
+make skipWaiting automatic on install   → 4.1 red
+```
+⚠️ **And 4.1 caught me first time round for the wrong reason:** it matched
+the install block's own comment — «NO `skipWaiting()` HERE» — and reported
+the fault it exists to prevent. **The comments are stripped before any
+«does the code do X» check: a check must read the code, never the prose
+about the code.**
+
+**What this batch does NOT do:** the 1,895 KB and 25 requests of the first
+load are another item. ⚠️ **A service worker makes the SECOND visit
+lighter, not the first, and nothing else is claimed.**
 
 ## Known open items
 - **The header image is still far larger than its box.** V.04.7 replaced

@@ -7,7 +7,8 @@ import { state, registerStrings, runReminders, runSubscriptionCycle,
          liveGreeting, markGreetingSeen } from './store.js';
 import { $, renderHeader, renderNav, hideNav, closeSheet, hideDrawer, drawerOwnsEntry, closeDropdown,
          mountScrollMemory, restoreScroll, historyKey, markShown, startClock, mountAdShare,
-         applyTheme, applyFontScale, mountThemeWatch, openGreeting, sheetOpen } from './ui.js';
+         applyTheme, applyFontScale, mountThemeWatch, openGreeting, sheetOpen,
+         mountServiceWorker } from './ui.js';
 
 import { OffersScreen, HomeScreen, mountGeoRefresh } from './screens/home.js';
 import { CategoriesScreen } from './screens/categories.js';
@@ -167,6 +168,9 @@ function catchUp() {
   mountAdShare();
   startClock();
   mountGeoRefresh();
+  /* ⚠️ Inside `catchUp`'s own try, and last: a service worker that fails
+     to register must never stop the app opening. */
+  mountServiceWorker();
 }
 
 /* ---------------- the greeting ---------------------------------------

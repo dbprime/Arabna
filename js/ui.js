@@ -562,14 +562,78 @@ export function sponsoredRows(rows) {
 }
 
 /* ---------------- toast ---------------- */
-export function toast(msg, kind = '') {
+/**
+ * @param opts  optional `{ action, onAction }` — a toast the reader can
+ *              press, which then stays until they do. ⚠️ This EXTENDS the
+ *              one toast the app has rather than inventing a second
+ *              component: the update prompt is one line and a tap, and a
+ *              banner of its own would be a surface to keep in sync. And
+ *              a toast that vanishes in 2.4s cannot carry an action, so
+ *              the actionable one does not auto-dismiss.
+ */
+export function toast(msg, kind = '', opts = null) {
   const root = $('#toast');
   const el = document.createElement('div');
   el.className = 'toast ' + kind;
-  el.innerHTML = (kind === 'ok' ? icon('checkCircle', 19) : kind === 'err' ? icon('alert', 19) : icon('info', 19)) + `<span>${msg}</span>`;
+  el.innerHTML = (kind === 'ok' ? icon('checkCircle', 19) : kind === 'err' ? icon('alert', 19) : icon('info', 19)) + `<span>${esc(msg)}</span>`;
+  if (opts && opts.action) {
+    const b = document.createElement('button');
+    b.className = 'toast-act';
+    b.textContent = opts.action;
+    b.addEventListener('click', () => { el.remove(); opts.onAction && opts.onAction(); });
+    el.appendChild(b);
+    el.style.pointerEvents = 'auto';
+  }
   root.appendChild(el);
+  if (opts && opts.action) return;          // stays until it is pressed
   setTimeout(() => { el.style.opacity = '0'; el.style.transition = 'opacity .25s'; }, 2400);
   setTimeout(() => el.remove(), 2750);
+}
+
+/* ---------------- the service worker ----------------
+ * ⚠️ ONLY ON https, AND THAT PROTECTS THE NET. A service worker is
+ * allowed on `localhost` exactly as it is on https — and the net runs
+ * fifty suites there. Registered, it would live between suites and serve
+ * stale files: a red from an old cache is worse than a real red, because
+ * it does not reproduce and nobody can read it. Google Play requires
+ * https anyway and production is https, so the reader loses nothing.
+ *
+ * ⚠️ AND ITS COST IS SAID PLAINLY: the net does not cover the service
+ * worker. It is checked by hand on a Vercel preview link with the network
+ * off, and the result is written into the closing line. A test that does
+ * not run is said not to run; it is never claimed.
+ */
+export function mountServiceWorker() {
+  if (location.protocol !== 'https:') return false;
+  if (!('serviceWorker' in navigator)) return false;
+  navigator.serviceWorker.register('/sw.js').then((reg) => {
+    /* ⚠️ THE NEW VERSION WAITS. `skipWaiting()` on its own swaps the
+       modules while the reader is inside a screen, so a new module is
+       imported by an old build and it breaks in front of them. It takes
+       over only when they press. */
+    const offer = (worker) => {
+      if (!worker) return;
+      toast(t('swUpdate'), '', {
+        action: t('swUpdateGo'),
+        onAction: () => {
+          worker.postMessage({ type: 'SKIP_WAITING' });
+          navigator.serviceWorker.addEventListener('controllerchange',
+            () => location.reload(), { once: true });
+        },
+      });
+    };
+    if (reg.waiting) offer(reg.waiting);
+    reg.addEventListener('updatefound', () => {
+      const w = reg.installing;
+      if (!w) return;
+      w.addEventListener('statechange', () => {
+        /* `controller` is null on the very first install — there is no old
+           version to replace, so there is nothing to offer */
+        if (w.state === 'installed' && navigator.serviceWorker.controller) offer(w);
+      });
+    });
+  }).catch(() => { /* an app that opens is worth more than one that caches */ });
+  return true;
 }
 
 /* ---------------- bottom sheet ---------------- */
