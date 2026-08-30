@@ -78,29 +78,44 @@ const seed = (p, { geo = false, coverage = true, miles = [0.40, 0.05, 0.25, 0.10
     return { paid: shops.slice(0, 4).map(b => b.id), free: shops.slice(4, 9).map(b => b.id) };
   }, [geo, coverage, miles]);
 
-const layers = p => p.evaluate(() => {
+/* ⚠️ `337` BOUNDED THE BAND. `330` lifted every active subscription; Rai's
+   decision of 29 August caps it at `AD_SLOTS.dirTop` rows filled by
+   rotation, so «layer one holds all four» is deliberately no longer true —
+   the subscribers who did not draw a row stand unmarked in their ordinary
+   place, which is the point of bounding it. Each item below keeps its
+   subject and is measured against the bounded band. */
+const layers = (p, sorted) => p.evaluate((sortIt) => {
   const S = window.__S;
-  const list = S.everyBusiness().filter(b => b.cat === 'restaurants').slice(0, 9)
+  let list = S.everyBusiness().filter(b => b.cat === 'restaurants').slice(0, 9)
     .map(b => S.businessById(b.id));
-  const r = S.paidFirst(list);
+  /* the reader's own order goes in, exactly as `directory.js` hands it over */
+  if (sortIt) list = S.byNearest(list);
+  const r = S.paidFirst(list, !!sortIt, null, 'v49');
   return {
     ids: r.ids,
+    slots: S.AD_SLOTS ? S.AD_SLOTS.dirTop : 2,
     order: r.list.map(b => ({ id: b.id, paid: S.isPaid(b), d: S.distanceTo(b) })),
   };
-});
+}, sorted);
 
 /* ---- 1. every subscriber before the first free listing ---- */
 {
   const { ctx, p } = await open();
   await seed(p);
   const r = await layers(p);
-  ok('1.1 layer one holds all four subscribers', r.ids.length === 4, String(r.ids.length));
+  /* ⚠️ CHANGED by `337`: two rows, not four — and every row in the band is
+     paid for, which is what protects the reader. */
+  ok('1.1 the band is bounded, and holds only subscribers',
+     r.ids.length === 2 && r.order.slice(0, r.ids.length).every(x => x.paid),
+     r.ids.length + ' rows');
   const firstFree = r.order.findIndex(x => !x.paid);
-  ok('1.2 …and every one of them is above the first free listing',
-     r.order.slice(0, firstFree).every(x => x.paid) && firstFree === 4, 'first free at ' + firstFree);
-  /* ⚠️ THE CASE THE OLD CHAIN GOT WRONG: a new subscriber has no ratings */
+  ok('1.2 …and every sold row is above the first free listing',
+     firstFree >= r.ids.length, 'first free at ' + firstFree);
+  /* ⚠️ THE CASE THE OLD CHAIN GOT WRONG, and it still holds: a new
+     subscriber has no ratings and would have sunk below every rated free
+     listing. Inside the band it leads them. */
   ok('1.3 a subscriber rated 0 still leads a free listing rated 4.9+',
-     r.order[0].paid && !r.order[4].paid);
+     r.order[0].paid && !r.order[firstFree].paid);
   await ctx.close();
 }
 
@@ -110,12 +125,19 @@ const layers = p => p.evaluate(() => {
   /* the four points are shuffled on purpose: a list that comes back sorted
      from an already-sorted input proves nothing */
   await seed(p, { geo: true });
-  const r = await layers(p);
-  const ds = r.order.slice(0, 4).map(x => x.d);
-  ok('2.1 layer one is ordered by real miles, ascending',
-     ds.every((d, i) => i === 0 || (d != null && ds[i - 1] != null && d >= ds[i - 1])),
-     ds.map(d => d == null ? '—' : d.toFixed(2)).join(' · '));
-  ok('2.2 …and it really was shuffled going in', ds[0] < ds[3], ds[0] + ' < ' + ds[3]);
+  const r = await layers(p, true);
+  const below = r.order.slice(r.ids.length).map(x => x.d).filter(d => d != null);
+  /* ⚠️ CHANGED by `337`: the two sold rows are drawn BY ROTATION from the
+     reader's own order, so they are not themselves a sorted pair — that is
+     the decision, and freezing them would be the fault. What the reader is
+     owed, and what is measured, is that EVERYTHING BELOW THE BAND is in
+     real miles ascending, which is the promise «from the third row down,
+     the nearest first, with no exception». */
+  ok('2.1 below the band it is real miles, ascending',
+     below.length > 1 && below.every((d, i) => i === 0 || d >= below[i - 1]),
+     below.map(d => d.toFixed(2)).join(' · '));
+  ok('2.2 …and it really was shuffled going in',
+     below[0] < below[below.length - 1], below[0] + ' < ' + below[below.length - 1]);
   await ctx.close();
 }
 
@@ -132,11 +154,18 @@ const layers = p => p.evaluate(() => {
     S.state.businessEdits[id] = { plan: 'paid', lat: null, lng: null };
     S.save();
   });
-  const r = await layers(p);
-  ok('3.1 it is still in layer one', r.ids.length === 4, String(r.ids.length));
-  ok('3.2 …at the end of it, not outside it',
-     r.order[3].d == null && r.order.slice(0, 4).every(x => x.paid),
-     JSON.stringify(r.order.slice(0, 4).map(x => x.d)));
+  const r = await layers(p, true);
+  /* ⚠️ CHANGED by `337`: with the band bounded it may not draw a row this
+     visit, and that is the rotation working. What must never happen — and
+     is what this item was always about — is that HAVING NO POINT costs it
+     its place: it stays in the directory, it stays eligible, and it is
+     never pushed out of the running for having no coordinates. */
+  const noPoint = r.order.find(x => x.paid && x.d == null);
+  ok('3.1 a subscriber with no point is never dropped from the directory',
+     !!noPoint, JSON.stringify(r.order.slice(0, 4).map(x => x.d)));
+  ok('3.2 …and it is still one of the paid rows the band draws from',
+     r.ids.length === 2 && r.order.slice(0, 2).every(x => x.paid),
+     r.ids.join(','));
   await ctx.close();
 }
 
@@ -173,16 +202,25 @@ const layers = p => p.evaluate(() => {
   const { ctx, p } = await open();
   await seed(p, { geo: true });
   await go(p, '#/directory?cat=restaurants');
-  const rows = await p.evaluate(() => [...document.querySelectorAll('#dirList .list-row')]
-    .slice(0, 4).map(e => ({
-      marked: /مموّل|Sponsored/.test(e.innerText),
-      sub: ((e.querySelector('.row-sub') || {}).textContent || '').trim(),
-    })));
+  /* ⚠️ CHANGED by `337`: it read the first FOUR rows, because four were
+     lifted. The band is two now, and the rows below it are free listings
+     that must NOT carry the mark — so the check reads the band itself
+     rather than a frozen count. */
+  const rows = await p.evaluate(async () => {
+    const D = await import('/js/data.js');
+    const all = [...document.querySelectorAll('#dirList .list-row[data-route^="#/directory/"]')]
+      .map(e => ({ marked: /مموّل|Sponsored/.test(e.innerText),
+                   sub: ((e.querySelector('.row-sub') || {}).textContent || '').trim() }));
+    return { band: all.filter(r => r.marked), slots: D.AD_SLOTS.dirTop, first: all.slice(0, 3) };
+  });
   ok('6.1 every lifted row carries the sponsored mark',
-     rows.length === 4 && rows.every(r => r.marked), JSON.stringify(rows.map(r => r.marked)));
+     rows.band.length > 0 && rows.band.length <= rows.slots
+     && rows.first.slice(0, rows.band.length).every(r => r.marked),
+     rows.band.length + ' / ' + rows.slots);
   /* ⚠️ THE MONEY BUYS THE POSITION, NOT THE RIGHT TO HIDE THE DISTANCE. */
   ok('6.2 …and none of them hides its distance line',
-     rows.every(r => r.sub.length > 0), JSON.stringify(rows.map(r => r.sub.slice(0, 14))));
+     rows.band.every(r => r.sub.length > 0),
+     JSON.stringify(rows.band.map(r => r.sub.slice(0, 14))));
   await ctx.close();
 }
 
