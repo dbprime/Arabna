@@ -47,7 +47,7 @@ export function isAndroid() { return /android/i.test(ua()); }
    which is the one route where installing is impossible. Each token
    below is a product that publishes it in its own user-agent. */
 const IN_APP = /FBAN|FBAV|FB_IAB|FBIOS|Instagram|Messenger|Line\/|MicroMessenger|Snapchat|TikTok|Twitter|GSA\//i;
-export function inAppBrowser() { return false; }
+export function inAppBrowser() { return IN_APP.test(ua()); }
 
 /* ---------------- the native Android prompt ----------------
  * Chrome fires `beforeinstallprompt` and lets the page keep the event and

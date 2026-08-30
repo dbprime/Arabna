@@ -6731,6 +6731,32 @@ keyed. The launch counter is what made it visible — **it read 2 on a first
 visit and spent the invite before anybody had returned.** One entry guard,
 and both entry points stay: whichever fires first owns the boot.
 
+### ⚠️ And the teeth run committed itself into the branch
+Proving a check has teeth means **breaking the app on purpose** — deleting
+the in-app detection, filling a store link — and restoring it after. That
+run was still between its two halves when I committed, so
+`js/install.js` went to the branch reading `inAppBrowser() { return false; }`:
+**the Facebook case, the one item in this batch that serves Ramadan,
+disabled in the pushed tree.**
+
+⚠️ **And the two builds disagreed**, which is the shape that hides it:
+`index-single-file.html` had been generated BEFORE the mutation, so the
+single-file build was correct and the module build was not — measured by
+decoding the inlined module, not by grepping the file, because the
+single-file build base64-encodes every module and a text search over it
+finds nothing either way.
+
+> **THE RULE: a teeth run owns the working tree while it runs.** Nothing
+> is committed, no other suite is started, and `git status` must come back
+> clean before anything is staged. Restoring at the end of the script is
+> not enough — the window in the middle is real, and a background run
+> makes it minutes long.
+
+⚠️ It also cost the full net a restart: I had started it over the same
+mutated tree, and stopped it rather than let it measure a file I had
+broken myself. **A green over a tree nobody trusts is worth less than no
+run at all.**
+
 ### `test_v54` — 34 assertions, and four the net cannot reach
 ⚠️ **Chromium does not emulate `display-mode`** (recorded here since
 V.01.7), it fires no real `beforeinstallprompt`, and there is no share
