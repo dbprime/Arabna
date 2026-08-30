@@ -347,18 +347,31 @@ ok('6.38 it is labelled, and keeps its area line', /إعلان مموّل/.test(
    is the promise that actually protects the reader: the labelled rows are
    exactly the paid ones — no free shop wears the badge, and no paid shop
    leads without it — and they are contiguous at the top, so the sold band
-   has a bottom edge somebody can see. */
+   has a bottom edge somebody can see.
+   ⚠️ CHANGED in V.07.4 (`337`), and it is that batch's own decision: the
+   band is BOUNDED at `AD_SLOTS.dirTop` rows, filled by rotation, and from
+   the third row down nothing is lifted for having paid. So «every paid
+   shop is marked» is deliberately no longer true — the subscribers who
+   did not draw a row this visit stand unmarked in their ordinary place,
+   which is the whole point of bounding it.
+   ⚠️ What must NOT change, and is what is asserted instead: no FREE shop
+   ever wears the badge, the band is contiguous at the top so it has a
+   visible bottom edge, and it never exceeds the constant. Those three are
+   the reader's protection; «all of them are marked» was the old model. */
 const sold = await page.evaluate(async () => {
   const S = await import('/js/store.js');
+  const D = await import('/js/data.js');
   const rows = [...document.querySelectorAll('#dirList .list-row[data-route^="#/directory/"]')]
     .map(r => ({ id: r.dataset.route.split('/').pop(), ad: !!r.querySelector('.badge-sponsored') }));
-  const paid = rows.filter(r => S.isPaid(S.businessById(r.id)));
-  return { n: rows.filter(r => r.ad).length,
-           badgeIsPaid: rows.every(r => r.ad === paid.some(p => p.id === r.id)),
-           contiguous: rows.findIndex(r => !r.ad) === rows.filter(r => r.ad).length };
+  const marked = rows.filter(r => r.ad);
+  return { n: marked.length,
+           slots: D.AD_SLOTS.dirTop,
+           noFreeBadge: marked.every(r => S.isPaid(S.businessById(r.id))),
+           contiguous: rows.findIndex(r => !r.ad) === marked.length };
 });
-ok('6.39 the sold rows are exactly the paid ones, and they lead together',
-   sold.n > 0 && sold.badgeIsPaid && sold.contiguous, JSON.stringify(sold));
+ok('6.39 every sold row is paid for, they lead together, and the band is bounded',
+   sold.n > 0 && sold.noFreeBadge && sold.contiguous && sold.n <= sold.slots,
+   JSON.stringify(sold));
 await page.evaluate(() => {
   const s = JSON.parse(localStorage.getItem('arabna.v1'));
   s.location = { zip: '', city: 'Katy', state: 'TX' }; s.geo = null;
