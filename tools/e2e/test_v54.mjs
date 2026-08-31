@@ -56,7 +56,20 @@ async function open(ua, hash = '#/home', seed = null, standalone = false) {
   await page.waitForTimeout(700);
   return { ctx, page };
 }
-const barShown = p => p.evaluate(() => { const b = document.querySelector('#installBar'); return !!b && !b.hidden; });
+/* ⚠️ WHAT IS DRAWN, NEVER WHAT THE ATTRIBUTE SAYS — and this is the half
+   that matters more than the fix it replaces. The old line read
+   `!b.hidden`, and the attribute was perfectly correct: `hidden === true`
+   with `display: flex` beside it. So this check was GREEN while a 374×22
+   strip stood on all ten screens taking every touch that landed on it.
+   ⚠️ That is «a net that lies about a green build» — the same family as
+   `SUITES` in `395`, and as `test_v53 · 6.3` measuring the page instead
+   of the list. A check reads the pixel, not the property. */
+const barShown = p => p.evaluate(() => {
+  const b = document.querySelector('#installBar');
+  if (!b) return false;
+  const cs = getComputedStyle(b);
+  return cs.display !== 'none' && b.getBoundingClientRect().height > 0;
+});
 const dump     = p => p.evaluate(() => localStorage.getItem('arabna.v1'));
 const inst     = p => p.evaluate(() => (JSON.parse(localStorage.getItem('arabna.v1') || '{}').install) || null);
 const mode     = p => p.evaluate(m => eval(m).then(x => x.installMode()), MOD);
@@ -258,6 +271,39 @@ console.log('--- somebody who adds it for an alert that never arrives was sold a
      !sysNotif.test(jsAll));
   ok('8.7 …so «تنبيه الأذان» is not a reason to install, and cannot become one silently',
      bad.length === 0 && !sysNotif.test(jsAll));
+}
+
+/* ============ 10 — and the class, not the incident ============ */
+console.log('--- an element that says it is not there must not be drawn ---');
+{
+  /* ⚠️ WRITTEN GENERALLY AND NOT BY THE NAME `#installBar`: a check named
+     after one element guards one element, and this is a CLASS of fault,
+     not an accident. `.search-clear` was the first case and was patched
+     where it stood; the second went unseen for a whole batch. */
+  const SCREENS = ['#/home', '#/directory', '#/marketplace', '#/profile', '#/settings',
+                   '#/prayer', '#/events', '#/magazine', '#/add-business', '#/install'];
+  const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, userAgent: IPHONE });
+  const page = await ctx.newPage();
+  const drawn = [];
+  for (const r of SCREENS) {
+    await page.goto(BASE + r, { waitUntil: 'domcontentloaded' });
+    await page.waitForTimeout(450);
+    const bad = await page.evaluate(() => [...document.querySelectorAll('[hidden]')]
+      .filter(e => getComputedStyle(e).display !== 'none' && e.getBoundingClientRect().height > 0)
+      .map(e => (e.id ? '#' + e.id : e.tagName.toLowerCase() + '.' + e.className)));
+    bad.forEach(x => drawn.push(r + ' ' + x));
+  }
+  ok('10.1 no [hidden] element is drawn on any screen', drawn.length === 0,
+     [...new Set(drawn)].slice(0, 4).join(' · '));
+  /* the rule is general and lives in one place — a second copy is the one
+     nobody updates, which is how the first case came back as the second */
+  const css = readFileSync(ROOT + 'styles/app.css', 'utf8')
+    .replace(/\/\*[\s\S]*?\*\//g, '');
+  const hid = (css.match(/\[hidden\]/g) || []).length;
+  ok('10.2 …and the rule that says so is written exactly once', hid === 1, hid + ' occurrences');
+  ok('10.3 …with the !important that the class rule would otherwise beat',
+     /\[hidden\]\s*\{\s*display:\s*none\s*!important;?\s*\}/.test(css));
+  await ctx.close();
 }
 
 ok('9.1 zero console errors across every state above', errors.length === 0, errors.slice(0, 2).join(' | '));

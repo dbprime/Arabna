@@ -7,7 +7,7 @@ ARABNA · عربنا — a mobile-first web app for the Arab community in the U.
 **business directory + marketplace + events + magazine**, Arabic-first with a full English toggle.
 ("Classifieds / الإعلانات الشخصية" is now "Marketplace / السوق" — the old `#/classifieds`
 routes still resolve so shared links keep working.)
-Current version: **V.07.7 (prototype)**. Owner: Rai Elby (@dbprime). Deploys to Vercel (team DB Prime).
+Current version: **V.07.8 (prototype)**. Owner: Rai Elby (@dbprime). Deploys to Vercel (team DB Prime).
 
 ## Hard rules (from the product brief)
 1. **One repository, one Vercel project.** No duplicates, no stray preview projects.
@@ -6987,6 +6987,87 @@ correct and it is useful. The check was wrong, and only the check changed.
 localStorage code sites in js/   1
 window.open( in js/              0
 alertSchedule, worst case       64
+```
+
+## V.07.8 — a hidden strip drew itself, and swallowed the touch
+
+**Rai found it on his own phone.** A fault this batch put into the
+published build in `425`, and it stood on **every screen**.
+
+```html
+<div id="installBar" class="install-bar" hidden></div>
+```
+```css
+.install-bar { position: absolute; … display: flex; … }
+```
+
+⚠️ **`hidden` comes from the browser's default sheet at the weakest
+priority, so any class rule writing `display` cancels it.** The attribute
+was set correctly and nothing happened on screen. Measured on all ten
+screens walked, on 0.7.6:
+
+```
+el.hidden · hasAttribute        true · true
+innerHTML.length                0
+getComputedStyle.display        flex          ← the fault
+drawn                           374 × 22 at y=736
+elementFromPoint in its middle  #installBar
+```
+
+**374 = 390 − 8 − 8, which is `inset-inline: 8px` exactly** — so what was
+drawn was that strip and not something resembling it.
+
+⚠️ **And it was not only a white line: it took the touch.** A 22px strip
+directly above the bottom bar, `pointer-events: auto`, `z-index: 120`,
+consuming every tap that landed on it. **In the directory it covers the
+last visible row — the reader taps a shop and it does not open, taps again
+and it does not open.**
+
+### The line, and it is general on purpose
+```css
+[hidden] { display: none !important; }
+```
+
+- ⚠️ **`!important` is deliberate and is not removed.** Without it the very
+  class rule that caused this wins again. **It is the one place in the file
+  that earns it:** a rule saying «this element is not there» must not be
+  beaten by anything.
+- ⚠️ **And `.search-clear[hidden] { display: none }` is deleted with it** —
+  a local patch for **this same class**, whose own comment said «`display:
+  grid` beats the `hidden` attribute». **So it had happened before and was
+  fixed where it stood.** The same rule written twice is the `esc()` fault,
+  and the second copy is the one nobody updates. **`[hidden]` now appears
+  exactly once in the stylesheet.**
+- **The code was right and is untouched.** `hideInstallInvite` sets
+  `hidden = true` and empties the node — that is correct, and «fixing» it
+  with `style.display` would hide this one element and leave the class open
+  for whoever comes next.
+
+### ⚠️ And why the net did not catch it — which matters more than the fault
+```js
+const barShown = p => p.evaluate(() =>
+  { const b = document.querySelector('#installBar'); return !!b && !b.hidden; });
+```
+
+**The check read the property, not the pixel** — and the property was
+perfectly correct. **So `test_v54` was green while the strip stood on ten
+screens.** That is «a net that lies about a green build»: the same family
+as `SUITES` in `395`, and as `test_v53 · 6.3` measuring the page instead of
+the list.
+
+`barShown` now reads `getComputedStyle` and the rectangle. **And a new
+check is written generally, never by the name `#installBar`** — a check
+named after one element guards one element, and **this is a class of fault,
+not an incident**: `10.1` walks all ten screens and asserts that nothing
+carrying `[hidden]` is drawn, `10.2` that the rule exists exactly once, and
+`10.3` that it keeps its `!important`.
+
+### Measured, before and after
+```
+[hidden] elements drawn, ten screens   10 → 0
+#installBar height                     22px → 0
+[hidden] in styles/app.css             2 → 1
+the invite itself                      still shows on the second visit, and still dismisses
 ```
 
 ## Known open items

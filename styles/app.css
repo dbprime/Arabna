@@ -246,6 +246,31 @@ html { font-size: 106.25%; }
 :root { --font-display: 'Noto Kufi Arabic', 'IBM Plex Sans Arabic', sans-serif; }
 
 
+/* ⚠️ `hidden` COMES FROM THE BROWSER'S DEFAULT SHEET, AT THE WEAKEST
+   PRIORITY — so any class rule that writes `display` cancels it. The
+   attribute is set correctly in the code and nothing happens on screen.
+
+   Measured on the published 0.7.6, on all ten screens walked: `#installBar`
+   carried `hidden`, `hidden === true`, `innerHTML.length === 0` — and was
+   drawn 374 × 22 at y=736, with `elementFromPoint` in its middle returning
+   the bar itself. ⚠️ A 22px strip straight above the bottom bar, taking
+   every touch that lands on it and doing nothing with them: in the
+   directory it sits over the last visible row, so the reader taps a shop
+   and it does not open.
+
+   ⚠️ AND IT HAD HAPPENED BEFORE. `.search-clear[hidden] { display: none }`
+   was a local patch for this same class — «`display: grid` beats the
+   `hidden` attribute, so the empty-field ✕ was showing anyway». It is
+   deleted with this rule going in: the same rule written twice is the
+   `esc()` fault, and the second copy is the one nobody updates.
+
+   ⚠️ `!important` IS DELIBERATE AND IS NOT REMOVED. Without it the very
+   class rule that caused this wins again. This is the one place in the
+   file that earns it: a rule saying «this element is not there» must not
+   be beaten by anything. And it is general on purpose — whatever is
+   hidden with `hidden` tomorrow is covered with no new line. */
+[hidden] { display: none !important; }
+
 html, body {
   margin: 0; padding: 0;
   background: var(--bg);
@@ -2140,11 +2165,6 @@ input[inputmode="tel"], input[type="email"], input[inputmode="decimal"], #zipIn 
   display: grid; place-items: center; color: var(--muted);
   background: var(--wash-2); border: 0;
 }
-/* `display: grid` beats the `hidden` attribute, so the empty-field ✕ was
-   showing anyway — and once the city chip joined the row it landed on top
-   of it. The attribute wins again. */
-.search-clear[hidden] { display: none; }
-
 .chip-n {
   font-size: .6875rem; font-weight: 700; opacity: .7;
   margin-inline-start: 4px;
