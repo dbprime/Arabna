@@ -7,7 +7,7 @@ ARABNA · عربنا — a mobile-first web app for the Arab community in the U.
 **business directory + marketplace + events + magazine**, Arabic-first with a full English toggle.
 ("Classifieds / الإعلانات الشخصية" is now "Marketplace / السوق" — the old `#/classifieds`
 routes still resolve so shared links keep working.)
-Current version: **V.07.6 (prototype)**. Owner: Rai Elby (@dbprime). Deploys to Vercel (team DB Prime).
+Current version: **V.07.7 (prototype)**. Owner: Rai Elby (@dbprime). Deploys to Vercel (team DB Prime).
 
 ## Hard rules (from the product brief)
 1. **One repository, one Vercel project.** No duplicates, no stray preview projects.
@@ -6805,6 +6805,147 @@ V.01.7), it fires no real `beforeinstallprompt`, and there is no share
 sheet. So the share sheet, a real Facebook link on an iPhone, and the
 Android dialog are **checked by hand and written into the closing line.**
 **A test that does not run is said not to run; it is never claimed.**
+
+## V.07.7 — the app gets ready for a native shell, and the data survives first
+
+**This is not the shell.** The shell needs a Mac, Xcode and an Apple
+account, and is not something written into a file that gets pasted. Every
+item here earns its place on the web **today**, not on the day the store
+opens — it is a batch of doors, not of behaviour, and not one line of what
+the reader sees changed.
+
+### The biggest danger in the project, and it is one problem in three worlds
+Everything a reader owns sits under one key, `arabna.v1`: the account, the
+claimed businesses, the favourites, the subscription, the receipts, the
+photo waiting for review.
+
+| where | what happens to it |
+|---|---|
+| a Safari tab | Apple's tracking prevention deletes `localStorage`, IndexedDB **and the service worker's cache** after **seven idle days** |
+| added to the home screen | **exempt from the seven days** |
+| inside a native shell | the platforms may clear `window.localStorage` periodically; a native storage API replaces it |
+
+⚠️ **So somebody who did not open the app for a week comes back to no
+account — having deleted nothing, understanding nothing, and not coming
+back a third time.** ⚠️ **And this turns `425` from a nicety into a
+survival condition**: on an iPhone, adding the app to the home screen is
+what makes the reader's data and `420`'s offline cache live at all.
+
+### One gate, because five identical writes are the rule written five times
+`localStorage` was touched in **six places in `js/store.js`** — one read
+and **five copies** of `try { setItem } catch`. Five copies means the
+fourth is the one nobody edits when the rule changes; that is `esc()`'s own
+fault wearing another file's clothes.
+
+```
+BACKEND    one line · the only line in the app that touches the browser store
+readState  the only read
+writeState the only write — the four boot migrations and save() all call it
+```
+
+**Measured: `localStorage` code sites in `js/` went 6 → 1.**
+
+- ⚠️ **The gate does not know who stores.** On the day the shell arrives
+  its native API goes into that one line and **nowhere else** — not in
+  twenty-three modules.
+- ⚠️ **The shell's machinery is NOT built today, only the door.** An
+  interface written for a machine nobody has tried gets written twice.
+- ⚠️ **The key is never changed.** Changing `arabna.v1` means every reader
+  opens the app tomorrow and finds nothing. Asserted, not merely intended.
+
+### One way out, and it is `342`'s fault in a native costume
+Inside the iOS in-app browser the directions button once left Rai in a
+window with no way back. **A native shell does the same thing to
+`window.open`** — it may open the map *inside* the app and trap the reader
+there.
+
+```
+before   window.open( × 2 in ui.js  ·  location.href = 'tel:' × 2 in directory.js
+after    openExternal(url) — and window.open( in js/ is ZERO
+```
+
+- ⚠️ **It is an anchor, not `window.open`, and that is the better
+  implementation rather than a way to satisfy a grep.** It is the same path
+  the app already uses for every link it prints (`<a target="_blank"
+  rel="noopener">`), so there is one behaviour and not two; a popup blocker
+  treats a real anchor click far more kindly; and `rel="noopener"` is
+  carried by the element, so the opened page can never reach back through
+  `window.opener`.
+- **A `tel:` or `mailto:` goes to `location.href`** — the scheme branch is
+  the door's job, not the caller's. A popup blocks it in some browsers and
+  opens a blank tab in others.
+- Today it does exactly what the four calls did. **The value is that four
+  doors became one.**
+
+### `persist()` is asked for, and nothing rests on the answer
+`navigator.storage.persist()` at boot. ⚠️ **It is not a guarantee, Apple
+does not document it, and it does not stop the seven-day rule.** So it is
+asked and forgotten — **and no string anywhere tells the reader their data
+is safe**, which `test_v55 · 3.3` holds.
+
+⚠️ **That check earned itself immediately:** «سجّل دخولك لننشر إعلانك —
+بياناتك محفوظة» meant *what you typed is parked* (true — `state.draft`) but
+**reads as «your data is stored safely»**, the one claim this app must not
+make. The English side already said «what you wrote is saved»; the Arabic
+now matches it.
+
+### The adhan alert does not wait for the server — and the copy said it did
+⚠️ **Measured: `js/prayer.js` computes everything with no network request
+at all**, and a local notification is scheduled *on the device*. So:
+
+```
+times computed on the device  +  alert scheduled on the device  =  no server
+```
+
+**The strongest thing the app can offer was waiting for the wrong
+milestone.** `prAlertSoon` read «يعمل مع إطلاق السيرفر»; it now reads
+**«يحتاج نسخةً أصليّة من البرنامج»**.
+
+⚠️ **And not the web either, which is why `425`'s guard stands.** The one
+API that could schedule a future notification — Notification Triggers —
+**was abandoned**: «it was not clear we could deliver a consistent and
+reliable experience across platforms». On the web an alert arrives only
+while the page is open or from a push server, and the adhan's moment is
+exactly when the phone is locked and the app closed. **The two halves do
+not meet, so the promise is not made** — `test_v54 · 8.6` and `8.7` are not
+softened, not edited and not moved. **They were right; the spec was
+corrected.**
+
+### ⚠️ Sixty-four, and it kills the feature silently if it is ignored
+iOS allows **64 pending local notifications per app** — an Apple engineer's
+own words are that this is a system limit with no way around it.
+
+```
+5 prayers a day  →  64 ÷ 5 = 12.8 days, then silence
+```
+
+**Somebody who does not open the app for a fortnight goes quiet, does not
+know why, and concludes the app is broken.** So `alertSchedule()` is a
+**rolling window**: every launch rebuilds it as far ahead as the ceiling
+allows. Measured from Houston:
+
+| chosen | alerts | reach |
+|---|---|---|
+| five prayers | 64 | **13 days** |
+| two prayers | 64 | **31 days** |
+| one prayer | 64 | **64 days** |
+
+- **The arithmetic is built and the scheduling is not.** A function that
+  answers «which moments» is testable today and callable by the shell
+  tomorrow. **Nothing here fires a notification, and `test_v55 · 4.9` says
+  so.**
+- **A prayer that cannot exist is skipped, never guessed** — and the loop
+  is bounded, so a polar summer where three of five are null cannot spin.
+- ⚠️ **«Always» is not promised.** The screen says «افتح البرنامج بين حينٍ
+  وآخر ليبقى التنبيه» — `337` and `415`'s rule: an alert that stops with no
+  word is worse than no alert.
+
+### `test_v55` — 29 assertions, and the three numbers the batch closes on
+```
+localStorage code sites in js/   1
+window.open( in js/              0
+alertSchedule, worst case       64
+```
 
 ## Known open items
 - **The header image is still far larger than its box.** V.04.7 replaced

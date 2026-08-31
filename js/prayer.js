@@ -184,3 +184,103 @@ export function nextPrayer(times, nowMins) {
 export function minutesNow(date = new Date()) {
   return date.getHours() * 60 + date.getMinutes() + date.getSeconds() / 60;
 }
+
+/* ============================================================
+   THE ALERT SCHEDULE — arithmetic only, and it is the whole item
+   ------------------------------------------------------------
+   ⚠️ NOTHING HERE FIRES A NOTIFICATION, and nothing here ever will.
+   There is not one call to `Notification`, `requestPermission`,
+   `showNotification` or `PushManager` anywhere in this app, and
+   `test_v54 · 8.6` holds that line. This function answers one
+   question — WHICH MOMENTS would be scheduled — so the native
+   shell can ask it on the day it exists, and so the ceiling below
+   can be measured today rather than discovered on somebody's phone.
+
+   ⚠️ WHY IT CANNOT BE THE WEB. Scheduling a notification for a
+   future moment needs an API the web does not have: Notification
+   Triggers was the one, and its development was abandoned — «it
+   was not clear we could deliver a consistent and reliable
+   experience across platforms». So on the web an alert arrives
+   only while the page is open, or from a push server. And the
+   adhan's moment is exactly when the phone is locked and the app
+   is closed. The two halves do not meet, so the promise is not
+   made. That is `337` and `415`'s rule.
+
+   ⚠️ AND THE CEILING THAT KILLS IT IF IT IS IGNORED: iOS allows
+   **64** pending local notifications per app, and an Apple
+   engineer's own words are that this is a system limit with no way
+   around it. Five prayers a day is 64 ÷ 5 = 12.8 days — so somebody
+   who does not open the app for a fortnight goes silent, does not
+   know why, and concludes the app is broken.
+
+   The answer is a ROLLING WINDOW: every launch cancels and
+   reschedules as far ahead as the ceiling allows. Pick two prayers
+   instead of five and the same 64 covers thirty-two days.
+
+   ⚠️ And the reader is told plainly to open the app now and then.
+   «Always» is not promised, because it cannot be kept.
+   ============================================================ */
+
+/** iOS allows this many pending local notifications per app. A system
+    limit, not a preference — one over and the extras are dropped in
+    silence, on the device, where nobody can see it happen. */
+export const MAX_PENDING_ALERTS = 64;
+
+/**
+ * The next moments an alert would be set for, soonest first, never more
+ * than the ceiling.
+ *
+ * `which` names the prayers the reader actually asked for — fewer
+ * prayers means the same 64 reaches further ahead, which is the whole
+ * point of letting them choose. `minutesBefore` is the pre-adhan lead.
+ *
+ * Returns `[{ key, at }]` with `at` a real Date. A prayer that cannot
+ * exist on a given day (the sun never reaches the angle) is skipped
+ * rather than guessed, exactly as `prayerTimes` skips it.
+ */
+export function alertSchedule({ lat, lng, from = new Date(), which = null,
+                                minutesBefore = 0, limit = MAX_PENDING_ALERTS,
+                                method = DEFAULT_METHOD, asrShadow = ASR_STANDARD,
+                                tzOffsetMinutes } = {}) {
+  const out = [];
+  if (!isFinite(lat) || !isFinite(lng)) return out;
+  const keys = (which && which.length ? which : ['fajr', 'dhuhr', 'asr', 'maghrib', 'isha'])
+    .filter(k => IS_PRAYER[k]);
+  if (!keys.length) return out;
+  const cap = Math.max(0, Math.min(limit, MAX_PENDING_ALERTS));
+  if (!cap) return out;
+
+  /* ⚠️ A BOUND ON THE LOOP, not on the output alone. With one prayer
+     chosen the ceiling reaches 64 days ahead, and a day whose every
+     prayer is null (a polar summer) would otherwise spin for ever. */
+  const maxDays = cap + 2;
+  const day = new Date(from.getFullYear(), from.getMonth(), from.getDate());
+
+  for (let d = 0; d < maxDays && out.length < cap; d++) {
+    const date = new Date(day.getFullYear(), day.getMonth(), day.getDate() + d);
+    const times = prayerTimes({ lat, lng, date, method, asrShadow, tzOffsetMinutes });
+    if (!times) break;
+    for (const k of keys) {
+      if (out.length >= cap) break;
+      const mins = times[k];
+      if (mins === null || mins === undefined) continue;   // never a guessed time
+      const at = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 0,
+                          Math.round(mins) - minutesBefore);
+      if (at <= from) continue;                            // already gone today
+      out.push({ key: k, at });
+    }
+  }
+  /* the prayers of one day are already in order, and the days are walked
+     in order, so this only matters when `minutesBefore` is large enough
+     to pull one alert across the boundary of the one before it */
+  out.sort((a, b) => a.at - b.at);
+  return out;
+}
+
+/** how many whole days the schedule above actually reaches — the number
+    the reader is really asking about when they ask «will it keep going?» */
+export function alertCoverageDays(schedule, from = new Date()) {
+  if (!schedule || !schedule.length) return 0;
+  const last = schedule[schedule.length - 1].at;
+  return Math.max(0, Math.floor((last - from) / 86400000));
+}

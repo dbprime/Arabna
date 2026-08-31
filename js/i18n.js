@@ -77,7 +77,16 @@ export const STRINGS = {
     prOnHomeLbl: 'إظهار المواقيت على الرئيسية',
     prOnHomeSub: 'شاشة المواقيت تبقى في القائمة الجانبية على كل حال',
     prAlertLbl: 'تنبيه قبل الأذان',
-    prAlertSoon: 'يعمل مع إطلاق السيرفر',
+    /* ⚠️ IT READ «يعمل مع إطلاق السيرفر», AND THAT IS MEASURABLY WRONG.
+       The times are computed on the device with no request at all, and a
+       local alert is scheduled on the device too — so this waits for the
+       NATIVE app, not for a server, and saying otherwise makes the owner
+       wait for the wrong milestone. And it is not the web either: the one
+       API that could schedule a future notification (Notification
+       Triggers) was abandoned, and the adhan's moment is exactly when the
+       phone is locked and the app closed. */
+    prAlertSoon: 'يحتاج نسخةً أصليّة من البرنامج',
+    prAlertKeep: 'ولن يعمل دائماً: افتح البرنامج بين حينٍ وآخر ليبقى التنبيه.',
     locMovedTitle: 'يبدو أنك في {city} — تحدّث موقعك؟',
     locMovedSub: 'اخترت مدينتك بنفسك، فلا نغيّرها من دون إذنك.',
     locMovedYes: 'نعم، حدّثه',
@@ -648,7 +657,12 @@ export const STRINGS = {
     addSell: 'بيع أو أجّر شيئاً', addSellSub: 'سيارة · أثاث · جهاز · شقة',
     addBiz: 'أضف نشاطك التجاري', addBizSub: 'مجاناً — محلك يظهر في الدليل',
     addSuggestEvent: 'اقترح فعالية', addSuggestEventSub: 'حفلة · مهرجان · محاضرة',
-    signInToPublish: 'سجّل دخولك لننشر إعلانك — بياناتك محفوظة',
+    /* ⚠️ «بياناتك محفوظة» here meant «what you typed is parked» — which is
+       true (`state.draft`) — but reads as «your data is stored safely»,
+       and that is the one claim this app must never make: Safari clears
+       a tab's storage after seven idle days. The English side already
+       said «what you wrote is saved»; the Arabic now matches it. */
+    signInToPublish: 'سجّل دخولك لننشر إعلانك — وما كتبته محفوظ',
     // --- search and filters (batch four, section I)
     searchExample: 'ابحث عن مطعم، طبيب، محامٍ…',
     clear: 'مسح',
@@ -1810,7 +1824,8 @@ export const STRINGS = {
     prOnHomeLbl: 'Show the times on Home',
     prOnHomeSub: 'The prayer screen stays in the menu either way',
     prAlertLbl: 'Alert before the adhan',
-    prAlertSoon: 'Works when the server launches',
+    prAlertSoon: 'Needs the native app',
+    prAlertKeep: 'And it will not run forever: open the app now and then so the alerts keep coming.',
     locMovedTitle: 'It looks like you are in {city} — update your location?',
     locMovedSub: 'You chose your city yourself, so we do not change it without asking.',
     locMovedYes: 'Yes, update it',

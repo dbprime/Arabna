@@ -495,7 +495,7 @@ export function DirectoryScreen(root) {
       n.querySelectorAll('[data-call]').forEach(b =>
         b.addEventListener('click', e => {
           e.stopPropagation();
-          location.href = 'tel:' + b.dataset.call;
+          openExternal('tel:' + b.dataset.call);
         }));
       const route = n.dataset.route || '';
       if (route.startsWith('#/directory/'))
@@ -1077,7 +1077,7 @@ export function ListingScreen(root, params) {
   const callBtn = $('#callBtn');
   if (callBtn) callBtn.addEventListener('click', () => {
     S.recordBizCall(b.id);
-    location.href = 'tel:' + b.phone;
+    openExternal('tel:' + b.phone);
   });
   const mapBtn = $('#mapBtn');
   if (mapBtn) mapBtn.addEventListener('click', () => {

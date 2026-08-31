@@ -381,6 +381,13 @@ export function openPrayerSettings(after) {
       <button class="switch ${S.prayerAlert() ? 'on' : ''}" id="prAlertSw" role="switch"
               aria-checked="${S.prayerAlert()}"><span class="knob"></span></button>
     </div>
+    ${/* ⚠️ «دائماً» IS NOT PROMISED, because it cannot be kept. iOS allows
+         64 pending local notifications per app — a system limit an Apple
+         engineer states has no way around it — so five prayers a day is
+         thirteen days and then silence. The schedule is rebuilt on every
+         launch (`alertSchedule` in prayer.js), and the reader is told
+         that in one line rather than discovering it as a fault. */''}
+    <div class="hint" style="padding:0 16px 10px">${t('prAlertKeep')}</div>
     <div class="hint mt-16">${icon('info', 15)} ${t('prCalcNote')}</div>
     <div class="sheet-foot">
       <button class="btn btn-gold btn-block" id="prDone">${t('apply')}</button>

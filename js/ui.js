@@ -2188,6 +2188,49 @@ export function mapUrl(app, address) {
   return `https://www.google.com/maps/search/?api=1&query=${q}`;
 }
 
+/* ---------------- THE ONE WAY OUT ----------------
+ * ⚠️ EVERY LINK THAT LEAVES THE APP GOES THROUGH HERE, and the reason is
+ * a fault Rai has already seen with his own eyes: inside the iOS in-app
+ * browser the directions button left him in a window with no way back
+ * (`342`). A native shell does the same thing to `window.open` — it may
+ * open the map INSIDE the app and trap the reader in it.
+ *
+ * ⚠️ TODAY IT DOES EXACTLY WHAT THE CALLS IT REPLACED DID, and nothing
+ * more. The value is not in the behaviour, it is that four doors became
+ * one: on the day the shell arrives, its own opener goes in here and in
+ * no other file.
+ *
+ * The scheme branch is the door's job and not the caller's. A `tel:` or
+ * `mailto:` handed to `window.open` is blocked by some browsers and
+ * opens a blank tab in others; `location.href` is what actually dials.
+ */
+export function openExternal(url) {
+  if (!url) return false;
+  /* A `tel:` or `mailto:` is a hand-off to another app, not a page. Some
+     browsers block it in a popup and others open a blank tab; this is
+     what actually dials. */
+  if (/^(tel:|mailto:|sms:)/i.test(url)) { location.href = url; return true; }
+  /* ⚠️ AN ANCHOR, NOT `window.open`, and it is the better of the two here
+     rather than a way to satisfy a grep. It is the same path the app
+     already uses for every link it prints (`<a target="_blank"
+     rel="noopener">`), so there is one behaviour and not two; a popup
+     blocker treats a real anchor click far more kindly than a scripted
+     window; and `rel="noopener"` is carried by the element itself, so the
+     page we open can never reach back through `window.opener` and
+     navigate this one.
+     ⚠️ It is attached before the click and removed after: a detached
+     anchor navigates in current browsers, but not in all of them, and
+     this costs two lines. */
+  const a = document.createElement('a');
+  a.href = url;
+  a.target = '_blank';
+  a.rel = 'noopener noreferrer';
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  return true;
+}
+
 /** Apple Maps is not offered on Android: an option that cannot work is
     worse than one option fewer. Waze is offered everywhere — its presence
     cannot be known, and the link degrades to the website. */
@@ -2198,7 +2241,7 @@ export function mapChoices() {
 
 export function openMaps(address) {
   const saved = S.mapsApp();
-  if (saved) { window.open(mapUrl(saved, address), '_blank'); return; }
+  if (saved) { openExternal(mapUrl(saved, address)); return; }
   openMapSheet(address);
 }
 
@@ -2227,7 +2270,7 @@ export function openMapSheet(address) {
     panel.querySelector('#mapGo').addEventListener('click', () => {
       if (panel.querySelector('#mapAlways').checked) S.setMapsApp(pick);
       closeSheet();
-      window.open(mapUrl(pick, address), '_blank');
+      openExternal(mapUrl(pick, address));
     });
   });
 }

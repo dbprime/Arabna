@@ -23,12 +23,65 @@ export { AVATARS, avatarSvg };
 
 const KEY = 'arabna.v1';
 
-function load() {
+/* ---------------- THE STORAGE GATE ----------------
+ * ⚠️ ONE PLACE KNOWS WHERE THE READER'S THINGS LIVE, and this is it.
+ * Everything they own sits under one key — the account, the claimed
+ * businesses, the favourites, the subscription, the receipts, the photo
+ * waiting for review — and the line below is the only line in the app
+ * that touches the browser's storage at all.
+ *
+ * ⚠️ AND THE SAME PROBLEM WAITS IN THREE WORLDS, with one answer:
+ *   a Safari tab      Apple's tracking-prevention deletes localStorage,
+ *                     IndexedDB and the service worker's cache after
+ *                     SEVEN DAYS with no interaction — so somebody who
+ *                     did not open the app for a week comes back to no
+ *                     account, having deleted nothing themselves
+ *   added to the home screen   exempt from the seven days — which turns
+ *                     `425` from a nicety into a survival condition
+ *   inside a native shell      the platforms may clear `window.localStorage`
+ *                     periodically, and a native storage API replaces it
+ *
+ * ⚠️ So the backend is swapped in ONE line on the day the shell arrives,
+ * not in twenty-three modules. The gate does not know who stores.
+ *
+ * ⚠️ AND THE MACHINERY OF THE SHELL IS NOT BUILT TODAY — only the door.
+ * An interface written for a machine nobody has tried gets written twice.
+ *
+ * ⚠️ THE KEY ITSELF IS NEVER CHANGED. Changing it means every reader
+ * opens the app tomorrow and finds nothing.
+ */
+const BACKEND = { read: () => localStorage.getItem(KEY), write: (v) => localStorage.setItem(KEY, v) };
+
+/* ⚠️ ASKED FOR, AND NOTHING IS BUILT ON THE ANSWER. `persist()` asks the
+   browser to keep this origin's storage rather than evict it under
+   pressure. It is not a guarantee, Apple does not document it, and it
+   does not stop the seven-day rule in a Safari tab.
+   ⚠️ SO NO LINE ANYWHERE TELLS THE READER THEIR DATA IS SAFE. The real
+   answer on an iPhone is adding the app to the home screen — `425` — and
+   that is what the app actually says. This costs one call and may help
+   on some devices; it is asked and then forgotten. */
+export function requestPersistence() {
   try {
-    const raw = localStorage.getItem(KEY);
+    if (navigator.storage && navigator.storage.persist) return navigator.storage.persist();
+  } catch (e) { /* never block boot */ }
+  return Promise.resolve(false);
+}
+
+/** the ONLY read. Returns null on private mode, a disabled store, or junk. */
+function readState() {
+  try {
+    const raw = BACKEND.read();
     if (raw) return JSON.parse(raw);
   } catch (e) { /* private mode / disabled storage → memory only */ }
   return null;
+}
+
+/* ⚠️ AND THE ONLY WRITE. It stood as five identical `try { setItem } catch`
+   lines — which is the rule written five times, and the fourth is the one
+   nobody edits. That is `esc()`'s own fault in another file. */
+function writeState() {
+  try { BACKEND.write(JSON.stringify(state)); return true; }
+  catch (e) { return false; }        // quota full, or storage disabled
 }
 
 const DEFAULTS = {
@@ -165,7 +218,7 @@ const DEFAULTS = {
    and what is reassigned was cleared, so signing out LOOKED like it worked.
    `DEFAULTS` is pure data, so the JSON round-trip is correct here, and it
    is the same one `signOut` already uses — one pattern, not two. */
-export const state = Object.assign(JSON.parse(JSON.stringify(DEFAULTS)), load() || {});
+export const state = Object.assign(JSON.parse(JSON.stringify(DEFAULTS)), readState() || {});
 
 /* Changing the default is not enough: anybody who opened the app before
    this fix has `["c1"]` written into their own localStorage, and it
@@ -175,7 +228,7 @@ export const state = Object.assign(JSON.parse(JSON.stringify(DEFAULTS)), load() 
    and a brand-new account was starting life owning a stranger's car. */
 if (!state.user && state.myListings && state.myListings.length) {
   state.myListings = [];
-  try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) { /* memory only */ }
+  writeState();
 }
 
 /* `location.manual` did not exist before V.04.0, so a reader upgrading
@@ -187,7 +240,7 @@ if (!state.user && state.myListings && state.myListings.length) {
    wrong here wipes a city somebody chose deliberately. */
 if (state.location && state.location.city && state.location.manual === undefined) {
   state.location = Object.assign({}, state.location, { manual: !state.geo });
-  try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) { /* memory only */ }
+  writeState();
 }
 
 /* THE THEME IS NOT REMEMBERED ACROSS LAUNCHES — Rai's decision.
@@ -204,7 +257,7 @@ if (state.location && state.location.city && state.location.manual === undefined
    lands, so nothing is asked of its owner. */
 if (state.theme && state.theme !== 'auto') {
   state.theme = 'auto';
-  try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) { /* memory only */ }
+  writeState();
 }
 
 /* V.05.3 and older wrote a single `myBusinessId`. That key is still in
@@ -221,21 +274,16 @@ if (state.myBusinessId !== undefined) {
   if (state.myBusinessId && !ids.includes(state.myBusinessId)) ids.push(state.myBusinessId);
   state.myBusinessIds = ids;
   delete state.myBusinessId;
-  try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) { /* memory only */ }
+  writeState();
 }
 
 /** Last write result — false when the browser refused (quota full, private mode). */
 export let lastSaveOk = true;
 
 export function save() {
-  try {
-    localStorage.setItem(KEY, JSON.stringify(state));
-    lastSaveOk = true;
-  } catch (e) {
-    // Photos are stored as data URLs, so a big listing can exhaust the quota.
-    // Callers check lastSaveOk and tell the user instead of losing data quietly.
-    lastSaveOk = false;
-  }
+  // Photos are stored as data URLs, so a big listing can exhaust the quota.
+  // Callers check lastSaveOk and tell the user instead of losing data quietly.
+  lastSaveOk = writeState();
   return lastSaveOk;
 }
 

@@ -4,7 +4,7 @@
 
 import { setLang, bothPacks } from './i18n.js';
 import { state, registerStrings, runReminders, runSubscriptionCycle,
-         liveGreeting, markGreetingSeen, noteVisit } from './store.js';
+         liveGreeting, markGreetingSeen, noteVisit, requestPersistence } from './store.js';
 import { $, renderHeader, renderNav, hideNav, closeSheet, hideDrawer, drawerOwnsEntry, closeDropdown,
          mountScrollMemory, restoreScroll, historyKey, markShown, startClock, mountAdShare,
          applyTheme, applyFontScale, mountThemeWatch, openGreeting, sheetOpen,
@@ -179,6 +179,10 @@ function catchUp() {
   /* ⚠️ ONE LAUNCH, COUNTED ONCE, and before anything is drawn — the
      invite is deliberately not shown on the first one. */
   try { noteVisit(); } catch (e) { /* never block boot */ }
+  /* ⚠️ Asked for, and nothing is built on the answer — see the note in
+     store.js. Apple's tracking prevention still clears a Safari tab's
+     storage after seven idle days; the real answer there is `425`. */
+  requestPersistence();
   /* Chrome fires `beforeinstallprompt` early and only once, so the
      listener has to be standing before the first screen is painted. */
   mountInstallPrompt();
