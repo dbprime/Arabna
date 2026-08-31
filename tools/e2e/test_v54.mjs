@@ -16,7 +16,7 @@
    the Facebook browser on a real phone and the Android dialog are
    checked by hand and written into the closing line. */
 import { chromium } from '/opt/node22/lib/node_modules/playwright/index.mjs';
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 
 const BASE = process.env.BASE || 'http://localhost:8099/index.html';
 const ROOT = new URL('../../', import.meta.url).pathname;
@@ -221,6 +221,33 @@ console.log('--- somebody who adds it for an alert that never arrives was sold a
      /beforeinstallprompt/.test(inst) && !/navigator\.install|webkit.*install/i.test(inst));
   ok('8.5 the device trace survives a sign-out — it is not account property',
      /'geoGranted', 'area', 'mapsApp', 'install',/.test(read('js/store.js')));
+
+  /* ⚠️ RAI'S OWN MEASUREMENT, AND IT MOVES THE CONDITION. The spec said
+     the reason is added «the day the alerts land», which assumes what is
+     missing is the PERMISSION. It is not: what is missing is the whole
+     machine. There is not one call to a system notification anywhere in
+     the app — so what the app calls «notifications» is a list INSIDE it,
+     and the pre-adhan switch raises a flag that writes a row in that
+     list, never an alert that reaches a locked phone.
+
+     So the condition is not «when the alerts land» but «WHEN IT BECOMES
+     TRUE», which needs a push service and a server. This assertion is
+     the guard on that: the reason cannot be written into the invite
+     while the machine to keep it does not exist. It goes red on the day
+     somebody adds the sentence — and on the day somebody adds the API,
+     which is the moment to revisit both halves together. */
+  const jsAll = (function collect(dir, acc = '') {
+    for (const e of readdirSync(ROOT + dir, { withFileTypes: true })) {
+      if (e.isDirectory()) acc = collect(dir + '/' + e.name, acc);
+      else if (e.name.endsWith('.js')) acc += read(dir + '/' + e.name);
+    }
+    return acc;
+  })('js') + read('sw.js');
+  const sysNotif = /new Notification\b|Notification\.requestPermission|showNotification|PushManager/;
+  ok('8.6 there is not one system-notification call in the whole app',
+     !sysNotif.test(jsAll));
+  ok('8.7 …so «تنبيه الأذان» is not a reason to install, and cannot become one silently',
+     bad.length === 0 && !sysNotif.test(jsAll));
 }
 
 ok('9.1 zero console errors across every state above', errors.length === 0, errors.slice(0, 2).join(' | '));

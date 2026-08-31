@@ -6713,11 +6713,53 @@ of `#/settings`, which V.04.8 opened to everybody for this same reason.
 ### And no promise is sold that is not built
 ```
 said today        full screen · opens faster · works with no internet (since 420)
-NOT said          «تنبيهات الأذان» — not built
+NOT said          «تنبيهات الأذان» — and NOT LATER EITHER, until it is true
 ```
 ⚠️ Somebody who adds the app for an alert that never arrives **has been sold
-a promise nobody kept** — `337` and `415`'s rule. The reason is added the day
-the alerts land. Measured: **21 invite strings, zero naming a notification.**
+a promise nobody kept** — `337` and `415`'s rule. Measured: **21 invite
+strings, zero naming a notification.**
+
+⚠️ **AND RAI'S OWN MEASUREMENT MOVED THE CONDITION.** This file first wrote
+«the reason is added the day the alerts land», which assumes what is missing
+is the **permission**. It is not — what is missing is the whole machine:
+
+```
+new Notification                 0
+Notification.requestPermission   0
+showNotification                 0
+PushManager · a push event       0        across all of js/ and sw.js
+```
+
+**So what this app calls «notifications» is a list inside itself.**
+`pushNotif()` writes a row into `state.extraNotifs`; the pre-adhan switch
+raises a flag that produces one of those rows — **never an alert that
+reaches a locked phone.** Real ones need a push service and a server.
+
+> **THE RULE: the condition is not «when the alerts land» but «WHEN IT
+> BECOMES TRUE».** The reason is not written into the invite while the
+> machine to keep it does not exist, and it is not added on the day the
+> switch appears either.
+
+`test_v54 · 8.6` and `8.7` are the guard: **zero system-notification calls
+anywhere in the app**, asserted alongside «no invite string names a
+notification». It goes red the day somebody writes the sentence — and the
+day somebody adds the API, which is exactly when both halves are revisited
+together.
+
+### And two of the three answers were Rai's, with the better argument
+- **The iOS steps stand as written**, and one thing is separated that this
+  file was blurring: **`#/install` is the WEB road, and the App Store
+  wrapper is `430`.** They are not alternatives — `APPSTORE_URL` filled in
+  turns the button into the store and the empty value keeps the web road,
+  so the two live side by side with no edit.
+- **The Settings placement is settled, and his measurement is the one
+  recorded, not mine.** I argued «`#/profile` for a visitor is a sign-up
+  screen». His is stronger and published: **`#/settings` carries no
+  `requireTier` at all, and the app already prints a line telling a visitor
+  that language, appearance and text size work without signing in.** The
+  door is open there by written text, not by inference. ⚠️ **And it is NOT
+  put in both places** — one thing in two places drifts apart after two
+  edits.
 
 ### ⚠️ And the counter found a fault older than the router's last three fixes
 **`boot()` had been running TWICE, since it was written.** A module script
@@ -6757,7 +6799,7 @@ mutated tree, and stopped it rather than let it measure a file I had
 broken myself. **A green over a tree nobody trusts is worth less than no
 run at all.**
 
-### `test_v54` — 34 assertions, and four the net cannot reach
+### `test_v54` — 36 assertions, and four the net cannot reach
 ⚠️ **Chromium does not emulate `display-mode`** (recorded here since
 V.01.7), it fires no real `beforeinstallprompt`, and there is no share
 sheet. So the share sheet, a real Facebook link on an iPhone, and the
