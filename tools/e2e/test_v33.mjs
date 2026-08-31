@@ -247,7 +247,20 @@ ok('5.6 the settings hold the switch that brings it back',
 console.log('--- 6) the alert says what is true ---');
 const setTxt = await sheetTxt();
 ok('6.1 «تنبيه قبل الأذان» is there', await page.evaluate(() => !!document.querySelector('#prAlertSw')));
-ok('6.2 …and says it works when the server does', /السيرفر/.test(setTxt));
+/* ⚠️ REVERSED BY 430, and the check was not softened — it was wrong.
+   It asserted the pre-adhan switch blames the server. Measured in that
+   batch: `js/prayer.js` computes every time on the device with NOT ONE
+   network request, and a local notification is scheduled on the device
+   too — so no server is in it anywhere, and saying otherwise made the
+   owner wait for the wrong milestone. What it waits for is the NATIVE
+   app. (Not the web either: Notification Triggers, the one API that
+   could schedule a future alert, was abandoned.)
+   ⚠️ And «always» is not promised: iOS allows 64 pending local
+   notifications per app, so five prayers a day is thirteen days and then
+   silence — the reader is told to open the app now and then. */
+ok('6.2 …and it no longer blames the server', !/السيرفر/.test(setTxt));
+ok('6.2b …it names what it really waits for', /نسخةً أصليّة/.test(setTxt));
+ok('6.2c …and «always» is not promised', /بين حينٍ وآخر/.test(setTxt));
 ok('6.3 …and offers no tone picker for something that cannot sound', !/نغمة|tone/i.test(setTxt));
 await page.evaluate(() => document.querySelector('#prHomeSw').click()); await page.waitForTimeout(400);
 await esc();
