@@ -745,6 +745,25 @@ conversation; that is not a mechanism.
 full net has been green on BOTH builds.** If the closing file does not say
 it closes the group, ask before assuming it does.
 
+### The report is two lines, and the number is one of them
+> **«خلصت الملفّ `430`.» That is the report.**
+
+⚠️ **Rai has asked for this three times, and each time the reply came back
+longer.** He is not reading a summary of the work — he has the commit, the
+docs and the net's own output — so a page of headings and tables is noise
+standing between him and the next file.
+
+```
+finished          «خلصت الملفّ NNN» · and the next queue line
+a red             the ITEM'S NAME, at once, and what it means — never in silence
+a decision he owes  the question, the recommendation, in one short line
+anything else     is not reported
+```
+
+**«خلصت» alone is not enough either** — it leaves a reader who cannot tell
+which of forty files it names. **The number is the other half, and the two
+together are the whole thing.**
+
 ### Never wait on a file with a loop
 No `until grep … do sleep`, and no waiting for a marker to appear in a
 file. **Run the command in the foreground and read its output**, or run it
