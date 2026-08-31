@@ -7,7 +7,7 @@ ARABNA · عربنا — a mobile-first web app for the Arab community in the U.
 **business directory + marketplace + events + magazine**, Arabic-first with a full English toggle.
 ("Classifieds / الإعلانات الشخصية" is now "Marketplace / السوق" — the old `#/classifieds`
 routes still resolve so shared links keep working.)
-Current version: **V.07.8 (prototype)**. Owner: Rai Elby (@dbprime). Deploys to Vercel (team DB Prime).
+Current version: **V.07.9 (prototype)**. Owner: Rai Elby (@dbprime). Deploys to Vercel (team DB Prime).
 
 ## Hard rules (from the product brief)
 1. **One repository, one Vercel project.** No duplicates, no stray preview projects.
@@ -7069,6 +7069,128 @@ carrying `[hidden]` is drawn, `10.2` that the rule exists exactly once, and
 [hidden] in styles/app.css             2 → 1
 the invite itself                      still shows on the second visit, and still dismisses
 ```
+
+## V.07.9 — a response carrying a redirect does not open an app
+
+⚠️ **A fatal fault, live on the published build.** The app added to an
+iPhone's home screen **did not open at all** — a white screen and:
+
+```
+Safari can’t open the page.
+The error was: “Response served by service worker has redirections”.
+```
+
+**Three lines in three files made it together:**
+
+```
+manifest.json   start_url = './index.html#/home'
+vercel.json     "cleanUrls": true      →  /index.html answers 308 → /
+sw.js           cached 'index.html' and served it for every navigation
+```
+
+**Measured on a host built to redirect the way `cleanUrls` did** — the
+cache was read directly, not inferred:
+
+```
+cache                        arabna-0.7.8 · 34 rows
+poisoned row                 /index.html  →  /   ·  redirected: true
+caches.match('index.html')   redirected: true
+the SECOND navigation        ERR_FAILED · #app 0 characters
+```
+
+⚠️ **The specification forbids answering a navigation with a redirected
+response.** WebKit enforces it literally, and the launch from a home-screen
+icon is the hardest case of all — it is a navigation straight to
+`start_url`.
+
+⚠️ **AND WHY ONE TRY NEVER FINDS IT.** A service worker does not answer
+until it has cached. **The first visit goes to the network and works; the
+one after it comes from the poisoned cache.** So the class passes the first
+check and fails at the reader — which is what makes it more dangerous than
+it looks.
+
+### ⚠️ A measuring error is recorded, because it is why this was late
+This exact possibility **was tested before, on a host that reproduced the
+`cleanUrls` redirect, and the answer was «the path is sound».** The check
+asked the wrong question:
+
+```
+asked      does the page open in Chromium        →  it did
+should ask what is `redirected` on the cached row →  true
+```
+
+> **THE RULE: measure what the specification says, not what one browser
+> tolerates.** Chromium is lenient on some paths and WebKit is not, so
+> «does it open here» is not an answer about anybody else's phone.
+
+### Three layers, and not one of them is enough alone
+1. **`"cleanUrls": true` is deleted** from `vercel.json`. ⚠️ **Nothing in
+   the repository depended on it** — every `.html` mention in `index.html`
+   and all of `js/` was read: `index.html` itself, and one word inside a
+   comment. The key arrived with the file and was never asked for.
+   `trailingSlash: false` stays; it has nothing to do with this.
+2. **`noRedirect()` in `sw.js`, at BOTH ends.** It rebuilds a response
+   without the flag and keeps the body byte for byte. ⚠️ **Guarding the
+   store alone leaves every cache already on a reader's phone poisoned;
+   guarding the answer alone lets the poison pile up.** It also replaces
+   `addAll` at install — `addAll` stores whatever the network returns,
+   redirect flag and all — and wraps the offline
+   `caches.match('index.html')`, the exact spot the fault landed.
+   ⚠️ **This layer stays after `cleanUrls` is gone**: any hosting setting
+   tomorrow, or a domain added later, can bring the redirect back, and the
+   guard belongs in the app rather than in a host's configuration.
+3. **The poisoned cache is erased by raising the version.** The cache name
+   is `'arabna-' + SW_VERSION` and `activate` deletes every other name, so
+   **the version bump is the eraser** — built in `420`, nothing added.
+
+### ⚠️ `start_url` is identity, not a path — and is not touched
+Changing it to `'./'` looks like the shortest fix and is the wrong one:
+
+```
+manifest.json   "id":  absent
+```
+
+**With no `id`, the app's identity is derived from `start_url` itself.**
+Changing it makes the phone treat this as a **different app** — whoever
+installed it keeps a dead icon for ever and never receives an update.
+**The cure is deleting the redirect, not moving the target.**
+
+### ⚠️ And whoever installed it before this fix
+Raising the version repairs everybody the update reaches. **It does not
+reach an icon that is already stuck, because the page does not open at
+all.** So, for Rai to pass on:
+
+```
+1) delete the icon from the home screen
+2) Settings → Safari → Advanced → Website Data → remove the host
+3) open the link in Safari
+4) then add it to the home screen again
+```
+
+⚠️ **Never «update the app»** — there is no updating from inside something
+that will not open.
+
+### ⚠️ And the teeth proved why BOTH kinds of check are needed
+```
+put "cleanUrls": true back   →  3.1 red · and 1.1 · 1.2 · 1.3 STAY GREEN
+remove noRedirect from the
+answer path                  →  3.4 red · and 1.1 · 1.2 STAY GREEN
+```
+
+**Each layer alone already saves the reader**, so with either one present
+the behavioural checks cannot see the other one missing. **That is the
+design working — and it is exactly why the structural assertions stand
+beside the behavioural ones.** A suite with only «does it open» would
+watch both layers rot one at a time and report green throughout.
+
+### `test_v56` — 14 assertions, and it builds its own host
+⚠️ **A plain static server cannot produce this fault**, which is precisely
+why it went unfound. The suite starts a server that answers **308 on
+`/index.html`**, registers the worker, waits for it, and then reads the
+cache itself. **Block 2 runs the same tree on a non-redirecting host and
+asserts everything passes there — the proof that the host is the
+difference.** And `1.3` navigates a **second** time, because the first
+always comes from the network.
 
 ## Known open items
 - **The header image is still far larger than its box.** V.04.7 replaced

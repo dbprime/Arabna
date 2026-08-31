@@ -25,12 +25,36 @@ const NETWORK_ONLY = [
   'api.bigdatacloud.net',
 ];
 
+/* ⚠️ A RESPONSE THAT CARRIES A REDIRECT CANNOT ANSWER A NAVIGATION —
+   the specification forbids it, and WebKit enforces it to the letter:
+   «Response served by service worker has redirections». Rebuilding it
+   drops the flag and keeps the body byte for byte.
+
+   Measured on a host that redirects `/index.html` the way `cleanUrls`
+   did: the cache held one poisoned row — `/index.html -> /`,
+   `redirected: true` — and the SECOND navigation failed outright.
+   ⚠️ The first always comes from the network, which is why one try never
+   finds this and it reaches the reader instead.
+
+   ⚠️ AND IT STAYS AFTER `cleanUrls` IS GONE. Any hosting setting
+   tomorrow, or a domain added later, can bring the redirect back — the
+   guard belongs in the app, not in the host's configuration. */
+const noRedirect = (res) => (res && res.redirected)
+  ? new Response(res.body, { status: res.status, statusText: res.statusText, headers: res.headers })
+  : res;
+
 self.addEventListener('install', (e) => {
   /* ⚠️ NO `skipWaiting()` HERE. Taking over while the reader is inside a
      screen swaps the modules under them, so a new module is imported by
      an old build and it breaks in front of their eyes. The new version
      waits until they press. */
-  e.waitUntil(caches.open(CACHE).then(c => c.addAll(self.PRECACHE)));
+  /* ⚠️ `addAll` cannot be used: it stores whatever the network returns,
+     redirect flag and all. Each file is fetched and passed through the
+     guard, so a poisoned row never enters the cache in the first place. */
+  e.waitUntil(caches.open(CACHE).then(c => Promise.all(
+    self.PRECACHE.map(f => fetch(f, { cache: 'reload' })
+      .then(r => (r && r.ok) ? c.put(f, noRedirect(r)) : null))
+  )));
 });
 
 self.addEventListener('activate', (e) => {
@@ -61,20 +85,24 @@ self.addEventListener('fetch', (e) => {
 
   e.respondWith(
     caches.match(req).then((hit) => {
-      if (hit) return hit;
+      /* ⚠️ BOTH ENDS, never one. Guarding only the store leaves every
+         cache already on a reader's phone poisoned; guarding only the
+         answer lets the poison pile up. */
+      if (hit) return noRedirect(hit);
       return fetch(req).then((res) => {
         /* whatever else the app asks for — the rest of `assets/` — is
            cached ON FIRST USE, never before: 4 MB up front on somebody's
            mobile data is an assault on the reader. */
         if (res && res.ok && res.type === 'basic') {
-          const copy = res.clone();
+          const copy = noRedirect(res.clone());
           caches.open(CACHE).then(c => c.put(req, copy));
         }
         return res;
       }).catch(() => {
         /* offline and never seen: a navigation still opens the app shell,
            so the directory is there rather than the browser's error page */
-        if (req.mode === 'navigate') return caches.match('index.html');
+        /* ⚠️ the exact spot the fault landed: the offline shell */
+        if (req.mode === 'navigate') return caches.match('index.html').then(noRedirect);
         return new Response('', { status: 504, statusText: 'offline' });
       });
     })
