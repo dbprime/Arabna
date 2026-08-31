@@ -236,13 +236,23 @@ console.log('--- somebody who adds it for an alert that never arrives was sold a
      while the machine to keep it does not exist. It goes red on the day
      somebody adds the sentence — and on the day somebody adds the API,
      which is the moment to revisit both halves together. */
-  const jsAll = (function collect(dir, acc = '') {
+  /* ⚠️ THE COMMENTS ARE STRIPPED BEFORE THE CHECK, and this suite learned
+     it the hard way rather than copying it: the first version read the raw
+     source, so the moment `430` wrote a comment in `js/prayer.js` saying
+     «there is not one call to `showNotification` or `PushManager`
+     anywhere», this check matched THE PROSE EXPLAINING ITS OWN RULE and
+     reported the fault it exists to prevent.
+     ⚠️ The line below is `test_v53`'s, verbatim, and so is its rule: A
+     CHECK MUST READ THE CODE, NEVER THE PROSE ABOUT THE CODE. The comment
+     in prayer.js is correct and useful and stays; the check was wrong. */
+  const strip = (t) => t.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
+  const jsAll = strip((function collect(dir, acc = '') {
     for (const e of readdirSync(ROOT + dir, { withFileTypes: true })) {
       if (e.isDirectory()) acc = collect(dir + '/' + e.name, acc);
       else if (e.name.endsWith('.js')) acc += read(dir + '/' + e.name);
     }
     return acc;
-  })('js') + read('sw.js');
+  })('js') + read('sw.js'));
   const sysNotif = /new Notification\b|Notification\.requestPermission|showNotification|PushManager/;
   ok('8.6 there is not one system-notification call in the whole app',
      !sysNotif.test(jsAll));

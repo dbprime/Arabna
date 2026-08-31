@@ -6940,6 +6940,29 @@ allows. Measured from Houston:
   وآخر ليبقى التنبيه» — `337` and `415`'s rule: an alert that stops with no
   word is worse than no alert.
 
+### ⚠️ And a check read the prose about the code — for the second time
+`test_v54 · 8.6` and `8.7` went red on both builds, and the app was
+innocent. Their `jsAll` was built from the **raw source**, so the moment
+this batch wrote a comment in `js/prayer.js` saying «there is not one call
+to `showNotification` or `PushManager` anywhere in this app», the check
+matched **the sentence explaining its own rule** and reported the fault it
+exists to prevent.
+
+Proven both ways before a line was touched:
+```
+on the raw source      matches  ← the false red
+on the stripped code   no match ← correct
+```
+
+**The fix is `test_v53`'s own line, verbatim**, and so is its rule — this
+project has now paid for it twice:
+
+> **A check must read the CODE, never the prose about the code.**
+
+⚠️ **Nothing else moved.** The two assertions were not softened, the
+ceiling was not shifted, and **the comment in `prayer.js` stays** — it is
+correct and it is useful. The check was wrong, and only the check changed.
+
 ### `test_v55` — 29 assertions, and the three numbers the batch closes on
 ```
 localStorage code sites in js/   1
