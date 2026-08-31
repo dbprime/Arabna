@@ -587,7 +587,15 @@ export function toast(msg, kind = '', opts = null) {
     el.style.pointerEvents = 'auto';
   }
   root.appendChild(el);
-  if (opts && opts.action) return;          // stays until it is pressed
+  /* An action toast waits to be pressed — unless the caller gives it a
+     life. ⚠️ «حدّثنا موقعك» is news with an undo, not a demand: it must
+     not sit on the screen for the rest of the session if nobody answers it. */
+  if (opts && opts.action) {
+    if (!opts.ms) return;
+    setTimeout(() => { el.style.opacity = '0'; el.style.transition = 'opacity .25s'; }, opts.ms);
+    setTimeout(() => el.remove(), opts.ms + 350);
+    return;
+  }
   setTimeout(() => { el.style.opacity = '0'; el.style.transition = 'opacity .25s'; }, 2400);
   setTimeout(() => el.remove(), 2750);
 }
@@ -1949,7 +1957,7 @@ export function regionAllLabel() {
 export function cityChipLabel() {
   const c = S.userCity();
   /* THE CITY NAME ALONE. How we arrived at it — by hand or from the device
-     — is internal: `askToMove` and `shouldRefreshGeo` read it, and it is
+     — is internal: the quiet refresh reads it, and it is
      not printed on a button in the header. `cityIsManual()` is untouched
      and still does its work; it simply no longer writes itself on screen. */
   /* THE STATE CODE APPEARS BY ITSELF, the day the directory covers more

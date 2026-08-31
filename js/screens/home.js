@@ -818,8 +818,22 @@ export function shouldRefreshGeo(force = false) {
  * question and still comes from nearestCity — see `inRegion`.
  */
 export function cityNameFor(r, near) {
-  const named = r && r.city && CITY_POINTS.some(c => c.city === r.city) ? r.city : null;
-  return named || (near && near.city) || (r && r.city) || '';
+  /* ⚠️ THE OLD CONDITION WAS HALF A FIX. It kept the resolved city only
+     when the directory covered it, and threw it away otherwise —
+     replacing it with the nearest of the 24 centres. So the very sentence
+     the comment above condemns was still being carried out, on everybody
+     living outside those 24: Rosenberg, Fresno, Sienna, Meadows Place and
+     Alief all sit beside Sugar Land and are not on the list, and the
+     reader standing in one of them was told «Sugar Land» while the
+     reverse lookup's own correct answer was discarded.
+     ⚠️ And the condition chose nothing: where the city IS covered,
+     `named` equals `r.city` and both branches returned the same value.
+     It was not picking between two names — it was picking when to throw
+     the right one away.
+     ⚠️ `near` STAYS: it is the last resort when there is no name at all.
+     And coverage is a separate question, answered by `inRegion` off
+     `nearestCity` — the two are never mixed. */
+  return (r && r.city) || (near && near.city) || '';
 }
 
 export function refreshLocationQuietly(force = false) {
@@ -846,17 +860,19 @@ export function refreshLocationQuietly(force = false) {
          date and nothing else, and the city name is the directory's
          business alone.
 
-         Except for somebody who chose their city by hand: nothing moves
-         for them until they say so. That is the V.04.0 decision and it is
-         not reversed here — and note the ORDER, because `setUserLocation`
-         writes `manual` from whether a point came with it, so calling it
-         with one would erase the mark. */
+         ⚠️ A hand-picked city is no longer frozen — see the note further
+         down — but the early save still skips it, and the ORDER is the
+         reason: `setUserLocation` writes `manual` from whether a point
+         came with it, so saving the point here would erase the mark
+         before the branch below has read it. */
+      /* No stored point means nothing says the name has gone stale, and a
+         name is only dropped when we can show the reader travelled.
+         `Infinity` here would wipe a correct city on the first open after
+         any state that lost its point.
+         ⚠️ Computed ONCE, above the branch: the three miles govern the
+         hand-picked city as well now. */
+      const travelled = S.state.geo ? S.haversine(S.state.geo, pt) : 0;
       if (!S.cityIsManual()) {
-        /* No stored point means nothing says the name has gone stale, and
-           a name is only dropped when we can show the reader travelled.
-           `Infinity` here would wipe a correct city on the first open
-           after any state that lost its point. */
-        const moved = S.state.geo ? S.haversine(S.state.geo, pt) : 0;
         /* and the old NAME is dropped when the point really travelled: a
            name for a place its owner has left is worse than no name, and
            the chip already knows how to say «موقعك الحالي» until one
@@ -865,7 +881,7 @@ export function refreshLocationQuietly(force = false) {
            `haversine` is local arithmetic — even this judgement needs no
            network. */
         S.setUserLocation(
-          moved >= NAME_STALE_MI
+          travelled >= NAME_STALE_MI
             ? { zip: '', city: '', state: S.state.location.state }
             : S.state.location,
           pt);
@@ -877,20 +893,33 @@ export function refreshLocationQuietly(force = false) {
       const near = S.nearestCity(pt);
       const before = S.userCity();
       const city = cityNameFor(r, near);
-      /* A CITY SOMEBODY TYPED IS NOT CHANGED BEHIND THEIR BACK. They may
-         have picked Houston deliberately while sitting in Richmond, to
-         look at Houston's shops — that is their right, and so is knowing
-         that we noticed. A point that arrived on its own still updates in
-         silence, exactly as before. */
-      if (S.cityIsManual() && city && city !== before) {
-        if (!S.moveAlreadyAsked()) {
-          S.markMoveAsked();
-          askToMove(city, { zip: r.zip || '', city, state: r.state }, pt);
-        }
-        return;
-      }
+      /* ⚠️ A HAND-PICKED CITY IS NO LONGER FROZEN — Rai's reversal of
+         V.04.0, and his argument is the stronger one: «I might pick
+         Houston on purpose, then travel to another city. The sensible
+         thing is for it to update by itself so it knows where I am — and
+         if I want Houston again I pick it again by hand.»
+
+         The two choices are not the same act. «Show me Houston's shops»
+         is an intention to browse; «where am I» is a question about
+         location. One field was carrying both, so the browsing answer
+         blocked the location question for ever.
+
+         ⚠️ But it is not switched behind their back either: the city
+         changes, and one transient line says so with a single undo that
+         gives back both the old city and its «by hand» mark. Whoever
+         meant to browse takes it back in one tap; whoever travelled is
+         asked nothing at all. No sheet, no question. */
+      const manual = S.cityIsManual();
+      /* ⚠️ THE SAME THREE MILES, applied to a hand-picked city too, so an
+         errand across the road never overrides what somebody chose. The
+         threshold already exists and is not invented here. */
+      if (manual && city && city !== before && travelled < NAME_STALE_MI) return;
+      const prev = S.state.location;
       S.setUserLocation({ zip: r.zip || '', city, state: r.state }, pt);
-      if (S.userCity() !== before) repaintCityChips();
+      if (S.userCity() !== before) {
+        repaintCityChips();
+        if (manual) offerUndoMove(city, prev);
+      }
     },
     (err) => {
       /* Still silent to the reader — but no longer silent to us. A fault
@@ -910,26 +939,26 @@ export function refreshLocationQuietly(force = false) {
 }
 
 /**
- * «It looks like you are in Richmond — update your location?»
+ * «حدّثنا موقعك إلى Rosenberg» — one transient line, and one undo.
  *
- * Asked once per session and never again after a «no», because «leave it»
- * is an answer about this visit and not a setting to store. The refusal
- * is honoured even if the city really has changed.
+ * ⚠️ NOT A SHEET AND NOT A QUESTION. Rai's reversal of V.04.0: the city
+ * updates by itself so the app knows where its reader is, and whoever
+ * meant to browse another city takes their choice back in one tap.
+ *
+ * ⚠️ The undo restores BOTH halves — the previous city and its «by hand»
+ * mark. `setUserLocation` with no point writes `manual: true` and clears
+ * the stored coordinate, which is exactly what picking a city by hand has
+ * always meant, so nothing special is invented for the undo path.
  */
-function askToMove(city, loc, geo) {
-  openSheet(`
-    <div class="sheet-title">${t('locMovedTitle').replace('{city}', esc(city))}</div>
-    <div class="sheet-sub">${t('locMovedSub')}</div>
-    <button class="btn btn-gold btn-block mt-12" id="mvYes">${t('locMovedYes')}</button>
-    <button class="btn btn-ghost btn-block mt-8" id="mvNo">${t('locMovedNo').replace('{city}', esc(S.userCity()))}</button>
-  `, (panel) => {
-    panel.querySelector('#mvYes').addEventListener('click', () => {
-      S.setUserLocation(loc, geo);
-      closeSheet();
+function offerUndoMove(city, prev) {
+  toast(t('locUpdated').replace('{city}', city), '', {
+    action: t('undo'),
+    ms: 9000,
+    onAction: () => {
+      S.setUserLocation(prev);
       repaintCityChips();
       window.dispatchEvent(new HashChangeEvent('hashchange'));
-    });
-    panel.querySelector('#mvNo').addEventListener('click', () => closeSheet());
+    },
   });
 }
 

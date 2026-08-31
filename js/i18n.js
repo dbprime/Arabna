@@ -87,10 +87,13 @@ export const STRINGS = {
        phone is locked and the app closed. */
     prAlertSoon: 'يحتاج نسخةً أصليّة من البرنامج',
     prAlertKeep: 'ولن يعمل دائماً: افتح البرنامج بين حينٍ وآخر ليبقى التنبيه.',
-    locMovedTitle: 'يبدو أنك في {city} — تحدّث موقعك؟',
-    locMovedSub: 'اخترت مدينتك بنفسك، فلا نغيّرها من دون إذنك.',
-    locMovedYes: 'نعم، حدّثه',
-    locMovedNo: 'لا، اتركه {city}',
+    /* ⚠️ THE SHEET IS GONE — Rai's reversal of V.04.0. A hand-picked city
+       is no longer frozen: it updates by itself and one transient line
+       says so, with a single undo. «Show me Houston's shops» and «where
+       am I» were sharing one field, and the browsing answer was blocking
+       the location question for ever. */
+    locUpdated: 'حدّثنا موقعك إلى {city}',
+    undo: 'تراجع',
     massTitle: 'مواعيد القداس',
     massSub: 'الكنائس القريبة منك وتقويم المناسبات',
     massNearby: 'كنائس قريبة منك',
@@ -1826,10 +1829,8 @@ export const STRINGS = {
     prAlertLbl: 'Alert before the adhan',
     prAlertSoon: 'Needs the native app',
     prAlertKeep: 'And it will not run forever: open the app now and then so the alerts keep coming.',
-    locMovedTitle: 'It looks like you are in {city} — update your location?',
-    locMovedSub: 'You chose your city yourself, so we do not change it without asking.',
-    locMovedYes: 'Yes, update it',
-    locMovedNo: 'No, keep {city}',
+    locUpdated: 'Your location is now {city}',
+    undo: 'Undo',
     massTitle: 'Mass times',
     massSub: 'Churches near you, and the calendar of feasts',
     massNearby: 'Churches near you',

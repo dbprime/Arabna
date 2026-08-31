@@ -7,7 +7,7 @@ ARABNA · عربنا — a mobile-first web app for the Arab community in the U.
 **business directory + marketplace + events + magazine**, Arabic-first with a full English toggle.
 ("Classifieds / الإعلانات الشخصية" is now "Marketplace / السوق" — the old `#/classifieds`
 routes still resolve so shared links keep working.)
-Current version: **V.07.9 (prototype)**. Owner: Rai Elby (@dbprime). Deploys to Vercel (team DB Prime).
+Current version: **V.08.0 (prototype)**. Owner: Rai Elby (@dbprime). Deploys to Vercel (team DB Prime).
 
 ## Hard rules (from the product brief)
 1. **One repository, one Vercel project.** No duplicates, no stray preview projects.
@@ -7191,6 +7191,97 @@ cache itself. **Block 2 runs the same tree on a non-redirecting host and
 asserts everything passes there — the proof that the host is the
 difference.** And `1.3` navigates a **second** time, because the first
 always comes from the network.
+
+## V.08.0 — the city's name is not replaced by the nearest centre
+
+⚠️ **Rai's report: the screen said Sugar Land and he was not in it.**
+
+### Half an old fix, still doing the thing its own comment condemns
+`cityNameFor` kept the reverse lookup's answer **only when the directory
+covered it**, and threw it away otherwise:
+
+```
+resolved city IS one of the 24   →  used. correct.
+resolved city is NOT one of them →  discarded, and the nearest of the 24
+                                    centres put in its place
+```
+
+**So the sentence the comment above it condemns — «nobody says: the
+nearest city hall to me is Katy» — was still being carried out**, on
+everybody living outside those 24. Measured beside Sugar Land:
+**Rosenberg, Fresno, Sienna, Meadows Place and Alief are all off the
+list** — and whoever stood in one of them was told Sugar Land while the
+correct name had already been fetched and thrown away.
+
+⚠️ **And the condition chose nothing.** Where the city IS covered, `named`
+equals `r.city` and both branches return the same value. **It was not
+picking between two names — it was picking when to discard the right
+one.** The fix deletes it, and the function shrinks:
+
+```js
+return (r && r.city) || (near && near.city) || '';
+```
+
+**`near` stays** — it is the last resort when there is no name at all.
+**And no city is added to `CITY_POINTS`:** coverage is a business decision,
+not a cure for naming, and adding a city we have no listings in promises a
+directory we do not have.
+
+### ⚠️ Stopping the quiet refresh would have made it worse, and was refused
+It was asked for. **The refresh does not invent the name — `cityNameFor`
+did** — so stopping it only freezes the wrong name for ever. And it saves
+the point **before any network call**, while every distance and every
+prayer time is computed from the point: **stopping it freezes the miles on
+a place the reader has left.**
+
+### ⚠️ A hand-picked city is no longer frozen — V.04.0 reversed
+The old rule: a city somebody chose is never changed, and the quiet
+refresh asks «It looks like you are in {city}?» once a session; a «no» is
+final. **Rai reversed it with the better argument:**
+
+> «I might pick Houston on purpose, then travel to another city. The
+> sensible thing is for it to update by itself so it knows where I am —
+> and if I want Houston again I pick it again by hand.»
+
+**He is right: the two are not the same act.** «Show me Houston's shops»
+is an intention to browse; «where am I» is a question about location. One
+field carried both, **so the browsing answer blocked the location question
+for ever.**
+
+- **It updates itself, and it is not silent either:** one transient line —
+  «حدّثنا موقعك إلى Rosenberg» — with **a single undo** that gives back
+  both the previous city and its «by hand» mark. No sheet, no question.
+- ⚠️ **The same `NAME_STALE_MI` — three miles — now governs the
+  hand-picked city too**, so an errand across the road never overrides
+  what somebody chose. The threshold already existed; nothing was invented.
+- **The sheet is deleted, not left dead**: `askToMove`,
+  `moveAlreadyAsked`, `markMoveAsked`, `moveAsked` and the four
+  `locMoved*` strings. **Measured: zero mentions left in `js/`.** A
+  function nobody calls reads two months later as a disabled feature and
+  gets revived for no reason.
+- **The undo needs no special path**: `setUserLocation(prev)` with no
+  point writes `manual: true` and clears the coordinate, which is exactly
+  what picking a city by hand has always meant.
+- **`toast` gained an optional `ms`** so an action line can expire. News
+  with an undo is not a demand, and it must not sit on the screen for the
+  rest of the session.
+
+### And the thing this batch could most easily have broken
+```
+directory rows · Rosenberg   40
+directory rows · Houston     40      ← identical
+inRegion(Houston · Rosenberg · Dallas)   true · true · false, unchanged
+```
+**`state.area` defaults to `'all'` and never filters by city**, so an
+uncovered name changes nothing about what is listed. ⚠️ **And coverage
+stays a separate question, still answered by `inRegion`.**
+
+### ⚠️ And a check that invented its own API measured nothing
+`2.2` first read `nearestCity(...).inRegion` — a field that does not
+exist; `nearestCity` returns `{city, miles}` or null, and `inRegion` is
+its own exported function. **It reported `false` for Houston**, which
+looks exactly like a real regression. **A check must call the API the app
+has, not the one the check imagined.**
 
 ## Known open items
 - **The header image is still far larger than its box.** V.04.7 replaced

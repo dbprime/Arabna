@@ -1260,11 +1260,6 @@ export function clearGeoFail() { if (state.geoFail) { delete state.geoFail; save
 /** did the reader choose this city by hand? */
 export function cityIsManual() { return !!(state.location && state.location.manual); }
 export function geoGranted() { return !!state.geoGranted; }
-/* Asked once per session and never again after a «no» — memory only,
-   because «leave it» is an answer about this visit, not a setting. */
-let moveAsked = false;
-export function moveAlreadyAsked() { return moveAsked; }
-export function markMoveAsked() { moveAsked = true; }
 
 export function markGeoAsked() { state.geoAsked = true; save(); }
 export function markGeoDenied() { state.geoDenied = true; save(); }
