@@ -504,10 +504,59 @@ export function mountThemeWatch() {
  * the house slide sits on our own surface, which does follow, so its ink
  * must follow too (`--text`). Mixing them is the fault fixed in ce0fc77.
  */
-export function sectionSlider(ads, { product, sectionName }) {
+/**
+ * The capacity strip — one line under a slider, and the answer to «if they
+ * are all sold, how does somebody browsing learn they could advertise here
+ * later?»
+ *
+ * ⚠️ IT SITS UNDER THE SLIDER, never above it and never inside it. Above,
+ * it crowds the first thing anybody sees; inside, it is back in the
+ * rotation and costs an advertiser a turn. Directly under it is seen with
+ * no scrolling and takes no turn at all.
+ *
+ * ⚠️ AND IT IS WRITTEN ONCE, not four times in four screens — the `esc()`
+ * fault this repository has already paid for in four places.
+ *
+ * ⚠️ It promises nothing it cannot give: sold out it offers the waiting
+ * list — `adWaitlist` / `joinWaitlist` were built and simply unreachable
+ * from the screens people browse — and with room it offers the slot and
+ * names how many are left, READ from `adSlotsLeft` and never written.
+ */
+export function adCapacityBarHtml(product, cat) {
+  const total = S.adCapacity(product);
+  if (!product || !total) return '';
+  const left = S.adSlotsLeft(product, cat);
+  const full = left <= 0;
+  return `<button class="cap-bar" data-route="#/advertise/${esc(product)}">
+      <span class="cap-text">${full ? t('capFull')
+        : t('capLeft').replace('{n}', left).replace('{total}', total)}</span>
+      <span class="cap-cta">${full ? t('capJoinWait') : t('capTakeSlot')} ${icon(document.documentElement.dir === 'rtl' ? 'chevronL' : 'chevronR', 14)}</span>
+    </button>`;
+}
+
+export function sectionSlider(ads, { product, sectionName, cat }) {
+  /* The house slide, drawn by one function so the two branches can never
+     say different things. */
+  const houseHtml = (active) => `<div class="slide slide-house ${active ? 'active' : ''}" data-route="#/advertise/${esc(product)}">
+        <div style="color:var(--gold);margin-bottom:6px">${icon('megaphone', 31)}</div>
+        <div class="slide-title">${t('adCtaSection').replace('{sec}', sectionName)}</div>
+        <div class="slide-sub" style="color:var(--text-2)">${t('adCtaSub')}</div>
+        <div class="slide-cta cta-center">${icon('plus', 17)} ${t('continueAction')}</div>
+      </div>`;
+
+  /* ⚠️ THE STATE IS COMPUTED, NOT GUESSED FROM `ads.length`. Deciding on
+     the length alone is what made the invitation vanish the moment ONE of
+     four sold — three empty slots and nobody left to learn of them. And it
+     was the only road in: measured across the section screens, the
+     magazine has a permanent button, the marketplace's upsell goes to
+     `#/subscribe` (not advertising), and events had nothing at all. */
   if (ads && ads.length) {
-    return `<div class="slider"><div class="slider-track" id="secTrack">
-        ${ads.map((a, i) => `<div class="slide ${i === 0 ? 'active' : ''}" data-route="${esc(a.link || '#/home')}" style="background:${esc(a.color)}">
+    /* ⚠️ THE LIST IS `slidesFor`'s — the same one the caller hands to
+       `startSlider`. The rotator is driven by that array, so a track
+       carrying one more slide than the array draws a slide that is never
+       shown, under a dot that never lights. */
+    const slides = S.slidesFor(product, ads, cat).map((a, i) => (a.kind === 'house' ? houseHtml(i === 0)
+      : `<div class="slide ${i === 0 ? 'active' : ''}" data-route="${esc(a.link || '#/home')}" style="background:${esc(a.color)}">
           <span class="slide-badge">${t('sponsored')}</span>
           ${/* ⚠️ THESE THREE ARE THE BUYER'S OWN WORDS, typed into the form
                on `#/advertise` — and this slide stands above Home and above
@@ -520,23 +569,20 @@ export function sectionSlider(ads, { product, sectionName }) {
           <div class="slide-cta">${esc(L(a.cta))} ${icon(document.documentElement.dir === 'rtl' ? 'chevronL' : 'chevronR', 15)}</div>
           <div class="slide-icon">${icon(a.icon, 86)}</div>
           ${adShareBtn(L(a.name), a.link)}
-        </div>`).join('')}
+        </div>`));
+    return `<div class="slider"><div class="slider-track" id="secTrack">
+        ${slides.join('')}
       </div>
-      <div class="slider-dots" id="secDots">${ads.map((_, i) =>
+      <div class="slider-dots" id="secDots">${slides.map((_, i) =>
         `<span class="dot-i ${i === 0 ? 'active' : ''}"></span>`).join('')}</div>
-    </div>`;
+    </div>${adCapacityBarHtml(product, cat)}`;
   }
   /* Nothing sold. The house slide is how a shop owner learns the slot is
      for sale at all — without it the section reads as having no room for
      advertising, and nobody asks. */
   return `<div class="slider"><div class="slider-track">
-      <div class="slide slide-house active" data-route="#/advertise/${product}">
-        <div style="color:var(--gold);margin-bottom:6px">${icon('megaphone', 31)}</div>
-        <div class="slide-title">${t('adCtaSection').replace('{sec}', sectionName)}</div>
-        <div class="slide-sub" style="color:var(--text-2)">${t('adCtaSub')}</div>
-        <div class="slide-cta cta-center">${icon('plus', 17)} ${t('continueAction')}</div>
-      </div>
-    </div></div>`;
+      ${houseHtml(true)}
+    </div></div>${adCapacityBarHtml(product, cat)}`;
 }
 
 /**

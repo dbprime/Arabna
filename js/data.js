@@ -91,7 +91,7 @@ export const CLASSIFIED_CATS = MARKET_CATS;
    hand-typed «0.1» while the project had reached V.03.6 — two literals,
    both stale, and a reader reporting a fault could not tell us which build
    they were on. Raise it here when CLAUDE.md's version line moves. */
-export const APP_VERSION = '0.8.3';
+export const APP_VERSION = '0.8.4';
 
 /* ============================================================
    Where the app lives outside itself
@@ -267,6 +267,16 @@ export const CITY_SUGGESTIONS = [
    reader. Every approved order that has no artwork of its own gets this. */
 export const AD_CARD_COLOR = 'linear-gradient(135deg,#2F5D50,#14312B)';
 
+/* Not demo data: the house slide is ARABNA's own "your ad here", and it is
+   the only thing standing in an unsold slot. It must survive both the demo
+   switch and launch day — which is why `sliderAds()` filters it out of the
+   rotation by its `kind` and never by marking it demo.
+
+   ⚠️ AND IT IS ONE OBJECT, NAMED ONCE. `slidesFor()` decides whether it
+   enters the rotation, and it can only do that if it is the same value the
+   seed list carries — two literals drift apart on the first edit. */
+export const HOUSE_SLIDE = { id: 'house', kind: 'house' };
+
 export const SLIDER_ADS = markDemo([
   {
     id: 'ad1', kind: 'paid',
@@ -290,10 +300,7 @@ export const SLIDER_ADS = markDemo([
     color: 'linear-gradient(135deg,#3B3663,#1A1733)', icon: 'car', link: '#/directory/b6',
   },
 ]).concat([
-  /* Not demo data: the house slide is ARABNA's own "your ad here", and it
-     is the only thing standing in an unsold slot. It must survive both the
-     demo switch and launch day. */
-  { id: 'house', kind: 'house' },
+  HOUSE_SLIDE,
 ]);
 
 /* ---- paid ad inventory (mini banner + magazine native) ---- */

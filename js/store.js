@@ -4,7 +4,7 @@
     the rest of the app only ever calls these functions.)
    ============================================================ */
 
-import { CLASSIFIEDS, BUSINESSES, NOTIFICATIONS, SLIDER_ADS, MINI_ADS, ARTICLES, REVIEWS,
+import { CLASSIFIEDS, BUSINESSES, NOTIFICATIONS, SLIDER_ADS, HOUSE_SLIDE, MINI_ADS, ARTICLES, REVIEWS,
          MARKET_CATS, FREE_PRICE, EVENTS, VERIFY_BADGE_PRICE, blankEvent,
          ATTRIBUTES, ATTR_GROUPS, CATEGORIES, DAY_KEYS, CHIP_MIN, CHIP_MAX_SHARE, EVENT_TYPES,
          GENERIC_WORDS, NAME_SIM_MIN, STREET_WORDS, SUBSCRIPTION_PRICE, AD_CARD_COLOR,
@@ -2440,7 +2440,35 @@ export function sliderAds() {
   const live = (state.myAds || [])
     .filter(a => a.product === 'slider' && a.status === 'live' && (!a.endsAt || a.endsAt > t))
     .map(orderAsSlide);
-  return live.concat(withoutDemo(SLIDER_ADS));
+  /* ⚠️ THE HOUSE SLIDE IS FILTERED OUT BY `kind`, never by making it demo
+     data. It is ARABNA's own «your ad here» and it has to survive both the
+     demo switch and launch day — that is written where it is defined. */
+  const seeds = withoutDemo(SLIDER_ADS).filter(a => a.kind !== 'house');
+  return slidesFor('slider', live.concat(seeds));
+}
+
+/**
+ * The rotation for one placement: what is sold, plus the house slide WHILE
+ * THERE IS A SLOT LEFT.
+ *
+ * ⚠️ IT ENTERS THE ROTATION WHEN THERE IS SOMETHING TO SELL, NOT ALWAYS.
+ * What an advertiser buys is a SHARE OF THE ROTATION — `AD_SLOTS`'s own
+ * comment says it: at four the cycle is 64 seconds and each is on screen a
+ * quarter of the time, «and the advertiser who saw a result is the one who
+ * renews». Six sold plus the house slide gives every one of them a seventh
+ * where they paid for a sixth. And worse, it advertises what cannot be
+ * bought: the tap lands on a page that says «full».
+ *
+ * ⚠️ Sold out it leaves the ROTATION, not the SCREEN — `adCapacityBarHtml`
+ * keeps the invitation under the slider, which is the other half of this.
+ *
+ * ⚠️ ONE DEFINITION, because two readers need the same answer: the markup
+ * that draws the track, and `startSlider`, which is handed the item list
+ * and rotates it. If the two disagreed the last slide would be drawn and
+ * never shown, under a dot that never lights.
+ */
+export function slidesFor(product, ads, cat) {
+  return adSlotsLeft(product, cat) > 0 ? (ads || []).concat(HOUSE_SLIDE) : (ads || []);
 }
 
 /** every live order for one placement, as slides */

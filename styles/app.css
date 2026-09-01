@@ -2767,3 +2767,20 @@ input[inputmode="tel"], input[type="email"], input[inputmode="decimal"], #zipIn 
 @media (max-width: 400px) {
   .action-grid.stack-narrow { grid-template-columns: 1fr; }
 }
+
+/* The capacity strip — one line directly under a slider.
+   ⚠️ UNDER IT, never above and never inside: above it crowds the first
+   thing anybody sees, inside it is back in the rotation and costs an
+   advertiser a turn. It is a full-width row so the reason and the way in
+   sit at opposite ends and neither has to be hunted for. */
+.cap-bar {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  width: 100%; margin-block-start: 8px; padding: 10px 14px;
+  background: var(--surface); border: 1px solid var(--line);
+  border-radius: 12px; text-align: start; cursor: pointer;
+}
+.cap-text { color: var(--text-2); font-size: .8125rem; }
+.cap-cta {
+  display: inline-flex; align-items: center; gap: 4px;
+  color: var(--gold-bright); font-size: .8125rem; font-weight: 600; white-space: nowrap;
+}

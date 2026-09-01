@@ -89,7 +89,12 @@ export function MarketplaceScreen(root) {
       product: 'market',
       sectionName: section ? t(section.key) : t('classifiedsTitle'),
     });
-    if (ads.length) startSlider(ads, '#secAds .slider', '#secTrack', '#secDots');
+    /* ⚠️ THE SAME LIST THE TRACK DREW. `slidesFor` decides once whether
+       the house slide is in the rotation, and the rotator is driven by
+       the array it is handed — two decisions would draw a slide that is
+       never shown. */
+    const slides = S.slidesFor('market', ads);
+    if (slides.length) startSlider(slides, '#secAds .slider', '#secTrack', '#secDots');
     wireRoutes($('#secAds'));
 
     const shown = ads.map(a => a.id);

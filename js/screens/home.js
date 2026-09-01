@@ -2,7 +2,7 @@
 import { t, L, icon, $, $$, go, renderHeader, openSheet, closeSheet, toast, stars, wireRoutes,
          distLabelHtml, distText, cityChipLabel, mountAdRotator, esc,
          pickerBtn, setPickerValue, openDropdown, regionAllLabel, outsideBoxHtml, mountOutsideBox, catTileHtml,
-         adShareBtn } from '../ui.js';
+         adShareBtn, adCapacityBarHtml } from '../ui.js';
 import { CATEGORIES, HOME_CATS, MINI_ADS, ARTICLES, ZIPS, CITY_SUGGESTIONS, AD_SLOTS,
          CITY_POINTS, SEARCH_HINTS, HINT_MS, HINT_FADE_MS } from '../data.js';
 import * as S from '../store.js';
@@ -148,6 +148,7 @@ export function HomeScreen(root) {
       </div>
       <div class="slider-dots" id="dots">${ads.map((_, i) => `<span class="dot-i ${i === 0 ? 'active' : ''}"></span>`).join('')}</div>
     </div>
+    ${adCapacityBarHtml('slider')}
 
     <!-- featured (directory subscribers) — hidden entirely when nobody
          has subscribed yet, rather than leaving a heading over a gap -->

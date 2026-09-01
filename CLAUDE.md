@@ -11,7 +11,7 @@ ARABNA · عربنا — a mobile-first web app for the Arab community in the U.
 **business directory + marketplace + events + magazine**, Arabic-first with a full English toggle.
 ("Classifieds / الإعلانات الشخصية" is now "Marketplace / السوق" — the old `#/classifieds`
 routes still resolve so shared links keep working.)
-Current version: **V.08.3 (prototype)**. Owner: Rai Elby (@dbprime). Deploys to Vercel (team DB Prime).
+Current version: **V.08.4 (prototype)**. Owner: Rai Elby (@dbprime). Deploys to Vercel (team DB Prime).
 
 ## Hard rules (from the product brief)
 1. **One repository, one Vercel project.** No duplicates, no stray preview projects.
@@ -7607,6 +7607,89 @@ somebody else's phone.
 ```
 114 runs · 57 suites · 6,056 assertions · zero red · zero crash
 ```
+
+## V.08.4 — the house slide shows what can be sold, and does not vanish when it cannot
+
+⚠️ **Rai's question is what opened this:** «إذا انباعوا كلُّهم، كيف بيعرف
+اللي بيتفرّج إنّه ممكن يعلن هون بالمستقبل؟»
+
+**The capacity is written and respected in the SELLING** — `AD_SLOTS`,
+`adSlotsLeft`, the waiting list — **and the DISPLAY knew none of it.**
+Three behaviours of one rule, each in a different place:
+
+- **Home appended the house slide unconditionally**, so six sold made
+  **seven slides**. ⚠️ **What an advertiser buys is a share of the
+  rotation** — `AD_SLOTS`'s own comment says it: at four the cycle is 64
+  seconds and each is on screen a quarter of the time, «and the advertiser
+  who saw a result is the one who renews». **Six paid for a sixth and got a
+  seventh.** And worse, it advertised what could not be bought: the tap
+  landed on a page that says «full».
+- **A section decided from `ads.length` alone**, so **one sale out of four
+  removed the invitation** — three empty slots and nobody left to learn of
+  them. ⚠️ **And measured, that was the only road in:** the magazine has a
+  permanent button, the marketplace's upsell goes to `#/subscribe` (which
+  is not advertising), and events had **nothing at all**.
+- **The permanent upsell block on Home does not cover it, and the
+  measurement says so:** the slider is at **y=459** and that block at
+  **y=1,529 — 1.8 screens of scrolling**, with the articles, the offers and
+  the featured strip in between. ⚠️ **«Discovery is guaranteed anyway» is
+  literally true and practically false**, and this is the number that
+  settles it.
+
+### THE RULE
+```
+a slot free   →  the house slide is IN the rotation
+sold out      →  it leaves the ROTATION, not the SCREEN
+                 and a strip under the slider carries the invitation
+```
+
+- **The strip sits UNDER the slider**, never above and never inside. Above
+  it crowds the first thing anybody sees; inside it is back in the rotation
+  and costs an advertiser a turn. **Measured at 390×844: top 673, above the
+  fold** — and that item is what protects the reason for the batch, because
+  a strip that needs scrolling is the old block in new clothes.
+- **It promises nothing it cannot give.** Sold out it offers the **waiting
+  list** — `adWaitlist` / `joinWaitlist` were built and simply unreachable
+  from the screens people browse — and with room it names **how many are
+  left, read from `adSlotsLeft` and never written**.
+- ⚠️ **`adCapacityBarHtml` is written ONCE in `ui.js`**, not four times in
+  four screens — the `esc()` fault this repository has already paid for in
+  four places.
+- ⚠️ **And the marketplace and events gain a permanent way in** that
+  neither had. That is intended, not a side effect.
+
+### One list, because two readers need the same answer
+`slidesFor(product, ads, cat)` in `store.js` decides whether the house
+slide is in the rotation, and **both the markup that draws the track and
+`startSlider` read it**. ⚠️ **The rotator is driven by the array it is
+handed**, so a track carrying one more slide than that array draws a slide
+that is never shown, under a dot that never lights. The dots are asserted
+against the slides for exactly that reason.
+
+- ⚠️ **`HOUSE_SLIDE` is one object in `data.js`, named once.** Two literals
+  drift apart on the first edit.
+- ⚠️ **It is filtered out by its `kind`, never by being marked demo.**
+  Marking it demo would hide it the day the owner turns the invented
+  records off — and it is not invented, it is ours.
+
+### And the inventory itself is untouched
+**The batch decides WHEN WHAT IS SHOWN, never HOW MANY THERE ARE.**
+`AD_SLOTS`, the prices, `#/advertise`, the waiting list and the ten-second
+rotation are all unchanged, and v60 · 8.1 asserts it.
+
+**`test_v60` — 15 assertions, and the teeth:**
+```
+adSlotsLeft always 0            → 1.1 · 2.1 · 6.1 · 6.2 red
+the slide appended always       → 3.1 red at seven slides, 3.2 red
+the strip pushed below the fold → 5.1 red at top 2865
+```
+
+⚠️ **And the first attempt at that third tooth did not bite, and the fault
+was the tooth.** `margin-block-start: 2200px` was inserted at the head of
+the rule, **above the block's own `margin-block-start: 8px`, which won by
+source order** — so the strip never moved and the check looked toothless.
+Measured `getComputedStyle` said `8px`, which is what settled it. **Prove
+the break happened before concluding a check is asleep.**
 
 ## Known open items
 - **The header image is still far larger than its box.** V.04.7 replaced
