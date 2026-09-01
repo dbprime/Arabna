@@ -505,32 +505,28 @@ export function mountThemeWatch() {
  * must follow too (`--text`). Mixing them is the fault fixed in ce0fc77.
  */
 /**
- * The capacity strip — one line under a slider, and the answer to «if they
- * are all sold, how does somebody browsing learn they could advertise here
- * later?»
+ * The capacity strip — a silent door under a slider, drawn ONLY when the
+ * house slide has left the rotation. With a slot free the house slide is
+ * the invitation, and a strip under it would say the same thing twice —
+ * measured on the owner's phone, «ضع إعلانك هنا» stood three times on one
+ * screen: the slide, this strip, and the permanent block below.
  *
- * ⚠️ IT SITS UNDER THE SLIDER, never above it and never inside it. Above,
- * it crowds the first thing anybody sees; inside, it is back in the
- * rotation and costs an advertiser a turn. Directly under it is seen with
- * no scrolling and takes no turn at all.
+ * ⚠️ IT NAMES NO NUMBER AND NEVER SAYS «FULL». The owner's rule, 1 Sep,
+ * and it is a product rule rather than a taste: «a queue at the door turns
+ * people away — let them come in and see what there is.» The truth — sold
+ * out, the next free date, the waiting list — is told inside #/advertise
+ * to whoever walked in by choice, never to whoever is passing.
+ * ⚠️ That reverses the argument `500` built the count on («the number is
+ * the best reason to buy this week»), and the new decision is the one
+ * that stands; the old one is deleted, not softened.
  *
- * ⚠️ AND IT IS WRITTEN ONCE, not four times in four screens — the `esc()`
- * fault this repository has already paid for in four places.
- *
- * ⚠️ It promises nothing it cannot give: sold out it offers the waiting
- * list — `adWaitlist` / `joinWaitlist` were built and simply unreachable
- * from the screens people browse — and with room it offers the slot and
- * names how many are left, READ from `adSlotsLeft` and never written.
+ * ⚠️ Whether it is drawn is READ from `adSlotsLeft`, never written.
  */
 export function adCapacityBarHtml(product, cat) {
-  const total = S.adCapacity(product);
-  if (!product || !total) return '';
-  const left = S.adSlotsLeft(product, cat);
-  const full = left <= 0;
+  if (!product || !S.adCapacity(product)) return '';
+  if (S.adSlotsLeft(product, cat) > 0) return '';
   return `<button class="cap-bar" data-route="#/advertise/${esc(product)}">
-      <span class="cap-text">${full ? t('capFull')
-        : t('capLeft').replace('{n}', left).replace('{total}', total)}</span>
-      <span class="cap-cta">${full ? t('capJoinWait') : t('capTakeSlot')} ${icon(document.documentElement.dir === 'rtl' ? 'chevronL' : 'chevronR', 14)}</span>
+      <span class="cap-cta">${t('capAdvertise')} ${icon(document.documentElement.dir === 'rtl' ? 'chevronL' : 'chevronR', 14)}</span>
     </button>`;
 }
 

@@ -31,6 +31,12 @@ const ok = (n, c, extra = '') => { if (c) { pass++; console.log('PASS ' + n + (e
 
 const browser = await chromium.launch();
 
+/* ⚠️ THE EXPECTED TEXT IS READ FROM THE PACKS, never written here: the
+   owner may reword the door, and a check that quotes it goes red on a
+   rewording with nothing broken. */
+const packs = readFileSync(ROOT + 'js/i18n.js', 'utf8');
+const capAdvertise = [...packs.matchAll(/capAdvertise:\s*'([^']+)'/g)].map(m => m[1]);
+
 /* ⚠️ THE INVENTED RECORDS ARE OFF — the app's own default since `510`, and
    the state this batch is measured in: `SLIDER_ADS` carries three demo
    slides, and with them on, «sold out» is unreachable at six. */
@@ -61,6 +67,7 @@ async function look(orders, route) {
       barText: bar ? bar.innerText.replace(/\s+/g, ' ').trim() : null,
       barTop: r ? Math.round(r.top + window.scrollY) : null,
       adv: [...document.querySelectorAll('#app [data-route^="#/advertise"]')].length,
+      lang: document.documentElement.lang,
     };
   });
   await ctx.close();
@@ -98,13 +105,16 @@ async function look(orders, route) {
 
 /* ============ 4 — but it does not leave the screen ============ */
   ok('4.1 the strip is drawn under the slider', !!r.barText, String(r.barText));
-  ok('4.2 …and it says the places are taken, not «put your ad here»',
-     !!r.barText && /مكتمل|taken/.test(r.barText) && !/ضع إعلانك هنا|Put your ad/.test(r.barText),
-     String(r.barText));
-  /* ⚠️ AND IT REACHES THE WAITING LIST — `adWaitlist`/`joinWaitlist` were
-     built and simply unreachable from the screens people browse. */
-  ok('4.3 …and it offers the waiting list', !!r.barText && /انتظار|waiting/.test(r.barText),
-     String(r.barText));
+  /* ⚠️ REVERSED IN `535`, by the owner's decision after seeing `500` on his
+     phone: «a queue at the door turns people away». No number, and never
+     «full» — the truth is told inside #/advertise to whoever walked in. */
+  ok('4.2 …and it names no number and never says «full»',
+     !!r.barText && !/\d/.test(r.barText) && !/مكتمل|taken|full/i.test(r.barText), String(r.barText));
+  /* ⚠️ THE DOOR AND THE SLIDE SAY THE SAME THING — the owner's decision —
+     so whoever saw one knows the other. Nothing else is on it. */
+  ok('4.3 …and it reads the door text and nothing else, read from the packs',
+     !!r.barText && capAdvertise.length === 2 && capAdvertise.includes(r.barText),
+     String(r.barText) + ' · lang ' + r.lang);
 
 /* ============ 5 — above the fold, which is the whole point ============ */
   /* ⚠️ THE ITEM THAT PROTECTS THE REASON FOR THE BATCH. The permanent
@@ -114,16 +124,16 @@ async function look(orders, route) {
      'top ' + r.barTop);
 }
 
-/* ============ 6 — with room, it names how many are left ============ */
+/* ============ 6 — with room, there is NO strip ============ */
 {
   const r = await look(Array.from({ length: 4 }, (_, i) => order('slider', i)), '#/home');
-  /* ⚠️ THE NUMBER IS READ FROM `adSlotsLeft`, NOT WRITTEN. Four of six sold
-     leaves two, and the strip has to say two — a written number is a red
-     scheduled for the day capacity changes. */
-  ok('6.1 the strip names the remaining count, read not written',
-     !!r.barText && /\b2\b/.test(r.barText) && /\b6\b/.test(r.barText), String(r.barText));
-  ok('6.2 …and offers the slot rather than the waiting list',
-     !!r.barText && !/انتظار|waiting/.test(r.barText), String(r.barText));
+  /* ⚠️ REVERSED IN `535`. With a slot free the house slide IS the
+     invitation, and a strip under it saying the same thing on the next
+     line is a repetition, not a door — measured on the owner's phone the
+     screen carried «ضع إعلانك هنا» three times. */
+  ok('6.1 with a slot free there is no strip at all', r.barText === null, String(r.barText));
+  ok('6.2 …and the house slide is the only invitation under the categories', r.house === 1,
+     'house ' + r.house);
 }
 
 /* ============ 7 — the marketplace and events gain a way in ============ */

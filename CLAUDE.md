@@ -11,7 +11,7 @@ ARABNA · عربنا — a mobile-first web app for the Arab community in the U.
 **business directory + marketplace + events + magazine**, Arabic-first with a full English toggle.
 ("Classifieds / الإعلانات الشخصية" is now "Marketplace / السوق" — the old `#/classifieds`
 routes still resolve so shared links keep working.)
-Current version: **V.08.4 (prototype)**. Owner: Rai Elby (@dbprime). Deploys to Vercel (team DB Prime).
+Current version: **V.08.5 (prototype)**. Owner: Rai Elby (@dbprime). Deploys to Vercel (team DB Prime).
 
 ## Hard rules (from the product brief)
 1. **One repository, one Vercel project.** No duplicates, no stray preview projects.
@@ -7764,6 +7764,57 @@ a 1400px node injected       → 2.5b red at [-1010 … 390] · AND 2.5 STAYS GR
 of a clipped button — no behaviour, no screen, no route. The rule of
 `180`, `185` and `210`.
 
+## V.08.5 — the capacity strip counts nothing, and shows only when there is no other door
+
+⚠️ **Rai saw `500` on his phone and refused the strip, and the reason is a
+product rule rather than a taste** — written in his words because it will
+come up again on other screens:
+
+> أنا ونفسي كثيرٌ من الناس، لو ذهبنا إلى محلٍّ ووجدنا عليه زحمةً أو
+> طابوراً، غيّرنا رأينا ولم ندخل. فعرضُ هذه الرسالة قد يُنفّر زبوناً
+> محتملاً. دَعْه يدخل ويستكشف ما هو متوفّر.
+
+⚠️ **That reverses the argument `500` built the count on** («the number is
+the best reason to buy this week»). **The new decision stands and the old
+one is deleted, not softened.**
+
+### THE RULE
+> **No count, no «full», no «left» on a screen the reader is browsing.
+> The number is said inside `#/advertise` to whoever walked in by choice,
+> never to whoever is passing.**
+
+- **With a slot free — no strip at all.** The house slide is in the
+  rotation and *is* the invitation; a strip under it saying the same thing
+  one line down is a repetition. ⚠️ **Measured on his phone: «ضع إعلانك
+  هنا» stood three times on one screen** — the slide, the strip, and the
+  permanent block below. It is two now; if he wants one, that is another
+  file and is not slipped in here.
+- **Sold out — the strip alone, silent.** The house slide has left the
+  rotation (`500`), so the strip is the only door and stays — but it reads
+  **«ضع إعلانك هنا ›»** and nothing else: no number, no «مكتمل», no
+  waiting list. ⚠️ **The text is the house slide's own, by his decision:
+  whoever saw one knows the other.** It lands on `#/advertise/{product}`,
+  where the whole truth is told to whoever entered — «محجوز بالكامل — أقرب
+  تاريخ متاح · احجز دورك» — and that page is untouched.
+- ⚠️ **Why the strip does not say «full» even though it would be true:**
+  that is the queue at the shop door. **Honesty inside; the door outside is
+  silent.**
+- **`capAdvertise` is its own key**, not `adCtaSection` reused: that one
+  carries `{sec}` and changes with the section, this one is fixed. Two
+  keys for two jobs even while their letters coincide today. **The four
+  old keys are deleted, not left** — their only reader was
+  `adCapacityBarHtml`, and a key with no reader is read a month later as
+  approved copy.
+- `.cap-text` in `app.css` is left: this batch does not touch `styles/`,
+  a rule with no element does no harm, and it goes the day `app.css` is
+  opened for another reason.
+
+**`test_v60` — four items reversed, none deleted, and the teeth:**
+```
+the old count put back on the strip   → 4.2 · 4.3 red
+the strip drawn with a slot free      → 6.1 red
+7.x untouched and green: with a slot free the house slide reaches #/advertise, sold out the strip does
+```
 ## Known open items
 - **The header image is still far larger than its box.** V.04.7 replaced
   the 831/837 KB lockups with the cropped marks at **333/338 KB** — 60% off
