@@ -795,7 +795,11 @@ export const STRINGS = {
     demoTitle: 'البيانات التجريبية',
     demoWhy: 'كل ما أضفناه للتجربة معلَّم، فيختفي أو يُحذف بضغطة — دون البحث عنه يدوياً وسط 485 نشاطاً حقيقياً.',
     demoShow: 'إظهار البيانات التجريبية',
-    demoShowSub: 'مُطفأ = لا يراها أحد، لا في الدليل ولا في البحث ولا في الشريط المتحرك',
+    /* ⚠️ IT SAID «nobody sees it», WHICH DESCRIBES A SERVER THAT DOES NOT
+       EXIST. The switch is saved in THIS PHONE's own store, so it only
+       ever spoke for this device — and the short sentence is what hid
+       that. The new one is longer on purpose. */
+    demoShowSub: 'يظهر على هذا الجهاز وحده — ولا يراه زائر، فالمفتاح تفضيل جهاز لا إعداد برنامج',
     demoOther: 'إعلانات وفعاليات ومقالات',
     demoWipe: 'احذف كل البيانات التجريبية نهائياً',
     demoWipeNote: 'لا تراجع — المفتاح في الأعلى لا يعيدها.',
@@ -805,7 +809,11 @@ export const STRINGS = {
     demoPurgedNote: 'بقيت خطوة أخيرة قبل الإطلاق: احذف مصفوفتَي DEMO_BUSINESSES و DEMO_REVIEWS من js/data.js وارفع التحديث.',
     demoShownToast: 'البيانات التجريبية ظاهرة',
     demoHiddenToast: 'أُخفيت البيانات التجريبية',
-    demoWarnBar: 'بيانات تجريبية ظاهرة للمستخدمين',
+    /* ⚠️ AND THIS ONE WAS WORSE: the bar is drawn from THIS device's
+       state, so turning the switch off made the warning vanish while the
+       invented data stayed visible to everybody else. An alarm silenced
+       by an act that fixes nothing is worse than no alarm. */
+    demoWarnBar: 'بيانات تجريبية ظاهرة على هذا الجهاز',
     dupQueue: 'تكرار محتمل',
     dupQueueEmpty: 'لا توجد أنشطة موقوفة بانتظار الموافقة',
     dupScan: 'افحص الدليل بحثاً عن تكرار',
@@ -2473,7 +2481,7 @@ export const STRINGS = {
     demoTitle: 'Demo data',
     demoWhy: 'Everything invented for the prototype is flagged, so it hides or goes in one action — no hunting fake shops among 486 real ones.',
     demoShow: 'Show demo data',
-    demoShowSub: 'Off = nobody sees it, not in the directory, search or slider',
+    demoShowSub: 'Shown on this device only — no visitor sees it; the switch is a device preference, not an app setting',
     demoOther: 'Ads, events and articles',
     demoWipe: 'Erase all demo data for good',
     demoWipeNote: 'No undo — the switch above will not bring it back.',
@@ -2483,7 +2491,7 @@ export const STRINGS = {
     demoPurgedNote: 'One step left before launch: delete the DEMO_BUSINESSES and DEMO_REVIEWS arrays from js/data.js and push.',
     demoShownToast: 'Demo data is visible',
     demoHiddenToast: 'Demo data hidden',
-    demoWarnBar: 'Demo data is visible to users',
+    demoWarnBar: 'Demo data is visible on this device',
     dupQueue: 'Possible duplicates',
     dupQueueEmpty: 'No listings are being held for review',
     dupScan: 'Scan the directory for duplicates',

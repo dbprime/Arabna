@@ -163,7 +163,23 @@ const DEFAULTS = {
   blocked: [],               // { key, label, when } — people this user has blocked
   savedEvents: [],           // event ids the user asked to be reminded about
   reminded: {},              // one-shot keys, so a reminder is never sent twice
-  showDemo: true,            // the invented prototype data is visible until the owner hides it
+  /* ⚠️ OFF BY DEFAULT — and the reason is not tidiness, it is that this
+     switch is a DEVICE preference, not an application setting. `DEFAULTS`
+     is cloned into `state` and `writeState` saves the whole of `state`
+     into this phone's own store, so turning it off on Rai's phone hid the
+     invented data ON RAI'S PHONE — and every new visitor started from the
+     default and saw all of it. There is no server to correct that, so
+     while the default was `true` there was NO WAY AT ALL to hide the
+     invented listings from people. The comment here used to read «until
+     the owner hides it», which is exactly the misreading that produced
+     the fault. */
+  showDemo: false,           // shown on THIS DEVICE only — the owner turns it on for his
+  /* ⚠️ THE MIGRATION'S MARK, and it cannot be dropped. Every phone that
+     ever opened the app has `showDemo: true` written into its own store,
+     and changing `DEFAULTS` does not touch one of them. Without the mark
+     the migration would run on every launch and the owner could never
+     turn the switch on at all. */
+  demoDefaultOff: false,
   demoPurged: false,         // …or erased for good, which the switch cannot undo
   seasons: { ramadan: false },   // seasonal attribute groups the owner has switched on
   /* The two dates only a human can know. Ramadan begins when the crescent
@@ -274,6 +290,23 @@ if (state.myBusinessId !== undefined) {
   if (state.myBusinessId && !ids.includes(state.myBusinessId)) ids.push(state.myBusinessId);
   state.myBusinessIds = ids;
   delete state.myBusinessId;
+  writeState();
+}
+
+/* ⚠️ THE INVENTED DATA IS OFF BY DEFAULT NOW — and changing `DEFAULTS`
+   reaches nobody who has already opened the app: `writeState` put
+   `showDemo: true` into every existing phone's own store, Rai's two
+   included. So it is turned off once, at boot.
+
+   ⚠️ THE MARK IS WHAT MAKES IT A MIGRATION RATHER THAN A LOCK. Without
+   it this would run on every launch and the switch could never be turned
+   on — the owner would flip it, reopen, and find it off again.
+
+   ⚠️ And it only ever turns the switch OFF: somebody who has already
+   been migrated and then switched it on keeps it on. */
+if (!state.demoDefaultOff) {
+  if (state.showDemo === true) state.showDemo = false;
+  state.demoDefaultOff = true;
   writeState();
 }
 
@@ -3489,7 +3522,7 @@ const KEEPS_ON_SIGN_OUT = new Set([
   'adminAuth', 'adminLog', 'businessEdits', 'extraArticles', 'extraEvents',
   'hiddenEvents', 'eventEdits', 'bizPhotos', 'bizVerify', 'mergedBusinesses',
   'removedBusinesses', 'adWaitlist', 'adStats', 'bizStats', 'clockOffset',
-  'showDemo', 'demoPurged', 'seasons', 'ramadanDates', 'greetings', 'prayer',
+  'showDemo', 'demoPurged', 'demoDefaultOff', 'seasons', 'ramadanDates', 'greetings', 'prayer',
   'worshipFixes', 'offers', 'flags',
   // an accounting record — unreadable while signed out, never erased
   'receipts',

@@ -1,0 +1,11 @@
+# ⚠️ TEMPORARY, BY DECISION — and it is opened the day arabna.app is
+# connected, not before.
+#
+# Opening it earlier makes the temporary address the one Google knows, and
+# moving an indexed result from one address to another is harder than
+# indexing the right one the first time.
+#
+# There is deliberately no sitemap.xml: no map is drawn for somebody who
+# is not allowed in.
+User-agent: *
+Disallow: /

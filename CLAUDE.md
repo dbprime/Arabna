@@ -7,7 +7,7 @@ ARABNA · عربنا — a mobile-first web app for the Arab community in the U.
 **business directory + marketplace + events + magazine**, Arabic-first with a full English toggle.
 ("Classifieds / الإعلانات الشخصية" is now "Marketplace / السوق" — the old `#/classifieds`
 routes still resolve so shared links keep working.)
-Current version: **V.08.0 (prototype)**. Owner: Rai Elby (@dbprime). Deploys to Vercel (team DB Prime).
+Current version: **V.08.1 (prototype)**. Owner: Rai Elby (@dbprime). Deploys to Vercel (team DB Prime).
 
 ## Hard rules (from the product brief)
 1. **One repository, one Vercel project.** No duplicates, no stray preview projects.
@@ -7303,6 +7303,97 @@ exist; `nearestCity` returns `{city, miles}` or null, and `inRegion` is
 its own exported function. **It reported `false` for Houston**, which
 looks exactly like a real regression. **A check must call the API the app
 has, not the one the check imagined.**
+
+## V.08.1 — the invented data is shown to nobody by default
+
+⚠️ **A publication gate, not an improvement.** Rai bought `arabna.app` and
+is about to connect it, and **the first stranger to open the real address
+would have seen invented businesses and reviews nobody wrote.**
+
+### The fault was not in the data — it was in who could see it
+```js
+showDemo: true,      // in DEFAULTS
+```
+`DEFAULTS` is cloned into `state`, and `writeState` saves the whole of
+`state` into **this phone's own store**. ⚠️ **So the switch is a DEVICE
+preference, not an application setting**: turning it off on Rai's phone
+hid the invented data *on Rai's phone*, and every new visitor started from
+the default and saw all of it. With no server, **while the default was
+`true` there was no way at all to hide it from people. Not one.**
+
+Measured at 390px on a brand-new device, after the fix:
+
+| | on | off |
+|---|---|---|
+| directory | 40 rows | **40 rows** |
+| marketplace | 10 | 0 |
+| magazine | 6 | 0 |
+| slider slides | 4 | **1** — the house «إعلانك هنا» alone |
+| mini banner | drawn | not drawn |
+
+**Turning it off does not empty the app — it makes it honest.** The 485
+real listings are untouched, and the empty sections carry their designed
+states.
+
+### ⚠️ And two lines in the panel were saying what was not true
+```
+demoShowSub   «مُطفأ = لا يراها أحد …»      describes a server that does not exist
+demoWarnBar   «بيانات تجريبية ظاهرة للمستخدمين»
+```
+**The second is the worse one:** the bar is drawn from **this device's**
+state, so Rai turning the switch off made the warning vanish **while the
+invented data stayed visible to everybody else.** An alarm silenced by an
+act that fixes nothing is worse than no alarm — and it is our own rule
+verbatim: *a check that goes green without a fix guards nothing.* Both now
+name **«هذا الجهاز»**, and the bar is kept: the owner has to know that
+what he sees is not what people see, which is exactly what misled him.
+
+### ⚠️ Changing the default reaches nobody who already opened the app
+`writeState` put `showDemo: true` into every existing phone's store, Rai's
+two included. So it is turned off **once, at boot**, behind a mark.
+
+> **The mark is what makes it a migration rather than a lock.** Without it
+> the switch could never be turned on at all: flip it, reopen, find it off.
+
+It lives in `DEFAULTS` **and** in the device-keys list beside `showDemo`
+itself — a key forgotten there is lost on sign-out and the migration runs
+again. And it writes through `writeState()`, not around it: **`430`'s rule
+that exactly one place in the app touches the browser store.**
+
+### The reviews stay, and that is safe now
+Rai's decision: `DEMO_BUSINESSES` and `DEMO_REVIEWS` stay in `js/data.js`.
+**Safe because of the very thing that caused the fault** — the switch is
+per-device, so with the default off **no visitor can turn it on or see
+them.** Deleting them is written as a launch-gate item in
+`docs/الحالة.md`, with `robots.txt`, the manifest and the CSP.
+⚠️ **Their presence in a public repository is text somebody can read, not
+a review somebody is shown. The difference is large and is not blurred.**
+
+### `robots.txt` — shut until the domain is connected
+`Disallow: /` for everyone, **opened the day `arabna.app` is connected and
+not before**: opening it earlier makes the temporary address the one
+Google knows, and **moving an indexed result is harder than indexing the
+right one first time.** No `sitemap.xml` — no map is drawn for somebody
+who is not allowed in.
+
+### ⚠️ And three of this suite's own checks were wrong first
+```
+2.2  demanded ZERO results for «مطعم الشام» — but that query legitimately
+     reaches two REAL shops, Al Shami (Westheimer) and (Katy), through the
+     transliteration tags V.02.6 added. The app was right. It now asserts
+     the invented record is absent, not that nothing is found.
+3.5  counted MATCHES of `localStorage.…Item`, but the one place holds both
+     the read and the write on one line, so the honest count is of PLACES.
+4.1  swept the whole i18n file and caught two innocents — this batch's own
+     comment quoting the sentence it removed, and `greetOffNote`, which
+     says «nobody sees it» about a paused greeting and is true.
+```
+
+⚠️ **And the tooth for the default did not bite**, which is worth as much
+as the ones that did: flipping `showDemo` back to `true` leaves the suite
+at 22/22, **because the migration protects a fresh device anyway.** Two
+layers again — so the default itself is asserted structurally (`1.1b`),
+and that one bites.
 
 ## Known open items
 - **The header image is still far larger than its box.** V.04.7 replaced
