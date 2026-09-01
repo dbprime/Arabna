@@ -7597,6 +7597,10 @@ the number is invalid — **worse than no icon, because it says support
 exists and then shuts the door.** It is checked by hand, once, from
 somebody else's phone.
 
+```
+114 runs · 57 suites · 6,056 assertions · zero red · zero crash
+```
+
 ## Known open items
 - **The header image is still far larger than its box.** V.04.7 replaced
   the 831/837 KB lockups with the cropped marks at **333/338 KB** — 60% off
