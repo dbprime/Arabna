@@ -7395,6 +7395,30 @@ at 22/22, **because the migration protects a fresh device anyway.** Two
 layers again — so the default itself is asserted structurally (`1.1b`),
 and that one bites.
 
+### ⚠️ Thirty-eight suites went red, and not one thing was broken
+Their fixtures **are** the invented records — a subscribed business, a
+boosted listing, a review with a rating. `tools/e2e/_demo.mjs` is one
+wrapper that turns the switch on for the suites alone, and it is the
+honest shape: **the app's default is what a stranger meets, and the net
+says so by having to ask for anything else.**
+
+Two faults in the wrapper itself, measured rather than reasoned about:
+
+- ⚠️ **It forced the flag on unconditionally**, so `v20 · 6.7` — which
+  turns the invented data OFF on purpose, to reach the drawer's «no
+  subscriber» branch — was overridden. **A helper that breaks a test by
+  helping it.** An object already carrying `showDemo` is now left exactly
+  as it is: **an explicit choice by a suite outranks the wrapper.**
+- ⚠️ **`addInitScript` runs in registration order**, and five suites
+  (`v38` · `v39` · `v40` · `v43` · `v45`) seed by **replacing the whole
+  state object**, erasing the flags a moment after they were written. So
+  the wrapper **intercepts the write** instead — the only point that is
+  proof against ordering, whatever shape a suite seeds in.
+
+```
+112 runs · 56 suites · 6,010 assertions · zero red · zero crash
+```
+
 ## Known open items
 - **The header image is still far larger than its box.** V.04.7 replaced
   the 831/837 KB lockups with the cropped marks at **333/338 KB** — 60% off
