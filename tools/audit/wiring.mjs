@@ -8,6 +8,7 @@
    copies, and the fifth screen written afterwards had none. */
 import fs from 'fs';
 import path from 'path';
+import { pathToFileURL } from 'node:url';
 
 const R = path.resolve(process.argv[2] || '.');
 const read = p => fs.readFileSync(path.join(R, p), 'utf8');
@@ -84,17 +85,28 @@ for (const f of files)
     todo.push(at(f, m.index) + ' ' + m[0].trim());
 ok('6 no TODO left behind', todo, false);
 
-/* The data the built features are waiting for. Both quote styles: the 29
-   development seeds are written one way and the 485 imported rows the
-   other, and matching only one counted 29 listings against 34 sets of
-   coordinates — a number that cannot be true and would have been read
-   past. */
-const d = read('js/data.js');
-const biz = (d.match(/id: *['"]b\d+['"]/g) || []).length;
-const geo = (d.match(/\blat: *-?\d+\.\d+/g) || []).length;
+/* The data the built features are waiting for.
+
+   ⚠️ THE RECORD IS READ, NOT THE TEXT. Matching `lat:` across the whole
+   file counts the ZIP centres and the city points as listings and prints
+   «34 of 514» — and that is the very sentence `docs/الحالة.md` carried
+   until V.06.4 corrected it by measuring. The document was fixed and the
+   tool was not, and the tool is what gets read first, every morning.
+
+   The lesson is written at the head of this same file: keys are written
+   several to a line, so a pattern over the text is a guess. THE TEXT IS
+   READ BY PATTERNS AND ERRS; THE MODULE IS IMPORTED AND IS TRUE.
+
+   ⚠️ `js/data.js` imports nothing and calls no network, so importing it
+   in a static tool with no browser is safe. And `pathToFileURL` is not
+   decoration: `R` comes from `process.argv[2]` and may be relative, and
+   `import()` of a bare disk path fails on some platforms. */
+const { BUSINESSES } = await import(pathToFileURL(path.join(R, 'js/data.js')).href);
+const biz = BUSINESSES.length;
+const geo = BUSINESSES.filter(b => b.lat != null && b.lng != null).length;
 console.log(`\nDATA listings=${biz} withCoords=${geo}`);
 ok('7 every listing has coordinates',
-   geo >= biz ? [] : [`${geo} of ${biz} carry lat/lng — the other ${biz - geo} are the imported rows`],
+   geo >= biz ? [] : [`${geo} of ${biz} carry lat/lng — the ${biz - geo} others wait on the data job`],
    false);
 
 console.log(`\n${pass} passed, ${fail} failed`);
