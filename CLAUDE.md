@@ -2,6 +2,10 @@
 
 اقرأ هذا الملف أولاً قبل أي تعديل. This file is the handoff context — read it before editing.
 
+⚠️ وقبله: `CLAUDE_PROJECT_MEMORY.md` في الجذر — ذاكرةُ المشروع الدائمة.
+   يُقرأ كاملاً قبل أيّ مهمّة، ويُحدَّث بعد كلّ قرارٍ أو تعديلٍ بلا أن يُطلَب.
+   وعند تعارضه مع أيّ ملفٍّ آخر فهو المعتمَد، ثمّ يُصحَّح الآخر فوراً.
+
 ## What this is
 ARABNA · عربنا — a mobile-first web app for the Arab community in the U.S.:
 **business directory + marketplace + events + magazine**, Arabic-first with a full English toggle.
@@ -20,6 +24,9 @@ Current version: **V.08.3 (prototype)**. Owner: Rai Elby (@dbprime). Deploys to 
    text, emoji or CSS. It must render centered, correct aspect ratio, no white box.
 6. Version tags: V.01, V.02, … Never overwrite a working version without preserving it.
 7. **No blank screens** — every empty list has a designed empty state.
+8. **ذاكرةُ المشروع ملفٌّ لا جلسة.** `CLAUDE_PROJECT_MEMORY.md` يُقرأ قبل العمل
+   ويُحدَّث بعده. وكلُّ قرارٍ أو خطأٍ أو وعدٍ أو متطلَّبٍ يُكتب فيه لحظتَه —
+   وما لا يُكتب يُنسى ويُبنى عليه خطأً.
 
 ## Stack
 Zero dependencies. Plain ES modules + one CSS file. No build step — Vercel serves it statically.
