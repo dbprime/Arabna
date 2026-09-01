@@ -63,9 +63,19 @@ const wire = p => {
 const mount = p => p.evaluate(async () => {
   window.__S = await import('arabna/js/store.js').catch(() => import('./js/store.js'));
 });
+/* ⚠️ THE INVENTED DATA IS ON FOR THIS SUITE, and it goes into the seed
+   rather than coming from the shared helper: `reopen` below seeds only
+   when the key is ABSENT, and a helper that creates the key first would
+   make it skip the whole fixture. And `b1` — a demo record — is this
+   suite's fixture: with the data off it does not exist, so
+   `#/business/edit/b1` lands on `#/directory` and 4.11 reads as a fault
+   that is not one. ⚠️ `demoDefaultOff` is the half that is easy to miss:
+   without it the boot migration turns the switch straight back off. */
+const DEMO_ON = { showDemo: true, demoDefaultOff: true };
 const openWith = async (state) => {
   const ctx = await browser.newContext({ viewport: { width: 390, height: 844 } });
-  await ctx.addInitScript(s => localStorage.setItem('arabna.v1', JSON.stringify(s)), state);
+  await ctx.addInitScript(s => localStorage.setItem('arabna.v1', JSON.stringify(s)),
+                          Object.assign({}, DEMO_ON, state));
   const p = await ctx.newPage(); wire(p);
   await p.goto(BASE + '#/home', { waitUntil: 'networkidle' });
   await p.waitForTimeout(500); await mount(p);

@@ -30,8 +30,15 @@ const NOW = Date.now();
 const LONG = 'سطر '.repeat(120);
 const MEMBER = { name: 'رامي البي', email: 'a@b.c', emailVerified: true,
                  phone: '7134669182', phoneVerified: true, joined: NOW - 9e8 };
+/* ⚠️ THE INVENTED DATA IS ON FOR THIS SUITE, in the seed itself and not
+   from the shared helper: `open` below seeds only when the key is
+   ABSENT, so a helper that creates it first would skip the fixture.
+   And `b1` and its review ARE the fixture here — with the data off
+   `#/directory/b1` does not exist, `.rv-text` is null, and the suite
+   crashes rather than failing. ⚠️ `demoDefaultOff` is the half that
+   is easy to miss: without it the boot migration turns it back off. */
 const SEED = {
-  lang: 'ar', user: MEMBER,
+  lang: 'ar', user: MEMBER, showDemo: true, demoDefaultOff: true,
   reviews: [
     { id: 'rL', bizId: 'b1', rating: 5, user: 'رامي', when: { ar: 'اليوم', en: 'today' },
       text: { ar: LONG, en: 'line '.repeat(120) }, mine: true },
