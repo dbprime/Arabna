@@ -7756,6 +7756,10 @@ the inline margin restored   → 2.5b red at [-16 … 374] on all four widths
 a 1400px node injected       → 2.5b red at [-1010 … 390] · AND 2.5 STAYS GREEN
 ```
 
+```
+116 runs · 58 suites · 6,094 assertions · zero red · zero crash
+```
+
 **No version raise:** one line in `js/`, and what changed is the position
 of a clipped button — no behaviour, no screen, no route. The rule of
 `180`, `185` and `210`.
