@@ -7276,6 +7276,27 @@ inRegion(Houston · Rosenberg · Dallas)   true · true · false, unchanged
 uncovered name changes nothing about what is listed. ⚠️ **And coverage
 stays a separate question, still answered by `inRegion`.**
 
+### ⚠️ And three suites went red on the full net — one of them my own trap
+```
+v24 · 1.2 · 1.3   a deliberate reversal — rewritten
+v33 · 2.6         CRASHED, calling a function this batch deleted — rewritten
+v56 · 3.6         MY FAULT: a frozen version literal
+```
+
+**`v56 · 3.6` is the one worth writing down.** I pinned `'0.7.9'` into the
+check, so raising the version in the very next batch turned it red with
+nothing broken.
+
+> **A frozen literal in a check is a red scheduled for a future date.** A
+> check on a mechanism measures the mechanism: the cache name carries
+> whatever `js/data.js` holds, and `activate` deletes every other name —
+> that is what makes the bump the eraser, whatever the number is.
+
+⚠️ **And `v33` CRASHED rather than failed** — the fourth time this session.
+A check calling a deleted function takes the whole suite down with it, and
+every assertion after it goes unmeasured. What replaced it asserts the
+machinery is **gone**, not merely unused.
+
 ### ⚠️ And a check that invented its own API measured nothing
 `2.2` first read `nearestCity(...).inRegion` — a field that does not
 exist; `nearestCity` returns `{city, miles}` or null, and `inRegion` is

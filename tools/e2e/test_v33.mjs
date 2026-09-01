@@ -138,15 +138,32 @@ await page.evaluate(() => {
   S.state.geo = { lat: 29.7604, lng: -95.3698, at: 0 };   // stale on purpose
   S.save();
 });
-ok('2.6 the move is asked once and then never again',
-   await page.evaluate(() => {
-     const S = window.__m.S;
-     const first = S.moveAlreadyAsked();
-     S.markMoveAsked();
-     return first === false && S.moveAlreadyAsked() === true;
+/* ⚠️ REVERSED BY 490 — and this one CRASHED the suite rather than failing
+   it, because it called `moveAlreadyAsked()`, which no longer exists. The
+   ask-once sheet is deleted: Rai reversed V.04.0 with the stronger
+   argument that «show me Houston's shops» and «where am I» are not the
+   same act, and one field carrying both let the browsing answer block the
+   location question for ever. The city now updates itself and one
+   transient line offers a single undo.
+   ⚠️ What is asserted instead is that the machinery is GONE, not merely
+   unused — a function nobody calls reads later as a disabled feature and
+   gets revived for no reason. */
+ok('2.6 the ask-once sheet is gone from the app entirely',
+   await page.evaluate(async () => {
+     for (const f of ['js/screens/home.js', 'js/store.js', 'js/ui.js']) {
+       const src = await (await fetch(f)).text();
+       if (/askToMove|moveAlreadyAsked|markMoveAsked/.test(src)) return false;
+     }
+     return true;
    }));
-ok('2.7 «لا» is respected — the city does not change on its own',
-   await page.evaluate(() => window.__m.S.userCity()) === 'Houston');
+/* ⚠️ AND THE HAND-PICKED CITY IS NO LONGER FROZEN — the deliberate half
+   of the reversal, asserted so it cannot drift back by accident. */
+ok('2.7 a hand-picked city updates itself, with an undo rather than a question',
+   await page.evaluate(async () => {
+     const src = await (await fetch('js/screens/home.js')).text();
+     return /offerUndoMove\(/.test(src) && /locUpdated/.test(src)
+         && /travelled < NAME_STALE_MI/.test(src);
+   }));
 /* and the limit the whole thing exists to protect */
 ok('2.8 nothing is read for a reader who never granted',
    await page.evaluate(async () => {

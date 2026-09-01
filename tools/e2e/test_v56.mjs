@@ -144,9 +144,20 @@ console.log('--- three layers, and not one of them is enough alone ---');
      /caches\.match\('index\.html'\)\.then\(noRedirect\)/.test(sw));
   /* the cache name carries the version, and activate deletes every other
      name — so raising APP_VERSION is what erases the poisoned cache */
-  ok('3.6 the version is the eraser, and it was raised',
+  /* ⚠️ MY OWN FAULT, AND IT WENT RED ON THE VERY NEXT BATCH. This pinned
+     the literal `0.7.9` into the suite, so `490` raising the version to
+     `0.8.0` turned it red while nothing was wrong. A check on a mechanism
+     must measure the MECHANISM: the cache name carries whatever version
+     `js/data.js` holds, and `activate` deletes every other name — that is
+     what makes raising the number the eraser, whatever the number is.
+     ⚠️ A frozen literal in a check is a red scheduled for a future date. */
+  const ver = /APP_VERSION\s*=\s*'([^']+)'/.exec(read('js/data.js'));
+  const swman = /SW_VERSION = '([^']+)'/.exec(read('js/sw-manifest.js'));
+  ok('3.6 the version is the eraser, and it is read from data.js — not frozen here',
      /const CACHE = 'arabna-' \+ self\.SW_VERSION;/.test(sw) &&
-     /APP_VERSION\s*=\s*'0\.7\.9'/.test(read('js/data.js')));
+     /caches\.keys\(\)/.test(sw) && /k !== CACHE/.test(sw) &&
+     !!ver && !!swman && ver[1] === swman[1],
+     ver && swman ? ver[1] + ' == ' + swman[1] : 'unreadable');
 }
 
 /* ============ 4 — and what must NOT be touched ============ */

@@ -68,17 +68,35 @@ ok('1.1 the resolved city wins when the directory covers it',
      return z.city === 'Houston' && near.city !== 'Houston'
          && H.cityNameFor(z, near) === 'Houston';
    }));
-ok('1.2 …and nearestCity is consulted only when it does not',
+/* ⚠️ REVERSED BY 490, and the check was not softened — it was wrong.
+   It asserted that a name the directory does not cover is REPLACED by the
+   nearest covered centre. That was half an old fix still doing the thing
+   the fix's own comment condemns: measured beside Sugar Land, Rosenberg,
+   Fresno, Sienna, Meadows Place and Alief are all off the 24, and whoever
+   stood in one of them was told «Sugar Land» while the reverse lookup's
+   correct answer was thrown away. Rai reported it from his own screen.
+   ⚠️ `nearestCity` is now the LAST RESORT — consulted when there is no
+   name at all — and that half is asserted below and in 1.2b. */
+ok('1.2 an uncovered name is kept, not swapped for the nearest centre',
    await page.evaluate(() => {
      const H = window.__m.H;
-     return H.cityNameFor({ city: 'Nowhere' }, { city: 'Katy' }) === 'Katy'
+     return H.cityNameFor({ city: 'Nowhere' }, { city: 'Katy' }) === 'Nowhere'
          && H.cityNameFor({ city: 'Nowhere' }, null) === 'Nowhere';
+   }));
+ok('1.2b …and the nearest centre still fills a real gap',
+   await page.evaluate(() => {
+     const H = window.__m.H;
+     return H.cityNameFor(null, { city: 'Katy' }) === 'Katy'
+         && H.cityNameFor(null, null) === '';
    }));
 ok('1.3 both places resolve it through the one function', await page.evaluate(async () => {
   const src = await (await fetch('/js/screens/home.js')).text();
-  // one definition, two call sites, and no second copy of the rule
+  /* one definition and two call sites, still. ⚠️ The second half of this
+     check counted `CITY_POINTS.some` — the condition 490 DELETED, because
+     it never chose between two names, it chose when to discard the right
+     one. Zero is the correct number now. */
   return (src.match(/cityNameFor\(/g) || []).length === 3
-      && (src.match(/CITY_POINTS\.some/g) || []).length === 1;
+      && (src.match(/CITY_POINTS\.some/g) || []).length === 0;
 }));
 ok('1.4 inRegion still comes from nearestCity — coverage is not the name',
    await page.evaluate(async () => {
