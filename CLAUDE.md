@@ -7684,6 +7684,10 @@ the slide appended always       → 3.1 red at seven slides, 3.2 red
 the strip pushed below the fold → 5.1 red at top 2865
 ```
 
+```
+116 runs · 58 suites · 6,086 assertions · zero red · zero crash
+```
+
 ⚠️ **And the first attempt at that third tooth did not bite, and the fault
 was the tooth.** `margin-block-start: 2200px` was inserted at the head of
 the rule, **above the block's own `margin-block-start: 8px`, which won by
