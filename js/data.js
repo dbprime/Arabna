@@ -91,7 +91,7 @@ export const CLASSIFIED_CATS = MARKET_CATS;
    hand-typed «0.1» while the project had reached V.03.6 — two literals,
    both stale, and a reader reporting a fault could not tell us which build
    they were on. Raise it here when CLAUDE.md's version line moves. */
-export const APP_VERSION = '0.8.2';
+export const APP_VERSION = '0.8.3';
 
 /* ============================================================
    Where the app lives outside itself
@@ -131,7 +131,17 @@ export const SOCIAL = [
   { id: 'facebook',  name: 'Facebook',   icon: 'facebook',  url: 'https://facebook.com/Arabnaapp' },
   { id: 'instagram', name: 'Instagram',  icon: 'instagram', url: 'https://instagram.com/arabna.app' },
   { id: 'x',         name: 'X',          icon: 'xLogo', filled: true, url: 'https://x.com/ARABNAapp' },
-  { id: 'whatsapp',  name: 'WhatsApp',   icon: 'whatsapp',  url: '' },
+  /* ⚠️ DIGITS ONLY in `wa.me` — country code, no `+`, no separators:
+     that is the service's own rule and any other shape opens an error
+     page. And the ready line is written ENCODED, verbatim, never built
+     with `encodeURIComponent` at run time for one string — a URL does
+     not carry Arabic letters intact through every browser.
+     It reads «مرحباً، أكتب لكم من تطبيق عربنا», and it is practical
+     rather than decorative: this number is the owner's own and the
+     support line at once, so the ready line sorts the app's messages
+     from everyone else's on the first line. */
+  { id: 'whatsapp',  name: 'WhatsApp',   icon: 'whatsapp',
+    url: 'https://wa.me/13463533322?text=%D9%85%D8%B1%D8%AD%D8%A8%D8%A7%D9%8B%D8%8C%20%D8%A3%D9%83%D8%AA%D8%A8%20%D9%84%D9%83%D9%85%20%D9%85%D9%86%20%D8%AA%D8%B7%D8%A8%D9%8A%D9%82%20%D8%B9%D8%B1%D8%A8%D9%86%D8%A7' },
 ];
 
 export const FREE_PRICE = '__FREE__';

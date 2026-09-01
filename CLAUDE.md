@@ -7,7 +7,7 @@ ARABNA · عربنا — a mobile-first web app for the Arab community in the U.
 **business directory + marketplace + events + magazine**, Arabic-first with a full English toggle.
 ("Classifieds / الإعلانات الشخصية" is now "Marketplace / السوق" — the old `#/classifieds`
 routes still resolve so shared links keep working.)
-Current version: **V.08.2 (prototype)**. Owner: Rai Elby (@dbprime). Deploys to Vercel (team DB Prime).
+Current version: **V.08.3 (prototype)**. Owner: Rai Elby (@dbprime). Deploys to Vercel (team DB Prime).
 
 ## Hard rules (from the product brief)
 1. **One repository, one Vercel project.** No duplicates, no stray preview projects.
@@ -7529,6 +7529,73 @@ yesterday's card restored      → 3.3 red, reporting 2 blocks
 ```
 114 runs · 57 suites · 6,038 assertions · zero red · zero crash
 ```
+
+## V.08.3 — the support number fills its place
+
+**Two values and no new screen.** The machinery was built long ago and was
+waiting: `SUPPORT_PHONE` has held `''` since V.03.6 — when `(713) 555-0199`,
+a reserved fictional exchange, was printing a `tel:` that rang nowhere —
+and the WhatsApp row in `SOCIAL` has stood dimmed behind «قريباً» since
+V.05.6. **Rai's number, and it is one number for both.**
+
+- **Nothing was hunted for and filled in.** The three places read the
+  constant and appeared by themselves. Measured across seventeen routes:
+  **«من نحن» · «الشروط» · «الخصوصية», and no fourth reader** — «المساعدة»
+  publishes the email and deliberately not the phone, which is V.02.7's
+  own decision.
+- ⚠️ **`+1 (346) 353-3322` and not `(346) 353-3322`, and the shape is the
+  whole item.** The link is built by stripping everything that is not a
+  digit or a `+`, so the short form gives `tel:3463533322` — **no country
+  code, and it does not dial for a reader outside the United States or on
+  a foreign network. This app is written for a community that travels.**
+  `fmtPhone` is not touched: it would change how five hundred listings
+  print, and none of them has anything to do with this.
+- ⚠️ **The `wa.me` number is digits alone** — country code, no `+`, no
+  separators. That is the service's own rule and any other shape opens an
+  error page.
+- **The ready line is a fixed percent-encoded value**, «مرحباً، أكتب لكم
+  من تطبيق عربنا», never built with `encodeURIComponent` at run time: a URL
+  does not carry Arabic letters intact through every browser. ⚠️ **And it
+  is practical rather than decorative** — the number is Rai's own and the
+  support line at once, so the ready line **sorts the app's messages from
+  everyone else's on the first line.**
+- **WhatsApp left «قريباً» by itself.** `soonLineHtml` builds that line
+  from the rows with no `url`, so nothing was deleted from a list and no
+  string was edited. Measured: the line is **not drawn at all** now — all
+  six rows are real anchors.
+- ⚠️ **`scrubContact` is named here to be left alone.** It strips WhatsApp
+  links from messages **readers send each other**, which is right and has
+  nothing to do with a support channel. No exception is added to it.
+
+### And the check as written would have been red on a clean tree
+`495`'s own wording for the guard was «search `js/` for `555-01`, the
+answer is zero». **Measured, that is fourteen places and every one of them
+is correct**: ten are the demo seeds' phone numbers — invented on purpose,
+and they leave with the two arrays at launch — two are the importer's
+example rows, and two are comments recording this very fault.
+
+⚠️ **A check written that way demands deleting the seeds and the
+documentation, and goes red with nothing wrong.** Same family as `test_v58
+· 4.1`, which swept a whole pack and caught the comment explaining its own
+rule. So it is scoped to the harm instead: **the number we publish as
+ours, and any `tel:` a reader can actually press.**
+
+**Added to `test_v14`, not to a suite of its own** — that is the block that
+already reads those three pages — and all four teeth bite:
+
+```
+SUPPORT_PHONE emptied        → 495.1 · 2 · 3 · 3b red, and no dead link printed
+the wa.me url emptied        → 495.4 · 5 · 5b red, «WhatsApp — قريباً» returns
+the number without +1        → 495.2 red
+the old fictional number     → 495.6 and 6b red, naming three dead tel: links
+```
+
+⚠️ **And one thing is not closed by code and is not claimed:** `wa.me`
+opens a conversation only if the number is **registered on WhatsApp**, and
+neither our code nor `wa.me` checks it. If it is not, the reader is told
+the number is invalid — **worse than no icon, because it says support
+exists and then shuts the door.** It is checked by hand, once, from
+somebody else's phone.
 
 ## Known open items
 - **The header image is still far larger than its box.** V.04.7 replaced

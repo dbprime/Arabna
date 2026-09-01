@@ -4761,7 +4761,7 @@ export const SUPPORT_EMAIL = 'support@arabna.app';
    An email is published on all the same pages and satisfies what the app
    stores ask for. Put a working number in this one line and it reappears
    everywhere by itself; leave it empty and no dead link is printed. */
-export const SUPPORT_PHONE = '';
+export const SUPPORT_PHONE = '+1 (346) 353-3322';
 
 /* ---------------- the store links ----------------
  * ⚠️ SUPPORT_PHONE's pattern, to the letter, and not a second one

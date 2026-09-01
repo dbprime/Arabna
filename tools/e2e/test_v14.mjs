@@ -2,6 +2,7 @@
    stats · notifications · blocking · back · search · the "+" button */
 import { chromium } from '/opt/node22/lib/node_modules/playwright/index.mjs';
 import { withDemoData } from './_demo.mjs';
+import { readFileSync, readdirSync } from 'node:fs';
 
 /* V.02.7 removed the quick-chip row: «مفتوح الآن» and the specialities are
    reached through the ⚙ sheet now. These do through the sheet exactly what
@@ -402,6 +403,87 @@ await go('#/privacy');
 ok('…and in the privacy page', (await txt()).includes('support@arabna.app'));
 await go('#/help');
 ok('…and in help, which is where a reader looks for it', (await txt()).includes('support@arabna.app'));
+
+/* ⚠️ 495 — THE SUPPORT NUMBER FILLS ITS PLACE, and it is two values and no
+   new screen: the machinery was built long ago and was waiting. The
+   constant held `''` since V.03.6, when `(713) 555-0199` — the reserved
+   fictional exchange — was printing a `tel:` that rang nowhere, offered to
+   somebody reporting harassment. So these items are added HERE rather than
+   in a suite of their own: this is the block that already reads the three
+   pages the number appears on. */
+{
+  const NUM = '+1 (346) 353-3322';
+  await go('#/about');
+  ok('495.1 the support number is printed on «من نحن»', (await txt()).includes(NUM), NUM);
+  /* ⚠️ WITH THE COUNTRY CODE, and this is the item that catches a short
+     form. The link is built by stripping everything that is not a digit or
+     a `+`, so `(346) 353-3322` would give `tel:3463533322` — which does not
+     dial for a reader outside the United States or on a foreign network,
+     and this app is written for a community that travels. The shape lives
+     in the constant; `fmtPhone` is not touched, because that would change
+     how five hundred listings print. */
+  ok('495.2 …and its link carries the country code', await page.evaluate(() =>
+    !!document.querySelector('#app a[href="tel:+13463533322"]')), 'tel:+13463533322');
+  await go('#/terms');
+  ok('495.3 …and it is on the terms page', (await txt()).includes(NUM));
+  await go('#/privacy');
+  ok('495.3b …and on the privacy page — both, not one', (await txt()).includes(NUM));
+
+  await go('#/about');
+  /* ⚠️ It leaves «قريباً» BY ITSELF: `soonLineHtml` builds that line from
+     the rows with no `url`, so nothing is deleted from a list and no string
+     is edited. */
+  ok('495.4 WhatsApp is out of the «قريباً» line', await page.evaluate(() => {
+    const el = document.querySelector('.social-soon');
+    return !el || !/WhatsApp/i.test(el.textContent);
+  }), await page.evaluate(() => (document.querySelector('.social-soon') || {}).textContent || '(no line at all)'));
+
+  const wa = await page.evaluate(() => {
+    const a = document.querySelector('#app a[href*="wa.me"]');
+    return a ? a.getAttribute('href') : null;
+  });
+  /* ⚠️ DIGITS ONLY before the query — the service's own rule; any other
+     shape opens an error page. */
+  ok('495.5 the wa.me number is digits alone', /^https:\/\/wa\.me\/\d+(\?|$)/.test(String(wa)), String(wa));
+  /* ⚠️ AND THE READY LINE IS ENCODED. A URL does not carry Arabic letters
+     intact through every browser, so it is a fixed percent-encoded value
+     and never built at run time. */
+  ok('495.5b …and the ready line is encoded, with no Arabic in the URL',
+     !!wa && !/[\u0600-\u06FF]/.test(wa) && /\?text=%D9%85/.test(wa),
+     String(wa).slice(0, 60) + '…');
+}
+
+/* ⚠️ 495.6 — A GUARD ON THE FAULT THAT EMPTIED THE CONSTANT IN THE FIRST
+   PLACE. `555-01xx` is the reserved fictional exchange, and
+   `lookupLineType()` cannot catch it: that function reads the AREA code,
+   and 713 is a real one — which is why the app's own rule against invented
+   numbers never fired, and a `tel:` that rings nowhere was offered to
+   somebody reporting harassment.
+
+   ⚠️ AND IT IS SCOPED TO WHAT IT GUARDS, NOT TO THE STRING. `495`'s own
+   wording was «search `js/` for `555-01`, the answer is zero», and measured
+   on a clean tree that is FOURTEEN places and every one of them is correct:
+   ten are the demo seeds' phones — invented on purpose, and they leave with
+   the two arrays at launch — two are the importer's example rows, and two
+   are comments recording this very fault. A check written that way would
+   demand deleting the seeds and the documentation, and it would go red
+   without anything being wrong. So what is measured is the harm: THE
+   NUMBER WE PUBLISH AS OURS, and any `tel:` a reader can actually press. */
+{
+  const src = readFileSync(new URL('../../js/store.js', import.meta.url).pathname, 'utf8');
+  const val = /SUPPORT_PHONE\s*=\s*'([^']*)'/.exec(src)[1];
+  ok('495.6 the published support number is not a reserved fictional one',
+     !/555-?01/.test(val), val || '(empty)');
+  const dead = [];
+  for (const r of ['#/about', '#/terms', '#/privacy', '#/help']) {
+    await go(r);
+    const hrefs = await page.evaluate(() =>
+      [...document.querySelectorAll('#app a[href^="tel:"]')].map(a => a.getAttribute('href')));
+    for (const h of hrefs) if (/555\D?01/.test(h)) dead.push(r + ' ' + h);
+  }
+  ok('495.6b …and no tel: a reader can press rings nowhere', dead.length === 0,
+     dead.length ? dead.join(', ') : '0 dead links');
+}
 
 await go('#/marketplace');
 const listing = await page.evaluate(() => {
