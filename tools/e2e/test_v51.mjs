@@ -20,6 +20,7 @@
    folding and its arrow moves to the END of the row, where it displaces
    nothing. */
 import { chromium } from '/opt/node22/lib/node_modules/playwright/index.mjs';
+import { withDemoData } from './_demo.mjs';
 
 const BASE = process.env.BASE || 'http://localhost:8099/index.html';
 let pass = 0, fail = 0;
@@ -40,6 +41,10 @@ const SEED = {
 };
 
 const browser = await chromium.launch();
+/* ⚠️ THIS SUITE USES THE INVENTED RECORDS AS ITS FIXTURE, and `510`
+   turned them off by default. It turns them on for itself — the
+   default is not reverted and no assertion is softened. */
+await withDemoData(browser);
 const errors = [];
 const wire = p => {
   p.on('pageerror', e => errors.push('PAGEERROR ' + e.message.slice(0, 120)));

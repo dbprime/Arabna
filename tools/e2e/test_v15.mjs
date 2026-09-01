@@ -3,12 +3,17 @@
    3 the footer never covers the last group · 4 the radius control ·
    5 the open/closed badge keeps time · 6 location, distance and the cities */
 import { chromium } from '/opt/node22/lib/node_modules/playwright/index.mjs';
+import { withDemoData } from './_demo.mjs';
 
 const BASE = process.env.BASE || 'http://localhost:8099/index.html';
 let pass = 0, fail = 0;
 const ok = (n, c, extra = '') => { if (c) { pass++; console.log('PASS ' + n + (extra ? ' -> ' + extra : '')); } else { fail++; console.log('FAIL ' + n + (extra ? ' -> ' + extra : '')); } };
 
 const browser = await chromium.launch();
+/* ⚠️ THIS SUITE USES THE INVENTED RECORDS AS ITS FIXTURE, and `510`
+   turned them off by default. It turns them on for itself — the
+   default is not reverted and no assertion is softened. */
+await withDemoData(browser);
 const ctx = await browser.newContext({ colorScheme: 'dark', viewport: { width: 390, height: 844 }, acceptDownloads: true });
 const page = await ctx.newPage();
 const errors = [];

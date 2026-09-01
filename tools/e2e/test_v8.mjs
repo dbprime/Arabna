@@ -1,6 +1,7 @@
 /* V.01.8 — structured hours, keywords, the general attribute system,
    new categories and duplicate detection */
 import { chromium } from '/opt/node22/lib/node_modules/playwright/index.mjs';
+import { withDemoData } from './_demo.mjs';
 
 /* V.02.7 removed the quick-chip row: «مفتوح الآن» and the specialities are
    reached through the ⚙ sheet now. These do through the sheet exactly what
@@ -80,6 +81,10 @@ let pass = 0, fail = 0;
 const ok = (n, c, extra = '') => { if (c) { pass++; console.log('PASS ' + n + (extra ? ' -> ' + extra : '')); } else { fail++; console.log('FAIL ' + n + (extra ? ' -> ' + extra : '')); } };
 
 const browser = await chromium.launch();
+/* ⚠️ THIS SUITE USES THE INVENTED RECORDS AS ITS FIXTURE, and `510`
+   turned them off by default. It turns them on for itself — the
+   default is not reverted and no assertion is softened. */
+await withDemoData(browser);
 const ctx = await browser.newContext({ colorScheme: 'dark', viewport: { width: 390, height: 844 } });
 const page = await ctx.newPage();
 const errors = [];

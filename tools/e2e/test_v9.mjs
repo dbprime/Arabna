@@ -1,6 +1,7 @@
 /* V.01.9 — no "free" badge, reviews for everyone, real photos,
    your-page-only-yours, ownership claims, verification, import/backup */
 import { chromium } from '/opt/node22/lib/node_modules/playwright/index.mjs';
+import { withDemoData } from './_demo.mjs';
 import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync, rmSync } from 'node:fs';
 
 const BASE = process.env.BASE || 'http://localhost:8123/index.html';
@@ -17,6 +18,10 @@ let pass = 0, fail = 0;
 const ok = (n, c, extra = '') => { if (c) { pass++; console.log('PASS ' + n + (extra ? ' -> ' + extra : '')); } else { fail++; console.log('FAIL ' + n + (extra ? ' -> ' + extra : '')); } };
 
 const browser = await chromium.launch();
+/* ⚠️ THIS SUITE USES THE INVENTED RECORDS AS ITS FIXTURE, and `510`
+   turned them off by default. It turns them on for itself — the
+   default is not reverted and no assertion is softened. */
+await withDemoData(browser);
 const ctx = await browser.newContext({ colorScheme: 'dark', viewport: { width: 390, height: 844 }, acceptDownloads: true });
 const page = await ctx.newPage();
 const errors = [];

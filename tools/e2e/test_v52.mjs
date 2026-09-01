@@ -24,6 +24,7 @@
    waiting — measured, two visits in four before the fix. That is the
    complaint this whole thread began with, shrunk into two rows. */
 import { chromium } from '/opt/node22/lib/node_modules/playwright/index.mjs';
+import { withDemoData } from './_demo.mjs';
 
 const BASE = process.env.BASE || 'http://localhost:8099/index.html';
 let pass = 0, fail = 0;
@@ -36,6 +37,10 @@ const BASE_STATE = { lang: 'ar', showDemo: true,
                      location: { zip: '', city: 'Houston', state: 'TX' }, geo: null };
 
 const browser = await chromium.launch();
+/* ⚠️ THIS SUITE USES THE INVENTED RECORDS AS ITS FIXTURE, and `510`
+   turned them off by default. It turns them on for itself — the
+   default is not reverted and no assertion is softened. */
+await withDemoData(browser);
 const errors = [];
 const open = async (seed, hash = '#/home') => {
   const ctx = await browser.newContext({ viewport: { width: 390, height: 844 } });

@@ -23,6 +23,7 @@
    move reviews, favourites and ownership and then DELETE a record with no
    undo and no question, and an event deleted on the first tap. */
 import { chromium } from '/opt/node22/lib/node_modules/playwright/index.mjs';
+import { withDemoData } from './_demo.mjs';
 
 const BASE = process.env.BASE || 'http://localhost:8099/index.html';
 let pass = 0, fail = 0;
@@ -38,6 +39,10 @@ const ACCOUNT = {
 const ADMIN_PW = 'Zaytoun#4417q';
 
 const browser = await chromium.launch();
+/* ⚠️ THIS SUITE USES THE INVENTED RECORDS AS ITS FIXTURE, and `510`
+   turned them off by default. It turns them on for itself — the
+   default is not reverted and no assertion is softened. */
+await withDemoData(browser);
 const errors = [];
 const wire = p => {
   p.on('pageerror', e => errors.push('PAGEERROR ' + e.message.slice(0, 120)));

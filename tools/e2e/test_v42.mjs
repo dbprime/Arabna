@@ -24,6 +24,7 @@
    the leak on a device that still carries the old state, with no
    `signOut` ever having run. That case is asserted here too (block 4). */
 import { chromium } from '/opt/node22/lib/node_modules/playwright/index.mjs';
+import { withDemoData } from './_demo.mjs';
 
 const BASE = process.env.BASE || 'http://localhost:8099/index.html';
 let pass = 0, fail = 0;
@@ -50,6 +51,10 @@ const OWNER = {
 };
 
 const browser = await chromium.launch();
+/* ⚠️ THIS SUITE USES THE INVENTED RECORDS AS ITS FIXTURE, and `510`
+   turned them off by default. It turns them on for itself — the
+   default is not reverted and no assertion is softened. */
+await withDemoData(browser);
 const errors = [];
 const wire = p => {
   p.on('pageerror', e => errors.push('PAGEERROR ' + e.message.slice(0, 120)));
