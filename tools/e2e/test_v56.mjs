@@ -54,8 +54,16 @@ function host(port, clean) {
       res.end(body);
     } catch (_) { res.writeHead(404); res.end('nope'); }
   });
-  return new Promise(r => srv.listen(port, () => r(srv)));
+  /* ⚠️ PORT 0 — THE KERNEL PICKS IT, AND THERE IS NO NUMBER TO COLLIDE.
+     `run.sh` runs the two builds AT THE SAME TIME, so a written port made
+     the second run die with EADDRINUSE — a CRASH, which reads as a red
+     that has nothing to do with what this suite guards. It survived one
+     full net only because the two runs happened to drift apart. Same
+     family as `test_v36`'s written-in port: a number typed into a check
+     is a fault waiting for the day the timing changes. */
+  return new Promise(r => srv.listen(0, () => r(srv)));
 }
+const portOf = srv => srv.address().port;
 
 /* register, wait for the worker, then read the cache itself */
 async function probe(browser, base) {
@@ -99,8 +107,8 @@ const browser = await chromium.launch();
 /* ============ 1 — on a host that redirects, which is production ============ */
 console.log('--- the host redirects, exactly as cleanUrls did ---');
 {
-  const srv = await host(8451, true);
-  const r = await probe(browser, 'http://localhost:8451');
+  const srv = await host(0, true);
+  const r = await probe(browser, 'http://localhost:' + portOf(srv));
   const bad = r.cache.rows.filter(x => x.redirected);
   /* ⚠️ THE ONE CHECK THAT WOULD HAVE CAUGHT THIS ON DAY ONE. */
   ok('1.1 no cached row carries a redirect', bad.length === 0,
@@ -115,8 +123,8 @@ console.log('--- the host redirects, exactly as cleanUrls did ---');
 /* ============ 2 — and on a host that does not, to prove the difference ============ */
 console.log('--- the same tree on a plain server: this is why it went unfound ---');
 {
-  const srv = await host(8452, false);
-  const r = await probe(browser, 'http://localhost:8452');
+  const srv = await host(0, false);
+  const r = await probe(browser, 'http://localhost:' + portOf(srv));
   ok('2.1 everything passes here — the host is the difference',
      r.cache.rows.filter(x => x.redirected).length === 0 &&
      typeof r.nav2 === 'number' && r.nav2 > 200, String(r.nav2));

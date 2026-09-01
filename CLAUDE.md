@@ -7,7 +7,7 @@ ARABNA · عربنا — a mobile-first web app for the Arab community in the U.
 **business directory + marketplace + events + magazine**, Arabic-first with a full English toggle.
 ("Classifieds / الإعلانات الشخصية" is now "Marketplace / السوق" — the old `#/classifieds`
 routes still resolve so shared links keep working.)
-Current version: **V.08.1 (prototype)**. Owner: Rai Elby (@dbprime). Deploys to Vercel (team DB Prime).
+Current version: **V.08.2 (prototype)**. Owner: Rai Elby (@dbprime). Deploys to Vercel (team DB Prime).
 
 ## Hard rules (from the product brief)
 1. **One repository, one Vercel project.** No duplicates, no stray preview projects.
@@ -7417,6 +7417,113 @@ Two faults in the wrapper itself, measured rather than reasoned about:
 
 ```
 112 runs · 56 suites · 6,010 assertions · zero red · zero crash
+```
+
+## V.08.2 — the share card carried the old address
+
+⚠️ **Rai connected `arabna.app` on 1 September and the domain works.**
+Measured after connecting: three absolute URLs in `index.html` were still
+written, by hand, on the temporary host.
+
+```
+og:image        https://arabna-db-prime.vercel.app/assets/share-1200x630.png
+og:url          https://arabna-db-prime.vercel.app/
+twitter:image   https://arabna-db-prime.vercel.app/assets/share-1200x630.png
+```
+
+⚠️ **And the harm is not cosmetic.** `og:url` is what the app declares as
+its own address, so whoever shares the link on WhatsApp or Facebook gets
+a card built on the old host, and whoever presses it lands there rather
+than on `arabna.app` — the image is fetched from there too. **That builds
+an audience on an address that will be abandoned**, which is the same
+harm that kept Google out in `510`.
+
+- ⚠️ **They stay absolute and are not made relative.** Facebook's and
+  WhatsApp's crawlers do not resolve a relative `og:image` — the absolute
+  form is correct here, **and the fault was in the host, not in the
+  shape.**
+- **What was measured and found sound is named so it is not touched**:
+  `manifest.json`'s `start_url` is relative, the CSP's `'self'` became
+  `arabna.app` by itself, and the image file really exists. **Changing
+  what is sound is a cost with nothing bought.**
+- **No redirect is built from the temporary address here, and
+  `robots.txt` stays shut.** Both belong to the publication batch;
+  merging them turns a three-line batch into a migration.
+
+### THE RULE, because nothing was watching
+⚠️ **The fault was not that the address was old — it was that three URLs
+slept for weeks and only surfaced when the domain was connected.** So the
+suite carries a standing item, and it is a negative **on the host**:
+
+```
+no absolute URL on a vercel.app host in any published file
+```
+
+⚠️ **On the host, never on the old name.** A negative on one name goes
+green by itself the day a second preview name is invented — `390`'s rule
+exactly. And in `CLAUDE.md`:
+
+> **The absolute URLs in `index.html` are three, and all three move with
+> the domain. A fourth is added only for a reason a relative URL cannot
+> serve.**
+
+### A comment that denied a feature it had
+Above the manifest line stood «installable on the home screen. **No
+service worker yet (V.02)**…». The worker landed with `420` and has
+`sw.js`, `js/sw-manifest.js` and `tools/build_sw.py`. ⚠️ **A comment
+saying what is no longer true is the same fault as a screen saying it:
+whoever reads it to decide something decides on a dead fact.** It now
+names where the version really lives.
+
+### Text drawn inside an image is never reached by a batch
+⚠️ **Measured after the domain was connected:** the card renders in full
+on Messenger — and the sentence drawn **inside** it read «كلّ ما تحتاجه
+في Houston» while the app's own line had grown to «في أمريكا».
+
+**The rule this exposes matters more than the difference:** the app's
+copy was updated when the reach widened from a city to a country **and
+the picture's copy was not**, because no batch reaches pixels. It will
+happen again with every change.
+
+**Rai's decision of 1 September: the line goes and the lockup stands
+alone.** ⚠️ **And that is the better design rather than a way around an
+obstacle** — the title and the description are printed **under** the
+image by WhatsApp and Facebook alike, so the sentence inside it was a
+duplicate, and it was the copy that falls behind.
+
+- `assets/share-1200x630.png` is replaced by **the owner's own file**,
+  1200×630, the lockup untouched and re-centred vertically. **Nothing is
+  redrawn and no text is generated.**
+- ⚠️ **The check for it is derived, not written.** It names no city, no
+  colour and no pixel position: the rows are scanned, rows differing from
+  the ground are content, and rows separated by a hairline are one object
+  (the lockup's own parts sit 2 and 3 rows apart; the sentence stood 60
+  rows below). **Measured: two blocks before, one after** — and the
+  previous card, restored from git, still reports two.
+
+### The version is raised, and the reason is measured
+The worker keeps `index.html` in a cache named after `APP_VERSION`, so
+**without a raise an installed reader keeps yesterday's head and
+yesterday's card.** ⚠️ **And no version literal is written into the
+check** — `test_v56 · 3.6` froze `'0.7.9'` and went red in the next batch
+with nothing broken. What is asserted is that the carriers **agree**:
+`js/data.js`, `js/sw-manifest.js` and this file's own version line.
+
+### And a suite with a port typed into it, found by running it
+⚠️ **`test_v56` built its own host on port 8451, and `run.sh` runs the
+two builds AT THE SAME TIME** — so the second run died with `EADDRINUSE`.
+It **crashed** rather than failed, which reads as a red that has nothing
+to do with what the suite guards, and it survived one full net only
+because the two runs drifted apart. The port is `0` now: the kernel picks
+it and there is no number to collide. **Same family as `test_v36`'s
+written-in port — a number typed into a check is a fault waiting for the
+day the timing changes.**
+
+**`test_v59` — 14 assertions, and all three teeth bite:**
+```
+one URL back on the old host   → 2.1 · 2.2 · 4.1 red (and 5.1, the stale generated build)
+the card file deleted          → 3.1 red
+yesterday's card restored      → 3.3 red, reporting 2 blocks
 ```
 
 ## Known open items
