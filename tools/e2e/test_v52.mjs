@@ -24,7 +24,6 @@
    waiting — measured, two visits in four before the fix. That is the
    complaint this whole thread began with, shrunk into two rows. */
 import { chromium } from '/opt/node22/lib/node_modules/playwright/index.mjs';
-import { withDemoData } from './_demo.mjs';
 
 const BASE = process.env.BASE || 'http://localhost:8099/index.html';
 let pass = 0, fail = 0;
@@ -33,14 +32,15 @@ const ok = (n, c, extra = '') => { if (c) { pass++; console.log('PASS ' + n + (e
 
 const H24 = Array(7).fill([['00:00', '24:00']]);
 const SHUT = Array(7).fill(null);
-const BASE_STATE = { lang: 'ar', showDemo: true,
+/* ⚠️ THIS SUITE SEEDS ITS OWN STATE, and its guard is «seed only if
+   the key is absent». So the shared helper must NOT run here: it
+   creates the key, and the whole fixture would be skipped — which
+   is exactly what happened. The switch goes into the seed itself,
+   which is what `510` asked for in the first place. */
+const BASE_STATE = { lang: 'ar', showDemo: true, demoDefaultOff: true,
                      location: { zip: '', city: 'Houston', state: 'TX' }, geo: null };
 
 const browser = await chromium.launch();
-/* ⚠️ THIS SUITE USES THE INVENTED RECORDS AS ITS FIXTURE, and `510`
-   turned them off by default. It turns them on for itself — the
-   default is not reverted and no assertion is softened. */
-await withDemoData(browser);
 const errors = [];
 const open = async (seed, hash = '#/home') => {
   const ctx = await browser.newContext({ viewport: { width: 390, height: 844 } });
