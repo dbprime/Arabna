@@ -30,15 +30,8 @@ const NOW = Date.now();
 const LONG = 'سطر '.repeat(120);
 const MEMBER = { name: 'رامي البي', email: 'a@b.c', emailVerified: true,
                  phone: '7134669182', phoneVerified: true, joined: NOW - 9e8 };
-/* ⚠️ THE INVENTED DATA IS ON FOR THIS SUITE, in the seed itself and not
-   from the shared helper: `open` below seeds only when the key is
-   ABSENT, so a helper that creates it first would skip the fixture.
-   And `b1` and its review ARE the fixture here — with the data off
-   `#/directory/b1` does not exist, `.rv-text` is null, and the suite
-   crashes rather than failing. ⚠️ `demoDefaultOff` is the half that
-   is easy to miss: without it the boot migration turns it back off. */
 const SEED = {
-  lang: 'ar', user: MEMBER, showDemo: true, demoDefaultOff: true,
+  lang: 'ar', user: MEMBER,
   reviews: [
     { id: 'rL', bizId: 'b1', rating: 5, user: 'رامي', when: { ar: 'اليوم', en: 'today' },
       text: { ar: LONG, en: 'line '.repeat(120) }, mine: true },
@@ -54,11 +47,25 @@ const wire = p => {
     !/ERR_CONNECTION|ERR_CERT|ERR_TUNNEL|ERR_NAME|ERR_FAILED|fonts\.googleapis/.test(m.text()))
     errors.push(m.text().slice(0, 120)); });
 };
+/* ⚠️ THE INVENTED DATA IS ON FOR THIS SUITE, and it is merged in HERE —
+   at the single door every state passes through — rather than into one
+   seed object. Half this suite opens with its own small state (`{ lang,
+   user }` for the drawer block), so a flag written into `SEED` alone
+   reaches only half the tests.
+   ⚠️ And it does not come from the shared helper: the guard below seeds
+   only when the key is ABSENT, and a helper that creates the key first
+   would skip the whole fixture.
+   ⚠️ `demoDefaultOff` is the half that is easy to miss — without it the
+   boot migration turns `showDemo` straight back off.
+   `b1`, its long review, and the subscribed business behind «إعلانات
+   مميّزة» are all invented records, and all three are this suite's
+   fixture. */
+const DEMO_ON = { showDemo: true, demoDefaultOff: true };
 const open = async (state, hash = '#/home') => {
   const ctx = await browser.newContext({ viewport: { width: 390, height: 844 } });
   await ctx.addInitScript(s => {
     if (!localStorage.getItem('arabna.v1')) localStorage.setItem('arabna.v1', JSON.stringify(s));
-  }, state);
+  }, Object.assign({}, DEMO_ON, state));
   const p = await ctx.newPage(); wire(p);
   await p.goto(BASE + hash, { waitUntil: 'domcontentloaded' });
   await p.waitForTimeout(1200);
