@@ -32,13 +32,34 @@ export async function withDemoData(browser) {
   browser.newContext = async (...args) => {
     const ctx = await real(...args);
     await ctx.addInitScript(() => {
+      const KEY = 'arabna.v1';
+      /* ⚠️ ONLY WHEN NOTHING HAS SAID OTHERWISE. A suite may turn the
+         invented data OFF on purpose — `v20 · 6.7` does exactly that to
+         reach the «no subscriber» branch of the drawer row — and a helper
+         that overrode it would break a test by helping it. So an object
+         that already carries `showDemo` is left exactly as it is. */
+      const on = (o) => {
+        if (o && o.showDemo === undefined) { o.showDemo = true; o.demoDefaultOff = true; }
+        return o;
+      };
       try {
-        const KEY = 'arabna.v1';
-        const s = JSON.parse(localStorage.getItem(KEY) || '{}');
-        s.showDemo = true;
-        s.demoDefaultOff = true;          // …or the migration undoes it
-        localStorage.setItem(KEY, JSON.stringify(s));
-      } catch (e) { /* private mode — the suite will fail loudly anyway */ }
+        const raw = localStorage.getItem(KEY);
+        localStorage.setItem(KEY, JSON.stringify(on(raw ? JSON.parse(raw) : {})));
+      } catch (e) { /* private mode — the suite fails loudly anyway */ }
+      /* ⚠️ AND THE WRITE IS INTERCEPTED, which is the only order-proof
+         point there is. `addInitScript` runs in registration order, and
+         this one is registered first — so a suite that seeds by REPLACING
+         the whole object (`setItem(KEY, JSON.stringify({...}))`, which
+         five of them do) would erase the flags a moment later. Measured:
+         v38, v39, v40, v43 and v45 all failed that way. Injecting at the
+         write catches every seeding shape, whenever it happens. */
+      const set = localStorage.setItem.bind(localStorage);
+      localStorage.setItem = (k, v) => {
+        if (k === KEY) {
+          try { v = JSON.stringify(on(JSON.parse(v))); } catch (e) { /* not ours */ }
+        }
+        return set(k, v);
+      };
     });
     return ctx;
   };
