@@ -7695,6 +7695,71 @@ source order** — so the strip never moved and the check looked toothless.
 Measured `getComputedStyle` said `8px`, which is what settled it. **Prove
 the break happened before concluding a check is asleep.**
 
+## The «إنشاء الحساب» button was clipped by sixteen pixels, and its guard was green
+
+**A visitor reaches `#/settings` by V.04.8's decision, and that button is
+the only door to signing up from that screen.** Measured on both builds,
+both languages, four widths:
+
+```
+ar · 390   [-16 … 374]  width 390  ·  frame 390
+en · 390   [ 16 … 406]  width 390  ·  frame 390
+```
+
+⚠️ **The fault changes side with the language**, so it is measured in both
+directions and never one. The arithmetic:
+
+```
+.btn-block { width: 100% }   → 100% of a container with no padding = 390
+style="margin:0 16px 16px"   → +16 each side                       = 422
+the box available                                                   = 390
+```
+
+⚠️ **And this is CLIPPING, not overflow — heavier, not lighter.**
+`.app-main` carries `overflow-x: hidden`, so **what is cut off cannot be
+scrolled to and cannot be reached at all.**
+
+- **The answer was one line above it.** The hint took its offset as
+  **padding on its own container** and stayed in; the button took it as a
+  **margin on itself** while being `width: 100%`, and walked out. Two
+  idioms for one job in adjacent lines. The offset now sits on a wrapper,
+  and `data-route` stays on the button so `wireRoutes` is untouched.
+- ⚠️ **`.btn-block` in `app.css` is NOT touched.** Measured: **120
+  `btn-block` elements in `js/`, and exactly one carried an inline margin.**
+  Changing the rule to `calc(100% - 32px)` fixes one place and breaks 119;
+  the fault was in the call that broke the pattern.
+- **After: `[16 … 374]` width 358 at 390 · 428 at 768 · 426 at 900 and
+  1280 — identical in both languages, zero elements outside the frame.**
+
+### THE RULE, and it is why the guard slept
+> **Horizontal overflow is never measured with
+> `documentElement.scrollWidth` in this app.** `.app-main` clips rather
+> than scrolls, so that number cannot move for anything inside the content
+> area. **Measure the element's own box against `.app-main`'s.**
+
+`test_v41 · 2.5` asserted exactly that number and **stood green over a
+button 16px outside the frame**, on four widths in two languages. It is
+**kept and not softened** — what it guards is still true — with a comment
+above it naming what it does not cover, and **`2.5b` beside it measuring
+the boxes at all four widths**. ⚠️ **A horizontal scroller is excluded by
+its COMPUTED STYLE, never by a written list of selectors**: the photo
+strip, «مميّز هذا الأسبوع» and the sliders are meant to run past the edge,
+and a list of names goes stale the first time one is added.
+
+⚠️ **V.06.4 measured the boxes by hand and wrote this same sentence — and
+that measurement never became a standing item, so the door reopened.**
+This closes it as an item, not a note.
+
+**The teeth, and the second is the whole argument:**
+```
+the inline margin restored   → 2.5b red at [-16 … 374] on all four widths
+a 1400px node injected       → 2.5b red at [-1010 … 390] · AND 2.5 STAYS GREEN
+```
+
+**No version raise:** one line in `js/`, and what changed is the position
+of a clipped button — no behaviour, no screen, no route. The rule of
+`180`, `185` and `210`.
+
 ## Known open items
 - **The header image is still far larger than its box.** V.04.7 replaced
   the 831/837 KB lockups with the cropped marks at **333/338 KB** — 60% off

@@ -1007,8 +1007,22 @@ export function SettingsScreen(root) {
            without one — never a blank where six sections used to be. */''}
       <div class="dr-group-label">${t('grpMyAccount')}</div>
       <div class="hint" style="padding:0 16px 12px">${t('settingsGuestNote')}</div>
-      <button class="btn btn-gold btn-block" data-route="#/auth/signup"
-        style="margin:0 16px 16px">${t('createAccount')}</button>
+      ${/* ⚠️ THE OFFSET IS ON A WRAPPER, NOT ON THE BUTTON. `.btn-block` is
+             `width: 100%`, so an inline margin on the button itself asks for
+             390 + 16 + 16 = 422 inside a 390 box. And `.app-main` carries
+             `overflow-x: hidden`, so the surplus is CLIPPED rather than
+             scrolled to — what is cut off cannot be reached at all, which is
+             heavier than an overflow and not lighter.
+             The hint one line above already did it the right way, as padding
+             on its own container: two idioms for one job in adjacent lines.
+             Measured before: [-16 … 374] in Arabic and [16 … 406] in English
+             — the fault changes side with the language.
+             ⚠️ And `.btn-block` in `app.css` is NOT touched: 120 elements in
+             `js/` read that rule and exactly one carried an inline margin —
+             this one. The fault was in the call that broke the pattern. */''}
+      <div style="padding:0 16px 16px">
+        <button class="btn btn-gold btn-block" data-route="#/auth/signup">${t('createAccount')}</button>
+      </div>
       `}
       <div style="height:20px"></div>
     </div>`;

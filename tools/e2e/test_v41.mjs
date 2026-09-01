@@ -118,7 +118,46 @@ ok('2.3 and NOT notifications, payment, subscription, receipts, blocked or delet
   !visitor.notif && !visitor.card && !visitor.sub && !visitor.receipts && !visitor.blocked && !visitor.del);
 /* never a blank where six sections used to be */
 ok('2.4 the visitor is told what an account adds', visitor.signup);
+/* ⚠️ WHAT 2.5 DOES NOT COVER, WRITTEN HERE SO NOBODY ASSUMES IT DOES.
+   `.app-main` carries `overflow-x: hidden`, so the PAGE never scrolls
+   sideways whatever happens inside it — this condition cannot go red on a
+   clipped element, and it stood green over a «إنشاء الحساب» button that was
+   16px outside the frame, in both languages and on all four widths. It is
+   kept because what it guards is still true and worth guarding; what was
+   learnt is that IT IS NOT ENOUGH ALONE, and 2.5b is the half it missed. */
 ok('2.5 no sideways scroll at 390', !visitor.overflow);
+
+/* ⚠️ THE BOX, NOT THE PAGE. `documentElement.scrollWidth` is the measure
+   that hid this fault and is never used for overflow in this app.
+   ⚠️ And a horizontal scroller is excluded BY ITS COMPUTED STYLE, never by
+   a written list of selectors — the photo strip, «مميّز هذا الأسبوع» and the
+   sliders are meant to run past the edge, and a list of names goes stale
+   the first time one is added. */
+const clipProbe = () => {
+  const main = document.querySelector('.app-main');
+  const m = main.getBoundingClientRect();
+  return Array.from(main.querySelectorAll('*')).filter((el) => {
+    for (let p = el.parentElement; p && p !== document.body; p = p.parentElement) {
+      const ov = getComputedStyle(p).overflowX;
+      if (ov === 'auto' || ov === 'scroll') return false;
+    }
+    const r = el.getBoundingClientRect();
+    if (!r.width || !r.height) return false;
+    return r.left < m.left - 0.5 || r.right > m.right + 0.5;
+  }).map((el) => {
+    const r = el.getBoundingClientRect();
+    return (el.tagName + '.' + (el.className || '')).slice(0, 46)
+      + ' [' + Math.round(r.left - m.left) + ' … ' + Math.round(r.right - m.left) + ']';
+  });
+};
+for (const w of [390, 768, 900, 1280]) {
+  await page.setViewportSize({ width: w, height: 844 });
+  await page.waitForTimeout(150);
+  const clipped = await page.evaluate(clipProbe);
+  ok('2.5b nothing is clipped by .app-main at ' + w, clipped.length === 0,
+     clipped.slice(0, 3).join(' | ') || '0 clipped');
+}
+await page.setViewportSize({ width: 390, height: 844 });
 
 /* ⚠️ THE POINT OF THE WHOLE ITEM: it has to work, not merely render. */
 await page.evaluate(() => document.querySelectorAll('[data-font]')[3].click());
