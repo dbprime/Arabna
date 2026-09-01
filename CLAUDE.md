@@ -7526,6 +7526,10 @@ the card file deleted          → 3.1 red
 yesterday's card restored      → 3.3 red, reporting 2 blocks
 ```
 
+```
+114 runs · 57 suites · 6,038 assertions · zero red · zero crash
+```
+
 ## Known open items
 - **The header image is still far larger than its box.** V.04.7 replaced
   the 831/837 KB lockups with the cropped marks at **333/338 KB** — 60% off
