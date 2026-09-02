@@ -959,7 +959,7 @@ function offersBlock(b, mine) {
 /** the subscription upsell, sized like a business row.
     A visitor gets the same offer with the number replaced by the gate. */
 function upsellHtml() {
-  return `<div class="list-row" data-route="#/subscribe" style="border-color:var(--line)">
+  return `<div class="list-row upsell-row" data-route="#/subscribe">
     <span class="row-ico" style="color:var(--gold-bright)">${icon('crown', 22)}</span>
     <div class="row-main">
       <div class="row-title">${t('upgradeBanner')}</div>

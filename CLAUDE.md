@@ -11,7 +11,7 @@ ARABNA · عربنا — a mobile-first web app for the Arab community in the U.
 **business directory + marketplace + events + magazine**, Arabic-first with a full English toggle.
 ("Classifieds / الإعلانات الشخصية" is now "Marketplace / السوق" — the old `#/classifieds`
 routes still resolve so shared links keep working.)
-Current version: **V.08.9 (prototype)**. Owner: Rai Elby (@dbprime). Deploys to Vercel (team DB Prime).
+Current version: **V.09.0 (prototype)**. Owner: Rai Elby (@dbprime). Deploys to Vercel (team DB Prime).
 
 ## Hard rules (from the product brief)
 1. **One repository, one Vercel project.** No duplicates, no stray preview projects.
@@ -8117,6 +8117,58 @@ from the first run (92 runs, all green), and 49–64 re-run afterwards (32
 runs). The six «CRASHED» lines in the first file are the restart itself —
 exit 1 with no result line, in the four suites that were running at the
 moment of the cut — and every one of them is green in the second stage.
+
+## V.09.0 — the upgrade card in the directory list is seen
+
+⚠️ **The owner, on his phone, between the rows of the directory:** «بدّي
+هالمكان يكون مميّزاً عن باقي المدرَجين — فلاش أو لون، شي بيجذب». Measured
+before the batch: `upsellHtml()` drew the card with the same `list-row`
+class as every business **and added `style="border-color:var(--line)"`** —
+the only hand-written thing about it made it look MORE like its
+neighbours. The rows look alike because they are one kind (businesses);
+**the card is not a business, it is an invitation to pay, fifth in the
+list on purpose** (`splice(5, 0, …)`), and if it does not differ to the eye
+the two kinds blur.
+
+- **One class, `upsell-row`, and the inline style is gone.** A gold border
+  (`--gold-wash-4`), a gold wash across the card, a soft shadow, the title
+  in `--gold-bright` — **and in the light theme the title goes back to
+  `--text`**, because the light gold token measures 4.17 on a gold wash
+  (its own comment says so), under the 4.5 text bar. Measured: title
+  against the card's worst gradient stop **7.89 dark · 12.90 light**.
+- **Two quiet movements, both under `prefers-reduced-motion:
+  no-preference`**: a band of light crossing the card once every six
+  seconds (still for more than two thirds of the cycle) and a breath of
+  gold around the crown. ⚠️ **Whoever asked for no motion gets none** — and
+  keeps the gold border and the wash, so the card is distinct with no
+  motion at all. The general `reduce` rule is not touched; nothing is
+  added there.
+- ⚠️ **The sheen is the `--ad-sheen` token, not the spec's literal.** The
+  spec wrote `rgba(255,255,255,.13)`; the rule since V.02.5 is that no
+  colour value stands outside the token layer, and that literal would
+  have been the only one in the file. `--ad-sheen` (white at 10%) is the
+  same thing by name and by role.
+- **`overflow: hidden` on the card alone**, to clip the sweep; measured,
+  nothing inside the card leaves its box (11 descendants, 0 outside).
+- **`.upsell` on the business page and «حسابي» is untouched** — the
+  owner's request was about the list, and a batch does what was asked.
+
+### `test_v65` — 14 assertions, nothing written as a colour
+Every value is read from computed styles: the card against the business
+row before it, the title against the token, the contrast from the gradient
+stops the browser resolved. The theme is left on `auto` and the DEVICE is
+emulated (`colorScheme`), because V.06.0 clears a pinned theme at boot.
+
+⚠️ **And the spec's own tooth for `2.1` was measured toothless.** «The
+border differs from the row before it» stayed green with the inline style
+restored, because the business rows carry `--line-soft` and the old inline
+`var(--line)` already differed from them. `2.1` now demands that the
+border **be** the gold token — which is what the inline style breaks.
+
+```
+the inline style restored                → 1.2 · 2.1 · 1.1[en] red
+the animation outside the media query    → 3.2 red
+```
 
 ## Known open items
 - **The header image is still far larger than its box.** V.04.7 replaced

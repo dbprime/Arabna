@@ -787,6 +787,48 @@ ul { margin: 0; padding: 0; list-style: none; }
   transition: transform .14s var(--ease);
 }
 .list-row.premium { border-color: var(--gold-wash-4); background: linear-gradient(140deg, var(--surface-2), var(--surface)); }
+/* ---------- the one paid door in the list ----------
+   Every other row is a business; this one is an invitation to pay, and
+   sits fifth on purpose. Until now the only hand-written thing about it
+   was an inline border-color that made it look MORE like its neighbours.
+   The owner's rule, 2 Sep: «it has to stand out — a flash, a colour».
+   Two quiet movements: a band of light crossing the card every few
+   seconds, and a soft breath of gold around the crown. Both are gone
+   under prefers-reduced-motion; the gold border and wash stay, so the
+   card is distinct with no motion at all. All colours are tokens; the
+   title's gold is for the dark theme only — see the light-theme rule. */
+.list-row.upsell-row {
+  position: relative; overflow: hidden;
+  border-color: var(--gold-wash-4);
+  background: linear-gradient(140deg, var(--gold-wash-2), var(--surface) 55%, var(--gold-wash-1));
+  box-shadow: 0 0 0 1px var(--gold-wash-1), 0 8px 20px -12px var(--gold-wash-4);
+}
+.list-row.upsell-row .row-title { color: var(--gold-bright); }
+/* In the light theme the gold token measures 4.17 on a gold wash (its own
+   comment says so) — under 4.5 for text this size. The title goes back to
+   --text there; the border, the wash and the crown carry the gold. */
+:root[data-theme="light"] .list-row.upsell-row .row-title { color: var(--text); }
+.list-row.upsell-row .row-ico { border-color: var(--gold-wash-3); }
+.list-row.upsell-row::after {
+  content: ''; position: absolute; inset: 0; pointer-events: none;
+  /* ⚠️ the sheen is the --ad-sheen TOKEN, not a literal: the rule since
+     V.02.5 is that no colour value stands outside the token layer, and the
+     spec's literal white at 13% would have been the only one in the file */
+  background: linear-gradient(115deg, transparent 38%, var(--ad-sheen) 50%, transparent 62%);
+  transform: translateX(-130%);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .list-row.upsell-row::after { animation: upsellSweep 6s ease-in-out infinite; }
+  .list-row.upsell-row .row-ico { animation: upsellBreath 3s ease-in-out infinite; }
+}
+@keyframes upsellSweep {
+  0%, 72% { transform: translateX(-130%); }
+  100%    { transform: translateX(130%); }
+}
+@keyframes upsellBreath {
+  0%, 100% { box-shadow: 0 0 0 0 var(--gold-wash-1); }
+  50%      { box-shadow: 0 0 0 7px var(--gold-wash-2); }
+}
 .list-row:active { transform: scale(0.99); }
 /* ⚠️ `.list-row` is a <div> everywhere else, so it fills its parent. In the
    account hub it is a BUTTON — correctly, because it is an action — and a
