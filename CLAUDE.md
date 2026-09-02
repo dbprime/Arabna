@@ -27,6 +27,9 @@ Current version: **V.08.5 (prototype)**. Owner: Rai Elby (@dbprime). Deploys to 
 8. **ذاكرةُ المشروع ملفٌّ لا جلسة.** `CLAUDE_PROJECT_MEMORY.md` يُقرأ قبل العمل
    ويُحدَّث بعده. وكلُّ قرارٍ أو خطأٍ أو وعدٍ أو متطلَّبٍ يُكتب فيه لحظتَه —
    وما لا يُكتب يُنسى ويُبنى عليه خطأً.
+9. **سجلُّ المصدر وقائمةُ المكوّنات ملفّان في المستودع**: `docs/AI-PROVENANCE.md`
+   يُولَّد ولا يُكتب، و`docs/SBOM.md` يُعاد قياسُه يومَ يُضاف مكوّنٌ أو خطٌّ أو
+   خدمةٌ خارجيّة — ولا يدخل البرنامجَ مكوّنٌ بلا سطرٍ فيه.
 
 ## Stack
 Zero dependencies. Plain ES modules + one CSS file. No build step — Vercel serves it statically.
@@ -820,6 +823,7 @@ node tools/e2e/chk_i18n.mjs        # both packs, every derived key, seconds
 tools/audit/quick.sh               # the fast gate — ~100 seconds
 tools/audit/daily.sh               # everything, once at the end — ~20 minutes
 python3 tools/build_single.py > index-single-file.html
+node tools/audit/provenance.mjs  # يُولَّد docs/AI-PROVENANCE.md ويدخل كومِتَ الإغلاق
 ```
 1. `tools/e2e/` holds every suite, v3 to v50, one per batch, and `run.sh`
    runs all of them against **both** `index.html` and the generated
