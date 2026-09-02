@@ -7899,6 +7899,12 @@ the slider wireframe inverted       → 8.1 red (both languages)
 the magazine named with no gate     → 7.1 red
 ```
 
+```
+118 runs · 59 suites · 6140 assertions · zero red · zero crash
+```
+
+⚠️ **And `v6` went red on the first net — three items guarding the very copy `505` reversed** (the old place, four points, a total of 32). Rewritten with the reversal named, none deleted.
+
 ## Known open items
 - **The header image is still far larger than its box.** V.04.7 replaced
   the 831/837 KB lockups with the cropped marks at **333/338 KB** — 60% off
