@@ -140,9 +140,13 @@ const probeHost = async (u) => {
   return csp.length === before;      // no violation logged = the policy allows it
 };
 ok('2.2 the ZIP lookup is allowed', await probeHost('https://api.zippopotam.us/us/77081'));
-ok('2.3 both reverse-geocoders are allowed',
+/* ⚠️ REVERSED IN V.08.8 (`550`): Nominatim is disabled in production under
+   Schedule E-08 of the Founder Agreement — no call in the code, no host in
+   CSP, none in sw.js. The policy must now REFUSE it, so that a line
+   bringing it back is stopped by the browser itself. */
+ok('2.3 BigDataCloud is allowed and Nominatim is NOT',
    (await probeHost('https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=1&longitude=1'))
-   && (await probeHost('https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=1&lon=1')));
+   && !(await probeHost('https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=1&lon=1')));
 ok('2.4 …and nothing else is', !(await probeHost('https://example.invalid/x')));
 /* A host forgotten in `connect-src` fails SILENTLY, so the screens that
    depend on one are walked before this suite is trusted. */

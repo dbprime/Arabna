@@ -1,7 +1,7 @@
 # سجلُّ مصدر التطوير بالذكاء الاصطناعيّ — مولَّدٌ من المستودع
 
 يُولَّد بـ `tools/audit/provenance.mjs` عند كلّ إغلاق. لا يُحرَّر بيد.
-آخرُ توليد: 2026-09-02 · على `a6295f2` (origin/main) · آخرُ كومِتٍ فيه 2026-09-02 · 196 كومِتاً
+آخرُ توليد: 2026-09-02 · على `f4d9055` (origin/main) · آخرُ كومِتٍ فيه 2026-09-02 · 201 كومِتاً
 
 كيف يُقرأ: كلُّ دفعةٍ تبدأ بملفّ مواصفةٍ يكتبه مالكُ البرنامج ويقرّره
 (الاختيارُ والترتيبُ والقرارات)، تنفّذه جلسةُ ذكاءٍ اصطناعيّ (رابطُها في
@@ -13,6 +13,11 @@ git لا يدخل الجدول. والخانةُ التي لا مصدرَ لها
 
 | التاريخ | الرقم | النوع | الكومِت | المواصفة | الجلسة | الشبكة | قبولُ المالك |
 |---|---|---|---|---|---|---|---|
+| 2026-09-02 | 540 | إغلاق | `f4d9055` | 540 | [جلسة](https://claude.ai/code/session_01FQktTvq1yNPmo67XBoW8hs) | 120 · 60 · 6174 | owner ✓ |
+| 2026-09-02 | — | وثائق | `2f512da` | — | [جلسة](https://claude.ai/code/session_01FQktTvq1yNPmo67XBoW8hs) | — | — |
+| 2026-09-02 | 540 | وثائق | `bc64acc` | 540 | [جلسة](https://claude.ai/code/session_01FQktTvq1yNPmo67XBoW8hs) | — | owner ✓ |
+| 2026-09-02 | 540 | شغل | `faf99fc` | 540 | [جلسة](https://claude.ai/code/session_01FQktTvq1yNPmo67XBoW8hs) | — | owner ✓ |
+| 2026-09-02 | — | وثائق | `04f27b0` | — | [جلسة](https://claude.ai/code/session_01FQktTvq1yNPmo67XBoW8hs) | — | — |
 | 2026-09-02 | 505 | إغلاق | `a6295f2` | 505 | [جلسة](https://claude.ai/code/session_01FQktTvq1yNPmo67XBoW8hs) | 118 · 59 · 6140 | owner ✓ |
 | 2026-09-02 | — | وثائق | `bf9a726` | — | [جلسة](https://claude.ai/code/session_01FQktTvq1yNPmo67XBoW8hs) | — | — |
 | 2026-09-02 | 505 | شغل | `ef875ca` | 505 | [جلسة](https://claude.ai/code/session_01FQktTvq1yNPmo67XBoW8hs) | — | owner ✓ |

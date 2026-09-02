@@ -8,7 +8,7 @@
 | IBM Plex Sans Arabic | SIL OFL 1.1 | يُحمَّل من Google Fonts وقت التشغيل | لا ملفَّ خطٍّ في المستودع |
 | Noto Kufi Arabic | SIL OFL 1.1 | كذلك | كذلك |
 | مساراتُ الأيقونات في js/icons.js | ⚠️ انظر LICENSES.md | مرسومةٌ داخل الواجهة | قِيست مقابل Feather 4.29.2 في 2 سبتمبر 2026: 31 حرفيّة · 16 مشتقّة · 48 أصليّة — الإسنادُ في LICENSES.md |
-| خدماتٌ عامّة وقت التشغيل: api.bigdatacloud.net · nominatim.openstreetmap.org · api.zippopotam.us | شروطُ كلّ مزوّد | connect-src في CSP | Nominatim: لا استعمالَ بالجملة — قرارٌ مسجَّل |
+| خدماتٌ عامّة وقت التشغيل: api.bigdatacloud.net · api.zippopotam.us | شروطُ كلّ مزوّد | connect-src في CSP | Nominatim: معطَّلة في الإنتاج منذ 550 — لا نداء في الشيفرة ولا مضيف في CSP ولا في sw.js (E-08) · لا تُعاد إلّا بمعالجةٍ على السيرفر وإعادة اختبار |
 
 ## ما لا يصل المستخدم (تطويرٌ وفحص)
 | المكوّن | الرخصة | الموضع | ملاحظة |

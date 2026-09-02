@@ -11,7 +11,7 @@ ARABNA · عربنا — a mobile-first web app for the Arab community in the U.
 **business directory + marketplace + events + magazine**, Arabic-first with a full English toggle.
 ("Classifieds / الإعلانات الشخصية" is now "Marketplace / السوق" — the old `#/classifieds`
 routes still resolve so shared links keep working.)
-Current version: **V.08.7 (prototype)**. Owner: Rai Elby (@dbprime). Deploys to Vercel (team DB Prime).
+Current version: **V.08.8 (prototype)**. Owner: Rai Elby (@dbprime). Deploys to Vercel (team DB Prime).
 
 ## Hard rules (from the product brief)
 1. **One repository, one Vercel project.** No duplicates, no stray preview projects.
@@ -98,7 +98,7 @@ Icons are sized inline via `icon('name', size)`.
 | Twilio Verify (OTP) | `sendSmsCode`, `sendEmailCode` |
 | Stripe (payments) | `chargeCard`, `subscribeBusiness` |
 | Cloudflare R2 (media) | `mountPhotoPicker` / `compressImage` in `screens/marketplace.js` — today the picker downscales to 1200px and stores a data URL in localStorage; V.02 uploads the same blob and stores the URL |
-| Geocoding | `lookupZip` + `reverseGeocode` in `screens/home.js` (ZIP table + api.zippopotam.us; coordinates via BigDataCloud → Nominatim) |
+| Geocoding | `lookupZip` + `reverseGeocode` in `screens/home.js` (ZIP table + api.zippopotam.us; coordinates via BigDataCloud only — Nominatim disabled (550, Schedule E-08)) |
 | Moderation service | `scanMessage`, `violatesFreeRule`, `stripPhones` in `store.js` — on-device now, same call signature against the real service later |
 
 ### Events
@@ -6571,7 +6571,7 @@ kilobytes heavier, and that is the worker's own registration.
 
 ### ⚠️ Three that never touch the cache
 ```
-api.zippopotam.us · nominatim.openstreetmap.org · api.bigdatacloud.net
+api.zippopotam.us · api.bigdatacloud.net
 ```
 **A coordinate cached from yesterday is worse than no coordinate:** the
 reader has moved and the app insists they are where they were. These are
@@ -7982,6 +7982,66 @@ image dropped from orderAsSlide                      → 1.1 · 1.3 red
 ```
 
 ⚠️ **`v7` went red on the first net** — one item drove `next3` with no destination, which `540` now refuses; the flow picks the phone (the account owns no business). Rewritten with the reversal named.
+
+## V.08.8 — Nominatim is disabled in production: no call, no host in CSP, none in sw.js
+
+⚠️ **Schedule E-08 of the Founder Agreement (execution copy, 2 Sep), in its
+own words:** «Nominatim must remain disabled in production until the
+approved remediation is implemented and re-test evidence confirms the
+required rate limit, application identification, caching, user-triggered
+requests, attribution, switchability, and prohibition of background …
+queries.» The remediation it names — an app-wide rate limit, a cache, a
+remote kill switch behind a proxy — is server work, none of which exists.
+**So the only decision that squares with the document today is to disable
+it.** ⚠️ That reverses the owner's own morning decision («تبقى وتأخذ
+نسبتها»); **the document outranks it, and the old one is deleted, not
+softened.**
+
+**Measured before the change:** `reverseGeocode` asked BigDataCloud and
+Nominatim together at every fix; the silent refresh on return to the
+foreground reached Nominatim too (the «silent refresh» the document
+names); the host stood in `connect-src` in both files and in `sw.js`'s
+`NETWORK_ONLY`; and the interface carried zero OpenStreetMap attribution.
+
+### THE RULE
+> **«Disabled» means: no code calls it AND no host permits it.** A function
+> behind a switch is one line from coming back unnoticed; a host removed
+> from `connect-src` means the browser itself refuses it should that line
+> ever be written. **The evidence for the lawyer is the second.**
+
+- **`rgNominatim` is deleted whole**, and `reverseGeocode` reads one
+  provider. **BigDataCloud stays alone** — its policy (read 2 Sep 2026) is
+  written for exactly this use: the device's own coordinates, from the
+  client, no key, no attribution. **The silent refresh stays** — a location
+  read under a permission already granted is not a background query to a
+  public server with a usage policy.
+- **The host is out of `connect-src` in `index.html` and `vercel.json`**
+  (identical, letter for letter) **and out of `sw.js`**. `v63 · 6.1` reads
+  the CSP off the live document, not the file.
+- ⚠️ **Three suites asserted the old two-provider design and were
+  reversed, not deleted**: `v29 · 2.3` now demands the policy REFUSE the
+  host; `v31 · 6` asserts exactly one provider and zero requests to the
+  host across the whole scene; `v56 · 4.3` counts two network-only hosts.
+- ⚠️ **`v63 · 1.1` reads the code with comments stripped** — the `test_v53`
+  rule. The comments that explain WHY Nominatim is gone («do not add it
+  back here») have to name it, and the spec's own §1أ dictates that
+  comment while its test asks for zero occurrences; a check that read the
+  prose would go red on its own guard.
+- `v63 · 4.1` measures the silent refresh on a cold open with a 31-minute
+  stale point: **one request to BigDataCloud, none to Nominatim**. And
+  `3.1`/`3.2`: with BigDataCloud down there is no city, no error, the point
+  is kept — and still no request to Nominatim: **no hidden fallback.**
+
+**Deferred by decision, written in `CLAUDE_PROJECT_MEMORY.md`:** if a
+second provider is ever needed — a server-side proxy with a rate limit, a
+cache and a kill switch, or a commercial provider. **No direct call from
+the device to a public server with a usage policy.**
+
+**`test_v63` — 9 assertions, and the teeth:**
+```
+the host back in sw.js                       → v56 · 4.3 red
+the host back in index.html's connect-src    → v63 · 1.1 · 1.2 · 6.1 red
+```
 
 ## Known open items
 - **The header image is still far larger than its box.** V.04.7 replaced

@@ -439,8 +439,11 @@ export async function lookupZip(zip) {
    Reverse geocoding — real device coordinates -> city / state / ZIP.
    NO default city is ever returned: if we cannot resolve the point
    the caller gets a typed error and shows it to the user.
-   1. BigDataCloud reverse-geocode-client (free, keyless, CORS-open)
-   2. OpenStreetMap Nominatim (fallback)
+   1. BigDataCloud reverse-geocode-client (free, keyless, CORS-open) —
+      the ONLY provider. Nominatim was removed in 550 under the Founder
+      Agreement's Schedule E-08: it stays out of production until a
+      server-side remediation (app-wide rate limit, cache, kill switch)
+      exists and is re-tested. Do not add it back here.
    3. the ZIP we got is normalised through lookupZip() so a coordinate
       result and a hand-typed ZIP always render the same city name.
    (V.02: swap both for Google Geocoding behind store.js)
@@ -494,19 +497,6 @@ async function rgBigDataCloud(lat, lng) {
   return { country, city, state, zip };
 }
 
-/* OpenStreetMap Nominatim — fallback */
-async function rgNominatim(lat, lng) {
-  const j = await getJSON(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&zoom=18&addressdetails=1&lat=${lat}&lon=${lng}`);
-  if (!j || !j.address) return null;
-  const a = j.address;
-  const country = (a.country_code || '').toUpperCase();
-  const city = a.city || a.town || a.village || a.hamlet || a.municipality || a.suburb || a.county || '';
-  const state = stateAbbr(a['ISO3166-2-lvl4'] ? a['ISO3166-2-lvl4'].replace(/^US-/, '') : a.state);
-  const zip = /^\d{5}/.test(a.postcode || '') ? String(a.postcode).slice(0, 5) : '';
-  if (!country && !city) return null;
-  return { country, city, state, zip };
-}
-
 /**
  * Turn real device coordinates into a U.S. city / state / ZIP.
  * @returns {{zip:string,city:string,state:string,lat:number,lng:number}}
@@ -515,28 +505,13 @@ async function rgNominatim(lat, lng) {
 export async function reverseGeocode(lat, lng) {
   const complete = (h) => h && h.city && h.state;
 
-  /* Both providers at once, not one after the other. Each has an 8-second
-     timeout, and asking them in turn made the worst case 16 seconds of a
-     screen saying nothing at all — which is what «I pressed allow and
-     nothing happened» actually was. In practice the second one was being
-     called most of the time anyway, so this costs no real traffic. */
-  const [a, b] = await Promise.all([
-    rgBigDataCloud(lat, lng).catch(() => null),
-    rgNominatim(lat, lng).catch(() => null),
-  ]);
+  /* ⚠️ ONE PROVIDER. Nominatim was the second half of a Promise.all here
+     until 550 — removed under Schedule E-08 of the Founder Agreement, and
+     the host is out of `connect-src` and out of `sw.js` too, so the
+     browser itself refuses it should a line ever bring it back. */
+  const a = await rgBigDataCloud(lat, lng).catch(() => null);
   if (a && a.country && a.country !== 'US') return { error: 'outside' };
-  if (b && b.country && b.country !== 'US') return { error: 'outside' };
-
-  // keep whichever field each of them actually resolved
-  let hit = complete(a) && a.zip ? a : null;
-  if (!hit) {
-    hit = a ? {
-      country: a.country || (b && b.country) || '',
-      city: a.city || (b && b.city) || '',
-      state: a.state || (b && b.state) || '',
-      zip: a.zip || (b && b.zip) || '',
-    } : b;
-  }
+  const hit = a && (a.city || a.zip) ? a : null;
   if (!hit) return { error: 'lookup' };
 
   let { city, state, zip } = hit;
@@ -613,7 +588,7 @@ export function openGeoPrompt(onAllow, why) {
 
    Any of these is enough to fail it, and none of them is a fault in this
    app: an ad blocker (these three hosts look like trackers to one),
-   Nominatim's rate limit on browser traffic, a weak cellular signal
+   a naming service's rate limit on browser traffic, a weak cellular signal
    against an 8-second timeout, a school or office network filtering
    outside domains. It is why it failed for him and works for you.
 

@@ -24,7 +24,7 @@ const errors = [];
 const HOUSTON = { latitude: 29.7604, longitude: -95.3698 };
 const KATY    = { latitude: 29.7858, longitude: -95.8245 };
 const DALLAS  = { latitude: 32.7767, longitude: -96.7970 };
-const NAMERS  = /bigdatacloud|nominatim|zippopotam/;
+const NAMERS  = /bigdatacloud|zippopotam/;   // Nominatim left in 550 (Schedule E-08)
 
 const open = async ({ coords, naming, slow } = {}) => {
   const ctx = await browser.newContext({
@@ -43,13 +43,11 @@ const open = async ({ coords, naming, slow } = {}) => {
       navigator.geolocation.getCurrentPosition = (a, b2, c) => setTimeout(() => o(a, b2, c), 2500);
     });
   }
-  /* The three naming hosts are unreachable from this sandbox either way,
+  /* The two naming hosts are unreachable from this sandbox either way,
      so a WORKING naming call has to be stubbed to be tested at all. */
   if (naming === 'ok') {
     await p.route(u => /bigdatacloud/.test(String(u)), r => r.fulfill({ status: 200, contentType: 'application/json',
       body: JSON.stringify({ countryCode: 'US', city: 'Houston', principalSubdivisionCode: 'US-TX', postcode: '77081' }) }));
-    await p.route(u => /nominatim/.test(String(u)), r => r.fulfill({ status: 200, contentType: 'application/json',
-      body: JSON.stringify({ address: { country_code: 'us', city: 'Houston', state: 'Texas', postcode: '77081' } }) }));
     await p.route(u => /zippopotam/.test(String(u)), r => r.fulfill({ status: 200, contentType: 'application/json',
       body: JSON.stringify({ places: [{ 'place name': 'Houston', 'state abbreviation': 'TX' }] }) }));
   } else if (naming === 'blocked') {
@@ -190,12 +188,19 @@ console.log('--- the same times, however you got there ---');
 }
 
 /* ======================================================================
-   6 — the two naming providers are asked together, not in turn
+   6 — one naming provider, and nothing else
+   ⚠️ REVERSED IN V.08.8 (`550`). This block asserted that BOTH providers
+   were asked at the same moment (V.03.8). Nominatim is disabled in
+   production under Schedule E-08 of the Founder Agreement — no call, no
+   host in CSP, none in sw.js — so what is asserted now is that exactly
+   ONE provider is called, it is BigDataCloud, and not a single request to
+   nominatim.openstreetmap.org leaves the page for the whole scene.
    ====================================================================== */
-console.log('--- eight seconds, not sixteen ---');
+console.log('--- one provider, and no hidden fallback ---');
 {
   const { ctx, p } = await open({ coords: HOUSTON });
-  const order = [];
+  const order = [], every = [];
+  p.on('request', r => every.push(r.url()));
   await p.route(u => /bigdatacloud|nominatim/.test(String(u)), async r => {
     order.push({ host: /bigdatacloud/.test(r.request().url()) ? 'bdc' : 'nom', at: Date.now() });
     await new Promise(res => setTimeout(res, 900));
@@ -203,10 +208,9 @@ console.log('--- eight seconds, not sixteen ---');
   });
   await allow(p);
   await p.waitForTimeout(3000);
-  ok('6.1 both providers are called', order.length === 2, order.map(o => o.host).join(','));
-  ok('6.2 …and at the same moment, so the wait cannot double',
-     order.length === 2 && Math.abs(order[1].at - order[0].at) < 400,
-     order.length === 2 ? Math.abs(order[1].at - order[0].at) + 'ms apart' : 'n/a');
+  ok('6.1 exactly one provider is called, and it is BigDataCloud', order.length === 1 && order[0].host === 'bdc', order.map(o => o.host).join(',') || 'none');
+  ok('6.2 no request to nominatim.openstreetmap.org leaves the page at all',
+     every.every(u => !/nominatim/i.test(u)), every.filter(u => /nominatim/i.test(u)).length + ' to nominatim of ' + every.length);
   await ctx.close();
 }
 

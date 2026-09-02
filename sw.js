@@ -15,13 +15,12 @@ importScripts('./js/sw-manifest.js');
    invalidates the old one — one number in `js/data.js`, no second copy. */
 const CACHE = 'arabna-' + self.SW_VERSION;
 
-/* ⚠️ THESE THREE NEVER TOUCH THE CACHE. A coordinate cached from
+/* ⚠️ THESE TWO NEVER TOUCH THE CACHE. A coordinate cached from
    yesterday is worse than no coordinate: the reader has moved and the app
-   insists they are where they were. They are the same three written into
+   insists they are where they were. They are the same two written into
    `connect-src` in `vercel.json` — read from there, not invented here. */
 const NETWORK_ONLY = [
   'api.zippopotam.us',
-  'nominatim.openstreetmap.org',
   'api.bigdatacloud.net',
 ];
 

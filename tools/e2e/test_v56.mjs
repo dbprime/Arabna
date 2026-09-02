@@ -182,8 +182,10 @@ console.log('--- start_url is identity, not a path ---');
   ok('4.2 …and there is still no id, which is why 4.1 matters',
      !('id' in man), 'id' in man ? 'id present' : 'no id');
   const sw = read('sw.js');
-  ok('4.3 the three network-only hosts are untouched',
-     /api\.zippopotam\.us/.test(sw) && /nominatim\.openstreetmap\.org/.test(sw) && /api\.bigdatacloud\.net/.test(sw));
+  /* ⚠️ REVERSED IN V.08.8 (`550`): two network-only hosts, and Nominatim gone
+     — disabled in production under Schedule E-08. */
+  ok('4.3 the two network-only hosts are present, and Nominatim is gone',
+     /api\.zippopotam\.us/.test(sw) && /api\.bigdatacloud\.net/.test(sw) && !/nominatim/i.test(sw));
   ok('4.4 …and the new version still waits for the reader to press',
      !/self\.skipWaiting\(\)/.test(sw.split("addEventListener('install'")[1].split("addEventListener('activate'")[0]));
 }
