@@ -21,6 +21,15 @@ const sh = (c) => execSync(c, { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 })
    on the server), and a record generated from it would be a record of the
    wrong repository. `origin/main` is what is served; `main` is the fallback
    only when there is no remote at all. */
+/* ⚠️ GUARD A — FETCH BEFORE READING. The remote-tracking ref in a container
+   can itself be stale (measured: `origin/main` parked on 9a98c8f while the
+   server held 196 commits), and a record generated from it went BACK 89
+   rows. So `main` is fetched from the server first; if there is no network
+   the local ref is used and the header says «(بلا fetch)» so nobody reads a
+   stale record as a fresh one. */
+let fetched = true;
+try { sh('git fetch origin +refs/heads/main:refs/remotes/origin/main --force 2>/dev/null'); }
+catch { fetched = false; console.error('provenance: git fetch failed — generating from the local ref (بلا fetch)'); }
 const ref = (() => {
   if (process.env.PROV_REF) return process.env.PROV_REF;   // the teeth run points it at a throwaway commit
   try { sh('git rev-parse --verify -q origin/main'); return 'origin/main'; } catch { /* no remote */ }
@@ -75,11 +84,23 @@ const rows = commits.map((c) => {
 });
 
 const head = sh(`git rev-parse --short ${ref}`).trim();
+const lastDate = sh(`git log -1 --format=%ad --date=short ${ref}`).trim();
 const today = new Date().toISOString().slice(0, 10);
+/* ⚠️ GUARD B — A PROVENANCE RECORD NEVER SHRINKS except by rewriting
+   history. If the new count is below what the file already holds, the ref
+   is stale: refuse, exit 1, and say what to do. */
+const OUT = 'docs/AI-PROVENANCE.md';
+if (existsSync(OUT)) {
+  const have = (readFileSync(OUT, 'utf8').match(/^\| 20\d\d-/gm) || []).length;
+  if (commits.length < have) {
+    console.error(`السجلّ يتراجع من ${have} إلى ${commits.length} — المرجع عالق. شغّل git fetch ثمّ أعِد.`);
+    process.exit(1);
+  }
+}
 const out = `# سجلُّ مصدر التطوير بالذكاء الاصطناعيّ — مولَّدٌ من المستودع
 
 يُولَّد بـ \`tools/audit/provenance.mjs\` عند كلّ إغلاق. لا يُحرَّر بيد.
-آخرُ توليد: ${today} · على \`${head}\` (${ref}) · ${commits.length} كومِتاً
+آخرُ توليد: ${today} · على \`${head}\` (${ref}${fetched ? '' : ' · بلا fetch'}) · آخرُ كومِتٍ فيه ${lastDate} · ${commits.length} كومِتاً
 
 كيف يُقرأ: كلُّ دفعةٍ تبدأ بملفّ مواصفةٍ يكتبه مالكُ البرنامج ويقرّره
 (الاختيارُ والترتيبُ والقرارات)، تنفّذه جلسةُ ذكاءٍ اصطناعيّ (رابطُها في
@@ -93,6 +114,6 @@ git لا يدخل الجدول. والخانةُ التي لا مصدرَ لها
 |---|---|---|---|---|---|---|---|
 ${rows.join('\n')}
 `;
-writeFileSync('docs/AI-PROVENANCE.md', out);
+writeFileSync(OUT, out);
 const noNum = commits.filter(c => !batchOf(c.subject)).length;
 console.log(`docs/AI-PROVENANCE.md: ${commits.length} rows on ${ref}@${head} · ${noNum} without a batch number · ${accepted.size} accepted in the queue`);

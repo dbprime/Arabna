@@ -825,6 +825,11 @@ tools/audit/daily.sh               # everything, once at the end — ~20 minutes
 python3 tools/build_single.py > index-single-file.html
 node tools/audit/provenance.mjs  # يُولَّد docs/AI-PROVENANCE.md ويدخل كومِتَ الإغلاق
 ```
+⚠️ **كومِتُ الإغلاق نفسُه يحمل `docs/AI-PROVENANCE.md` المولَّد بعد fetch.**
+مقيس: كومِتُ إغلاق `505` لم يحمله، وكومِتُ عمل `540` ولّده من مرجعٍ بعيدٍ
+عالقٍ على 9a98c8f فتراجع السجلُّ من 193 صفّاً إلى 104. الأداةُ تجلب `main`
+من الخادم قبل القراءة، **وترفض أن يتراجع السجلُّ** (تخرج 1) — سجلُّ مصدرٍ
+لا ينقص إلّا بإعادة كتابة التاريخ — ويذكر رأسُه تاريخَ آخر كومِتٍ قرأه.
 1. `tools/e2e/` holds every suite, v3 to v50, one per batch, and `run.sh`
    runs all of them against **both** `index.html` and the generated
    `index-single-file.html`. A change is not finished until both are green.
