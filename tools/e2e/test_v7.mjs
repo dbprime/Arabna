@@ -476,6 +476,11 @@ ok('the package button opens the duration step', await page.locator('#durs').cou
 ok('…for the package that was chosen', (await txt()).includes('مقال برعاية'));
 await page.click('#next2'); await page.waitForTimeout(360);
 await page.fill('#aName', 'مطعم الشام');
+/* ⚠️ REVERSED IN V.08.7 (`540`): step 3 now asks where a tap on the ad
+   goes, and `next3` does not pass without a destination — an ad that leads
+   nowhere is not sold. This account owns no business, so the phone is its
+   only door, exactly as a reader with no listing would see it. */
+await page.selectOption('#aDest', 'phone'); await page.fill('#aPhone', '(713) 466-9182');
 await page.click('#next3'); await page.waitForTimeout(400);
 ok('…and the flow still reaches the review step', (await txt()).includes('الإجمالي'));
 
