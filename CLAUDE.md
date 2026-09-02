@@ -11,7 +11,7 @@ ARABNA · عربنا — a mobile-first web app for the Arab community in the U.
 **business directory + marketplace + events + magazine**, Arabic-first with a full English toggle.
 ("Classifieds / الإعلانات الشخصية" is now "Marketplace / السوق" — the old `#/classifieds`
 routes still resolve so shared links keep working.)
-Current version: **V.08.8 (prototype)**. Owner: Rai Elby (@dbprime). Deploys to Vercel (team DB Prime).
+Current version: **V.08.9 (prototype)**. Owner: Rai Elby (@dbprime). Deploys to Vercel (team DB Prime).
 
 ## Hard rules (from the product brief)
 1. **One repository, one Vercel project.** No duplicates, no stray preview projects.
@@ -8045,6 +8045,67 @@ the host back in index.html's connect-src    → v63 · 1.1 · 1.2 · 6.1 red
 
 ```
 122 runs · 61 suites · 6,192 assertions · zero red · zero crash
+```
+
+## V.08.9 — reviews are free by decision and by code, and three texts were selling them
+
+⚠️ **The owner saw the card on his own phone** — «رقّي صفحة نشاطك — صور،
+فيديو، وتقييمات المستخدمين» between the directory's rows — and asked
+whether reviews were not agreed to be free. **They are, in the packs and
+in the code**: `planFreeNote` and `faqA2` say so, `PLAN_LIMITS` gates
+photos · videos · offers and nothing else, and the business page draws
+the reviews section and «اكتب تقييماً» for every listing with no plan
+condition (measured on `b30`, both languages: `#revList` present,
+`#revBtn` enabled, zero `.locked`). **Three keys written before that
+decision were promising the opposite** — `upgradeBanner` (the directory
+card, the business page, «حسابي»), `lockedSub` (the add-business form)
+and `subFeatures` (a dead key today, and still the approved list).
+
+> **A text that says what the code does not do is corrected ON THE
+> CODE, never the other way round — the code is what matches the
+> decision.** The first advertiser who pays «to open the reviews» finds
+> they were open all along.
+
+- **And a second fault of the same family on the way**: `subFeatures` and
+  `photosLimit` both said «حتى 10 صور» while `PLAN_LIMITS.paid.photos` is
+  `Infinity` and `photosUnlimited` says so. **The 10 corresponded to
+  nothing.** `photosLimit` and `videoLimit` were measured to have zero
+  readers in `js/screens`, `ui.js`, `store.js` and `index.html`, and are
+  deleted from both packs; `subFeatures` is corrected and kept — it is
+  the subscription page's list the day that page is built on the server.
+- **«عروض» enters the texts because `PLAN_LIMITS.paid.offers` is `true`
+  and the OFFERS block is built** — not because it sounds good. And
+  «شارة التوثيق الذهبية» stays in `subFeatures` by its letter: naming the
+  badge and detaching it from payment is the lawyer's batch, not this
+  one.
+- **Nothing in `js/screens/`, `js/store.js` or `styles/` moved.**
+  `lockedBlock()` in `directory.js` — a function with no caller — is
+  left for another file.
+
+### The spec contradicted itself, and the measurement settled it
+Its item 1.1 asked that none of the three keys contain «تقييم», while its
+own wording for `lockedSub` reads «**التقييمات** وحتى 3 صور مفتوحة له مثل
+الجميع» — reviews named, as free. ⚠️ **The harm the item guards is a text
+that puts reviews in the subscription's column**, so `test_v64` measures
+that: a review word in the same sentence as the subscription. `lockedSub`
+must **name** reviews as open to everyone (`1.1b`); `upgradeBanner` and
+`subFeatures` are entirely the subscription's column, so for them any
+review word is the fault. A check written to the spec's letter would have
+been red on the spec's own text.
+
+### `test_v64` — 20 assertions, nothing written as a number
+The 3, the `Infinity` and the 3 videos are **read from `PLAN_LIMITS`**;
+if the table moves, `2.2` and `2.3` go red on purpose. And `5.1` decodes
+the single-file build's **inlined base64 pack** and compares the three
+keys letter for letter — a text search over that file finds nothing
+either way, which is how a stale generated build passes on the module one.
+`v27 · 1.5` asserted that «التقييمات» IS in `subFeatures` and is reversed
+with a comment; the half that survives is its original point (nothing is
+counted twice).
+
+```
+«وتقييمات» back in upgradeBanner   → 1.1 · 3.2 · 4.1 red (and 5.1, the unrebuilt single-file build)
+«حتى 10 صور» back in subFeatures    → 2.1 red
 ```
 
 ## Known open items

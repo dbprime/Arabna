@@ -92,8 +92,14 @@ ok('1.3 «كلمة السر» is gone', withWord(/كلمة السر|كلمتا �
 const DIALECT = /(?<![\u0621-\u064A])(صار |يصير|يقدر |تقدر |قبل ما |مرة ثانية|بزنس|ماركت بليس|سلايدر|بانر|فلترة|طابور|مزوّد|الجوال|موبايل| رح |هلق|بكرة)/;
 ok('1.4 no dialect or jargon left in the pack', withWord(DIALECT).length === 0, withWord(DIALECT).join(' '));
 
-ok('1.5 the subscription stops counting the same thing twice',
-   !/المراجعات والتقييمات/.test(P.ar.subFeatures) && /التقييمات/.test(P.ar.subFeatures), P.ar.subFeatures);
+/* ⚠️ REVERSED IN 555 (V.08.9). This item asserted that «التقييمات» IS in
+   `subFeatures` — written when the list still sold reviews. Reviews are
+   free for every listing by decision and by code (PLAN_LIMITS gates
+   photos, videos and offers only), so the list may not name them at all.
+   The half that survives is the original one: the same thing is never
+   counted twice. test_v64 holds the rest. */
+ok('1.5 the subscription list names no review — they are free — and counts nothing twice',
+   !/المراجعات والتقييمات/.test(P.ar.subFeatures) && !/تقييم/.test(P.ar.subFeatures), P.ar.subFeatures);
 ok('1.6 the field and its error use the same name',
    P.ar.password.includes('كلمة المرور') && P.ar.wrongPassword.includes('كلمة المرور'));
 
