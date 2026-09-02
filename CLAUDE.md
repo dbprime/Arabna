@@ -8108,6 +8108,16 @@ counted twice).
 «حتى 10 صور» back in subFeatures    → 2.1 red
 ```
 
+```
+124 runs · 62 suites · 6,232 assertions · zero red · zero crash
+```
+⚠️ **Run in two stages on the same commit**, because the container was
+restarted twice mid-net (at 86 and again at 98 of 124 runs): suites 3–48
+from the first run (92 runs, all green), and 49–64 re-run afterwards (32
+runs). The six «CRASHED» lines in the first file are the restart itself —
+exit 1 with no result line, in the four suites that were running at the
+moment of the cut — and every one of them is green in the second stage.
+
 ## Known open items
 - **The header image is still far larger than its box.** V.04.7 replaced
   the 831/837 KB lockups with the cropped marks at **333/338 KB** — 60% off
