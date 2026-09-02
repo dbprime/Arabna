@@ -11,7 +11,7 @@ ARABNA · عربنا — a mobile-first web app for the Arab community in the U.
 **business directory + marketplace + events + magazine**, Arabic-first with a full English toggle.
 ("Classifieds / الإعلانات الشخصية" is now "Marketplace / السوق" — the old `#/classifieds`
 routes still resolve so shared links keep working.)
-Current version: **V.08.5 (prototype)**. Owner: Rai Elby (@dbprime). Deploys to Vercel (team DB Prime).
+Current version: **V.08.6 (prototype)**. Owner: Rai Elby (@dbprime). Deploys to Vercel (team DB Prime).
 
 ## Hard rules (from the product brief)
 1. **One repository, one Vercel project.** No duplicates, no stray preview projects.
@@ -7823,6 +7823,82 @@ the strip drawn with a slot free      → 6.1 red
 ```
 116 runs · 58 suites · 6094 assertions · zero red · zero crash
 ```
+## V.08.6 — the advertise page described a place that was not the place, and a second that was not the second
+
+⚠️ **`#/advertise` is the one screen where we describe our product to
+somebody about to pay, and a wrong description there is a promise sold and
+not kept** — `337`'s rule. Measured on Home at 390 (member view):
+
+```
+categories row   ends at 301         the slider starts at 301
+mini banner      at 826              525px below the categories · content height 752
+```
+
+**Six faults, all on the selling page:**
+- **The mini banner's place was written wrong in four strings** — «تحت
+  التصنيفات مباشرة» while the whole slider and the offers stand between
+  them and the banner is under the fold. ⚠️ **«مباشرة» was the worst
+  word**: a shop owner pictures a spot everyone sees on opening, pays, and
+  finds their ad only after scrolling — heavier than a high price.
+- **«Rotates every 7 seconds» while Home rotates it every 16.** ⚠️ **The 7
+  was not invented — it was `mountAdRotator`'s default**, written into the
+  copy the day the call still took it; the call moved on and the text did
+  not. Same disease as `390` (prices) and `395` (the suite list): **a number
+  written in two places parts after one edit.** So correcting 7 to 16 is
+  not enough — it would part again.
+- **The phone wireframe was inverted in two products**: the slider lit
+  *above* the categories, the mini banner *right under* them. **Whoever does
+  not read the line sees the picture.**
+- **«أول ما يراه كل من يفتح التطبيق»** with the categories row above it —
+  right in spirit, wrong in letter.
+- ⚠️ **A placement we sell and never mention**: `MINI_ADS` also appears
+  inside the magazine list every third article — same inventory, same
+  buyer — and the page said nothing of it.
+
+### THE RULE
+> **Whatever the advertise page says about a place or a time is READ from
+> the app and never written in a text that can part from it.**
+
+- **`AD_ROTATE_MS = 10000` and `MINI_ROTATE_MS = 16000` in `data.js`**;
+  Home rotates by them and the copy reads them through `{n}` — the
+  substitution idiom the packs already use. **The values did not change:
+  ten is ten and sixteen is sixteen. The batch fixes the text, not the
+  behaviour.** And the counted noun goes through `arCount` with
+  `plSecond`: «16 ثانية» · «10 ثوانٍ» — «16 ثوانٍ» is wrong Arabic.
+  ⚠️ **The same `{n}` went into the market, events and magazine bullets**
+  — three more written «10 ثوانٍ» that the rule covers equally.
+- **The copy**: «أعلى الصفحة الرئيسية، بعد شريط التصنيفات» · «في الصفحة
+  الرئيسية أسفل قسم العروض» · «ظهور متكرر بأقل سعر» · «أكبر مساحة في
+  الشاشة الأولى» (true: 206px tall, above the fold). The «daily» bullet
+  is gone — nothing in the app is daily; the banner sells by the month.
+- **The wireframe**: slider `[bar, cats, LIT, block, block]` · mini
+  `[bar, cats, block, block, LIT]` — **the mini banner as the last row
+  says «below the fold» without a word.**
+
+### The magazine placement is NOT mentioned yet, and that is the safe half
+`505` gates the second place on **`sectionOpen`, which `365` builds** — and
+`365` has not landed: the queue put `505` ahead of it by the owner's
+decision (the drawing was inverted and he asked to see the placement).
+⚠️ **Writing a second condition here is what the file forbids, and naming
+the magazine while it holds no real article is the very promise this batch
+exists to stop** — so the place is described as Home alone, `v61 · 7.1`
+asserts the silence, and **`365`'s own file adds the second half behind its
+gate.** Written into `docs/الحالة.md` as a deferred gap.
+
+### The spec contradicted itself once, and the measurement settled it
+Its §0 says the gap is «more than half a screen» (525) and the banner «140
+below the fold»; its test line asked for «more than a whole screen». **The
+same numbers refute the test line** (525 against 752), so `v61 · 1.1`
+asserts what is true: below the fold, and more than half a screen down.
+
+**`test_v61` — 23 assertions, nothing written as a number, and the teeth:**
+```
+«تحت التصنيفات» put back           → 2.1 · 4.1 red
+a written 7 instead of the constant → 5.1 red
+the slider wireframe inverted       → 8.1 red (both languages)
+the magazine named with no gate     → 7.1 red
+```
+
 ## Known open items
 - **The header image is still far larger than its box.** V.04.7 replaced
   the 831/837 KB lockups with the cropped marks at **333/338 KB** — 60% off

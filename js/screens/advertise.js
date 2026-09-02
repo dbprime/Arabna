@@ -1,7 +1,7 @@
 /* ======================= ADVERTISE PURCHASE FLOW ======================= */
-import { t, icon, $, $$, go, renderHeader, toast, wireRoutes, fmtMoney,
+import { t, arCount, icon, $, $$, go, renderHeader, toast, wireRoutes, fmtMoney,
          openSheet, closeSheet, showsPrices, wirePriceGates, esc } from '../ui.js';
-import { AD_PRODUCTS, CATEGORIES } from '../data.js';
+import { AD_PRODUCTS, CATEGORIES, AD_ROTATE_MS, MINI_ROTATE_MS } from '../data.js';
 import * as S from '../store.js';
 import { mountPhotoPicker } from './marketplace.js';
 import { fmtDate } from './directory.js';
@@ -38,8 +38,15 @@ function placement(productId) {
   const cats = `<span class="ph-row ph-cats">${'<i></i>'.repeat(5)}</span>`;
 
   const screens = {
-    slider: [row('ph-bar'), lit('height:34px'), cats, row('ph-block', 'height:22px'), row('ph-block', 'height:22px')],
-    mini:   [row('ph-bar'), row('ph-block', 'height:26px'), cats, lit('height:15px'), row('ph-block', 'height:22px')],
+    /* ⚠️ THE LIT ROW SITS WHERE THE PLACEMENT REALLY IS — measured on Home at
+       390: the categories row ends at 367 and the slider starts there, and
+       the mini banner is at 892, under the offers and 140px below the fold.
+       Both drawings were inverted: the slider lit ABOVE the categories, the
+       mini banner RIGHT UNDER them. Whoever does not read the line sees the
+       picture, so the picture has to be the truer of the two — and the mini
+       banner as the LAST row says «below the fold» without a word. */
+    slider: [row('ph-bar'), cats, lit('height:34px'), row('ph-block', 'height:22px'), row('ph-block', 'height:22px')],
+    mini:   [row('ph-bar'), cats, row('ph-block', 'height:26px'), row('ph-block', 'height:22px'), lit('height:15px')],
     story:  [row('ph-bar'), row('ph-line'), row('ph-block', 'height:20px'), lit('height:20px'), row('ph-block', 'height:20px')],
     event:  [row('ph-bar'), row('ph-line'), lit('height:24px'), row('ph-block', 'height:20px'), row('ph-block', 'height:20px')],
     // a category page: the chips first, then the strip that was bought
@@ -67,7 +74,14 @@ function placement(productId) {
 function points(productId) {
   const list = t(productId + 'Points');
   if (!Array.isArray(list)) return '';
-  return `<ul class="ad-points">${list.map(p => `<li>${icon('check', 14)}<span>${p}</span></li>`).join('')}</ul>`;
+  /* ⚠️ THE ROTATION TIME IS READ FROM THE CONSTANT HOME ROTATES BY, never
+     written in the copy — «every 7 seconds» stood here while Home rotated
+     every 16, because the 7 was a default that a later call stopped using.
+     And the counted noun goes through `arCount`: ثانية · ثانيتان · ثوانٍ are
+     three words, and «16 ثوانٍ» is wrong Arabic. */
+  const ms = productId === 'mini' ? MINI_ROTATE_MS : AD_ROTATE_MS;
+  const every = arCount(Math.round(ms / 1000), t('plSecond'));
+  return `<ul class="ad-points">${list.map(p => `<li>${icon('check', 14)}<span>${p.replace('{n}', every)}</span></li>`).join('')}</ul>`;
 }
 
 /**

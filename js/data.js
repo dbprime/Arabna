@@ -91,7 +91,7 @@ export const CLASSIFIED_CATS = MARKET_CATS;
    hand-typed «0.1» while the project had reached V.03.6 — two literals,
    both stale, and a reader reporting a fault could not tell us which build
    they were on. Raise it here when CLAUDE.md's version line moves. */
-export const APP_VERSION = '0.8.5';
+export const APP_VERSION = '0.8.6';
 
 /* ============================================================
    Where the app lives outside itself
@@ -863,6 +863,16 @@ export const STATE_SUGGEST = [
    ⚠️ ONE value, here. No derived number, no «about», and no separate
    figure in CSS: if the animation needs a duration it is written from this
    variable through a custom property, never typed a second time. */
+/* ⚠️ THE ROTATION TIMES LIVE HERE AND NOWHERE ELSE. «Rotates every 7
+   seconds» stood on the advertise page while Home rotated the mini banner
+   every 16 — the 7 was `mountAdRotator`'s default, written into the copy
+   the day the call still took it, and the call moved on without the text.
+   A number written in two places parts after one edit: the copy reads
+   these constants now, and the values are NOT changed by this — ten stays
+   ten, sixteen stays sixteen. */
+export const AD_ROTATE_MS = 10000;     // every slider
+export const MINI_ROTATE_MS = 16000;   // the mini banner
+
 export const HINT_MS = 2000;
 export const HINT_FADE_MS = 250;
 

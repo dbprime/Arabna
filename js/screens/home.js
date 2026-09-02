@@ -4,7 +4,7 @@ import { t, L, icon, $, $$, go, renderHeader, openSheet, closeSheet, toast, star
          pickerBtn, setPickerValue, openDropdown, regionAllLabel, outsideBoxHtml, mountOutsideBox, catTileHtml,
          adShareBtn, adCapacityBarHtml } from '../ui.js';
 import { CATEGORIES, HOME_CATS, MINI_ADS, ARTICLES, ZIPS, CITY_SUGGESTIONS, AD_SLOTS,
-         CITY_POINTS, SEARCH_HINTS, HINT_MS, HINT_FADE_MS } from '../data.js';
+         CITY_POINTS, SEARCH_HINTS, HINT_MS, HINT_FADE_MS, AD_ROTATE_MS, MINI_ROTATE_MS } from '../data.js';
 import * as S from '../store.js';
 import { prayerBarHtml, mountPrayerBar, mountPrayerAsk,
          ramadanBarHtml, mountRamadanBar } from './prayer.js';
@@ -345,7 +345,7 @@ export function startSlider(ads, hostSel = '.slider', trackSel = '#track', dotsS
   };
   let current = 0;
   sliderStop = mountAdRotator({
-    host, items: ads, interval: 10000,
+    host, items: ads, interval: AD_ROTATE_MS,
     paint: (a, idx) => { current = idx; show(a, idx); },
     onClick: (a) => { if (a && a.link) go(a.link); },
   });
@@ -390,7 +390,7 @@ function startMiniAd() {
   if (dots) dots.innerHTML = ads.length > 1
     ? ads.map((_, i) => `<span class="dot-i ${i === 0 ? 'active' : ''}"></span>`).join('') : '';
   miniStop = mountAdRotator({
-    host: el, items: ads, interval: 16000,
+    host: el, items: ads, interval: MINI_ROTATE_MS,
     paint: (a, i) => {
       el.innerHTML = `<span class="m-ico">${icon(a.icon, 19)}</span>
         <span class="m-body"><span class="m-name">${esc(L(a.name))}</span><br><span class="m-tag">${esc(L(a.tag))}</span></span>
