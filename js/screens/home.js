@@ -2,7 +2,7 @@
 import { t, L, icon, $, $$, go, renderHeader, openSheet, closeSheet, toast, stars, wireRoutes,
          distLabelHtml, distText, cityChipLabel, mountAdRotator, esc,
          pickerBtn, setPickerValue, openDropdown, regionAllLabel, outsideBoxHtml, mountOutsideBox, catTileHtml,
-         adShareBtn, adCapacityBarHtml } from '../ui.js';
+         adShareBtn, adCapacityBarHtml, adSlideHtml } from '../ui.js';
 import { CATEGORIES, HOME_CATS, MINI_ADS, ARTICLES, ZIPS, CITY_SUGGESTIONS, AD_SLOTS,
          CITY_POINTS, SEARCH_HINTS, HINT_MS, HINT_FADE_MS, AD_ROTATE_MS, MINI_ROTATE_MS } from '../data.js';
 import * as S from '../store.js';
@@ -259,14 +259,12 @@ function slideHtml(a, i) {
       <div class="slide-cta cta-center">${icon('plus', 17)} ${t('continueAction')}</div>
     </div>`;
   }
-  return `<div class="slide ${i === 0 ? 'active' : ''}" data-i="${i}" data-route="${a.link}" style="background:${a.color}">
-    <span class="slide-badge">${t('sponsored')}</span>
-    <div class="slide-title">${esc(L(a.name))}</div>
-    <div class="slide-sub">${esc(L(a.tag))}</div>
-    <div class="slide-cta">${esc(L(a.cta))} ${icon(document.documentElement.dir === 'rtl' ? 'chevronL' : 'chevronR', 15)}</div>
-    <div class="slide-icon">${icon(a.icon, 86)}</div>
-    ${adShareBtn(L(a.name), a.link)}
-  </div>`;
+  /* ⚠️ THE PAID SLIDE IS DRAWN BY ONE FUNCTION, in ui.js — Home, every
+     section and the preview on #/advertise all read it. This was a second
+     hand-written copy, and it is why the buyer's photo never appeared on
+     Home while the preview showed it: two copies say two things. `data-i`
+     was read by nothing in the slider and goes with it. */
+  return adSlideHtml(a, i === 0);
 }
 
 

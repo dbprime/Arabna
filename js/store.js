@@ -2431,6 +2431,11 @@ function orderAsSlide(a) {
     tag: { ar: a.tagline, en: a.tagline },
     cta: { ar: a.ctaText, en: a.ctaText },
     color: AD_CARD_COLOR, icon: 'megaphone',
+    /* ⚠️ THE IMAGE IS READ FROM THE ORDER AS IT WAS STORED — it was
+       collected and kept since the first ad flow and never drawn (the slide
+       rendered a megaphone over it). Not reprocessed here: `mountPhotoPicker`
+       is where it was downscaled and stripped of EXIF at capture. */
+    image: a.image || '',
     link: a.link || '#/home',
   };
 }

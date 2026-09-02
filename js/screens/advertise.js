@@ -1,7 +1,7 @@
 /* ======================= ADVERTISE PURCHASE FLOW ======================= */
-import { t, arCount, icon, $, $$, go, renderHeader, toast, wireRoutes, fmtMoney,
-         openSheet, closeSheet, showsPrices, wirePriceGates, esc } from '../ui.js';
-import { AD_PRODUCTS, CATEGORIES, AD_ROTATE_MS, MINI_ROTATE_MS } from '../data.js';
+import { t, L, arCount, icon, $, $$, go, renderHeader, toast, wireRoutes, fmtMoney,
+         openSheet, closeSheet, showsPrices, wirePriceGates, esc, adSlideHtml } from '../ui.js';
+import { AD_PRODUCTS, CATEGORIES, AD_ROTATE_MS, MINI_ROTATE_MS, AD_CARD_COLOR } from '../data.js';
 import * as S from '../store.js';
 import { mountPhotoPicker } from './marketplace.js';
 import { fmtDate } from './directory.js';
@@ -117,7 +117,32 @@ export function AdvertiseScreen(root, params) {
   let duration = DURATIONS[0];
   // only the per-category slider needs one; the rest ignore it
   let adCat = CATEGORIES.filter(c => !c.route)[0].id;
-  const content = { bizName: '', tagline: '', ctaText: '', image: '' };
+  const content = { bizName: '', tagline: '', ctaText: '', image: '', dest: '', bizId: '', phone: '', link: '' };
+  /* ⚠️ THE PREVIEW IS THE SLIDE. Built from `content` by the same shape
+     `orderAsSlide` builds from the order — and v62 · 3.1 compares the two
+     markups letter by letter, so the day they part the preview is a lie
+     and the check says so. What the slide cannot do, the preview does not
+     promise. */
+  const previewSlide = () => ({
+    kind: 'paid',
+    name: { ar: content.bizName, en: content.bizName },
+    tag: { ar: content.tagline, en: content.tagline },
+    cta: { ar: content.ctaText, en: content.ctaText },
+    color: AD_CARD_COLOR, icon: 'megaphone',
+    image: content.image || '',
+    link: content.link || '#/home',
+  });
+  /* the destination choices are DERIVED from what the account owns, never
+     written: one business → preselected; several → a list with none
+     chosen; none → a phone number is the only door. And a phone is offered
+     in every case, for whoever wants a call rather than a page. */
+  const destOptionsHtml = () => {
+    const mine = S.myBusinesses();
+    const sel = (v) => content.dest === v ? 'selected' : '';
+    const bizOpts = mine.map(b => `<option value="biz:${esc(b.id)}" ${sel('biz:' + b.id)}>${esc(L(b.name))}</option>`).join('');
+    const none = mine.length === 1 ? '' : `<option value="" ${sel('')} disabled>${t('adDestination')}</option>`;
+    return `${none}${bizOpts}<option value="phone" ${sel('phone')}>${t('adDestPhone')}</option>`;
+  };
 
   const shell = document.createElement('div');
   root.appendChild(shell);
@@ -270,24 +295,49 @@ export function AdvertiseScreen(root, params) {
           <div class="field"><label class="label">${t('adTagline')}</label><input class="input" id="aTag" value="${esc(content.tagline)}" /></div>
           <div class="field"><label class="label">${t('adCtaText')}</label><input class="input" id="aCta" placeholder="${t('call')}" value="${content.ctaText}" /></div>
           <div class="field"><label class="label">${t('photosLabel')}</label><div id="adPh"></div></div>
+          <div class="field"><label class="label">${t('adDestination')}</label>
+            <select class="input" id="aDest">${destOptionsHtml()}</select>
+            <input class="input mt-8" id="aPhone" type="tel" inputmode="tel" placeholder="${t('adDestPhone')}" value="${esc(content.phone)}" ${content.dest === 'phone' ? '' : 'hidden'} />
+          </div>
           <button class="btn btn-gold btn-block mt-12" id="next3">${t('reviewOrder')}</button>
           <button class="btn btn-ghost btn-block mt-8" id="back3">${t('back')}</button>
         </div>`;
       const pic = mountPhotoPicker($('#adPh'), content.image ? [content.image] : [], 0, 1);
+      /* one business → it is the destination already, and its name shows */
+      if (!content.dest && S.myBusinesses().length === 1) { content.dest = 'biz:' + S.myBusinesses()[0].id; $('#aDest').value = content.dest; }
+      $('#aDest').addEventListener('change', () => { content.dest = $('#aDest').value; $('#aPhone').hidden = content.dest !== 'phone'; });
       $('#back3').addEventListener('click', () => { step = 2; render(); });
       $('#next3').addEventListener('click', () => {
         content.bizName = $('#aName').value.trim();
         content.tagline = $('#aTag').value.trim();
         content.ctaText = $('#aCta').value.trim() || t('call');
         content.image = pic.photos[0] || '';
+        content.dest = $('#aDest').value;
+        content.phone = ($('#aPhone').value || '').replace(/[^0-9+]/g, '');
         if (!content.bizName) { toast(t('required'), 'err'); return; }
+        /* ⚠️ AN AD THAT LEADS NOWHERE IS NOT SOLD. The dearest product in the
+           app used to send a tap back to the very screen the reader was on. */
+        if (content.dest.startsWith('biz:')) { content.bizId = content.dest.slice(4); content.link = '#/directory/' + content.bizId; }
+        else if (content.dest === 'phone' && content.phone.replace(/\D/g, '').length >= 10) { content.bizId = ''; content.link = 'tel:' + content.phone; }
+        else { toast(t('adDestinationRequired'), 'err'); return; }
         step = 4; render();
       });
 
     } else if (step === 4) {
       shell.innerHTML = `${paintSteps()}
         <div class="pad mt-16">
-          <div class="section-title">${t('reviewOrder')}</div>
+          ${/* ⚠️ THE PREVIEW STANDS ABOVE THE INVOICE, not under it, and it is
+               the slide itself drawn by the one function Home uses — never a
+               drawing of it. It cannot be tapped: a tap on a real slide would
+               carry the buyer off to their own page and lose the order. */''}
+          <div class="section-title">${t('adPreviewTitle')}<small>${t('adPreviewSub')}</small></div>
+          <div class="ad-live-preview">
+            <div class="slider"><div class="slider-track">
+              ${adSlideHtml(previewSlide(), true, { share: false })}
+            </div></div>
+          </div>
+          <div class="hint fs-13" style="margin:6px 4px 0">${t('adPreviewNote')}</div>
+          <div class="section-title mt-16">${t('reviewOrder')}</div>
           <div class="card mt-12" style="padding:14px">
             <div class="info-row"><span class="i-ico">${icon(product.icon, 21)}</span>
               <div class="i-txt"><b>${t(product.nameKey)}</b><span>${t(product.descKey)}</span></div></div>
@@ -320,7 +370,8 @@ export function AdvertiseScreen(root, params) {
         S.addAdOrder({ product: product.id, duration: duration.id, price: price(),
                        cat: product.perCat ? adCat : '',
                        bizName: content.bizName, tagline: content.tagline,
-                       ctaText: content.ctaText, image: content.image });
+                       ctaText: content.ctaText, image: content.image,
+                       link: content.link, bizId: content.bizId, phone: content.phone });
         // an ad used to leave no invoice at all
         S.addReceipt({ kind: 'ad', amount: price(), method: 'card',
                        description: `${t(product.key)} — ${t(duration.key)}`,

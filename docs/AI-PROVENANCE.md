@@ -1,7 +1,7 @@
 # سجلُّ مصدر التطوير بالذكاء الاصطناعيّ — مولَّدٌ من المستودع
 
 يُولَّد بـ `tools/audit/provenance.mjs` عند كلّ إغلاق. لا يُحرَّر بيد.
-آخرُ توليد: 2026-09-02 · على `37440ee` (origin/main) · 193 كومِتاً
+آخرُ توليد: 2026-09-02 · على `9a98c8f` (origin/main) · 104 كومِتاً
 
 كيف يُقرأ: كلُّ دفعةٍ تبدأ بملفّ مواصفةٍ يكتبه مالكُ البرنامج ويقرّره
 (الاختيارُ والترتيبُ والقرارات)، تنفّذه جلسةُ ذكاءٍ اصطناعيّ (رابطُها في
@@ -13,95 +13,6 @@ git لا يدخل الجدول. والخانةُ التي لا مصدرَ لها
 
 | التاريخ | الرقم | النوع | الكومِت | المواصفة | الجلسة | الشبكة | قبولُ المالك |
 |---|---|---|---|---|---|---|---|
-| 2026-09-02 | 545 | وثائق | `37440ee` | 545 | [جلسة](https://claude.ai/code/session_01FQktTvq1yNPmo67XBoW8hs) | — | owner ✓ |
-| 2026-09-02 | — | وثائق | `566b412` | — | [جلسة](https://claude.ai/code/session_01FQktTvq1yNPmo67XBoW8hs) | — | — |
-| 2026-09-02 | 535 | إغلاق | `22ca7a1` | 535 | [جلسة](https://claude.ai/code/session_01FQktTvq1yNPmo67XBoW8hs) | 116 · 58 · 6094 | owner ✓ |
-| 2026-09-01 | 535 | شغل | `22b0c17` | 535 | [جلسة](https://claude.ai/code/session_01FQktTvq1yNPmo67XBoW8hs) | — | owner ✓ |
-| 2026-09-01 | — | وثائق | `e40190a` | — | [جلسة](https://claude.ai/code/session_01FQktTvq1yNPmo67XBoW8hs) | — | — |
-| 2026-09-01 | 435 | إغلاق | `f6aaea7` | 435 | [جلسة](https://claude.ai/code/session_01FQktTvq1yNPmo67XBoW8hs) | 116 · 58 · 6,094 | owner ✓ |
-| 2026-09-01 | 435 | وثائق | `cdb4072` | 435 | [جلسة](https://claude.ai/code/session_01FQktTvq1yNPmo67XBoW8hs) | — | owner ✓ |
-| 2026-09-01 | 500 | إغلاق | `e08b70a` | 500 | [جلسة](https://claude.ai/code/session_01FQktTvq1yNPmo67XBoW8hs) | 116 · 58 · 6,086 | owner ✓ |
-| 2026-09-01 | 500 | شغل | `fd6511a` | 500 | [جلسة](https://claude.ai/code/session_01FQktTvq1yNPmo67XBoW8hs) | — | owner ✓ |
-| 2026-09-01 | 530 | وثائق | `144bdcf` | 530 | [جلسة](https://claude.ai/code/session_01FQktTvq1yNPmo67XBoW8hs) | — | owner ✓ |
-| 2026-09-01 | 525 | وثائق | `37b0019` | 525 | [جلسة](https://claude.ai/code/session_01FQktTvq1yNPmo67XBoW8hs) | — | owner ✓ |
-| 2026-09-01 | — | وثائق | `6f63b4a` | — | [جلسة](https://claude.ai/code/session_01FQktTvq1yNPmo67XBoW8hs) | — | — |
-| 2026-09-01 | — | وثائق | `260d3f7` | — | [جلسة](https://claude.ai/code/session_01FQktTvq1yNPmo67XBoW8hs) | — | — |
-| 2026-09-01 | 520 | وثائق | `d69c3aa` | 520 | [جلسة](https://claude.ai/code/session_01FQktTvq1yNPmo67XBoW8hs) | — | owner ✓ |
-| 2026-09-01 | — | وثائق | `0256abf` | — | [جلسة](https://claude.ai/code/session_01FQktTvq1yNPmo67XBoW8hs) | — | — |
-| 2026-09-01 | 495 | إغلاق | `2e68e42` | 495 | [جلسة](https://claude.ai/code/session_01FQktTvq1yNPmo67XBoW8hs) | 114 · 57 · 6,056 | owner ✓ |
-| 2026-09-01 | 495 | شغل | `6f2ede2` | 495 | [جلسة](https://claude.ai/code/session_01FQktTvq1yNPmo67XBoW8hs) | — | owner ✓ |
-| 2026-09-01 | 515 | إغلاق | `1799b4f` | 515 | [جلسة](https://claude.ai/code/session_01FQktTvq1yNPmo67XBoW8hs) | 114 · 57 · 6,038 | owner ✓ |
-| 2026-09-01 | 515 | شغل | `e619ce3` | 515 | [جلسة](https://claude.ai/code/session_01FQktTvq1yNPmo67XBoW8hs) | — | owner ✓ |
-| 2026-09-01 | — | وثائق | `e447e54` | — | [جلسة](https://claude.ai/code/session_01FQktTvq1yNPmo67XBoW8hs) | — | — |
-| 2026-09-01 | — | وثائق | `8550b5c` | — | [جلسة](https://claude.ai/code/session_01FQktTvq1yNPmo67XBoW8hs) | — | — |
-| 2026-09-01 | — | وثائق | `34592e5` | — | [جلسة](https://claude.ai/code/session_01FQktTvq1yNPmo67XBoW8hs) | — | — |
-| 2026-09-01 | — | وثائق | `00939b0` | — | [جلسة](https://claude.ai/code/session_01FQktTvq1yNPmo67XBoW8hs) | — | — |
-| 2026-09-01 | — | وثائق | `2219f70` | — | [جلسة](https://claude.ai/code/session_01FQktTvq1yNPmo67XBoW8hs) | — | — |
-| 2026-09-01 | — | وثائق | `87a2f74` | — | [جلسة](https://claude.ai/code/session_01FQktTvq1yNPmo67XBoW8hs) | — | — |
-| 2026-09-01 | — | وثائق | `ccf8e47` | — | [جلسة](https://claude.ai/code/session_01FQktTvq1yNPmo67XBoW8hs) | — | — |
-| 2026-09-01 | 510 | شغل | `ccb2133` | 510 | [جلسة](https://claude.ai/code/session_01FQktTvq1yNPmo67XBoW8hs) | — | owner ✓ |
-| 2026-09-01 | — | وثائق | `cfa73f2` | — | [جلسة](https://claude.ai/code/session_01FQktTvq1yNPmo67XBoW8hs) | — | — |
-| 2026-09-01 | — | وثائق | `4af8e85` | — | [جلسة](https://claude.ai/code/session_01FQktTvq1yNPmo67XBoW8hs) | — | — |
-| 2026-09-01 | 490 | إغلاق | `8c65648` | 490 | [جلسة](https://claude.ai/code/session_01FQktTvq1yNPmo67XBoW8hs) | 110 · 55 · 5,964 | owner ✓ |
-| 2026-09-01 | — | وثائق | `7354d69` | — | [جلسة](https://claude.ai/code/session_01FQktTvq1yNPmo67XBoW8hs) | — | — |
-| 2026-08-31 | 490 | شغل | `2537c9a` | 490 | [جلسة](https://claude.ai/code/session_01FQktTvq1yNPmo67XBoW8hs) | — | owner ✓ |
-| 2026-08-31 | — | وثائق | `4244986` | — | [جلسة](https://claude.ai/code/session_01FQktTvq1yNPmo67XBoW8hs) | — | — |
-| 2026-08-31 | 485 | إغلاق | `c69f7e8` | 485 | [جلسة](https://claude.ai/code/session_01FQktTvq1yNPmo67XBoW8hs) | 108 · 54 · 5,922 | owner ✓ |
-| 2026-08-31 | 485 | شغل | `fe284c3` | 485 | [جلسة](https://claude.ai/code/session_01FQktTvq1yNPmo67XBoW8hs) | — | owner ✓ |
-| 2026-08-31 | — | وثائق | `44d78c8` | — | [جلسة](https://claude.ai/code/session_01FQktTvq1yNPmo67XBoW8hs) | — | — |
-| 2026-08-31 | 480 | إغلاق | `d840dab` | 480 | [جلسة](https://claude.ai/code/session_01FQktTvq1yNPmo67XBoW8hs) | 106 · 53 · 5,894 | owner ✓ |
-| 2026-08-31 | 480 | شغل | `007744d` | 480 | [جلسة](https://claude.ai/code/session_01FQktTvq1yNPmo67XBoW8hs) | — | owner ✓ |
-| 2026-08-31 | — | وثائق | `2d31b16` | — | [جلسة](https://claude.ai/code/session_01FQktTvq1yNPmo67XBoW8hs) | — | — |
-| 2026-08-31 | — | وثائق | `4a49d73` | — | [جلسة](https://claude.ai/code/session_01FQktTvq1yNPmo67XBoW8hs) | — | — |
-| 2026-08-31 | 430 | إغلاق | `c544b00` | 430 | [جلسة](https://claude.ai/code/session_01FQktTvq1yNPmo67XBoW8hs) | 106 · 53 · 5,888 | owner ✓ |
-| 2026-08-31 | — | وثائق | `17d69df` | — | [جلسة](https://claude.ai/code/session_01FQktTvq1yNPmo67XBoW8hs) | — | — |
-| 2026-08-31 | — | وثائق | `3947aba` | — | [جلسة](https://claude.ai/code/session_01FQktTvq1yNPmo67XBoW8hs) | — | — |
-| 2026-08-31 | 430 | شغل | `e37e367` | 430 | [جلسة](https://claude.ai/code/session_01FQktTvq1yNPmo67XBoW8hs) | — | owner ✓ |
-| 2026-08-31 | 425 | إغلاق | `1e5b517` | 425 | [جلسة](https://claude.ai/code/session_01FQktTvq1yNPmo67XBoW8hs) | 104 · 52 · 5,826 | owner ✓ |
-| 2026-08-31 | — | وثائق | `197e783` | — | [جلسة](https://claude.ai/code/session_01FQktTvq1yNPmo67XBoW8hs) | 104 · 52 · 5,822 | — |
-| 2026-08-30 | — | وثائق | `b269747` | — | [جلسة](https://claude.ai/code/session_01FQktTvq1yNPmo67XBoW8hs) | — | — |
-| 2026-08-30 | 425 | شغل | `311fc86` | 425 | [جلسة](https://claude.ai/code/session_01FQktTvq1yNPmo67XBoW8hs) | — | owner ✓ |
-| 2026-08-30 | — | وثائق | `86e61d7` | — | [جلسة](https://claude.ai/code/session_01FQktTvq1yNPmo67XBoW8hs) | — | — |
-| 2026-08-30 | 420 | إغلاق | `5c948cb` | 420 | [جلسة](https://claude.ai/code/session_01FQktTvq1yNPmo67XBoW8hs) | 102 · 51 · 5,754 | owner ✓ |
-| 2026-08-30 | — | وثائق | `6459f42` | — | [جلسة](https://claude.ai/code/session_01FQktTvq1yNPmo67XBoW8hs) | — | — |
-| 2026-08-30 | — | وثائق | `6bb32a1` | — | [جلسة](https://claude.ai/code/session_01FQktTvq1yNPmo67XBoW8hs) | — | — |
-| 2026-08-30 | 420 | شغل | `9399c28` | 420 | [جلسة](https://claude.ai/code/session_01FQktTvq1yNPmo67XBoW8hs) | — | owner ✓ |
-| 2026-08-30 | — | وثائق | `f9d2e4d` | — | [جلسة](https://claude.ai/code/session_01FQktTvq1yNPmo67XBoW8hs) | — | — |
-| 2026-08-30 | — | وثائق | `8ec81be` | — | [جلسة](https://claude.ai/code/session_01FQktTvq1yNPmo67XBoW8hs) | 100 · 50 · 5,712 | — |
-| 2026-08-30 | 395 | وثائق | `84ca163` | 395 | [جلسة](https://claude.ai/code/session_01FQktTvq1yNPmo67XBoW8hs) | — | owner ✓ |
-| 2026-08-30 | — | وثائق | `7845cde` | — | [جلسة](https://claude.ai/code/session_01FQktTvq1yNPmo67XBoW8hs) | — | — |
-| 2026-08-30 | 337 | إغلاق | `59b1c81` | 337 | [جلسة](https://claude.ai/code/session_01FQktTvq1yNPmo67XBoW8hs) | 100 · 50 · 5,712 | owner ✓ |
-| 2026-08-30 | — | وثائق | `907fcce` | — | [جلسة](https://claude.ai/code/session_01FQktTvq1yNPmo67XBoW8hs) | — | — |
-| 2026-08-30 | — | وثائق | `4743ff0` | — | [جلسة](https://claude.ai/code/session_01FQktTvq1yNPmo67XBoW8hs) | — | — |
-| 2026-08-30 | — | وثائق | `e4eadfc` | — | [جلسة](https://claude.ai/code/session_01FQktTvq1yNPmo67XBoW8hs) | — | — |
-| 2026-08-30 | — | وثائق | `3d83c4d` | — | [جلسة](https://claude.ai/code/session_01FQktTvq1yNPmo67XBoW8hs) | — | — |
-| 2026-08-30 | — | شغل | `6541eb5` | — | [جلسة](https://claude.ai/code/session_01FQktTvq1yNPmo67XBoW8hs) | — | — |
-| 2026-08-30 | — | وثائق | `e2393e1` | — | [جلسة](https://claude.ai/code/session_01FQktTvq1yNPmo67XBoW8hs) | — | — |
-| 2026-08-30 | 385 | وثائق | `14be81a` | 385 | [جلسة](https://claude.ai/code/session_01FQktTvq1yNPmo67XBoW8hs) | — | owner ✓ |
-| 2026-08-30 | — | إغلاق | `2def3fc` | — | [جلسة](https://claude.ai/code/session_01FQktTvq1yNPmo67XBoW8hs) | 98 · 48 · 5,664 | — |
-| 2026-08-30 | — | وثائق | `872dd71` | — | [جلسة](https://claude.ai/code/session_01FQktTvq1yNPmo67XBoW8hs) | — | — |
-| 2026-08-30 | — | شغل | `fbc04ac` | — | [جلسة](https://claude.ai/code/session_01FQktTvq1yNPmo67XBoW8hs) | — | — |
-| 2026-08-29 | — | وثائق | `d82b4e0` | — | [جلسة](https://claude.ai/code/session_01FQktTvq1yNPmo67XBoW8hs) | — | — |
-| 2026-08-29 | — | وثائق | `678e417` | — | [جلسة](https://claude.ai/code/session_01FQktTvq1yNPmo67XBoW8hs) | — | — |
-| 2026-08-29 | — | شغل | `cdd6b46` | — | [جلسة](https://claude.ai/code/session_01FQktTvq1yNPmo67XBoW8hs) | — | — |
-| 2026-08-29 | 336 | وثائق | `a4cd0c3` | 336 | [جلسة](https://claude.ai/code/session_01FQktTvq1yNPmo67XBoW8hs) | — | — |
-| 2026-08-29 | 345 | شغل | `865a4b1` | 345 | [جلسة](https://claude.ai/code/session_01FQktTvq1yNPmo67XBoW8hs) | — | — |
-| 2026-08-29 | — | وثائق | `c19e8b5` | — | [جلسة](https://claude.ai/code/session_01FQktTvq1yNPmo67XBoW8hs) | — | — |
-| 2026-08-29 | 335 | شغل | `ea5557f` | 335 | [جلسة](https://claude.ai/code/session_01FQktTvq1yNPmo67XBoW8hs) | — | — |
-| 2026-08-29 | — | وثائق | `b50d35f` | — | [جلسة](https://claude.ai/code/session_01FQktTvq1yNPmo67XBoW8hs) | — | — |
-| 2026-08-29 | 330 | شغل | `5495f52` | 330 | [جلسة](https://claude.ai/code/session_01FQktTvq1yNPmo67XBoW8hs) | — | — |
-| 2026-08-29 | — | وثائق | `f78869f` | — | [جلسة](https://claude.ai/code/session_01FQktTvq1yNPmo67XBoW8hs) | — | — |
-| 2026-08-29 | — | شغل | `32fc054` | — | [جلسة](https://claude.ai/code/session_01FQktTvq1yNPmo67XBoW8hs) | — | — |
-| 2026-08-29 | — | شغل | `6cf4b35` | — | [جلسة](https://claude.ai/code/session_01FQktTvq1yNPmo67XBoW8hs) | — | — |
-| 2026-08-29 | — | شغل | `0f53c80` | — | [جلسة](https://claude.ai/code/session_01FQktTvq1yNPmo67XBoW8hs) | — | — |
-| 2026-08-29 | — | شغل | `0bf7788` | — | [جلسة](https://claude.ai/code/session_01FQktTvq1yNPmo67XBoW8hs) | — | — |
-| 2026-08-29 | — | شغل | `4b9a3b0` | — | [جلسة](https://claude.ai/code/session_01FQktTvq1yNPmo67XBoW8hs) | — | — |
-| 2026-08-28 | — | شغل | `33e78a6` | — | [جلسة](https://claude.ai/code/session_01FQktTvq1yNPmo67XBoW8hs) | — | — |
-| 2026-08-28 | — | شغل | `1a2a776` | — | [جلسة](https://claude.ai/code/session_01FQktTvq1yNPmo67XBoW8hs) | — | — |
-| 2026-08-28 | — | شغل | `b2dc61a` | — | [جلسة](https://claude.ai/code/session_01FQktTvq1yNPmo67XBoW8hs) | — | — |
-| 2026-08-27 | — | شغل | `9ffb31f` | — | [جلسة](https://claude.ai/code/session_01FQktTvq1yNPmo67XBoW8hs) | — | — |
-| 2026-08-27 | — | شغل | `1147ada` | — | [جلسة](https://claude.ai/code/session_01FQktTvq1yNPmo67XBoW8hs) | — | — |
-| 2026-08-27 | — | شغل | `b42a983` | — | [جلسة](https://claude.ai/code/session_01FQktTvq1yNPmo67XBoW8hs) | — | — |
 | 2026-08-27 | — | شغل | `9a98c8f` | — | [جلسة](https://claude.ai/code/session_01FQktTvq1yNPmo67XBoW8hs) | — | — |
 | 2026-08-27 | — | شغل | `36582d4` | — | [جلسة](https://claude.ai/code/session_01FQktTvq1yNPmo67XBoW8hs) | — | — |
 | 2026-08-27 | — | وثائق | `2aefaea` | — | [جلسة](https://claude.ai/code/session_01FQktTvq1yNPmo67XBoW8hs) | — | — |

@@ -5,7 +5,7 @@ import { t, L, icon, $, $$, go, back, renderHeader, openSheet, closeSheet, confi
          pickerBtn, setPickerValue, openDropdown, closeDropdown,
          showsPrices, priceGate, wirePriceGates,
          openBadgeHtml, openBadgeSlotHtml, onMinute, distLabelHtml, cityChipLabel, fmtMiles, attrChipsHtml, fmtDay, fmtTime, bizBadgeHtml,
-         historyKey, esc, outsideBoxHtml, mountOutsideBox } from '../ui.js';
+         historyKey, esc, outsideBoxHtml, mountOutsideBox, adSlideHtml } from '../ui.js';
 import { CATEGORIES, SUBSCRIPTION_PRICE, DAY_KEYS } from '../data.js';
 import * as S from '../store.js';
 import { catIcon, startSlider, repaintCityChips, mountSearchHint } from './home.js';
@@ -835,15 +835,14 @@ function catHouseHtml(catName) {
   </div>`;
 }
 
-/** one slide in a category slider — the same shape the home one uses */
+/** one paid slide in a category slider — THE one function, in ui.js.
+    ⚠️ This was a third hand-written copy, and it was the poorest of the
+    three: it carried no `data-route` at all, so a paid category strip led
+    nowhere when tapped, and no photo and no share button. One function,
+    read everywhere, is the only way the preview on #/advertise can be
+    telling the truth about every surface it is sold on. */
 function catSlideHtml(a, i) {
-  return `<div class="slide ${i === 0 ? 'active' : ''}" style="background:${a.color}">
-    <span class="slide-badge">${t('sponsored')}</span>
-    <div class="slide-title">${esc(L(a.name))}</div>
-    <div class="slide-sub">${esc(L(a.tag))}</div>
-    <div class="slide-cta">${esc(L(a.cta))} ${icon(document.documentElement.dir === 'rtl' ? 'chevronL' : 'chevronR', 15)}</div>
-    <div class="slide-icon">${icon(a.icon, 86)}</div>
-  </div>`;
+  return adSlideHtml(a, i === 0);
 }
 
 /**

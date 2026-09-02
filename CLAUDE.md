@@ -11,7 +11,7 @@ ARABNA · عربنا — a mobile-first web app for the Arab community in the U.
 **business directory + marketplace + events + magazine**, Arabic-first with a full English toggle.
 ("Classifieds / الإعلانات الشخصية" is now "Marketplace / السوق" — the old `#/classifieds`
 routes still resolve so shared links keep working.)
-Current version: **V.08.6 (prototype)**. Owner: Rai Elby (@dbprime). Deploys to Vercel (team DB Prime).
+Current version: **V.08.7 (prototype)**. Owner: Rai Elby (@dbprime). Deploys to Vercel (team DB Prime).
 
 ## Hard rules (from the product brief)
 1. **One repository, one Vercel project.** No duplicates, no stray preview projects.
@@ -7904,6 +7904,73 @@ the magazine named with no gate     → 7.1 red
 ```
 
 ⚠️ **And `v6` went red on the first net — three items guarding the very copy `505` reversed** (the old place, four points, a total of 32). Rewritten with the reversal named, none deleted.
+
+## V.08.7 — the advertiser sees the ad as people will see it, before paying
+
+⚠️ **Rai's request** — «لمّا يدخل ويختار، يطلعله preview وين مكان الإعلان» —
+settled as two things: the wireframe before buying (`505`) and **the real
+preview, with his own ad, before paying.** And measuring what would be
+previewed found the paid slide breaking its own promise twice:
+
+- **The buyer's photo was collected, stored on the order, and never
+  drawn.** Step 3 took it, `addAdOrder` kept it, `orderAsSlide` ignored it,
+  and the slide rendered a megaphone over it — while the page promised
+  «صورة وعنوان ووصف وزر إجراء».
+- **The paid slide led back to Home.** No destination field, no `bizId` on
+  the order, `link: '#/home'` — **the dearest product in the app, when
+  tapped, returned the reader to the screen they were on.** And `v60` could
+  not see it: it measures the rotation, not the destination.
+
+### THE RULE
+> **The preview is never built to show anything other than what will be
+> shown.** One function draws the paid slide — `adSlideHtml` in `ui.js` —
+> and Home, every section, the category strip and the preview all read it.
+> **What the slide cannot do, the preview does not promise.**
+
+- ⚠️ **There were THREE hand-written copies, not one.** `sectionSlider`,
+  Home's `slideHtml`, and the directory's `catSlideHtml` — **and the third
+  was the poorest: it carried no `data-route` at all, so a paid category
+  strip led nowhere when tapped.** All three read the one function now;
+  `v62 · 5.3` counts `slide-badge` across all of `js/` and demands one.
+- **`orderAsSlide` reads `image` and `link` off the order as stored.** The
+  photo is not reprocessed there — `mountPhotoPicker` is where it was
+  downscaled and stripped of EXIF at capture.
+- **Step 3 asks where a tap goes, and the choices are DERIVED**: one
+  business → preselected with its name; several → a list, none chosen;
+  none → a phone number is the only door; and a phone is offered in every
+  case. ⚠️ **`next3` does not pass without a destination — an ad that
+  leads nowhere is not sold.**
+- **`tel:` in a route needed one line, in `go()`**: `location.hash =
+  'tel:…'` is not a call, so a `tel:`/`mailto:`/`sms:` route is handed to
+  `openExternal`, the door that already dials for the support number.
+- **The preview stands above the invoice in step 4**, drawn by
+  `adSlideHtml(previewSlide(), true, { share: false })` — **and `v62 ·
+  3.1` compares its markup, after DOM serialisation, letter for letter
+  with `adSlideHtml(orderAsSlide(the same content))`.** The day they part,
+  the preview is a lie and the check says so. `pointer-events: none`: a
+  tap on a real slide would carry the buyer to their own page and lose
+  the order.
+- **The photo takes the icon's exact place and size (86px)** — a slide
+  with a photo and one without measure the same width and the title wraps
+  no more (`v62 · 2.3`, by `offsetWidth`: the client rect would measure an
+  inactive slide's transform, not its box).
+- **Old orders with no image and no link draw as they did** — megaphone
+  and `#/home`; `a.link || '#/home'` is a guard for readers' existing
+  devices, never a default for new orders.
+
+⚠️ **Two things the suite had to learn.** `script-src 'self'` refuses
+`eval` inside `page.evaluate` — the app's own module is reached by a
+dynamic import, `arabna/js/…` first (the importmap name that hits the SAME
+instance on the single-file build). And `outerHTML` re-serialises
+`<polyline …/>` as `<polyline …></polyline>`: **both sides go through a
+`<template>` before a letter-for-letter comparison**, or the check measures
+serialisation instead of content.
+
+**`test_v62` — 17 assertions, and the teeth:**
+```
+a hand copy back in sectionSlider, one letter off   → 5.3 red  (3.1 unaffected by design: it compares the preview with orderAsSlide, and a section copy reaches neither)
+image dropped from orderAsSlide                      → 1.1 · 1.3 red
+```
 
 ## Known open items
 - **The header image is still far larger than its box.** V.04.7 replaced

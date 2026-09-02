@@ -2784,3 +2784,13 @@ input[inputmode="tel"], input[type="email"], input[inputmode="decimal"], #zipIn 
   display: inline-flex; align-items: center; gap: 4px;
   color: var(--gold-bright); font-size: .8125rem; font-weight: 600; white-space: nowrap;
 }
+
+/* V.08.7 — the buyer's photo in the paid slide, and the live preview.
+   ⚠️ The photo takes the icon's exact place and size (86px): a slide with a
+   photo and one without are the same width, and no text or button moves. */
+.slide.has-photo .slide-photo { position: absolute; inset-inline-end: 14px; inset-block-start: 50%;
+  transform: translateY(-50%); width: 86px; height: 86px; border-radius: 14px; object-fit: cover; z-index: 1; }
+/* the preview cannot be tapped: a tap on a real slide carries the buyer
+   away to their own page and loses the order */
+.ad-live-preview { pointer-events: none; }
+.ad-live-preview .slider { margin: 0; }

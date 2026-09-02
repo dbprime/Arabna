@@ -98,6 +98,10 @@ export function restoreScroll(key) {
 export function forgetScroll(key) { scrollMemory.delete(key || historyKey()); }
 
 export function go(hash) {
+  /* ⚠️ ONE LINE, added in V.08.7: a paid slide may now lead to a phone
+     number, and `location.hash = 'tel:…'` is not a call — `openExternal`
+     is the door that dials, so the scheme branch is handed to it. */
+  if (/^(tel:|mailto:|sms:)/i.test(hash || '')) { openExternal(hash); return; }
   /* Save first, then shut the listener up. Going forward is the path that
      matters: the screen being left is the one we want to come back to, and
      `go()` is the only moment we control — everything after it (the
@@ -530,6 +534,38 @@ export function adCapacityBarHtml(product, cat) {
     </button>`;
 }
 
+/**
+ * One paid slide. ⚠️ WRITTEN ONCE: Home draws it and the preview on
+ * #/advertise draws it, and a preview built from a second copy would show
+ * the buyer something other than what the reader gets — the esc() fault,
+ * in a place where it costs money.
+ *
+ * ⚠️ THE THREE TEXTS ARE THE BUYER'S OWN WORDS, typed into the form on
+ * #/advertise, and the image is the buyer's own file: all four escaped,
+ * none trusted. This slide stands above Home and above every section — the
+ * most-seen surface in the app.
+ *
+ * ⚠️ The image takes the icon's exact place and size (86px), so a slide
+ * with a photo and one without are the same width and nothing moves.
+ * ⚠️ `a.link || '#/home'` is a guard, not a default: every order placed
+ * after V.08.7 carries a destination, and the guard is for the orders
+ * already sitting in readers' devices.
+ */
+export function adSlideHtml(a, active = false, { share = true } = {}) {
+  const dir = document.documentElement.dir === 'rtl' ? 'chevronL' : 'chevronR';
+  const art = a.image
+    ? `<img class="slide-photo" src="${esc(a.image)}" alt="" loading="lazy">`
+    : `<div class="slide-icon">${icon(a.icon || 'megaphone', 86)}</div>`;
+  return `<div class="slide ${active ? 'active' : ''} ${a.image ? 'has-photo' : ''}" data-route="${esc(a.link || '#/home')}" style="background:${esc(a.color)}">
+          <span class="slide-badge">${t('sponsored')}</span>
+          <div class="slide-title">${esc(L(a.name))}</div>
+          <div class="slide-sub">${esc(L(a.tag))}</div>
+          <div class="slide-cta">${esc(L(a.cta))} ${icon(dir, 15)}</div>
+          ${art}
+          ${share ? adShareBtn(L(a.name), a.link) : ''}
+        </div>`;
+}
+
 export function sectionSlider(ads, { product, sectionName, cat }) {
   /* The house slide, drawn by one function so the two branches can never
      say different things. */
@@ -551,21 +587,7 @@ export function sectionSlider(ads, { product, sectionName, cat }) {
        `startSlider`. The rotator is driven by that array, so a track
        carrying one more slide than the array draws a slide that is never
        shown, under a dot that never lights. */
-    const slides = S.slidesFor(product, ads, cat).map((a, i) => (a.kind === 'house' ? houseHtml(i === 0)
-      : `<div class="slide ${i === 0 ? 'active' : ''}" data-route="${esc(a.link || '#/home')}" style="background:${esc(a.color)}">
-          <span class="slide-badge">${t('sponsored')}</span>
-          ${/* ⚠️ THESE THREE ARE THE BUYER'S OWN WORDS, typed into the form
-               on `#/advertise` — and this slide stands above Home and above
-               every section, so it is the most-seen surface in the app. The
-               link and the colour on the line above were escaped and these
-               were not: the rule was applied to two fields of the same
-               element and missed on three. */''}
-          <div class="slide-title">${esc(L(a.name))}</div>
-          <div class="slide-sub">${esc(L(a.tag))}</div>
-          <div class="slide-cta">${esc(L(a.cta))} ${icon(document.documentElement.dir === 'rtl' ? 'chevronL' : 'chevronR', 15)}</div>
-          <div class="slide-icon">${icon(a.icon, 86)}</div>
-          ${adShareBtn(L(a.name), a.link)}
-        </div>`));
+    const slides = S.slidesFor(product, ads, cat).map((a, i) => (a.kind === 'house' ? houseHtml(i === 0) : adSlideHtml(a, i === 0)));
     return `<div class="slider"><div class="slider-track" id="secTrack">
         ${slides.join('')}
       </div>
