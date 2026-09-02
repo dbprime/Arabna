@@ -7815,6 +7815,10 @@ the old count put back on the strip   → 4.2 · 4.3 red
 the strip drawn with a slot free      → 6.1 red
 7.x untouched and green: with a slot free the house slide reaches #/advertise, sold out the strip does
 ```
+
+```
+116 runs · 58 suites · 6094 assertions · zero red · zero crash
+```
 ## Known open items
 - **The header image is still far larger than its box.** V.04.7 replaced
   the 831/837 KB lockups with the cropped marks at **333/338 KB** — 60% off
