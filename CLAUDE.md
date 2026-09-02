@@ -8043,6 +8043,10 @@ the host back in sw.js                       → v56 · 4.3 red
 the host back in index.html's connect-src    → v63 · 1.1 · 1.2 · 6.1 red
 ```
 
+```
+122 runs · 61 suites · 6,192 assertions · zero red · zero crash
+```
+
 ## Known open items
 - **The header image is still far larger than its box.** V.04.7 replaced
   the 831/837 KB lockups with the cropped marks at **333/338 KB** — 60% off
