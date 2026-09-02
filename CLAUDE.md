@@ -7977,6 +7977,12 @@ a hand copy back in sectionSlider, one letter off   → 5.3 red  (3.1 unaffected
 image dropped from orderAsSlide                      → 1.1 · 1.3 red
 ```
 
+```
+120 runs · 60 suites · 6174 assertions · zero red · zero crash
+```
+
+⚠️ **`v7` went red on the first net** — one item drove `next3` with no destination, which `540` now refuses; the flow picks the phone (the account owns no business). Rewritten with the reversal named.
+
 ## Known open items
 - **The header image is still far larger than its box.** V.04.7 replaced
   the 831/837 KB lockups with the cropped marks at **333/338 KB** — 60% off
