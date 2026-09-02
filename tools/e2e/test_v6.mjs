@@ -89,7 +89,12 @@ ok('expanding still shows no price', (await dollars()).length === 0);
 
 /* the placement diagram */
 console.log('--- placement preview ---');
-for (const [id, where] of [['mini', 'تحت التصنيفات'], ['event', 'أعلى قسم الفعاليات'],
+/* ⚠️ REVERSED IN V.08.6 (`505`): the mini banner's place is «أسفل قسم
+   العروض», not «تحت التصنيفات» — measured on Home at 390 the banner sits
+   525px under the categories and below the fold, and the old copy was a
+   promise sold and not kept. And it carries THREE points now, not four: the
+   «daily» bullet was deleted because nothing in the app is daily. */
+for (const [id, where] of [['mini', 'أسفل قسم العروض'], ['event', 'أعلى قسم الفعاليات'],
                            ['slider', 'أعلى الصفحة الرئيسية'], ['story', 'داخل قائمة المجلة']]) {
   await page.click(`#prods .ad-card[data-group="${id}"] .price-card`);
   await page.waitForTimeout(330);
@@ -115,7 +120,7 @@ for (const [id, where] of [['mini', 'تحت التصنيفات'], ['event', 'أ�
   ok(id + ': one slot lit in gold', pv.litIndex >= 0 && pv.gold, 'row ' + pv.litIndex + '/' + pv.rowCount);
   ok(id + ': labelled "إعلانك هنا"', (pv.label || '').includes('إعلانك هنا'));
   ok(id + ': names the surface', (pv.where || '').includes(where), pv.where);
-  ok(id + ': carries four benefit points', pv.points === 4, pv.points + ' points');
+  ok(id + ': carries its benefit points (four; the mini banner three since 505)', pv.points === (id === 'mini' ? 3 : 4), pv.points + ' points');
 }
 /* each package lights a different row — otherwise the diagram says nothing */
 const litRows = await page.evaluate(() => {
@@ -313,7 +318,8 @@ ok('EN visitor: gate note translated', body.includes('The price shows after a fr
 ok('EN visitor: gate button translated', body.includes('See the prices'));
 ok('EN visitor: packages and points still complete',
    await page.evaluate(() => document.querySelectorAll('#prods .ad-card').length) === 8
-   && await page.evaluate(() => document.querySelectorAll('.ad-points li').length) === 32);
+   /* ⚠️ 31, not 32, since `505`: eight packages, the mini banner with three points */
+   && await page.evaluate(() => document.querySelectorAll('.ad-points li').length) === 31);
 
 await go('#/marketplace');
 ok('EN visitor: item prices still visible (the exception)', (await dollars()).length >= 3);
