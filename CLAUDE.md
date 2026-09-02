@@ -825,7 +825,7 @@ tools/audit/daily.sh               # everything, once at the end — ~20 minutes
 python3 tools/build_single.py > index-single-file.html
 node tools/audit/provenance.mjs  # يُولَّد docs/AI-PROVENANCE.md ويدخل كومِتَ الإغلاق
 ```
-⚠️ **كومِتُ الإغلاق نفسُه يحمل `docs/AI-PROVENANCE.md` المولَّد بعد fetch.**
+⚠️ **كومِتُ الإغلاق نفسُه يحمل `docs/AI-PROVENANCE.md` المولَّد من HEAD بعد fetch — فيحمل الدفعةَ التي يُغلقها.**
 مقيس: كومِتُ إغلاق `505` لم يحمله، وكومِتُ عمل `540` ولّده من مرجعٍ بعيدٍ
 عالقٍ على 9a98c8f فتراجع السجلُّ من 193 صفّاً إلى 104. الأداةُ تجلب `main`
 من الخادم قبل القراءة، **وترفض أن يتراجع السجلُّ** (تخرج 1) — سجلُّ مصدرٍ

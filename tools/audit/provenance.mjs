@@ -16,25 +16,35 @@ import { execSync } from 'node:child_process';
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 
 const sh = (c) => execSync(c, { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 });
-/* ⚠️ THE PUBLISHED main, not the clone's. A fresh clone can carry a local
-   `main` parked on an old commit (measured: 104 rows on 9a98c8f against 191
-   on the server), and a record generated from it would be a record of the
-   wrong repository. `origin/main` is what is served; `main` is the fallback
-   only when there is no remote at all. */
 /* ⚠️ GUARD A — FETCH BEFORE READING. The remote-tracking ref in a container
    can itself be stale (measured: `origin/main` parked on 9a98c8f while the
    server held 196 commits), and a record generated from it went BACK 89
    rows. So `main` is fetched from the server first; if there is no network
-   the local ref is used and the header says «(بلا fetch)» so nobody reads a
-   stale record as a fresh one. */
+   the header says «(بلا fetch)» so nobody reads a stale record as a fresh one. */
 let fetched = true;
 try { sh('git fetch origin +refs/heads/main:refs/remotes/origin/main --force 2>/dev/null'); }
-catch { fetched = false; console.error('provenance: git fetch failed — generating from the local ref (بلا fetch)'); }
-const ref = (() => {
-  if (process.env.PROV_REF) return process.env.PROV_REF;   // the teeth run points it at a throwaway commit
-  try { sh('git rev-parse --verify -q origin/main'); return 'origin/main'; } catch { /* no remote */ }
-  return 'main';
-})();
+catch { fetched = false; console.error('provenance: git fetch failed — generating from HEAD without it (بلا fetch)'); }
+/* ⚠️ THE REF IS HEAD, NOT origin/main. Generated from `origin/main` at a
+   close, the record could never hold the batch being closed — its commits
+   sit on the branch and are not on the server yet — so the file came out
+   identical to the previous one and the record on main ran a whole batch
+   behind, always (measured: faf99fc · bc64acc · 2f512da · f4d9055 all absent).
+   HEAD holds the branch; guard D below makes sure it also holds the server. */
+const ref = process.env.PROV_REF || 'HEAD';   // the teeth run points it at a throwaway commit
+/* ⚠️ GUARD D — HEAD MUST CONTAIN origin/main. A branch behind the server
+   would generate a record missing what is already published. Checked only
+   when the fetch succeeded: a stale local ref proves nothing either way. */
+if (fetched && !process.env.PROV_REF) {
+  let hasRemote = true;
+  try { sh('git rev-parse --verify -q origin/main'); } catch { hasRemote = false; }
+  if (hasRemote) {
+    try { sh('git merge-base --is-ancestor origin/main HEAD'); }
+    catch {
+      console.error('HEAD لا يحوي origin/main — الفرعُ خلف الخادم. اسحب أوّلاً.');
+      process.exit(1);
+    }
+  }
+}
 
 /* one record per commit, fenced with unit/record separators so a multi-line
    body cannot bleed into the next record */
@@ -101,6 +111,7 @@ const out = `# سجلُّ مصدر التطوير بالذكاء الاصطنا�
 
 يُولَّد بـ \`tools/audit/provenance.mjs\` عند كلّ إغلاق. لا يُحرَّر بيد.
 آخرُ توليد: ${today} · على \`${head}\` (${ref}${fetched ? '' : ' · بلا fetch'}) · آخرُ كومِتٍ فيه ${lastDate} · ${commits.length} كومِتاً
+كومِتُ الإغلاق الأخير يدخل السجلَّ في الإغلاق الذي يليه.
 
 كيف يُقرأ: كلُّ دفعةٍ تبدأ بملفّ مواصفةٍ يكتبه مالكُ البرنامج ويقرّره
 (الاختيارُ والترتيبُ والقرارات)، تنفّذه جلسةُ ذكاءٍ اصطناعيّ (رابطُها في
