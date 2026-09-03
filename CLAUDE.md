@@ -21,7 +21,8 @@ Current version: **V.09.2 (prototype)**. Owner: dbprime. Deploys to Vercel (team
    owner» in English. The repository is public. `@dbprime`, the domain and
    the Vercel team name stay: an account handle its holder chose is not a
    personal name. **And nothing ever goes into a repository that is built
-   from a real person's name** — see `Qamar#Nile42` below, which replaced a
+   from a real person's name** — see the password-shaped string described
+   below, which replaced a
    string built from the owner's surname and city, published beside the word
    «accepted».
 1. **One repository, one Vercel project.** No duplicates, no stray preview projects.
@@ -2280,7 +2281,8 @@ which makes a rule on the sign-up screen worth nothing. All three call
   **before** the comparison — strip the symbols first and `P@ssw0rd!`
   becomes `pssw0rd`, which does not match `password` and sails through.
   The app's own name and the cities are matched **whole**, so
-  `Houston2026$` is refused and `Qamar#Nile42` is not.
+  a password carrying the app's own name or one of the cities is refused,
+  while one built from neither is not.
 - **The strength meter is gone.** Once the rule is absolute a password is
   accepted or it is not, and «متوسّطة» tells nobody what to fix. The live
   checklist does: five conditions, green as each is met, **red only after
@@ -8388,18 +8390,22 @@ any screen, in either pack — so nothing about behaviour changes.
 Published in `CLAUDE.md` **and** in `js/store.js`, beside the word
 «accepted»:
 
-```
-`Houston2026$` is refused and <surname>#<city><digits> is not.
-```
+A line contrasting a refused password with an accepted one — and the
+accepted one was **built from the owner's surname and his city.**
 
-⚠️ **A string shaped like a password, built from the owner's surname and
-his city, in a public repository, with a note saying it passes.** Run
-through the app's own `passwordChecks` it clears all six conditions. **An
-example in a comment stops being an example when it is built out of a real
+⚠️ **A string shaped like a password, made out of a real identity, in a
+public repository, with a note beside it saying it passes.** Run through
+the app's own `passwordChecks` it clears all six conditions. **An example
+in a comment stops being an example when it is built out of a real
 identity** — and it is the first thing anyone would try against that
-account. It reads `Qamar#Nile42` now, **in all three places**: the two the
-spec named, and `tools/e2e/test_v27.mjs`, where the same string sat in a
-fixture table beside `true`.
+account. It was replaced by a string belonging to nobody, **in all three
+places**: the two the spec named, and `tools/e2e/test_v27.mjs`, where the
+same string sat in a fixture table beside `true`.
+
+⚠️ **And the replacement is not printed here either.** It is a live
+fixture in `js/store.js`, so writing it beside the word «accepted» would
+reproduce the shape of the fault with a different name in it — which is
+the whole finding of this batch, not an exception to it.
 
 ### And the name survived in forms a grep for it could not see
 ⚠️ **This is the finding, and it is bigger than the list the batch was
@@ -8408,22 +8414,19 @@ and the short Latin form with a word boundary — leaves every one of these
 standing:
 
 ```
-البي                     the surname in Arabic — 12 fixture lines
-Rami2026$ · rami2026$    the transliterated first name INSIDE PASSWORD fixtures
-Rami٢٠٢٦$ · Café#Rami9   the same, in the Arabic-digit and accented cases
-rami@arabna.app          the fixture email, in nine suites
-rami@example.com         the same, in another
-rami dot elby at gmail dot com   ⚠️ THE OWNER'S REAL ADDRESS, SPELLED OUT,
-                                 in test_v3 and in a comment in store.js
-'Rami E.'                the author of a seed review in data.js
+the surname in Arabic                    12 fixture lines
+the first name inside PASSWORD fixtures  and again with Arabic-Indic digits,
+                                         and again with an accented letter
+a fixture email built on the first name  nine suites · and one more on another host
+the owner's real address, SPELLED OUT    ⚠️ in test_v3 and in a comment in store.js
+the short display name                   the author of a seed review in data.js
 ```
 
-**All of them are gone** — `أحمد سالم`, `Qamar2026$`, `ahmad@arabna.app`,
-`ahmad dot salem at gmail dot com`, `Ahmad S.`. Every replacement was
-checked against the rule it has to satisfy: `Qamar2026$` still passes the
-six password conditions, `Qamar2026` still fails on the missing symbol,
-`qamar2026$` still fails on the missing capital — **so no fixture changed
-what it measures.**
+**All of them are gone**, replaced by names and addresses belonging to
+nobody. Every replacement was checked against the rule it has to satisfy —
+the substitute password still passes the six conditions, the same string
+without its symbol still fails on the symbol, and in lower case it still
+fails on the capital — **so no fixture changed what it measures.**
 
 ### What the sweep must not do, and what it did anyway once
 ⚠️ **A capitalisation pass touched lines that never carried the name.**
@@ -8436,7 +8439,8 @@ not a sweep, it is damage.**
 
 - **`ARABNA-preview.html` — an orphan from 16 August** that nothing
   references, an old single-file build predating the build tool, and the
-  only file left carrying `'Rami E.'` inside its inlined modules. It is
+  only file left carrying the short display name inside its inlined
+  modules. It is
   **regenerated** rather than hand-edited, and comes out byte-identical to
   `index-single-file.html`. ⚠️ **It is now a second copy of a generated
   file under another name, which this project bans elsewhere — deleting it
