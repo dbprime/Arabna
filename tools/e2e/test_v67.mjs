@@ -27,6 +27,15 @@
 import { chromium } from '/opt/node22/lib/node_modules/playwright/index.mjs';
 import { readFileSync } from 'node:fs';
 
+/* ⚠️ ROOT, never a relative path. `run.sh` runs the suites from its own
+   working directory, so `readFileSync('js/…')` resolves against whatever
+   that happens to be — it read fine by hand and CRASHED in the net with
+   ENOENT, taking all 35 assertions on the module build with it. Same
+   family as the port written into `test_v36` and the version frozen into
+   `test_v56`: a path typed into a check is a red waiting for the day the
+   caller changes. Every other suite derives it from `import.meta.url`. */
+const ROOT = new URL('../../', import.meta.url).pathname;
+
 const BASE = process.env.BASE || 'http://localhost:8099/index.html';
 const SINGLE = /index-single-file/.test(BASE);
 let pass = 0, fail = 0;
@@ -251,7 +260,7 @@ async function photoScreen(bizId) {
     return { addBtns: document.querySelectorAll('#phHost [data-add], #phHost .pick-add').length, has: !!src };
   });
   ok('3.3 the picker is mounted for the subscriber', cap.has === true);
-  const src = SINGLE ? '' : readFileSync('js/screens/directory.js', 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
+  const src = SINGLE ? '' : readFileSync(ROOT + 'js/screens/directory.js', 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
   if (!SINGLE) {
     ok('3.4 the photo screen no longer asks whether the limit is Infinity',
        !/limits\.photos\s*[!=]==\s*Infinity/.test(src));
