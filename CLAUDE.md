@@ -11,7 +11,7 @@ ARABNA · عربنا — a mobile-first web app for the Arab community in the U.
 **business directory + marketplace + events + magazine**, Arabic-first with a full English toggle.
 ("Classifieds / الإعلانات الشخصية" is now "Marketplace / السوق" — the old `#/classifieds`
 routes still resolve so shared links keep working.)
-Current version: **V.09.2 (prototype)**. Owner: dbprime. Deploys to Vercel (team DB Prime).
+Current version: **V.09.3 (prototype)**. Owner: dbprime. Deploys to Vercel (team DB Prime).
 
 ## Hard rules (from the product brief)
 0. ⚠️ **THE OWNER'S NAME IS NEVER WRITTEN — anywhere.** Not in this file, not
@@ -78,6 +78,11 @@ Light — page `#EFE8DA` · bar and surface `#FFFDF8` / `#F6EFE1`.
 Gold `#C6A15B` / `#E4C77E` · ivory `#F3F1EC` · muted `#8B93AC` in dark;
 the light theme darkens gold and green for contrast on ivory.
 Base font-size 16px, generous spacing, large tap targets (buttons ≥ 52px).
+- **And the floor is 44, not 52**: `.nav-item` carries `min-block-size: 44px` (570).
+  The header buttons were already 44×44; the bar's five measured **43** and
+  nobody had measured them. ⚠️ **`min-block-size`, never `height`** — the bar
+  is `--nav-h` and carries the safe-area inset, and a fixed height breaks that
+  on a notched phone. A floor lifts the small and does not cut the large.
 Icons are sized inline via `icon('name', size)`.
 
 ## Monetization map
@@ -8545,6 +8550,74 @@ printed number any more. They now demand the pack carry the token and
 **no digit at all** — stronger, because a hand-typed number turns them
 red — plus `2.3b`, that `planText` really fills from `PLAN_LIMITS`.
 **`test_v65` is green with no edit**, which was the batch's own condition.
+
+## V.09.3 — three from a full walk: a missing pixel, a half-blind guard, a silent link
+
+A walk of 51 routes at 390×844 — both languages, both themes, visitor and
+member. **It came back clean on five axes** (zero console errors, zero
+failed requests, zero horizontal overflow, zero raw keys or `{n}` or
+`undefined`, zero empty screens, zero link to a route that does not
+exist), **so these three are all of it.**
+
+### The bar was 43 and the floor is 44
+```
+الرئيسية · الدليل · السوق · حسابي   78 × 43
+أضف                                  78 × 52
+the header's own buttons             44 × 44   ← exactly
+```
+**The rule was known, applied in the header, and forgotten in the bar.**
+`.nav-item` had no minimum, so it sized to its content — icon 22 + gap 4 +
+one line at `.71875rem` = 43. **One pixel is not taste**: 44pt is the
+minimum touch target in Apple's guidelines and App Store review measures
+it, and this is the batch before the shell.
+
+⚠️ **`min-block-size`, not `height`, and the reason is measured**: the bar
+is 78px and carries the safe-area inset, so a fixed height breaks it on a
+notched phone. The floor costs the bar nothing — 44 < 78 — and **`--nav-h`,
+`.bottom-nav` and `.nav-post` are untouched**, which the suite asserts by
+reading `--nav-h` from the live page rather than writing 78 into itself.
+
+### A tool guards what it can see, and certifies the rest clean
+`wiring.mjs`'s dead-code loop matched **`export function` alone**, so a
+module-private function with no caller was invisible to it. Measured over
+the whole repository under the same rule, there is exactly one:
+`lockedBlock` in `screens/directory.js`, which builds the free-plan card
+and is called by nobody.
+
+⚠️ **The reach is past one function.** `168` says at its own head that its
+list is «not written, but computed at run time from `wiring.mjs`» — **so a
+blind spot in the tool is a blind spot in the batch whose whole job is the
+clearing up, and it is the last file sent.**
+
+- **Check `5b` is a NOTE, not a failure**, exactly like check 5. **A check
+  that is red every morning is read as though it were switched off**, and
+  raising it happens in `168` alone under the two conditions written there.
+- ⚠️ **And nothing is deleted here. The tool finds; `168` removes.**
+
+### Nine links that turned people away without a word
+```
+directory 4 · marketplace 3 · magazine 1 · events 1
+```
+Each did `go('#/…')` and nothing else. **Somebody opening a link sent on
+WhatsApp for a listing that has been removed lands in the directory with
+no idea why** — and concludes the app is broken, or that the link they
+were sent was wrong.
+
+- ⚠️ **The destination does not change.** The list is the right place; what
+  was missing is the sentence, not the road.
+- **One key for all four** — «هذا لم يعد متاحاً» serves a business, a
+  listing, an article and an event alike; four texts would be four things
+  to translate and four things to go stale.
+- ⚠️ **And it does not say «deleted»**: it may be hidden, or suspended, or
+  expired. **What we do not know we do not say.**
+- Today it only fires on invented data that has been switched off, **but it
+  is the same path the day a real listing is removed**, and that happens.
+
+⚠️ **A tenth of the same shape is NOT changed here, and is recorded rather
+than swept in**: `ClaimScreen` bounces to `#/claim` for an id that does not
+resolve. It is outside the spec's nine, it is reached from inside the app
+rather than from a shared link, and its landing is a purposeful screen and
+not a generic list — **but it is silent, and it is the owner's call.**
 
 ## Known open items
 - **The header image is still far larger than its box.** V.04.7 replaced

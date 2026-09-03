@@ -961,6 +961,7 @@ export const STRINGS = {
     yes: 'نعم',
     // --- commercial prices behind a free account
     pricesAfterSignup: 'الأسعار تظهر بعد إنشاء حساب مجاني',
+    gone: 'هذا لم يعد متاحاً',
     unlockPrices: 'سجّل مجاناً واعرض الأسعار',
     unlockPrice: 'سجّل مجاناً واعرض السعر',
     // --- advertise: package detail, placement preview, guide sheet
@@ -2639,6 +2640,7 @@ export const STRINGS = {
     evRepeatNote: 'The new edition starts as a draft, not published: the venue, price and details change every year.',
     yes: 'Yes',
     pricesAfterSignup: 'Prices show after you create a free account',
+    gone: 'This is no longer available',
     unlockPrices: 'Sign up free to see prices',
     unlockPrice: 'Sign up free to see the price',
     adHere: 'Your ad here',

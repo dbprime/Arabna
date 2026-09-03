@@ -236,7 +236,7 @@ function cardHtml(c, isNew) {
 /* --------------------------- DETAIL --------------------------- */
 export function ListingDetailScreen(root, params) {
   const c = S.classifiedById(params[0]);
-  if (!c) { go('#/marketplace'); return; }
+  if (!c) { toast(t('gone'), 'err'); go('#/marketplace'); return; }
   renderHeader({ hidden: true });
   const mine = S.state.myListings.includes(c.id);
   const photos = c.photos || [];
@@ -725,7 +725,7 @@ export function MessagesScreen(root, params) {
   if (!listingId) { threadListView(root); return; }
 
   const c = S.classifiedById(listingId);
-  if (!c) { go('#/marketplace'); return; }
+  if (!c) { toast(t('gone'), 'err'); go('#/marketplace'); return; }
   renderHeader({ simple: true, title: t('messagesTitle') });
 
   if (!S.requireTier(2, location.hash, go)) return;
@@ -807,7 +807,7 @@ function threadListView(root) {
 /* ----------------------------- BOOST ----------------------------- */
 export function BoostScreen(root, params) {
   const c = S.classifiedById(params[0]);
-  if (!c) { go('#/marketplace'); return; }
+  if (!c) { toast(t('gone'), 'err'); go('#/marketplace'); return; }
   // boost prices are our prices — never rendered for a visitor, not even
   // by typing the route
   if (!S.requireTier(1, location.hash, go)) return;

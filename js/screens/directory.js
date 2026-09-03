@@ -972,7 +972,7 @@ function upsellHtml() {
 /* --------------------------- DETAIL --------------------------- */
 export function ListingScreen(root, params) {
   const b = S.businessById(params[0]);
-  if (!b) { go('#/directory'); return; }
+  if (!b) { toast(t('gone'), 'err'); go('#/directory'); return; }
   renderHeader({ hidden: true });
 
   const paid = S.isPaid(b);
@@ -1855,7 +1855,7 @@ function ownerOnly(bizId, allowAdmin = false) {
 
 export function BusinessEditScreen(root, params) {
   const b = S.businessById(params[0]);
-  if (!b) { go('#/directory'); return; }
+  if (!b) { toast(t('gone'), 'err'); go('#/directory'); return; }
   if (!ownerOnly(b.id, true)) return;   // the admin panel edits through here
   renderHeader({ simple: true, title: t('editBusiness') });
 
@@ -1946,7 +1946,7 @@ export function BusinessEditScreen(root, params) {
  */
 export function BusinessPhotosScreen(root, params) {
   const b = S.businessById(params[0]);
-  if (!b) { go('#/directory'); return; }
+  if (!b) { toast(t('gone'), 'err'); go('#/directory'); return; }
   if (!ownerOnly(b.id)) return;
   renderHeader({ simple: true, title: t('managePhotos') });
 
@@ -1988,7 +1988,7 @@ export function BusinessPhotosScreen(root, params) {
  */
 export function BusinessVerifyScreen(root, params) {
   const b = S.businessById(params[0]);
-  if (!b) { go('#/directory'); return; }
+  if (!b) { toast(t('gone'), 'err'); go('#/directory'); return; }
   if (!ownerOnly(b.id)) return;
   renderHeader({ simple: true, title: t('verifyBusiness') });
 

@@ -195,7 +195,7 @@ function articleCard(a) {
 
 export function ArticleScreen(root, params) {
   const a = allArticles().find(x => x.id === params[0]);
-  if (!a) { go('#/magazine'); return; }
+  if (!a) { toast(t('gone'), 'err'); go('#/magazine'); return; }
   renderHeader({ hidden: true });
 
   root.innerHTML = `

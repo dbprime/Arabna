@@ -422,6 +422,14 @@ ul { margin: 0; padding: 0; list-style: none; }
   display: flex; flex-direction: column; align-items: center; gap: 4px;
   color: var(--muted); font-size: .71875rem; font-weight: 600;
   transition: color .18s var(--ease);
+  /* 44 is the floor, and the bar had been sizing to its content: an icon,
+     a 4px gap and one line came to 43. The header buttons were already
+     44x44 — the rule was known and applied there and forgotten here.
+     ⚠️ min-block-size, never height: the bar is 78px and carries the safe
+     area inset, and a fixed height breaks that on a notched phone. A floor
+     lifts the small and does not cut the large, so «أضف» stays 52. */
+  min-block-size: 44px;
+  justify-content: center;
 }
 .nav-item.active { color: var(--gold-bright); }
 .nav-item.active svg { filter: drop-shadow(0 0 6px var(--gold-glow)); }

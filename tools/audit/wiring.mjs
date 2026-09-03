@@ -79,6 +79,30 @@ for (const f of files)
   }
 ok('5 no exported function is dead', dead, false);
 
+/* ⚠️ AND THE PRIVATE ONES. The loop above matches `export function` only,
+   so a module-private function nobody calls is invisible to it — measured:
+   `lockedBlock` in screens/directory.js, which builds the free-plan card
+   and has no caller anywhere.
+
+   The reach is wider than one function. `168` says at its own head that its
+   list is «not written, but computed at run time from wiring.mjs» — so a
+   blind spot here is a blind spot there, and `168` is the last file sent
+   and the one whose whole job is the clearing up. A tool guards what it
+   can see; what it cannot see it certifies clean.
+
+   ⚠️ A note, not a failure, exactly like check 5 — and raising it to a
+   failure happens in `168` alone, under the two conditions written there.
+   A check that is red every morning is read as though it were switched off.
+   ⚠️ AND NOTHING IS DELETED HERE: the tool finds, `168` removes. */
+const deadLocal = [];
+for (const f of files)
+  for (const m of src[f].matchAll(/^(?!export)\s*(?:async )?function ([A-Za-z0-9_]+)/gm)) {
+    const name = m[1];
+    const uses = (src[f].match(new RegExp('\\b' + name + '\\b', 'g')) || []).length;
+    if (uses <= 1) deadLocal.push(at(f, m.index) + ' ' + name);
+  }
+ok('5b no module-private function is dead', deadLocal, false);
+
 const todo = [];
 for (const f of files)
   for (const m of src[f].matchAll(/\/\/\s*(TODO|FIXME|HACK|XXX)\b.{0,60}/g))

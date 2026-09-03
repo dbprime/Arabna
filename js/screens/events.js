@@ -186,7 +186,7 @@ function typeBadge(e) {
 /* ---------------------------- DETAIL ---------------------------- */
 export function EventScreen(root, params) {
   const e = S.eventById(params[0]);
-  if (!e) { go('#/events'); return; }
+  if (!e) { toast(t('gone'), 'err'); go('#/events'); return; }
   renderHeader({ simple: true, title: t('eventsTitle') });
 
   const past = S.eventIsPast(e);
