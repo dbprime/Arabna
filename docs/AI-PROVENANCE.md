@@ -1,7 +1,7 @@
 # سجلُّ مصدر التطوير بالذكاء الاصطناعيّ — مولَّدٌ من المستودع
 
 يُولَّد بـ `tools/audit/provenance.mjs` عند كلّ إغلاق. لا يُحرَّر بيد.
-آخرُ توليد: 2026-09-03 · على `8d4e0d1` (HEAD) · آخرُ كومِتٍ فيه 2026-09-03 · 221 كومِتاً
+آخرُ توليد: 2026-09-03 · على `0630462` (HEAD) · آخرُ كومِتٍ فيه 2026-09-03 · 228 كومِتاً
 كومِتُ الإغلاق الأخير يدخل السجلَّ في الإغلاق الذي يليه.
 
 كيف يُقرأ: كلُّ دفعةٍ تبدأ بملفّ مواصفةٍ يكتبه مالكُ البرنامج ويقرّره
@@ -14,9 +14,16 @@ git لا يدخل الجدول. والخانةُ التي لا مصدرَ لها
 
 | التاريخ | الرقم | النوع | الكومِت | المواصفة | الجلسة | الشبكة | قبولُ المالك |
 |---|---|---|---|---|---|---|---|
-| 2026-09-03 | 375 | شغل | `8d4e0d1` | 375 | [جلسة](https://claude.ai/code/session_01FQktTvq1yNPmo67XBoW8hs) | — | owner ✓ |
-| 2026-09-03 | 375 | وثائق | `13176f8` | 375 | [جلسة](https://claude.ai/code/session_01FQktTvq1yNPmo67XBoW8hs) | — | owner ✓ |
-| 2026-09-03 | 375 | وثائق | `c7c534e` | 375 | [جلسة](https://claude.ai/code/session_01FQktTvq1yNPmo67XBoW8hs) | — | owner ✓ |
+| 2026-09-03 | 565 | وثائق | `0630462` | 565 | [جلسة](https://claude.ai/code/session_01FQktTvq1yNPmo67XBoW8hs) | — | owner ✓ |
+| 2026-09-03 | 565 | وثائق | `718f39b` | 565 | [جلسة](https://claude.ai/code/session_01FQktTvq1yNPmo67XBoW8hs) | — | owner ✓ |
+| 2026-09-03 | 375 | وثائق | `45da334` | 375 | [جلسة](https://claude.ai/code/session_01FQktTvq1yNPmo67XBoW8hs) | — | owner ✓ |
+| 2026-09-03 | 565 | شغل | `9b1d05c` | 565 | [جلسة](https://claude.ai/code/session_01FQktTvq1yNPmo67XBoW8hs) | — | owner ✓ |
+| 2026-09-03 | — | وثائق | `34ef744` | — | [جلسة](https://claude.ai/code/session_01FQktTvq1yNPmo67XBoW8hs) | — | — |
+| 2026-09-03 | — | وثائق | `931638f` | — | [جلسة](https://claude.ai/code/session_01FQktTvq1yNPmo67XBoW8hs) | — | — |
+| 2026-09-03 | 375 | وثائق | `26c63b8` | 375 | [جلسة](https://claude.ai/code/session_01FQktTvq1yNPmo67XBoW8hs) | 128 · 64 · 6,296 | owner ✓ |
+| 2026-09-03 | 375 | شغل | `ee8ce12` | 375 | [جلسة](https://claude.ai/code/session_01FQktTvq1yNPmo67XBoW8hs) | — | owner ✓ |
+| 2026-09-03 | 375 | وثائق | `20c0573` | 375 | [جلسة](https://claude.ai/code/session_01FQktTvq1yNPmo67XBoW8hs) | — | owner ✓ |
+| 2026-09-03 | 375 | وثائق | `1a60f68` | 375 | [جلسة](https://claude.ai/code/session_01FQktTvq1yNPmo67XBoW8hs) | — | owner ✓ |
 | 2026-09-03 | 167 | إغلاق | `4bcf20e` | 167 | [جلسة](https://claude.ai/code/session_01FQktTvq1yNPmo67XBoW8hs) | 128 · 64 · 6296 | owner ✓ |
 | 2026-09-03 | — | وثائق | `df617b9` | — | [جلسة](https://claude.ai/code/session_01FQktTvq1yNPmo67XBoW8hs) | — | — |
 | 2026-09-03 | 167 | شغل | `d84bc53` | 167 | [جلسة](https://claude.ai/code/session_01FQktTvq1yNPmo67XBoW8hs) | — | owner ✓ |
