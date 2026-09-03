@@ -8381,7 +8381,7 @@ Published in `CLAUDE.md` **and** in `js/store.js`, beside the word
 «accepted»:
 
 ```
-`Houston2026$` is refused and `Elby#Katy77` is not.
+`Houston2026$` is refused and <surname>#<city><digits> is not.
 ```
 
 ⚠️ **A string shaped like a password, built from the owner's surname and
@@ -8395,8 +8395,9 @@ fixture table beside `true`.
 
 ### And the name survived in forms a grep for it could not see
 ⚠️ **This is the finding, and it is bigger than the list the batch was
-written from.** The sweep the spec describes (`رامي` and `Rai\b`) leaves
-every one of these standing:
+written from.** The sweep the spec describes — the first name in Arabic,
+and the short Latin form with a word boundary — leaves every one of these
+standing:
 
 ```
 البي                     the surname in Arabic — 12 fixture lines
@@ -8440,8 +8441,8 @@ not a sweep, it is damage.**
   holder chose is not a personal name.**
 
 ```
-grep 'رامي'   0        grep 'Rai\b'  0        grep -i 'rami'  0
-grep -i 'Elby'  0      the surname in Arabic, as a name   0
+the first name, in Arabic and in Latin, in every form above   0 · 0 · 0
+the surname, in Latin and in Arabic                          0 · 0
 i18n            416 derived keys · 1858 strings — unchanged, so no interface text was touched
 ```
 
