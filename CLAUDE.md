@@ -8352,6 +8352,10 @@ references (`pay_`, `demo_`) — values a gateway will return one day, ours
 until then, and stored in our own tables. All nineteen mint, and **zero ids
 are still made out of the clock alone.**
 
+```
+128 runs · 64 suites · 6,296 assertions · zero red · zero crash
+```
+
 ## Known open items
 - **The header image is still far larger than its box.** V.04.7 replaced
   the 831/837 KB lockups with the cropped marks at **333/338 KB** — 60% off
