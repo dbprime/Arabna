@@ -7,7 +7,7 @@
    somebody who saved a typo COULD NOT VERIFY THEIR REAL NUMBER: to get
    back in they had to retype the mistake.
 
-   Rai's decision: the number is parked exactly as the address is. The same
+   The owner's decision: the number is parked exactly as the address is. The same
    argument the email block already carries — a typo costs posting,
    contacting a seller, claiming a business and buying any advertisement,
    because every one of those is gated on tier 2.
@@ -29,7 +29,7 @@ const ok = (n, c, extra = '') => { if (c) { pass++; console.log('PASS ' + n + (e
   else { fail++; console.log('FAIL ' + n + (extra ? ' -> ' + extra : '')); } };
 
 const PW = 'Zaytoun#4417q';
-const MAIL = 'rami@example.com';
+const MAIL = 'ahmad@example.com';
 const OLD = '7135550123', NEW = '7135559999';
 const browser = await chromium.launch();
 const errors = [];
@@ -47,7 +47,7 @@ const fresh = async (verified = true) => {
   await p.evaluate(async ([pw, mail, old, v]) => {
     window.__S = await import('arabna/js/store.js').catch(() => import('./js/store.js'));
     localStorage.removeItem('arabna.v1');
-    await window.__S.signUp({ name: 'رامي البي', email: mail, phone: old, password: pw });
+    await window.__S.signUp({ name: 'أحمد سالم', email: mail, phone: old, password: pw });
     window.__S.confirmEmail('123456');
     if (v) window.__S.confirmPhone(old);
   }, [PW, MAIL, OLD, verified]);
@@ -105,7 +105,7 @@ const user = p => p.evaluate(() => ({
 /* ---- 3. the code promotes it, and only the code ---- */
 {
   const { ctx, p } = await fresh();
-  await p.evaluate(n => window.__S.updateProfile({ name: 'رامي البي', email: 'rami@example.com', phone: n }), NEW);
+  await p.evaluate(n => window.__S.updateProfile({ name: 'أحمد سالم', email: 'ahmad@example.com', phone: n }), NEW);
   const parked = await user(p);
   ok('3.1 parked and waiting', parked.pending === NEW && parked.phone === OLD);
   await p.evaluate(n => window.__S.confirmPhone(n), NEW);
@@ -121,11 +121,11 @@ const user = p => p.evaluate(() => ({
   const { ctx, p } = await fresh();
   const r = await p.evaluate(([mail, o, n]) => {
     const S = window.__S;
-    S.updateProfile({ name: 'رامي البي', email: mail, phone: n });
+    S.updateProfile({ name: 'أحمد سالم', email: mail, phone: n });
     const parked = S.pendingPhone();
-    S.updateProfile({ name: 'رامي البي', email: mail, phone: o });
+    S.updateProfile({ name: 'أحمد سالم', email: mail, phone: o });
     const undone = S.pendingPhone();
-    S.updateProfile({ name: 'رامي البي', email: mail, phone: '' });
+    S.updateProfile({ name: 'أحمد سالم', email: mail, phone: '' });
     return { parked, undone, phone: S.state.user.phone,
              verified: S.state.user.phoneVerified, pending: S.pendingPhone() };
   }, [MAIL, OLD, NEW]);
@@ -214,7 +214,7 @@ const user = p => p.evaluate(() => ({
      refusal could not be seen. */
   ok('8.1 the age confirmation is on the sign-up screen',
      await p.evaluate(() => !!document.querySelector('#agree2')));
-  await p.fill('#sFirst', 'رامي'); await p.fill('#sLast', 'البي');
+  await p.fill('#sFirst', 'أحمد'); await p.fill('#sLast', 'سالم');
   await p.fill('#sEmail', MAIL); await p.fill('#sPhone', OLD);
   await p.fill('#sPass', PW).catch(() => {});
   await p.fill('#sPass2', PW).catch(() => {});

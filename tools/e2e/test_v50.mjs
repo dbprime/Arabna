@@ -1,6 +1,6 @@
 /* V.07.0 — التهاني: one tool for every occasion.
 
-   Rai asked for a button that puts a greeting in front of whoever opens
+   The owner asked for a button that puts a greeting in front of whoever opens
    the app, between two dates, and that he can use for anything.
 
    ⚠️ SO IT IS NOT «the Eid card». It is a GENERAL greeting: Eid al-Fitr,
@@ -32,7 +32,7 @@ const NOW = Date.now();
 const PAY = '<img src=x onerror="window.__pwn=1">';
 const ADMIN_PW = 'Zaytoun#4417q';
 const ACCOUNT = {
-  name: 'رامي البي', email: 'a@b.c', emailVerified: true,
+  name: 'أحمد سالم', email: 'a@b.c', emailVerified: true,
   phone: '7134669182', phoneVerified: true, joined: NOW - 9e8,
 };
 /* ⚠️ THE DAY KEYS ARE BUILT IN THE BROWSER'S TIMEZONE, NOT THE

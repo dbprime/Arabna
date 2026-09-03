@@ -1,6 +1,6 @@
 /* V.04.0 — batch nine (ب): two live bugs, and the dropdown rule finished.
 
-   The two bugs both came off Rai's own phone. A masjid was being offered a
+   The two bugs both came off the owner's own phone. A masjid was being offered a
    $29 monthly subscription — «مكان عام لا يُطالَب بملكيته» — and the city
    he had picked by hand froze there for good, because one flag was doing
    two jobs: "we have a point" and "the reader chose this".
@@ -125,7 +125,7 @@ ok('2.4 a GPS city is not manual', await page.evaluate(() => window.__m.S.cityIs
 /* V.04.5 REVERSED this deliberately, and it is inverted rather than
    deleted: a check that disappears with no reason takes its behaviour
    back two batches later. V.04.0 put «· تلقائي» on the chip so the two
-   states would not read alike; Rai asked for the word gone. The
+   states would not read alike; the owner asked for the word gone. The
    DISTINCTION stays where it belongs — in the data, where `cityIsManual`
    still stops a hand-picked city being changed behind its owner — it is
    simply no longer written on a button in the header. */
@@ -145,7 +145,7 @@ await page.evaluate(() => {
 });
 /* ⚠️ REVERSED BY 490 — and this one CRASHED the suite rather than failing
    it, because it called `moveAlreadyAsked()`, which no longer exists. The
-   ask-once sheet is deleted: Rai reversed V.04.0 with the stronger
+   ask-once sheet is deleted: the owner reversed V.04.0 with the stronger
    argument that «show me Houston's shops» and «where am I» are not the
    same act, and one field carrying both let the browsing answer block the
    location question for ever. The city now updates itself and one

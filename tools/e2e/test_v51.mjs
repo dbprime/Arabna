@@ -1,4 +1,4 @@
-/* V.07.1 — five things Rai saw on his own phone.
+/* V.07.1 — five things the owner saw on his own phone.
 
    All five are interface, all five are local, and not one of them waits
    for the server.
@@ -28,12 +28,12 @@ const ok = (n, c, extra = '') => { if (c) { pass++; console.log('PASS ' + n + (e
 
 const NOW = Date.now();
 const LONG = 'سطر '.repeat(120);
-const MEMBER = { name: 'رامي البي', email: 'a@b.c', emailVerified: true,
+const MEMBER = { name: 'أحمد سالم', email: 'a@b.c', emailVerified: true,
                  phone: '7134669182', phoneVerified: true, joined: NOW - 9e8 };
 const SEED = {
   lang: 'ar', user: MEMBER,
   reviews: [
-    { id: 'rL', bizId: 'b1', rating: 5, user: 'رامي', when: { ar: 'اليوم', en: 'today' },
+    { id: 'rL', bizId: 'b1', rating: 5, user: 'أحمد', when: { ar: 'اليوم', en: 'today' },
       text: { ar: LONG, en: 'line '.repeat(120) }, mine: true },
   ],
   myListings: ['c1'],
@@ -103,7 +103,7 @@ console.log('--- the button is the class, not the word ---');
   ok('1.2 …and not a letter of it falls outside', m.longInside);
   ok('1.3 a one-line .btn-sm is unchanged at 40', m.smH === 40, String(m.smH));
   ok('1.4 …and a one-line .btn is unchanged at 52', m.bigH === 52, String(m.bigH));
-  /* the real screen Rai photographed */
+  /* the real screen the owner photographed */
   await go(p, '#/profile');
   const real = await p.evaluate(() => [...document.querySelectorAll('.btn, .btn-sm')].every(el => {
     const b = el.getBoundingClientRect();
@@ -205,7 +205,7 @@ console.log('--- the drawer line ---');
 }
 
 /* ============ 5 — two heads, and the arrow that displaced the text ==== */
-/* ⚠️ REWRITTEN in V.07.3, and the correction is Rai's. `345 · 5` said
+/* ⚠️ REWRITTEN in V.07.3, and the correction is the owner's. `345 · 5` said
    «تصنيفات عربنا» becomes a section title that is always open; he had
    said «take the arrow off, and when somebody taps categories it opens».
    The folding was never in question — and building it as written cost the
@@ -263,7 +263,7 @@ for (const [who, user] of [['member', MEMBER], ['visitor', null]]) {
     opened: !!document.querySelector('.dr-group[data-group="sections"].open'),
     rows: document.querySelectorAll('.dr-group[data-group="sections"] .dr-item[data-route]').length,
   }));
-  ok(`5.8 ${who}: tapping the head opens it — the whole of what Rai asked`, after.opened);
+  ok(`5.8 ${who}: tapping the head opens it — the whole of what the owner asked`, after.opened);
   ok(`5.9 ${who}: …onto its six leaves`, after.rows === 6, String(after.rows));
   await p.click('#drawer [data-toggle="help"]'); await p.waitForTimeout(500);
   ok(`5.10 ${who}: and one group is open at a time`,

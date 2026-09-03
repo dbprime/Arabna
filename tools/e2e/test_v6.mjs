@@ -216,14 +216,14 @@ ok('the gate starts the signup flow', (await hash()).startsWith('#/auth/signup')
 // V.02.7: one name field became two, and the password is confirmed
 
 
-await page.fill('#sFirst', 'رامي');
+await page.fill('#sFirst', 'أحمد');
 
 
-await page.fill('#sLast', 'البي');
-await page.fill('#sEmail', 'rami@arabna.app');
-await page.fill('#sPass', 'Rami2026$');
+await page.fill('#sLast', 'سالم');
+await page.fill('#sEmail', 'ahmad@arabna.app');
+await page.fill('#sPass', 'Qamar2026$');
 
-await page.fill('#sPass2', 'Rami2026$');
+await page.fill('#sPass2', 'Qamar2026$');
 await page.check('#agree1'); await page.check('#agree2');
 await page.click('#suBtn'); await page.waitForTimeout(900);
 await page.click('[data-fill="e"]'); await page.click('#vBtn'); await page.waitForTimeout(1000);

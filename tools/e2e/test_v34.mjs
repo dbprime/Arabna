@@ -1,6 +1,6 @@
 /* The `<svg …>` printed as words under every sponsored business.
 
-   Rai photographed it: on #/directory, under the name of each of the two
+   The owner photographed it: on #/directory, under the name of each of the two
    rows we sell, the pin icon's own source code was printed as text.
 
    Every link in the chain was right and the result was wrong. `distLabel`
@@ -54,7 +54,7 @@ const sponSubs = () => page.evaluate(() => [...document.querySelectorAll('.spon 
 /* CHANGED in V.06.9: the rows the directory SELLS are no longer a `.spon`
    band above the results — every subscriber stands at the top of the
    results themselves, labelled there. So the row this suite was written
-   about still exists on the very screen Rai photographed; only its class
+   about still exists on the very screen the owner photographed; only its class
    moved. The `.spon` reader stays for the marketplace, the magazine and
    events, which still draw a band. */
 const dirSponSubs = () => page.evaluate(() => [...document.querySelectorAll('#dirList .list-row')]

@@ -1,5 +1,5 @@
 /* ======================= MASS TIMES =======================
-   Rai asked for a churches section in the drawer — «so a Christian feels
+   The owner asked for a churches section in the drawer — «so a Christian feels
    there is something here for him». The row is named «مواعيد القداس», not
    «الكنائس»: a church is a building, and «مواقيت الصلاة» beside it names a
    service. The PARALLEL IN THE WORDING is what carries the message; the
@@ -67,7 +67,7 @@ function feastLabel(f) {
  * @param own  'islam' on the prayer screen · 'christian' on the mass screen
  */
 export function feastsBlockHtml(own, nMine = 6, nOther = 3) {
-  /* the two dates Rai announces, if he has: the calendar itself reads
+  /* the two dates the owner announces, if he has: the calendar itself reads
      nothing and is handed them, which is what keeps it dependency-free */
   /* `S.now()`, not `Date.now()` — the app has one clock and the admin
      test panel winds it forward. Everything else dated reads it, and a
@@ -168,7 +168,7 @@ export function MassScreen(root) {
 
   /* ⚠️ I RECOMMENDED THE OPPOSITE HERE, and said why: the mass times are
      written inside the church cards, so pushing them down buries the
-     point of the screen. Rai decided the uniform order, and it comes with
+     point of the screen. The owner decided the uniform order, and it comes with
      a switch that reverses it (admin → settings) — so the decision is
      reversible without a batch. Nothing inside either block changes. */
   const occasions = feastsBlockHtml('christian');
@@ -187,7 +187,7 @@ export function MassScreen(root) {
 /* ------------------------------------------------------------
    «Do you know a mosque that is not here?»
 
-   Rai wanted anybody to be able to add one, reviewed before it goes live,
+   The owner wanted anybody to be able to add one, reviewed before it goes live,
    «so everybody works for the app without feeling it». The machinery
    already exists — `#/add-business`, the admin queue, `findDuplicates()`
    on phone, name and address, and a merge button in the panel — so what

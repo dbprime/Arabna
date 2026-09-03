@@ -84,7 +84,7 @@ export function ReceiptScreen(root, params) {
         ${/* The tax line is PRESENT at $0.00 rather than absent. Adding it
              later to receipts issued without one is far harder than filling
              a line that is already there — and whether Texas charges sales
-             tax on a digital subscription is a question for Rai's
+             tax on a digital subscription is a question for the owner's
              accountant, not for us to guess. */''}
         ${row(t('receiptTax'), `<span class="ltr">${fmtMoney(r.tax || 0)}</span>`)}
         <div class="rc-row rc-total"><span>${t('receiptTotal')}</span>

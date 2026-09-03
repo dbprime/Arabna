@@ -279,7 +279,7 @@ const st2 = await ls();
 ok('6.28 the point is kept', st2.geo && Math.abs(st2.geo.lat - 29.7604) < 0.01, JSON.stringify(st2.geo));
 ok('6.29 it is snapped to a city the directory covers', st2.location.city === 'Houston', st2.location.city);
 /* V.04.0 put «· تلقائي» on a device-found city so the two states would
-   not read alike; V.04.5 took the word off again at Rai's request. The
+   not read alike; V.04.5 took the word off again at the owner's request. The
    chip prints the city and nothing else, whichever way it arrived — the
    distinction lives in the data, not on the button. */
 ok('6.30 the chip names the city, and says nothing about where it came from',
@@ -384,7 +384,7 @@ await page.evaluate(() => {
 });
 await page.goto(BASE); await page.waitForTimeout(500);
 await go('#/directory');
-/* the scope Rai settled on: Greater Houston, not Texas. A Houston
+/* the scope the owner settled on: Greater Houston, not Texas. A Houston
    advertiser is worth showing to a reader in Katy — and worth nothing to
    one in Dallas. */
 /* CHANGED in V.06.9 with 6.39: the count is no longer one. What 6.40 has

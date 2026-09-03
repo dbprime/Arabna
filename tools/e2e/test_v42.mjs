@@ -32,7 +32,7 @@ const ok = (n, c, extra = '') => { if (c) { pass++; console.log('PASS ' + n + (e
 
 const NOW = Date.now();
 const OWNER = {
-  user: { name: 'رامي', email: 'a@b.c', emailVerified: true, phone: '7134669182',
+  user: { name: 'أحمد', email: 'a@b.c', emailVerified: true, phone: '7134669182',
           phoneVerified: true, joined: NOW - 9e8 },
   myBusinessIds: ['b1'],
   subscription: { businessId: 'b1', plan: 'monthly', price: 29, status: 'active',

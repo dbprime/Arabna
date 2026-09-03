@@ -63,7 +63,7 @@ await mods();
 
 /* ---- 1. the ZIP names the city; nearestCity only fills a gap ---- */
 console.log('--- the ZIP wins ---');
-/* 77036 is the same shape as Rai's 77407 and is in the offline table: the
+/* 77036 is the same shape as the owner's 77407 and is in the offline table: the
    ZIP resolves to Houston while the nearest covered centre is Bellaire. */
 ok('1.1 the resolved city wins when the directory covers it',
    await page.evaluate(() => {
@@ -79,7 +79,7 @@ ok('1.1 the resolved city wins when the directory covers it',
    the fix's own comment condemns: measured beside Sugar Land, Rosenberg,
    Fresno, Sienna, Meadows Place and Alief are all off the 24, and whoever
    stood in one of them was told «Sugar Land» while the reverse lookup's
-   correct answer was thrown away. Rai reported it from his own screen.
+   correct answer was thrown away. The owner reported it from his own screen.
    ⚠️ `nearestCity` is now the LAST RESORT — consulted when there is no
    name at all — and that half is asserted below and in 1.2b. */
 ok('1.2 an uncovered name is kept, not swapped for the nearest centre',
@@ -126,7 +126,7 @@ ok('2.1 watchPosition is never used, anywhere', await page.evaluate(async () => 
 /* V.04.0 split one flag into two: "the permission was granted once" and
    "we hold a point now" are different facts, because choosing a city by
    hand deliberately clears the point — and gating the quiet refresh on the
-   POINT is what froze Rai's city on Houston for good. So the fixture has
+   POINT is what froze the owner's city on Houston for good. So the fixture has
    to say both, as the real flow does. */
 const stale = (mins) => page.evaluate((m) => {
   const { H, S } = window.__m;

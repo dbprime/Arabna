@@ -1,6 +1,6 @@
 /* V.04.5 — the word «تلقائي», and the reader who is 450 miles away.
 
-   Rai opened the app and his chip said `Beebe`. Measured before writing
+   The owner opened the app and his chip said `Beebe`. Measured before writing
    anything, with the point in Beebe, Arkansas: `#/prayer` and `#/mass`
    each explained themselves in a line, and Home and the directory said
    nothing at all — so the reader saw their own town on the chip above a

@@ -138,7 +138,7 @@ ok('5.2 …and the record still carries the English name', await page.evaluate(a
   const r = await fetch('js/data.js').then(x => x.text()).catch(() => null);
   return r === null ? true : /id: "b30", name: \{ ar: "عبد الله", en: "Abdallah's" \}/.test(r);
 }));
-/* a name Rai chose to leave English stays English — no invented Arabic */
+/* a name the owner chose to leave English stays English — no invented Arabic */
 await page.evaluate(() => { location.hash = '#/directory/b334'; });
 await page.waitForTimeout(700);
 const b334 = await page.evaluate(() => document.body.innerText);

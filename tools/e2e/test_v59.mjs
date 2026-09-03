@@ -1,6 +1,6 @@
 /* V.08.2 — the share card carried the old address.
 
-   ⚠️ Rai connected `arabna.app` on 1 September and the domain works.
+   ⚠️ the owner connected `arabna.app` on 1 September and the domain works.
    Measured after connecting: THREE absolute URLs in `index.html` were
    still written, by hand, on the temporary host — `og:url`, `og:image`
    and `twitter:image`.

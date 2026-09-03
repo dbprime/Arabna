@@ -126,14 +126,14 @@ ok('a visitor is sent to sign up first', (await hash()).startsWith('#/auth/signu
 // V.02.7: one name field became two, and the password is confirmed
 
 
-await page.fill('#sFirst', 'رامي');
+await page.fill('#sFirst', 'أحمد');
 
 
-await page.fill('#sLast', 'البي');
-await page.fill('#sEmail', 'rami@arabna.app');
-await page.fill('#sPass', 'Rami2026$');
+await page.fill('#sLast', 'سالم');
+await page.fill('#sEmail', 'ahmad@arabna.app');
+await page.fill('#sPass', 'Qamar2026$');
 
-await page.fill('#sPass2', 'Rami2026$');
+await page.fill('#sPass2', 'Qamar2026$');
 await page.check('#agree1'); await page.check('#agree2');
 await page.click('#suBtn'); await page.waitForTimeout(900);
 await page.click('[data-fill="e"]'); await page.click('#vBtn'); await page.waitForTimeout(1000);
@@ -188,7 +188,7 @@ ok('it opens the claim form for that business', (await hash()) === '#/claim/b2',
 ok('the form asks who is claiming', await page.locator('#cName').count() === 1
    && await page.locator('#cRole').count() === 1 && await page.locator('#cProof').count() === 1);
 
-await page.fill('#cName', 'رامي البي');
+await page.fill('#cName', 'أحمد سالم');
 await page.fill('#cPhone', '(713) 466-9182');
 await page.fill('#cProof', 'رخصة رقم 44821');
 await page.click('#cSend'); await page.waitForTimeout(700);
@@ -199,7 +199,7 @@ await page.click('#sendBtn'); await page.waitForTimeout(1600);
 await page.click('[data-fill="p"]'); await page.click('#vBtn'); await page.waitForTimeout(1000);
 ok('after verifying, the claim form is back', (await hash()) === '#/claim/b2', await hash());
 
-await page.fill('#cName', 'رامي البي');
+await page.fill('#cName', 'أحمد سالم');
 await page.fill('#cPhone', '(713) 466-9182');
 await page.fill('#cProof', 'رخصة رقم 44821');
 await page.click('#cSend'); await page.waitForTimeout(800);

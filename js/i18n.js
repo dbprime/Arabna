@@ -87,7 +87,7 @@ export const STRINGS = {
        phone is locked and the app closed. */
     prAlertSoon: 'يحتاج نسخةً أصليّة من البرنامج',
     prAlertKeep: 'ولن يعمل دائماً: افتح البرنامج بين حينٍ وآخر ليبقى التنبيه.',
-    /* ⚠️ THE SHEET IS GONE — Rai's reversal of V.04.0. A hand-picked city
+    /* ⚠️ THE SHEET IS GONE — the owner's reversal of V.04.0. A hand-picked city
        is no longer frozen: it updates by itself and one transient line
        says so, with a single undo. «Show me Houston's shops» and «where
        am I» were sharing one field, and the browsing answer was blocking
@@ -1140,7 +1140,7 @@ export const STRINGS = {
     statPaidCash: 'مدفوع نقداً',
     // --- directions (V.03.4)
     mapsOpenIn: 'افتح الاتجاهات في',
-    /* ⚠️ A PRODUCT'S NAME IS NOT TRANSLATED — Rai's rule, and the same one
+    /* ⚠️ A PRODUCT'S NAME IS NOT TRANSLATED — the owner's rule, and the same one
        that keeps «Houston» and every shopfront in English inside an Arabic
        sentence. And this very list was the proof it had been missed: three
        products, and `Waze` had kept its name while the other two had not. */

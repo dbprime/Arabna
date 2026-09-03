@@ -1,6 +1,6 @@
 /* V.06.9 — whoever pays is on top, and among them the nearest first.
 
-   Rai's decision, and it changes the MODEL rather than tuning a number in
+   The owner's decision, and it changes the MODEL rather than tuning a number in
    it. The old order was a chain of tiebreaks with «subscribed» last in it;
    it is two layers now.
 
@@ -78,7 +78,7 @@ const seed = (p, { geo = false, coverage = true, miles = [0.40, 0.05, 0.25, 0.10
     return { paid: shops.slice(0, 4).map(b => b.id), free: shops.slice(4, 9).map(b => b.id) };
   }, [geo, coverage, miles]);
 
-/* ⚠️ `337` BOUNDED THE BAND. `330` lifted every active subscription; Rai's
+/* ⚠️ `337` BOUNDED THE BAND. `330` lifted every active subscription; the owner's
    decision of 29 August caps it at `AD_SLOTS.dirTop` rows filled by
    rotation, so «layer one holds all four» is deliberately no longer true —
    the subscribers who did not draw a row stand unmarked in their ordinary

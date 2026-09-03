@@ -37,7 +37,7 @@ const openPage = async (opts = {}) => {
    rebuilt from a string inside the page, which is what CSP refuses. */
 const setState = (p, fn) => p.evaluate(fn);
 const asMember = (p) => setState(p, () => window.__patch((s) => {
-  s.user = { name: 'رامي البي', email: 'r@x.com', tier: 2, emailVerified: true,
+  s.user = { name: 'أحمد سالم', email: 'r@x.com', tier: 2, emailVerified: true,
              phone: '(713) 466-9182', phoneVerified: true, joined: Date.now() };
 }));
 const go = async (p, h) => { await p.evaluate(x => { location.hash = x; }, h); await p.waitForTimeout(600); };
@@ -215,7 +215,7 @@ ok('6.3 «إعلانات مميّزة» took their place', dr.featured && dr.rou
 /* V.03.2: «دليل الواصل الجديد» was the sixth leaf in this group and the
    panel was already full, so with the group OPEN it now overflows by one
    row. Folded it still fits (v7 measures that). Nothing was removed to
-   make room — which row goes is Rai's call, not a code decision — so the
+   make room — which row goes is the owner's call, not a code decision — so the
    overflow is bounded rather than dropped: it may not grow past one row
    while the question is open. See CLAUDE.md, "The drawer is now full". */
 /* V.03.5 moved this number, and the reason is worth writing down: the
@@ -225,7 +225,7 @@ ok('6.3 «إعلانات مميّزة» took their place', dr.featured && dr.rou
    46px over at base 16, 72px at 17, and 127px at «أكبر». The guard is
    still a hard ceiling on a known gap, re-anchored to what the new base
    actually measures, and it is measured against the panel rather than a
-   frozen 844. One row anywhere fixes every size; which row is Rai's
+   frozen 844. One row anywhere fixes every size; which row is the owner's
    call. See CLAUDE.md, "The drawer scrolls when a group is open".
 
    V.03.9 raised it from 80 to 130, because «مواعيد القداس» was asked for
@@ -254,12 +254,12 @@ ok('6.3 «إعلانات مميّزة» took their place', dr.featured && dr.rou
    exists to stop the gap growing unnoticed, and it has done that four times —
    but the gap itself has never once been closed. ONE row removed from the
    drawer fixes every measurement at once, and that question has stood in
-   Rai's name since V.03.2. A row is a product decision, not a code one. */
+   the owner's name since V.03.2. A row is a product decision, not a code one. */
 /* The tile pushed every EXISTING overflow up — a top-level row grew 8px
    and a group head 10 — and no new overflow was born: a visitor went 195
    -> 231 with «تصنيفات عربنا» and 95 -> 131 with «المساعدة», a member
    112 -> 156 and 12 -> 56.
-   ⚠️ AND THEN IT COMES BACK DOWN, in the SAME batch, because Rai took the
+   ⚠️ AND THEN IT COMES BACK DOWN, in the SAME batch, because the owner took the
    duplicate row out: 231 -> 181 for a visitor and 156 -> 106 for a member.
    So the ceiling lands at 191, not 241 — LOWER than the 205 this batch
    started from, and the first time in five raises that it has gone down.
@@ -465,7 +465,7 @@ await go(page, '#/auth/signup');
 await page.click('#suBtn'); await page.waitForTimeout(400);
 ok('11.1 an empty form writes an error under every field',
    await page.evaluate(() => [...document.querySelectorAll('.field-err')].filter(e => e.textContent).length) === 5);
-await page.fill('#sFirst', 'رامي1'); await page.fill('#sEmail', 'nope');
+await page.fill('#sFirst', 'أحمد1'); await page.fill('#sEmail', 'nope');
 await page.fill('#sPass', 'abc'); await page.fill('#sPass2', 'abd');
 await page.click('#suBtn'); await page.waitForTimeout(400);
 const fe = await page.evaluate(() => Object.fromEntries([...document.querySelectorAll('.field-err')].map(e => [e.id, e.textContent])));
@@ -475,7 +475,7 @@ ok('11.3 a bad email is named as such', /غير صحيحة/.test(fe.e_sEmail || 
    whole rule — «كلمة المرور غير صالحة» names nothing to fix. */
 ok('11.4 the password error names what is missing', /ينقص/.test(fe.e_sPass || ''), fe.e_sPass);
 ok('11.5 a mismatch is caught', /متطابقتين/.test(fe.e_sPass2 || ''), fe.e_sPass2);
-await page.fill('#sPass', 'Rami2026$'); await page.waitForTimeout(250);
+await page.fill('#sPass', 'Qamar2026$'); await page.waitForTimeout(250);
 /* V.03.4: the meter is gone. «ضعيفة / متوسّطة / قوية» measures nothing
    once the rule is absolute; the list says WHICH condition is missing and
    turns each one green as it is met. */
@@ -489,10 +489,10 @@ ok('11.8 …and the header still says «إنشاء حساب»',
    (await page.textContent('.h-title')).trim() === 'إنشاء حساب');
 await page.click('.sheet-panel [data-close]'); await page.waitForTimeout(600);
 ok('11.9 …and closing keeps everything typed', await page.evaluate(() =>
-  document.querySelector('#sFirst').value === 'رامي1' && document.querySelector('#sPass').value === 'Rami2026$'));
-await page.fill('#sFirst', 'رامي'); await page.fill('#sLast', 'البي');
-await page.fill('#sEmail', 'rami@example.com'); await page.fill('#sPhone', '(713) 466-9182');
-await page.fill('#sPass2', 'Rami2026$');
+  document.querySelector('#sFirst').value === 'أحمد1' && document.querySelector('#sPass').value === 'Qamar2026$'));
+await page.fill('#sFirst', 'أحمد'); await page.fill('#sLast', 'سالم');
+await page.fill('#sEmail', 'ahmad@example.com'); await page.fill('#sPhone', '(713) 466-9182');
+await page.fill('#sPass2', 'Qamar2026$');
 await page.click('#agree1'); await page.click('#agree2');
 await page.click('#suBtn'); await page.waitForTimeout(1600);
 ok('11.10 it lands on the code screen', await page.evaluate(() => location.hash) === '#/auth/email');

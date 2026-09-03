@@ -320,7 +320,7 @@ const dirFresh = await page.evaluate(() => [...document.querySelectorAll('#dirLi
 ok('5.3 the directory\u2019s paid rows come back in the very same order',
    dirBefore.length > 0 && JSON.stringify(dirBefore) === JSON.stringify(dirAfter),
    dirBefore.join(',') + ' vs ' + dirAfter.join(','));
-/* ⚠️ REVERSED in V.07.4 (`337`), deliberately and by Rai's decision. This
+/* ⚠️ REVERSED in V.07.4 (`337`), deliberately and by the owner's decision. This
    asserted that a fresh visit gives the SAME rows — true while the order
    was pure arithmetic and every subscriber was lifted. `337` bounds the
    band to two rows and fills them BY ROTATION, precisely so that ten

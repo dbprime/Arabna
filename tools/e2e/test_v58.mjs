@@ -1,6 +1,6 @@
 /* V.08.1 — the invented data is shown to nobody by default.
 
-   ⚠️ A PUBLICATION GATE, NOT AN IMPROVEMENT. Rai bought `arabna.app` and
+   ⚠️ A PUBLICATION GATE, NOT AN IMPROVEMENT. The owner bought `arabna.app` and
    is about to connect it, and the first stranger to open the real address
    would have seen invented businesses and reviews nobody wrote.
 
@@ -8,7 +8,7 @@
    `showDemo` lives in `DEFAULTS`, `DEFAULTS` is cloned into `state`, and
    `writeState` saves the whole of `state` into THIS PHONE's own store. So
    the switch is a DEVICE preference, not an application setting: turning
-   it off on Rai's phone hid the invented data on Rai's phone, and every
+   it off on the owner's phone hid the invented data on the owner's phone, and every
    new visitor started from the default and saw all of it. With no server,
    while the default was `true` there was no way at all to hide it. */
 import { chromium } from '/opt/node22/lib/node_modules/playwright/index.mjs';

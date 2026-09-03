@@ -176,7 +176,7 @@ function ramadanBarInner(times) {
  *
  * A button whose filter returns nothing is not drawn at all. That is the
  * standing rule — a filter is never offered with nothing behind it — and
- * here it doubles as the honest state before Rai fills the season in.
+ * here it doubles as the honest state before the owner fills the season in.
  */
 function rmButtons() {
   const n = (a) => S.allBusinesses().filter(b => (b.attributes || []).includes(a)).length;

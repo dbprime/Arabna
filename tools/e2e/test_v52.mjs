@@ -1,6 +1,6 @@
 /* V.07.4 — صفّان مموّلان، والباقي بالمسافة.
 
-   `330` gave layer one EVERY active subscription. Rai's decision of
+   `330` gave layer one EVERY active subscription. The owner's decision of
    29 August bounds it to two rows: the paying shop gets a guaranteed
    place at the top of the screen, and the reader gets an honest
    directory from the third row down, where nothing is lifted for having
@@ -151,7 +151,7 @@ console.log('--- the nearer one, even when the further one pays ---');
   ok('4.1 Katy is 14.6 miles and Houston 26.5', d.katy === 14.6 && d.houston === 26.5,
      d.katy + ' / ' + d.houston);
   /* ⚠️ THIS ITEM WAS WRITTEN WRONG FIRST TIME AND IS CORRECTED HERE, not
-     softened. Rai's words — «it should show me the nearer one, not the
+     softened. The owner's words — «it should show me the nearer one, not the
      further, even if it pays» — are answered by `337` FROM THE THIRD ROW
      DOWN, not at row one: the two top rows are the guaranteed place the
      $29 buys, and the file says so in as many words. Asserting that a

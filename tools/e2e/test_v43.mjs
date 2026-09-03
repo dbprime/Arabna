@@ -1,6 +1,6 @@
 /* V.05.4 — the second approval was shredding the first.
 
-   Rai asked about a restaurant with three branches, each with its own
+   The owner asked about a restaurant with three branches, each with its own
    phone number, and then about one owner trading under three different
    names. Neither is a verification problem — a code sent to the LISTING's
    own number proves control per listing, and the name never enters it.
@@ -33,7 +33,7 @@ const ok = (n, c, extra = '') => { if (c) { pass++; console.log('PASS ' + n + (e
 
 const NOW = Date.now();
 const ACCOUNT = {
-  name: 'رامي', email: 'a@b.c', emailVerified: true,
+  name: 'أحمد', email: 'a@b.c', emailVerified: true,
   phone: '7134669182', phoneVerified: true, tier: 2, joined: NOW - 9e8,
 };
 
@@ -104,7 +104,7 @@ const disk = p => p.evaluate(() => JSON.parse(localStorage.getItem('arabna.v1'))
     const S = window.__S;
     const ids = S.allBusinesses().slice(0, 3).map(b => b.id);
     for (const id of ids) {
-      const c = S.requestClaim(id, { name: 'رامي', role: 'مالك', phone: '7134669182' });
+      const c = S.requestClaim(id, { name: 'أحمد', role: 'مالك', phone: '7134669182' });
       S.approveClaim(c.id);
     }
     return { ids, owned: S.state.myBusinessIds.slice(),
@@ -125,7 +125,7 @@ const disk = p => p.evaluate(() => JSON.parse(localStorage.getItem('arabna.v1'))
   const again = await p.evaluate(() => {
     const S = window.__S;
     const id = S.state.myBusinessIds[0];
-    const c = S.requestClaim(id, { name: 'رامي', role: 'مالك', phone: '7134669182' });
+    const c = S.requestClaim(id, { name: 'أحمد', role: 'مالك', phone: '7134669182' });
     S.approveClaim(c.id);
     return S.state.myBusinessIds.filter(x => x === id).length;
   });

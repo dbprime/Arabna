@@ -75,7 +75,7 @@ console.log('--- the phantom listing ---');
   await p.evaluate(async () => {
     const S = window.__m.S;
     S.state.myListings = ['c1']; S.save();
-    await S.signUp({ name: 'رامي البي', email: 'r@x.com', password: 'Houston#2026rai', phone: '7134669182' });
+    await S.signUp({ name: 'أحمد سالم', email: 'r@x.com', password: 'Houston#2026abc', phone: '7134669182' });
   });
   await p.waitForTimeout(400);
   ok('1.6 a brand-new account owns nothing',

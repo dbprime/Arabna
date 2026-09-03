@@ -109,7 +109,7 @@ const adminLogin = async () => {
 const member = async () => {
   await page.evaluate(() => {
     const s = JSON.parse(localStorage.getItem('arabna.v1') || '{}');
-    s.user = { name: 'رامي', email: 'r@a.app', phone: '(713) 466-9182',
+    s.user = { name: 'أحمد', email: 'r@a.app', phone: '(713) 466-9182',
                phoneVerified: true, emailVerified: true, tier: 2, joined: Date.now() };
     localStorage.setItem('arabna.v1', JSON.stringify(s));
   });
@@ -387,7 +387,7 @@ ok('…and it is remembered', ((await ls()).savedEvents || []).length === 1);
    ====================================================================== */
 console.log('--- G: safety ---');
 await go('#/about');
-/* CHANGED here, Rai's decision: on «من نحن» the address is an ICON in the
+/* CHANGED here, the owner's decision: on «من نحن» the address is an ICON in the
    row beside the site and the four accounts, not a written-out line — so
    what has to be true here is that the icon REACHES it. An `<a>` with no
    `mailto:` would fail this, which is the whole point: the row must not

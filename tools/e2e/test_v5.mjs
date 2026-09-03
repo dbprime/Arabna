@@ -109,13 +109,13 @@ console.log('--- becoming a member ---');
 await go('#/auth/signup');
 // V.02.7: one name field became two, and the password is confirmed
 
-await page.fill('#sFirst', 'رامي');
+await page.fill('#sFirst', 'أحمد');
 
-await page.fill('#sLast', 'البي');
-await page.fill('#sEmail', 'rami@arabna.app');
-await page.fill('#sPass', 'Rami2026$');
+await page.fill('#sLast', 'سالم');
+await page.fill('#sEmail', 'ahmad@arabna.app');
+await page.fill('#sPass', 'Qamar2026$');
 
-await page.fill('#sPass2', 'Rami2026$');
+await page.fill('#sPass2', 'Qamar2026$');
 await page.check('#agree1'); await page.check('#agree2');
 await page.click('#suBtn'); await page.waitForTimeout(900);
 await page.click('[data-fill="e"]'); await page.click('#vBtn'); await page.waitForTimeout(800);
@@ -348,8 +348,8 @@ const pt = await txt();
 for (const gone of ['الإعدادات', 'المساعدة', 'من نحن', 'الخصوصية', 'الشروط', 'تسجيل الخروج']) {
   ok('profile no longer repeats "' + gone + '"', !pt.includes(gone));
 }
-ok('profile shows the name', pt.includes('رامي البي'));
-ok('profile shows the email', pt.includes('rami@arabna.app'));
+ok('profile shows the name', pt.includes('أحمد سالم'));
+ok('profile shows the email', pt.includes('ahmad@arabna.app'));
 ok('profile shows the join date label', pt.includes('عضو منذ'));
 ok('profile shows the account tier', pt.includes('حساب مؤكد'));
 ok('profile prompts phone verification', pt.includes('وثّق رقمك'));

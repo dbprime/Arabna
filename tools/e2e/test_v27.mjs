@@ -221,12 +221,12 @@ await page.click('#hTheme'); await page.waitForTimeout(400);
    ====================================================================== */
 console.log('--- the password ---');
 const CASES = [
-  ['Rami2026$', true], ['Elby#Katy77', true], ['Sh@mi-Katy!9', true],
+  ['Qamar2026$', true], ['Qamar#Nile42', true], ['Sh@mi-Katy!9', true],
   ['M0ntaha#Rd82', true], ['correct horse Staple9!', true],
   ['Password1$', false], ['P@ssw0rd!', false], ['Qwerty123!', false],
-  ['Rami2026', false], ['rami2026$', false], ['Houston2026$', false],
+  ['Qamar2026', false], ['qamar2026$', false], ['Houston2026$', false],
   ['Arabna@2026!', false], ['عربنا#Houston2026', false], ['كلمةمروري2026$', false],
-  ['Rami٢٠٢٦$', false], ['Café#Rami9', false], ['Rami2026$🔥', false],
+  ['Qamar٢٠٢٦$', false], ['Café#Qamar9', false], ['Qamar2026$🔥', false],
   ['123456', false], ['aaaaaaaa', false],
 ];
 const results = await page.evaluate((cases) =>
@@ -267,15 +267,15 @@ await page.fill('#sPass', 'R'); await page.waitForTimeout(250);
 ok('4.6 one letter draws no red', (await page.textContent('#e_sPass')).trim() === '');
 ok('4.7 …and the met condition is already green', await page.evaluate(() =>
   document.querySelector('.pw-reqs [data-req="upper"]').classList.contains('ok')));
-await page.fill('#sPass', 'Rami2026'); await page.waitForTimeout(250);
+await page.fill('#sPass', 'Qamar2026'); await page.waitForTimeout(250);
 ok('4.8 still no red while typing', (await page.textContent('#e_sPass')).trim() === '');
-await page.fill('#sPass', 'Rami2026$'); await page.waitForTimeout(250);
+await page.fill('#sPass', 'Qamar2026$'); await page.waitForTimeout(250);
 ok('4.9 the symbol turns green the moment it is typed', await page.evaluate(() =>
   document.querySelector('.pw-reqs [data-req="symbol"]').classList.contains('ok')));
-await page.fill('#sPass', 'Rami2026'); await page.locator('#sPass').blur(); await page.waitForTimeout(350);
+await page.fill('#sPass', 'Qamar2026'); await page.locator('#sPass').blur(); await page.waitForTimeout(350);
 ok('4.10 leaving the field names what is missing',
    /ينقص/.test(await page.textContent('#e_sPass')), (await page.textContent('#e_sPass')).trim());
-await page.fill('#sPass', 'Rami2026$'); await page.waitForTimeout(300);
+await page.fill('#sPass', 'Qamar2026$'); await page.waitForTimeout(300);
 ok('4.11 …and typing again clears it at once', (await page.textContent('#e_sPass')).trim() === '');
 await page.fill('#sPass', 'عربنا#Houston2026'); await page.locator('#sPass').blur(); await page.waitForTimeout(350);
 ok('4.12 Arabic is told one thing and one only',
@@ -284,13 +284,13 @@ ok('4.12 Arabic is told one thing and one only',
    (await page.textContent('#e_sPass')).trim());
 
 /* the whole way through, and the storage */
-await page.fill('#sFirst', 'رامي'); await page.fill('#sLast', 'البي');
-await page.fill('#sEmail', 'rami@arabna.app');
-await page.fill('#sPass', 'Rami2026$'); await page.fill('#sPass2', 'Rami2026$');
+await page.fill('#sFirst', 'أحمد'); await page.fill('#sLast', 'سالم');
+await page.fill('#sEmail', 'ahmad@arabna.app');
+await page.fill('#sPass', 'Qamar2026$'); await page.fill('#sPass2', 'Qamar2026$');
 await page.check('#agree1'); await page.check('#agree2');
 await page.click('#suBtn'); await page.waitForTimeout(1400);
 ok('4.13 the password is not written down anywhere', await page.evaluate(() =>
-  !localStorage.getItem('arabna.v1').includes('Rami2026$')));
+  !localStorage.getItem('arabna.v1').includes('Qamar2026$')));
 ok('4.14 …only a salted hash', await page.evaluate(() => {
   const u = JSON.parse(localStorage.getItem('arabna.v1')).user || {};
   return !('password' in u) && (u.pwHash || '').length === 64 && (u.pwSalt || '').length === 32;
@@ -302,12 +302,12 @@ await patch(() => {
   localStorage.setItem('arabna.v1', JSON.stringify(s));
 });
 await go('#/profile/password');
-await page.fill('#cpCur', 'Rami2026$'); await page.fill('#cpNew', '123456'); await page.fill('#cpConf', '123456');
+await page.fill('#cpCur', 'Qamar2026$'); await page.fill('#cpNew', '123456'); await page.fill('#cpConf', '123456');
 await page.click('#cpSave'); await page.waitForTimeout(600);
 ok('4.15 the change screen refuses 123456 — the original fault',
    (await page.evaluate(() => location.hash)) === '#/profile/password'
    && (await page.textContent('#e_cpNew')).trim().length > 0);
-await page.fill('#cpNew', 'Rami2026$'); await page.fill('#cpConf', 'Rami2026$');
+await page.fill('#cpNew', 'Qamar2026$'); await page.fill('#cpConf', 'Qamar2026$');
 await page.locator('#cpNew').blur(); await page.waitForTimeout(300);
 await page.click('#cpSave'); await page.waitForTimeout(600);
 ok('4.16 …and the same one as before', /مطابقة للحالية/.test(await page.textContent('#cpErr')));
@@ -438,7 +438,7 @@ ok('6.6 with «always» it never asks again', await page.locator('#mapPick').cou
 ok('6.7 …and the choice is stored', await page.evaluate(() => window.__m.S.mapsApp()) === 'google');
 await patch(() => {
   const s = JSON.parse(localStorage.getItem('arabna.v1') || '{}');
-  s.user = { name: 'رامي', email: 'r@a.app', phone: '(713) 466-9182',
+  s.user = { name: 'أحمد', email: 'r@a.app', phone: '(713) 466-9182',
              phoneVerified: true, emailVerified: true, tier: 2, joined: Date.now() };
   localStorage.setItem('arabna.v1', JSON.stringify(s));
 });
@@ -482,7 +482,7 @@ await page.selectOption('#cshBiz', 'b1');
 await page.click('#cshGo'); await page.waitForTimeout(400);
 ok('7.4 …and without the name of whoever took the money',
    (await page.textContent('#cshErr')).trim().length > 0, (await page.textContent('#cshErr')).trim());
-await page.fill('#cshWho', 'رامي البي');
+await page.fill('#cshWho', 'أحمد سالم');
 await page.fill('#cshAmt', '29'); await page.fill('#cshDays', '30');
 await page.click('#cshGo'); await page.waitForTimeout(1100);
 const cash = await page.evaluate(() => {
@@ -490,7 +490,7 @@ const cash = await page.evaluate(() => {
   return { rec: S.receipts()[0], sub: S.state.subscription };
 });
 ok('7.5 it issues a receipt like any card payment', !!cash.rec && /^ARB-/.test(cash.rec.id), cash.rec && cash.rec.id);
-ok('7.6 …recording who took it', cash.rec.receivedBy === 'رامي البي' && cash.rec.method === 'cash');
+ok('7.6 …recording who took it', cash.rec.receivedBy === 'أحمد سالم' && cash.rec.method === 'cash');
 ok('7.7 the subscription runs immediately', cash.sub && cash.sub.status === 'active');
 ok('7.8 …and does NOT renew', cash.sub.autoRenew === false && cash.sub.cancelAtPeriodEnd === true);
 

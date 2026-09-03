@@ -174,7 +174,7 @@ export const MAG_CATS = [
       whole education category instead. A button onto an empty
       list is the blank screen this project bans.
 
-   The copy is a placeholder and says so. Rai writes the real
+   The copy is a placeholder and says so. The owner writes the real
    text; nothing here invents a government procedure, because one
    wrong step or number costs a family a day.
    ============================================================ */
@@ -6290,7 +6290,7 @@ const DEMO_REVIEWS = {
     { user: 'محمد ص.', rating: 5, when: { ar: 'قبل 10 أيام', en: '10 days ago' }, text: { ar: 'موعد بنفس اليوم وما انتظرت كثير.', en: 'Same-day appointment, barely waited.' } },
   ],
   b4: [
-    { user: 'Rami E.', rating: 5, when: { ar: 'قبل شهر', en: '1 month ago' }, text: { ar: 'ساعدوني بملف الهجرة خطوة بخطوة.', en: 'They walked me through my immigration file step by step.' } },
+    { user: 'Ahmad S.', rating: 5, when: { ar: 'قبل شهر', en: '1 month ago' }, text: { ar: 'ساعدوني بملف الهجرة خطوة بخطوة.', en: 'They walked me through my immigration file step by step.' } },
   ],
   b6: [
     { user: 'Khaled M.', rating: 4, when: { ar: 'قبل أسبوع', en: '1 week ago' }, text: { ar: 'سعر عادل وشغل نظيف.', en: 'Fair price and clean work.' } },
@@ -6510,7 +6510,7 @@ export const AD_PRODUCTS = [
   { id: 'mini',      nameKey: 'prodMini',      descKey: 'prodMiniDesc',      icon: 'bolt',       days: 30, prices: { week1: 49,  week2: 89,  month1: 149 } },
   { id: 'story',     nameKey: 'prodStory',     descKey: 'prodStoryDesc',     icon: 'newspaper',  days: 14, prices: { week1: 199, week2: 349, month1: 549 } },
   { id: 'event',     nameKey: 'prodEvent',     descKey: 'prodEventDesc',     icon: 'calendar',   days: 14, prices: { week1: 99,  week2: 179, month1: 299 } },
-  /* The three section sliders. PRICES ARE PLACEHOLDERS — Rai sets the real
+  /* The three section sliders. PRICES ARE PLACEHOLDERS — the owner sets the real
      ones; the rule is that pricing lives with the owner, not in the code.
      The ordering behind these numbers: the marketplace carries the highest
      traffic and the most direct buying intent, events draw a seasonal
@@ -6538,7 +6538,7 @@ export const AD_SLOTS = {
   market: 4, events: 4, magazine: 4,
   story: 4, event: 3,
   /* ⚠️ THE TOP OF THE DIRECTORY IS TWO ROWS, NOT «every subscriber».
-     `330` gave layer one every active subscription; Rai's decision of
+     `330` gave layer one every active subscription; the owner's decision of
      29 August bounds it — the paying shop gets a guaranteed place at the
      top of the screen, and the reader gets an honest directory from the
      third row down, where nothing is lifted by having paid.

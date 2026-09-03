@@ -39,7 +39,7 @@ const ok = (n, c, extra = '') => { if (c) { pass++; console.log('PASS ' + n + (e
 
 const NOW = Date.now();
 const ACCOUNT = {
-  name: 'رامي البي', email: 'a@b.c', emailVerified: true,
+  name: 'أحمد سالم', email: 'a@b.c', emailVerified: true,
   phone: '7134669182', phoneVerified: true, tier: 2, joined: NOW - 9e8,
 };
 
@@ -101,7 +101,7 @@ const go = async (p, h) => { await p.evaluate(x => { location.hash = x; }, h); a
   const d = await disk(p);
   ok('2.2 choosing one is saved as a preset',
      d.user && d.user.avatar && d.user.avatar.kind === 'preset', JSON.stringify(d.user && d.user.avatar));
-  /* ⚠️ Rai's decision: a mark WE drew needs no moderator. Only an
+  /* ⚠️ the owner's decision: a mark WE drew needs no moderator. Only an
      uploaded photograph does — that is the whole reason the marks exist. */
   ok('2.3 …and it does NOT wait for approval',
      !d.user.avatar.status || d.user.avatar.status === 'ok', String(d.user.avatar.status));

@@ -306,7 +306,7 @@ ok('6.2 …on one line at 390', head && head.lines === 1, head ? String(head.lin
 ok('6.3 …with the subline under it', head && head.sub);
 
 await asReader({ location: { city: 'Houston', manual: true },
-  user: { name: 'رامي', email: 'a@b.c', emailVerified: true, joined: 1700000000000 } });
+  user: { name: 'أحمد', email: 'a@b.c', emailVerified: true, joined: 1700000000000 } });
 await at('#/home');
 /* somebody with an account has opened the app twenty times and knows what
    it is; the line would be stealing the space they came for */

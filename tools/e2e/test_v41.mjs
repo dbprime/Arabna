@@ -31,7 +31,7 @@ const browser = await chromium.launch();
 const errors = [];
 let ctx, page;
 
-const MEMBER = { user: { name: 'رامي', email: 'a@b.c', emailVerified: true,
+const MEMBER = { user: { name: 'أحمد', email: 'a@b.c', emailVerified: true,
   phoneVerified: true, phone: '7134669182', joined: 1700000000000 } };
 
 const asReader = async (state = {}, device = 'light') => {
@@ -210,7 +210,7 @@ for (const device of ['light', 'dark']) {
     JSON.stringify(a2));
 }
 
-/* REVERSED in V.06.0, Rai's decision: the theme is not carried across a
+/* REVERSED in V.06.0, the owner's decision: the theme is not carried across a
    launch at all — `asReader` opens the app afresh, so a stored «فاتح»
    is cleared at boot and the device decides. Within one session the
    choice still holds; that is what 3.1–3.3 above measure. */

@@ -1,6 +1,6 @@
 /* V.03.9 — batch nine (أ): the churches and the mass times.
 
-   Rai asked for a churches section in the drawer, «so a Christian feels
+   The owner asked for a churches section in the drawer, «so a Christian feels
    there is something here for him», and asked what to put in it.
 
    The answer this suite guards: the feast calendar is COMPUTED, not

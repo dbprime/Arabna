@@ -825,7 +825,7 @@ function eventsHtml() {
 /**
  * «آخر ما عُدِّل» — what the panel changed, and only the panel.
  *
- * It protects Rai before it protects anybody else: without it, an owner
+ * It protects the owner before it protects anybody else: without it, an owner
  * ringing to ask who changed their phone number gets no answer at all.
  */
 function adminLogHtml() {

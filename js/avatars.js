@@ -1,7 +1,7 @@
 /* ============================================================
    ARABNA — the ready-made profile marks
    ------------------------------------------------------------
-   Rai's decision (25 August 2026), and it reverses my own
+   The owner's decision (25 August 2026), and it reverses my own
    recommendation. I argued against ready-made pictures on storage
    grounds — and I was measuring the wrong axis. His design is that the
    pictures live HERE, once, and a reader stores only the id:

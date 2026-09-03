@@ -72,7 +72,7 @@ const openPage = async (opts = {}) => {
    reaches the app's own instance. This warning is older than the helper
    below and still decides how it is written. */
 /* ⚠️ APPLIED LIVE, never «write and reload» — V.06.0. The theme is now
-   cleared back to `auto` at every boot (Rai: the launch always starts from
+   cleared back to `auto` at every boot (the owner: the launch always starts from
    the device), so writing it to localStorage and reloading landed on the
    device's dark and every colour measured below was the wrong theme's.
    Within one session an explicit choice still holds, which is exactly what

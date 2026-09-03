@@ -233,7 +233,7 @@ ok('Home is gone from the drawer', !d.routes.includes('#/home'), d.routes.join('
 ok('Directory left with it', !d.routes.includes('#/directory'));
 /* V.03.1 added «مواقيت الصلاة» and V.03.2 «دليل الواصل الجديد», both here
    on purpose: the bottom bar has five tabs and every one is spoken for. */
-/* V.03.9 added «مواعيد القداس» directly under «مواقيت الصلاة» — Rai asked
+/* V.03.9 added «مواعيد القداس» directly under «مواقيت الصلاة» — the owner asked
    for a churches section so a Christian reader finds something of theirs
    here, and the two lines are deliberately the same shape. */
 /* SIX now, not seven: «كل التصنيفات» left, because Home already carries
@@ -251,7 +251,7 @@ ok('…and the newcomer\'s guide', await page.evaluate(() =>
   [...document.querySelectorAll('.dr-group[data-group="sections"] [data-route]')]
     .some(b => b.dataset.route === '#/newcomer')));
 ok('no chevron on any row', d.chevrons === 0, d.chevrons + ' chevrons');
-/* ⚠️ REVERSED in V.07.3 — Rai's decision, and this is the ONE of the eight
+/* ⚠️ REVERSED in V.07.3 — the owner's decision, and this is the ONE of the eight
    that changes. It guarded that the arrow is never deleted without a
    decision behind it; the decision landed. It sat between the tile and the
    label and pushed every head's text 34px further in than an ordinary
@@ -346,13 +346,13 @@ console.log('--- drawer, as a member ---');
 await go('#/auth/signup');
 // V.02.7: one name field became two, and the password is confirmed
 
-await page.fill('#sFirst', 'رامي');
+await page.fill('#sFirst', 'أحمد');
 
-await page.fill('#sLast', 'البي');
-await page.fill('#sEmail', 'rami@arabna.app');
-await page.fill('#sPass', 'Rami2026$');
+await page.fill('#sLast', 'سالم');
+await page.fill('#sEmail', 'ahmad@arabna.app');
+await page.fill('#sPass', 'Qamar2026$');
 
-await page.fill('#sPass2', 'Rami2026$');
+await page.fill('#sPass2', 'Qamar2026$');
 await page.check('#agree1'); await page.check('#agree2');
 await page.click('#suBtn'); await page.waitForTimeout(900);
 await page.click('[data-fill="e"]'); await page.click('#vBtn'); await page.waitForTimeout(900);
@@ -375,7 +375,7 @@ const fitInfo = await page.evaluate(() => {
 /* The drawer's standing rule is that it never scrolls, and with every group
    FOLDED it still does not. With «تصنيفات عربنا» open it now overflows by
    exactly one row: the guide was the sixth leaf and the panel was already
-   full. Nothing was deleted to make room — which row goes is Rai's call,
+   full. Nothing was deleted to make room — which row goes is the owner's call,
    not a code decision — so this is bounded rather than dropped: it may not
    get any worse than one row while the question is open. See CLAUDE.md,
    "The drawer is now full". */
@@ -396,7 +396,7 @@ ok('member drawer fits with every group folded', folded.s <= folded.c + 2, folde
    relaxed. «مواعيد القداس» was asked for and a row costs 50px; the
    drawer's standing rule is that it never scrolls, and with a group open
    it now misses that by more than two. One row anywhere fixes every
-   size — which row is Rai's call, and has been since V.03.2.
+   size — which row is the owner's call, and has been since V.03.2.
    V.04.8: THREE rows, for «الإعدادات» — see the note in v20's 6.4 for the
    measured numbers. The bound is raised rather than the check softened,
    which is the whole point of having it: it is a hard ceiling on a known
@@ -519,13 +519,13 @@ await page.waitForTimeout(600);
 ok('the gate starts signup', (await hash()).startsWith('#/auth/signup'), await hash());
 // V.02.7: one name field became two, and the password is confirmed
 
-await page.fill('#sFirst', 'رامي');
+await page.fill('#sFirst', 'أحمد');
 
-await page.fill('#sLast', 'البي');
-await page.fill('#sEmail', 'rami@arabna.app');
-await page.fill('#sPass', 'Rami2026$');
+await page.fill('#sLast', 'سالم');
+await page.fill('#sEmail', 'ahmad@arabna.app');
+await page.fill('#sPass', 'Qamar2026$');
 
-await page.fill('#sPass2', 'Rami2026$');
+await page.fill('#sPass2', 'Qamar2026$');
 await page.check('#agree1'); await page.check('#agree2');
 await page.click('#suBtn'); await page.waitForTimeout(900);
 await page.click('[data-fill="e"]'); await page.click('#vBtn'); await page.waitForTimeout(1000);

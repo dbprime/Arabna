@@ -56,7 +56,7 @@ const fresh = async (hash = '#/home') => {
   return { ctx, p };
 };
 const signUp = p => p.evaluate(pw => {
-  window.__S.signUp({ name: 'رامي البي', email: 'a@b.c', phone: '7135550123', password: pw });
+  window.__S.signUp({ name: 'أحمد سالم', email: 'a@b.c', phone: '7135550123', password: pw });
   window.__S.confirmEmail('123456');
 }, PW);
 const go = async (p, h) => { await p.evaluate(x => { location.hash = x; }, h); await p.waitForTimeout(750); };
@@ -68,7 +68,7 @@ const go = async (p, h) => { await p.evaluate(x => { location.hash = x; }, h); a
   const r = await p.evaluate(() => {
     const S = window.__S;
     S.toggleSaved('b1'); S.toggleSaved('b2');
-    S.state.reviews.push({ id: 'r1', bizId: 'b1', rating: 5, text: 'x', user: 'رامي' });
+    S.state.reviews.push({ id: 'r1', bizId: 'b1', rating: 5, text: 'x', user: 'أحمد' });
     S.state.messages.push({ id: 'm1', with: 'x', items: [] });
     S.state.readNotifs.push('n1');
     const before = { saved: S.state.saved.length, reviews: S.state.reviews.length,
@@ -122,7 +122,7 @@ const go = async (p, h) => { await p.evaluate(x => { location.hash = x; }, h); a
     S.state.hiddenListings = ['c1'];
     S.state.readNotifs = ['n1'];
     S.state.pendingVerify = { email: 'x' };
-    S.state.receipts = [{ id: 'ARB-1', amount: 29, buyer: { name: 'رامي', email: 'a@b.c' } }];
+    S.state.receipts = [{ id: 'ARB-1', amount: 29, buyer: { name: 'أحمد', email: 'a@b.c' } }];
     S.deleteAccount();
     return { card: S.state.cardOnFile, hidden: (S.state.hiddenListings || []).length,
              read: (S.state.readNotifs || []).length, pending: S.state.pendingVerify,
@@ -146,9 +146,9 @@ const go = async (p, h) => { await p.evaluate(x => { location.hash = x; }, h); a
   await signUp(p);
   const r = await p.evaluate(() => {
     const S = window.__S;
-    S.updateProfile({ name: 'رامي البي', email: 'typo@b.c', phone: '7135550123' });
+    S.updateProfile({ name: 'أحمد سالم', email: 'typo@b.c', phone: '7135550123' });
     const parked = S.pendingEmail();
-    S.updateProfile({ name: 'رامي البي', email: 'a@b.c', phone: '7135550123' });
+    S.updateProfile({ name: 'أحمد سالم', email: 'a@b.c', phone: '7135550123' });
     return { parked, after: S.pendingEmail(), email: S.state.user.email };
   });
   ok('4.1 a new address is parked, not written', r.parked === 'typo@b.c' && r.email === 'a@b.c',

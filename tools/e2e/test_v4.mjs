@@ -373,7 +373,7 @@ ok('clear all resets the counter', (await page.textContent('#fCount')).trim() ==
    version — the guest version has its own suite (test_v5.mjs). */
 await page.evaluate(() => {
   const s = JSON.parse(localStorage.getItem('arabna.v1') || '{}');
-  s.user = { name: 'رامي', email: 'r@a.app', password: 'x', emailVerified: true,
+  s.user = { name: 'أحمد', email: 'r@a.app', password: 'x', emailVerified: true,
              phone: '(713) 466-9182', phoneVerified: true, joined: Date.now(), avatar: null, badge: null };
   localStorage.setItem('arabna.v1', JSON.stringify(s));
 });
@@ -406,7 +406,7 @@ ok('home and directory both out of the drawer', !dr.hasHome && !dr.hasDirectory)
 // V.01.5 also moves the personal rows back, into their own folded group.
 /* REVERSED in V.05.5: the six personal rows left the drawer for the account
    hub on #/profile, reached from the «حسابي» button in the drawer's head —
-   Rai's decision, and it took 53px off the member's worst group. They are
+   the owner's decision, and it took 53px off the member's worst group. They are
    asserted on the hub in test_v5, moved and not dropped. So: none of the six
    in the drawer, and two groups where there were three. */
 ok('personal rows have left the drawer for the hub', dr.personal.length === 0,

@@ -1,7 +1,7 @@
 /* ============================================================
    THE FEAST CALENDAR — computed, never stored
    ------------------------------------------------------------
-   Rai asked for «dates for next year». Storing a table would be the
+   The owner asked for «dates for next year». Storing a table would be the
    worse answer: it goes stale, it has to be maintained by hand, and it
    is wrong the first year nobody remembers to extend it. Easter is
    arithmetic — exactly as the prayer times are arithmetic — so this file

@@ -66,7 +66,7 @@ console.log('--- five identical writes are the rule written five times ---');
 }
 
 /* ============ 2 — ONE way out ============ */
-console.log('--- the directions button trapped Rai once already (342) ---');
+console.log('--- the directions button trapped the owner once already (342) ---');
 {
   ok('2.1 zero window.open( anywhere in js/', !/window\.open\(/.test(allCode));
   const ui = code('js/ui.js');

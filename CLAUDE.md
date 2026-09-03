@@ -11,9 +11,19 @@ ARABNA · عربنا — a mobile-first web app for the Arab community in the U.
 **business directory + marketplace + events + magazine**, Arabic-first with a full English toggle.
 ("Classifieds / الإعلانات الشخصية" is now "Marketplace / السوق" — the old `#/classifieds`
 routes still resolve so shared links keep working.)
-Current version: **V.09.1 (prototype)**. Owner: Rai Elby (@dbprime). Deploys to Vercel (team DB Prime).
+Current version: **V.09.1 (prototype)**. Owner: dbprime. Deploys to Vercel (team DB Prime).
 
 ## Hard rules (from the product brief)
+0. ⚠️ **THE OWNER'S NAME IS NEVER WRITTEN — anywhere.** Not in this file, not
+   in `docs/`, not in a code comment, not in a fixture, and **not in a commit
+   message from here on**. It is «مالك البرنامج» in Arabic — never «المالك»
+   alone, which collides with the shop owner the app is full of — and «the
+   owner» in English. The repository is public. `@dbprime`, the domain and
+   the Vercel team name stay: an account handle its holder chose is not a
+   personal name. **And nothing ever goes into a repository that is built
+   from a real person's name** — see `Qamar#Nile42` below, which replaced a
+   string built from the owner's surname and city, published beside the word
+   «accepted».
 1. **One repository, one Vercel project.** No duplicates, no stray preview projects.
 2. **Never break a working feature while building another.** If a new request conflicts with
    something already built, stop and explain the conflict instead of silently deleting it.
@@ -521,7 +531,7 @@ takes a number already in use, and reopens a settled argument.
 **Written in the file itself, not in anybody's head.** State that lives in
 one person's memory falls over on the first day they are not there — and
 it did: the record said batch nine (ب) had not shipped **while it was
-live in V.04.0**, and Rai found it from the colour of a dot on his phone.
+live in V.04.0**, and the owner found it from the colour of a dot on his phone.
 
 ## `docs/سجل-القرارات.md` and `docs/تقارير/` — what was already settled, and what was already found
 
@@ -597,7 +607,7 @@ a higher version — written by whoever writes the files, never edited by a
 session.
 
 ## The report names the file it closed, and the net when a group closes
-Rai's rule of 29 August, and it is the twin of the one above it: a session
+the owner's rule of 29 August, and it is the twin of the one above it: a session
 that says «خلصت» and nothing else leaves a reader who cannot tell **which**
 file was landed — and the numbering is the one thing a fresh session has no
 way to recover.
@@ -663,7 +673,7 @@ prayer and mass              read each file's own header — it says what it cov
 the whole set** — and the full set at the end catches what you missed.
 
 ### `main` IS PRODUCTION — so nothing reaches it before the net is green
-Rai's rule of 29 August, and it exists because two true things were being
+the owner's rule of 29 August, and it exists because two true things were being
 treated as one.
 
 **Measured:** the Vercel project is wired to `main`, and **every push to
@@ -688,7 +698,7 @@ was still being tested.
 >
 > **4. ⚠️ And if a net goes red AFTER production is already standing on
 > that commit, it is reported at once and BY THE NAME OF THE ITEM. It is
-> never fixed in silence, and the decision to roll back is Rai's alone.**
+> never fixed in silence, and the decision to roll back is the owner's alone.**
 
 ### The suite list is derived from the files, never written by hand
 `SUITES` in `run.sh` was a literal string, and nothing compared it against
@@ -727,7 +737,7 @@ guard whose only guard has already failed is not a guard.**
   minutes, and removing it would slow every batch down.
 
 ### The full net runs once per GROUP, and the closing file says so at its head
-Rai's decision of 28 August: the full net is about fifty minutes, and
+the owner's decision of 28 August: the full net is about fifty minutes, and
 running it after every batch pays that four times inside one group. So a
 batch runs **only the suites it touches**, and the net runs **once, at the
 end of the group**.
@@ -740,7 +750,7 @@ end of the group**.
 > guessing.
 
 ⚠️ **AND THE FILE THAT CLOSES A GROUP SAYS SO INSIDE ITSELF, AT ITS HEAD.**
-Rai's rule from 29 August, and he writes it in the head rather than the
+The owner's rule from 29 August, and he writes it in the head rather than the
 tail so it is read before the work starts, not after it is done.
 
 **Why it has to be written in the file and not carried in anybody's head:**
@@ -758,7 +768,7 @@ it closes the group, ask before assuming it does.
 ### The report is two lines, and the number is one of them
 > **«خلصت الملفّ `430`.» That is the report.**
 
-⚠️ **Rai has asked for this three times, and each time the reply came back
+⚠️ **the owner has asked for this three times, and each time the reply came back
 longer.** He is not reading a summary of the work — he has the commit, the
 docs and the net's own output — so a page of headings and tables is noise
 standing between him and the next file.
@@ -799,7 +809,7 @@ that rebuild it are in `tools/nc/اقرأني.md`.
 > **Never edit `js/newcomer-content.js` by hand.** The edit is lost on the
 > next build, silently — no error, no diff in size.
 
-**And the guide text is Rai's, approved word by word.** It is not
+**And the guide text is the owner's, approved word by word.** It is not
 reworded, shortened, or added to — not in the JSON and not in the
 generated file. A change to it arrives in a numbered file after he
 approves it, like everything else.
@@ -1388,7 +1398,7 @@ the whole cache away because the labels in it came from the old pack.
 the attributes went in.
 
 ### The name on the sign, the transliteration in the search
-Rai went through the 179 names that had been guessed at and settled all of
+the owner went through the 179 names that had been guessed at and settled all of
 them: 154 stay English, 21 take the Arabic name, 4 take a name he wrote
 himself. So **25 records changed `name.ar`** and `name.en` was never touched.
 
@@ -1480,7 +1490,7 @@ simple back+title one.
   When no business subscribes it reads «قريباً» and does not navigate, so
   the row can never open an empty list. Still 844px, still no scroll.
 - **Help** — ten folded questions above the contact block, one open at a
-  time, the drawer's idiom; placeholder answers for Rai to replace. The
+  time, the drawer's idiom; placeholder answers for the owner to replace. The
   phone is off this screen (it stays in About and both legal pages, where
   the app stores expect it).
 - **Sign in** — «ليس لديك حساب؟ أنشئ حساباً», and the forgot-password link
@@ -1537,7 +1547,7 @@ rather than announced.
 
 ### Sign up
 - **First and last name, letters only** (`validName` allows letters, spaces,
-  apostrophes, hyphens — Unicode-aware, so «رامي» passes and «رامي1» does
+  apostrophes, hyphens — Unicode-aware, so «مالك البرنامج» passes and «مالك البرنامج1» does
   not). Every error is **written under its field**; an alert names no field
   and is gone before the reader looks up from the keyboard.
 - **The email is checked before anything is sent**; **the password rule is
@@ -1626,7 +1636,7 @@ events, the sponsored stories. **With a category chosen they come from that
 category alone** — somebody who opened «مطاعم» wants a restaurant.
 
 ### The rotation: fair, and it survives Back
-Rai asked for them to change every time. Plain randomness gets that wrong
+the owner asked for them to change every time. Plain randomness gets that wrong
 twice, and both were designed out.
 
 - **It would break Back.** Scroll the directory, open a shop, come back —
@@ -1665,7 +1675,7 @@ not happen.
 accounts in this build: `state.user` is one person — whoever holds the
 device — and `personKey()` says in `store.js` that it stands in for real
 identities until there is a server. A «المستخدمون» screen today would show
-one row, Rai looking at himself, which is worse than no screen: it looks
+one row, the owner looking at himself, which is worse than no screen: it looks
 like a tool and is a mirror. Same for `bizStats` and `adStats` — they count
 this device. **Where a number needs a server, the panel writes «يبدأ العدّ
 مع السيرفر»** rather than a zero or an invented figure.
@@ -1871,7 +1881,7 @@ store uses. **100 groups · 984 words**, and the confusion bar is unmoved:
 ## V.03.1 — batch seven (a): the location, and the prayer times
 
 ### The ZIP names the city; the snap only fills the gaps
-Rai opened the app at home in **77407 — Richmond** and was told he was in
+the owner opened the app at home in **77407 — Richmond** and was told he was in
 **Katy**. The reverse lookup had resolved the ZIP correctly and one line
 then threw the right answer away:
 
@@ -2085,7 +2095,7 @@ them for years and is named to every family that arrives after.
   id the way the attribute registry does, so they cannot drift.
 - **The copy is a placeholder and says so.** Nothing here invents a
   government procedure — one wrong step or number costs a family a day.
-  The button under each part works today; Rai's text replaces `ncSoon`.
+  The button under each part works today; the owner's text replaces `ncSoon`.
 
 ### Ramadan
 **Iftar is maghrib.** The V.03.1 engine already computes it to the minute
@@ -2116,7 +2126,7 @@ which row goes is a product decision, not a code one.
 ## V.03.3 — batch eight (1 + 2): the descriptions, and who may pay
 
 ### The city is written in English, always
-Rai's rule: **the city name is English even when the interface is Arabic,
+the owner's rule: **the city name is English even when the interface is Arabic,
 and somebody who searches in Arabic finds the listing and is shown its
 English name.** It follows the rule the names already obey — the name as
 it is on the shopfront, the transliteration in the search words — and the
@@ -2252,7 +2262,7 @@ which makes a rule on the sign-up screen worth nothing. All three call
   the same word typed on another phone is a different string and its owner
   is locked out **reading their correct password off the screen**, with
   nothing visible to explain it. And Arabic-Indic digits are not digits to
-  `/\d/`, so `Rami٢٠٢٦$` would be refused for «missing a number» with four
+  `/\d/`, so `Qamar٢٠٢٦$` would be refused for «missing a number» with four
   of them on screen. The message says the reason, not the verdict, and it
   comes **alone** — telling somebody who typed Arabic that they also need
   a capital adds confusion to confusion.
@@ -2262,7 +2272,7 @@ which makes a rule on the sign-up screen worth nothing. All three call
   **before** the comparison — strip the symbols first and `P@ssw0rd!`
   becomes `pssw0rd`, which does not match `password` and sails through.
   The app's own name and the cities are matched **whole**, so
-  `Houston2026$` is refused and `Elby#Katy77` is not.
+  `Houston2026$` is refused and `Qamar#Nile42` is not.
 - **The strength meter is gone.** Once the rule is absolute a password is
   accepted or it is not, and «متوسّطة» tells nobody what to fix. The live
   checklist does: five conditions, green as each is met, **red only after
@@ -2310,7 +2320,7 @@ issued. Ads, boosts and the badge produced no invoice at all before.
   at the first, and both stay in the list.
 - **Three lines that do not come off**: the period the money bought,
   «renews automatically on …» with the literal path to cancel, and the
-  issuer — left as `[TODO]` until Rai gives the registered name.
+  issuer — left as `[TODO]` until the owner gives the registered name.
 - **The tax line is present at `$0.00`**, not absent. Adding it later to
   receipts issued without one is far harder than filling a line that is
   already there, and whether Texas taxes a digital subscription is a
@@ -2473,7 +2483,7 @@ a new hole.
 Measured before the fix: a probe element sent in `#/directory?q=…` **became
 part of the page**, not a word on it. So did a marketplace listing's title
 and description, a review and its author, an offer — and the queue **inside
-the admin panel**, which is the one that matters most: reaching Rai's own
+the admin panel**, which is the one that matters most: reaching the owner's own
 screen needed no break-in, only posting an advertisement and waiting for him
 to open it.
 
@@ -2579,7 +2589,7 @@ app's state.
 
 - Both are deleted and **nothing replaced them.** The panel is now **claimed
   on first use**: a device with no staff password shows a setup screen, the
-  owner sets one, and it is asked for from then on. Rai types it himself and
+  owner sets one, and it is asked for from then on. The owner types it himself and
   it is in no file and in no message.
 - **Only a salted SHA-256 is kept** (`{user, salt, hash}`), the same
   `pwSalt`/`pwHash` path a user's own password already used — this was the
@@ -2839,7 +2849,7 @@ city name. The point is right; only the label is missing.
 
 ## V.03.9 — batch nine (أ): the churches, and the mass times
 
-Rai asked for a churches section in the drawer — «so a Christian feels
+The owner asked for a churches section in the drawer — «so a Christian feels
 there is something here for him» — and asked what to put in it.
 
 ### The naming is the message
@@ -2848,7 +2858,7 @@ there is something here for him» — and asked what to put in it.
 مواعيد القداس   →  #/mass
 ```
 Not «الكنائس»: a church is a building, and «مواقيت الصلاة» beside it names
-a service. **The parallel in the WORDING is what carries what Rai meant**;
+a service. **The parallel in the WORDING is what carries what the owner meant**;
 the row merely existing does not. Directly under it, in the same group, at
 the same size and weight — measured identical at 14.6625px / 500. In
 another group it would be an appendix; above it would reverse an order
@@ -2959,7 +2969,7 @@ asking a mosque for rent.
   drift into the other.
 
 ### The city he picked by hand froze there for good
-Rai chose Houston by hand, drove, and the app stayed Houston forever. The
+the owner chose Houston by hand, drove, and the app stayed Houston forever. The
 quiet refresh was gated on `!state.geo` — and **choosing a city by hand
 clears the point on purpose**, because that point belonged to somewhere
 the reader had left. So one manual choice switched the refresh off
@@ -3053,7 +3063,7 @@ because choosing a sound for something that cannot sound is the dishonest
 half. The honest blank is what creates the pressure that fills it.
 
 ### A stranger adds the place, never its times
-Rai asked that anyone be able to add a masjid or a church, reviewed before
+the owner asked that anyone be able to add a masjid or a church, reviewed before
 it appears — «علشان نخلّي الكل يشتغل لخدمة البرنامج بدون ما يحسّ».
 **The machinery already existed** — the add-business queue, `findDuplicates()`,
 the merge button — so what was needed was a door, not a system.
@@ -3434,7 +3444,7 @@ file does not know that a file exists to be sent.
 
 ### The chip says the city and nothing about how it got there
 V.04.0 put «· تلقائي» on a device-found city so the two states would not
-read alike. Rai asked for the word gone, and he is right that a chip in
+read alike. The owner asked for the word gone, and he is right that a chip in
 the header is not where an internal distinction belongs.
 
 **`cityIsManual()` is untouched and still does its work** — it is what
@@ -3506,7 +3516,7 @@ nothing. A reader who picked a region by hand has no point at all
 ## V.04.6 — the silent refresh failed silently, and locked itself out
 
 ### «It works when it feels like it» is the signature of a throttle
-Rai's chip said `Beebe, AR` while he was in `Romeoville, IL` — six hundred
+the owner's chip said `Beebe, AR` while he was in `Romeoville, IL` — six hundred
 miles — and «حدّث موقعي» corrected it at once. So the permission was
 granted, the read worked and the naming worked: **only the automatic
 refresh was failing.**
@@ -3543,7 +3553,7 @@ disagree with it. **Measured after: 5 opens, one attempt.**
 
 ### A fault that leaves no trace is guessed at, not diagnosed
 The failure handler was empty — no message, no retry, **not a line written
-anywhere**. So Rai could not know it had failed and nobody could prove it.
+anywhere**. So the owner could not know it had failed and nobody could prove it.
 `noteGeoFail(code)` records the code, the time and a count.
 
 - **It is shown in the location sheet and nowhere else** — not on Home, not
@@ -3557,7 +3567,7 @@ anywhere**. So Rai could not know it had failed and nobody could prove it.
 ask-first path instead of the silent refresh. That is `askToMove`'s design
 from V.04.0 — a city somebody chose is not changed behind their back —
 and reversing a decision nobody asked to reverse is not this batch's job.
-It is one line, in its own file, when Rai says so.
+It is one line, in its own file, when the owner says so.
 
 ## V.04.7 — batch nine (ج): the visual identity, and the link when it is sent
 
@@ -3904,7 +3914,7 @@ feature» true, and skipping it does not save the time, it moves it.
 ## V.04.9 — the mosque that would not open, and the order of the two blocks
 
 ### One screen wired its list and the other did not
-Rai: «في المواقيت، المساجد ما بتتحوّل على صفحة المسجد.» Measured on both
+the owner: «في المواقيت، المساجد ما بتتحوّل على صفحة المسجد.» Measured on both
 screens before touching anything, and the difference is the proof:
 
 ```
@@ -3930,7 +3940,7 @@ time** — and never `root`.
   unmoved at `#/directory/b12`, zero console errors on both builds.
 
 ### Occasions above the lists, on both screens
-Rai's decision after the mockups. `#/prayer` reads times → prayer settings
+the owner's decision after the mockups. `#/prayer` reads times → prayer settings
 → **occasions** → mosques; `#/mass` reads **occasions** → churches.
 
 ⚠️ **The times stay the first thing on `#/prayer`** — they are the screen's
@@ -3941,7 +3951,7 @@ card, no internal order, no seven-day grace logic.
 
 ⚠️ **I recommended the opposite for `#/mass` and said why**: the mass times
 are printed inside the church cards, so pushing them down buries the
-screen's purpose. Rai chose the uniform order **and a switch that reverses
+screen's purpose. The owner chose the uniform order **and a switch that reverses
 it**, so the decision needs no deploy to undo. The comment recording that
 sits in `mass.js`.
 
@@ -3968,7 +3978,7 @@ beside it. Admin → settings carries «المناسبات فوق المساجد
 ## V.05.0 — the hue is the subject, the shape is the section
 
 ### Two faults, one line between them
-Rai: the marketplace section icons have no colour, as if they were still
+the owner: the marketplace section icons have no colour, as if they were still
 the old shape. Measured on `#/categories` before touching anything:
 
 ```
@@ -3989,7 +3999,7 @@ the marketplace was called with no `catId` at all, and Events is the only
   guarding nothing else: no other category carries one.
 
 ### Filled is a place, outlined is a listing that passes
-Rai's decision after the mockups: **outline, not fill.**
+the owner's decision after the mockups: **outline, not fill.**
 
 ```
 filled + khatam    a place in the directory
@@ -4027,7 +4037,7 @@ the subject and the shape is the section.
 ```
 The light-theme fill rules above are **(0,4,0)** and a single `(0,3,0)`
 rule loses to them — **the fill would come back in light mode alone**,
-which is the mode Rai uses. And `border-color: currentColor` means the
+which is the mode the owner uses. And `border-color: currentColor` means the
 outline can never drift from the icon: measured worst case **6.67 dark
 (أثاث 334) and 5.28 light (حيوانات 68)** against the page ground, both far
 over 3. ⚠️ **The width stays 1px on purpose** — the browser floors
@@ -4071,7 +4081,7 @@ category carrying `route`, which is Events alone, and Events is not in
 `HOME_CATS`.
 
 ### A colour identical in both themes is a colour nobody chose
-Rai: the rotating word in the search box is too faint in light mode.
+the owner: the rotating word in the search box is too faint in light mode.
 Measured, and it was the opposite of what he expected:
 
 ```
@@ -4087,7 +4097,7 @@ and its being identical is the proof the field was never styled at all.**
 is V.04.7's fade, and that rule owns `opacity` and never mentions colour.
 
 - **Light was the better of the two, not the worse.** Dark failed by a
-  wide margin, and Rai noticed light because faint grey on white reads as
+  wide margin, and the owner noticed light because faint grey on white reads as
   «empty», while the same grey on dark blue reads as «faint text» — seen,
   and not complained about.
 - ⚠️ **Dark takes `--text-2`, not `--muted`.** The field's ground is
@@ -4100,7 +4110,7 @@ is V.04.7's fade, and that rule owns `opacity` and never mentions colour.
   16.37 and 10.26: the rule is on `::placeholder` alone.
 
 ### The drawer kept the lockup the header had already rejected
-Rai: «الكلام جنبه مش تحته». Measured: the drawer drew
+the owner: «الكلام جنبه مش تحته». Measured: the drawer drew
 `assets/logo-sm-ink.png` — **913×340, ratio 2.69** — at 124px wide, so
 «عربنا» was a few pixels beside the mark rather than under it.
 
@@ -4233,7 +4243,7 @@ repository at the moment of writing, not from a note, which is the rule
 ## V.05.3 — colour that reads on ivory, and the word that only moved on Home
 
 ### An outline carrying all the colour cannot also be dark
-Rai: «على الغامق مبيّنة وشكلها حلو، بس على الفاتح كأنّها أبيض وأسود.» He
+the owner: «على الغامق مبيّنة وشكلها حلو، بس على الفاتح كأنّها أبيض وأسود.» He
 is right, and the cause is not a missing colour — it is the missing fill.
 
 ```
@@ -4252,7 +4262,7 @@ line** — and a line dark enough to clear 4.5 has to lose its hue.
 - ⚠️ **The contrast fell and it is written here, not hidden**: lowest
   3.19 against the page ground where it was 5.28. **3:1 is the bar
   non-text graphics answer to and 4.5 is the text bar**, and an icon is a
-  graphic — but the number did drop, and Rai chose 32% after seeing both.
+  graphic — but the number did drop, and the owner chose 32% after seeing both.
 - ⚠️ **Dark is untouched** — «شكلها حلو», and the measurement agrees at
   6.67. **The 22 directory tiles are untouched** — 24% on their own fill
   is correct. **And the border stays `currentColor`**, so it followed the
@@ -4277,7 +4287,7 @@ directory 1, the marketplace 1.
   would start a fresh timer on every filter tap.
 - ⚠️ **The marketplace is deliberately still.** `SEARCH_HINTS` are trades
   — restaurant, plumber, doctor, electrician, masjid — and the
-  marketplace's sections are cars, furniture and jobs. Rai's decision; if
+  marketplace's sections are cars, furniture and jobs. The owner's decision; if
   it ever wants one it needs its own words.
 
 ### The drawer mark, and the eighteen pixels it costs
@@ -4302,7 +4312,7 @@ member   حسابي        +97   →    +115
 
 **Every group grew by exactly +18** — the file's arithmetic for the member
 was right to the pixel; only its claim about the visitor was not. The
-overflow is a standing gap awaiting Rai's decision on which row to drop,
+overflow is a standing gap awaiting the owner's decision on which row to drop,
 and `docs/الحالة.md` already carried the 46px figures — they are updated
 to the new ones and **the gap stays open**. Folded, the drawer is still
 844/844 and does not scroll.
@@ -4329,7 +4339,7 @@ waits for `#app` to actually have text, capped at 8s.
 ## V.05.4 — the second approval was shredding the first
 
 ### Silent, and worse than a refusal
-Rai asked about a restaurant with three branches, each with its own phone
+the owner asked about a restaurant with three branches, each with its own phone
 number, and then about one owner trading under three names. Neither is a
 verification problem — a code to the **listing's** own number proves
 control per listing, and the name never enters it. The question exposed
@@ -4388,7 +4398,7 @@ Ten sites in `store.js`, four in `directory.js`, one in `profile.js`.
   as a gap.** A subscription is a payment, and payment belongs on the
   server, not in a browser. An owner of three branches subscribes once
   until then.
-- The new button is **«عندي نشاط آخر» → `#/claim`** — Rai's own wording,
+- The new button is **«عندي نشاط آخر» → `#/claim`** — the owner's own wording,
   landing in the **existing** admin queue. No new screen, no invented
   review path.
 
@@ -4436,14 +4446,14 @@ Each was re-run **on the pre-batch commit** rather than guessed at:
 ⚠️ **And the lesson repeats, so it is written again: a batch is not
 finished when its own suite is green.** `240` shipped with `v43` at 23/23
 and `38/41/42` clean, and left `v9` and `v26` red — and `230` before it
-left `v20` red the same way. Rai's own decision log had already recorded
+left `v20` red the same way. The owner's own decision log had already recorded
 exactly this («الدفعة لا تنتهي بخُضرة سويتها وحدها»), which is why the log
 is read at the start of a session and not only written at the end.
 
 ## V.05.5 — the drawer empties, the profile fills, and the picture becomes a choice
 
 ### «حسابي» was a group in a panel that scrolls
-Rai: «بتشيل حسابي من تحت كامل وتخلّي حسابي اللي فوق، وبعد الضغط على حسابي
+the owner: «بتشيل حسابي من تحت كامل وتخلّي حسابي اللي فوق، وبعد الضغط على حسابي
 اللي فوق تفتحله شاشة فيها كلّ الخيارات اللي كانت تحت.» Two buttons under
 the name, and the six leaves become the account hub on `#/profile`.
 
@@ -4457,13 +4467,13 @@ visitor «تصنيفات»      +195      +195 — not one pixel
 ```
 
 - ⚠️ **Removing the group is what paid, not the two buttons.** I had told
-  Rai the buttons would save about 3px, and that was true of the buttons
+  the owner the buttons would save about 3px, and that was true of the buttons
   alone. The measured saving is **53px on the member's worst group**, and
   «المساعدة» went from 65 over to 12. His decision was worth more than the
   number I gave it.
 - ⚠️ **The visitor did not move, and that is correct** — the «حسابي» group
   was never drawn for a visitor. **The visitor's 195 stays open**, which is
-  Rai's own answer to question 4: leave it, the drawer may scroll.
+  the owner's own answer to question 4: leave it, the drawer may scroll.
 - ⚠️ **The batch file's own baseline was 18px low across the board** (it
   said 147 → 94 and 47 → 0). Its numbers predate V.05.3's taller drawer
   mark, which adds exactly 18 to every group. **The saving it claimed —
@@ -4478,7 +4488,7 @@ visitor «تصنيفات»      +195      +195 — not one pixel
 
 ### The picture: three kinds, and I had measured the wrong axis
 I argued against ready-made avatars on storage grounds. ⚠️ **I had costed
-it as though every reader stored a copy.** Rai's design is that the
+it as though every reader stored a copy.** the owner's design is that the
 pictures live in `js/avatars.js` **once** and the reader stores an id.
 
 ```
@@ -4548,7 +4558,7 @@ here while eight assertions across three others were broken or unmeasured.
 ## V.05.6 — the marks are placed, and WhatsApp says «قريباً» rather than lying
 
 ### A button that does nothing is worse than no button
-Rai: «حطّ الأيقونة وبعدين بنربطه.» That runs straight into a rule this
+the owner: «حطّ الأيقونة وبعدين بنربطه.» That runs straight into a rule this
 project has carried since V.02.1 — and the answer is not one side or the
 other, it is what the drawer already does for «إعلانات مميّزة»:
 
@@ -4588,7 +4598,7 @@ in the app into a logo. That collision was checked, not guarded against.
 carries a published address for complaints, not marketing accounts, and a
 follow row above «طلبات إزالة المحتوى» reads wrong. ⚠️ **And not in the
 drawer:** it is 112 over for a member and 195 for a visitor after V.05.5,
-and another row adds to that — Rai's answer to question 4 was to leave the
+and another row adds to that — the owner's answer to question 4 was to leave the
 overflow, not to feed it. Measured: privacy 0, terms 0, help 0, drawer 0
 and still 844/844 folded.
 
@@ -4664,7 +4674,7 @@ after the code     new@b.app · pending null · verified · tier 2
 ```
 
 ### The business mark, and the honest part of it
-Rai's decision (question 2): **one account, with a flag added at the
+the owner's decision (question 2): **one account, with a flag added at the
 moment somebody presses «هذا نشاطي»** — not two kinds at sign-up, where
 nobody yet knows which they are and the question only costs registrations.
 
@@ -4688,7 +4698,7 @@ I withdrew after his question about one owner trading under three names.
   → `personal` after sign-out. That is V.05.2's rule paying again.
 
 ### A product's name is not translated
-Rai on the directions sheet: «بفضّل تكتب أسامي البرامج بالإنجليزيّة.» It is
+the owner on the directions sheet: «بفضّل تكتب أسامي البرامج بالإنجليزيّة.» It is
 the rule the project already has for «Houston» and every shopfront — and
 **the list itself was the proof it had been missed:**
 
@@ -4825,7 +4835,7 @@ before the thing is called a net.**
 
 ## V.06.0 — the appearance starts from the device on every launch
 
-### Rai's decision, and it reverses half of V.04.8 on purpose
+### the owner's decision, and it reverses half of V.04.8 on purpose
 > «خليه كل مرة يفتح تلقائي بغض النظر عن اختياري.»
 
 **The other half stands**: the header button still flips, Settings still
@@ -4906,7 +4916,7 @@ whose *setup* silently depended on it, which get repaired. The second kind
 looks like a failure of what it guards and is not.
 
 
-## V.06.1 — «من نحن» in Rai's own words, and the real X mark
+## V.06.1 — «من نحن» in the owner's own words, and the real X mark
 
 ### The row read «facebook · instagram · close»
 `xMark` was two crossed lines — **the close glyph under a different
@@ -4957,7 +4967,7 @@ first among them, for the audience reason V.05.6 recorded.
   truth, read twice the same way.
 
 ### «عن التطبيق» becomes «من نحن», and the page says what the app is
-Rai's wording, and the three paragraphs are his own, put into plain MSA
+the owner's wording, and the three paragraphs are his own, put into plain MSA
 and approved by him — the same rule the newcomer guide's text lives under.
 **Nothing is invented**: the need, the two kinds of reader (newly arrived
 or settled for years), Houston as the start and every American city as the
@@ -5040,7 +5050,7 @@ two worlds.
   before changing anything: the feast crescent is **gold inside a gold
   square** (`rgb(228,199,126)` dark, `rgb(90,68,24)` light) while the theme
   button's is **grey**, and in dark the theme button shows a sun at all —
-  so the two never met. Rai chose the mosque there too. **The line changes
+  so the two never met. The owner chose the mosque there too. **The line changes
   and no colour is added**, because the colour asked for was already there.
 
 ### The tile is opt-in, and a leaf is never given one
@@ -5067,7 +5077,7 @@ group leaves are all of that kind.
   `--on-gold` on the gold** (`rgb(26,18,6)` dark, `rgb(255,253,248)`
   light), **zero tiles inside `.dr-sub`**, zero console errors.
 
-**And a number given to Rai was wrong, so it is written here corrected.**
+**And a number given to the owner was wrong, so it is written here corrected.**
 I told him «no row grows, the cost is 36px». The truth: «اللغة» is 67px
 and swallows the tile (+0) **because it is the tallest row in the drawer,
 carrying the language disc** — I measured that one and generalised from
@@ -5143,7 +5153,7 @@ to prove the same rule.
 
 ## V.06.3 — the checklist says every condition, and a refusal reads as one
 
-### Rai found it, and the app was right
+### the owner found it, and the app was right
 He opened `#/admin` on his phone to set the panel's password, typed one,
 pressed the button — **and nothing happened**. «لوحة الادمن ما بتفتح.»
 
@@ -5467,7 +5477,7 @@ reason, not as a group.
 what an escaping pass should look like — it changes what is printed, not
 what is counted.
 
-### And the process rule Rai changed on 28 August
+### And the process rule the owner changed on 28 August
 > **The full net is no longer run per batch — once at the end of a
 > group.** The group here is **307 + 308**. The guarantee is unchanged and
 > the sentence moved: «a batch is not finished when its own suite is
@@ -5616,7 +5626,7 @@ The sign-in screen calls `signUp()` with any address typed and then
 somebody in**, and an existing account's name, verified number and tier are
 replaced without a word. `checkUserPassword()` exists in `store.js` and
 nothing calls it there. **The file says explicitly that no line is written
-for this before Rai's word, and the rest lands without it.** Recorded in
+for this before the owner's word, and the rest lands without it.** Recorded in
 `docs/الحالة.md` rather than left to be rediscovered.
 
 ### `test_v46` — 31 assertions, and the teeth are the point
@@ -5624,7 +5634,7 @@ for this before Rai's word, and the rest lands without it.** Recorded in
 red**, and the widths came back as **222 · 158 · 164 · 157 · 163 · 168** —
 the same six numbers the file measured, reproduced independently.
 
-⚠️ **And the full net is not run here.** Rai's rule of 28 August: once at
+⚠️ **And the full net is not run here.** the owner's rule of 28 August: once at
 the end of a group, and this group is **315 · 325 · 326**. What ran is the
 suites this batch touches, on both builds.
 
@@ -5725,7 +5735,7 @@ reversal; nothing was softened, and `v46` is back to 31/31.
 touching suites, both builds: 3 · 5 · 7 · 20 · 37 · 42 · 46 · 47 — all green
 ```
 
-⚠️ **The full net is not run here** — Rai's rule of 28 August: once at the
+⚠️ **The full net is not run here** — the owner's rule of 28 August: once at the
 end of a group, and this group is **315 · 325 · 326**.
 
 ## V.06.8 — the pending number, and a copy of your own data
@@ -5742,7 +5752,7 @@ posting, contacting a seller, claiming a business and buying any
 advertisement — so one slip of a finger closed all four, and the way out
 was the very thing they had got wrong.
 
-**Rai's decision: the number is parked exactly as the address is.** Measured
+**the owner's decision: the number is parked exactly as the address is.** Measured
 after:
 
 ```
@@ -5811,7 +5821,7 @@ had already given `field-err` to the other boxes.
   arrive the order becomes pure distance, with `isPaid` not in it at all.
   ⚠️ **So writing «verified above subscribed» on top of a chain where
   «subscribed» does not work would make both orderings decoration.** The
-  chain is fixed once, with both in it, and that needs Rai's decision on
+  chain is fixed once, with both in it, and that needs the owner's decision on
   the model first. **No promise is made that does not work** — the rule that
   turned «قريباً» into a readable line in V.05.8.
 
@@ -5824,7 +5834,7 @@ which is the fault in one line.
 ```
 92 runs · 46 suites · 5,456 assertions · zero red · zero crash
 ```
-This is the first run under Rai's 28 August rule in its intended shape:
+This is the first run under the owner's 28 August rule in its intended shape:
 `315` and `325` ran their touching suites only, and the net ran **once**
 at the end of **315 · 325 · 326** instead of three times. It grew from 43
 suites to 46 across the group (`v46`, `v47`, `v48`) and from 5,284
@@ -5835,7 +5845,7 @@ assertions to 5,456.
 ⚠️ **This batch does not close its group.** The group is **`330` then
 `335`**, and `335` is the closer — so the full net runs with that one, and
 what ran here is the suites this batch touches. (`330` says so at its own
-head, which is the rule Rai set on 29 August.)
+head, which is the rule the owner set on 29 August.)
 
 ### The chain did not deliver what it promised, and the four reasons were all in the code
 Measured on V.06.3 — a search with four new subscribers and five rated free
@@ -5852,7 +5862,7 @@ and once coordinates arrive the order becomes pure DISTANCE with isPaid
    data got BETTER
 ```
 
-**Rai's decision changes the model, not a number in it**: two layers where
+**the owner's decision changes the model, not a number in it**: two layers where
 there was a chain.
 
 ```
@@ -5909,7 +5919,7 @@ trust worth more than the subscription.
 **And a consequence said out loud**: in a category thick with subscribers
 the whole first screen would be marked. Today there are **four subscribers
 in the entire directory** (measured), so the effect is theoretical. If that
-number grows, a cap on layer one is Rai's decision, not this batch's.
+number grows, a cap on layer one is the owner's decision, not this batch's.
 
 ### The badge, and two decisions that could not both hold literally
 «Verified above subscribed» was decided on the **old single list**, where
@@ -5919,7 +5929,7 @@ above, so the verified cannot precede them without dissolving the layer.
 ⚠️ **So verification is a tiebreak INSIDE each layer** — a verified shop
 leads an unverified one *in its own situation*, and never jumps a layer.
 **This is a reading of the two decisions together, not a new one**, and it
-is written here so Rai can overturn this one item without the file being
+is written here so the owner can overturn this one item without the file being
 rebuilt. **And paying still verifies nobody**: the badge follows review.
 
 ### `test_v49` — 19 assertions
@@ -5948,7 +5958,7 @@ guessed at**, and each carries a comment naming its reversal.
 | v15 · 6.36b | «anything above it is the one labelled ad» | everything above the first free listing is labelled **and nothing below it is** — the rule the count was standing in for |
 | v15 · 6.39 | «only one place is sold at the top» | ⚠️ the batch's own decision, reversed: the labelled rows are **exactly** the paid ones (no free shop wears the badge, no paid shop leads without it) and they are **contiguous**, so the sold band has a bottom edge somebody can see. Proven: reverting to the single lift prints `badgeIsPaid:false` |
 | v15 · 6.40 | the count is 1 | the count is **> 0** — 6.40 was always about the SCOPE, and 6.40b (nobody in Dallas) is the half with the teeth |
-| v34 · 1.1–5.2 | `.spon .row-sub` on the directory | ⚠️ **the row Rai photographed still exists on the very screen he photographed** — only its class moved, from a band row to a labelled result. The `.spon` reader stays for the marketplace, the magazine and events. **1.2, 1.4 and 2.1 were passing vacuously** on an empty list, which is worse than red |
+| v34 · 1.1–5.2 | `.spon .row-sub` on the directory | ⚠️ **the row the owner photographed still exists on the very screen he photographed** — only its class moved, from a band row to a labelled result. The `.spon` reader stays for the marketplace, the magazine and events. **1.2, 1.4 and 2.1 were passing vacuously** on an empty list, which is worse than red |
 | v21 · 4.7 | the band narrows to the chosen category — on a screen with no band | it returned `true` on an empty list and asserted nothing. **Every labelled row on `?cat=restaurants` must be a restaurant**, and an empty list is now a FAIL, never vacuous |
 | v21 · 5.1 · 5.2 | the band's seed survives Back and rotates on a fresh visit | moved to the marketplace, and ⚠️ **four listings are boosted there first** — the seed file carries exactly **one**, so a pool of one could not rotate and 5.2 would have been red on inventory rather than on behaviour |
 | v21 · 5.3 · 5.4 (new) | — | what the directory owes in the band's place: its paid rows come back **in the very same order**, and a fresh visit does not reshuffle them. ⚠️ Nothing rotates here any more — the order is arithmetic, so «Back gets the same order» stops being a seed that must survive and becomes a computation that must repeat, which is the stronger promise |
@@ -5962,10 +5972,10 @@ list by construction.
 
 ⚠️ **This file CLOSES its group.** The group is `330` then `335`, and this
 is the second — so the full net ran on both builds at the end of it, which
-is Rai's rule of 28 August and the head-of-file rule of the 29th.
+is the owner's rule of 28 August and the head-of-file rule of the 29th.
 
 ### It is a greeting, not «the Eid card»
-Rai asked for a button that puts a card in front of whoever opens the app,
+The owner asked for a button that puts a card in front of whoever opens the app,
 between two dates, «for any greeting». **So no occasion is named anywhere
 in the code, and the suite asserts that too** — the moment a label says
 «العيد», the Hijri new year needs a second tool, and Easter a third.
@@ -6082,7 +6092,7 @@ seeding unconditionally rewrote `seenGreetings` back to empty on the very
 reload item 1.7 depends on — the suite would have reported the app failing
 to remember while the harness was erasing the memory. It seeds once now.
 
-## V.07.1 — five things Rai saw on his own phone
+## V.07.1 — five things the owner saw on his own phone
 
 All five are interface, all five are local, and not one waits for the
 server.
@@ -6267,14 +6277,14 @@ returns on its first line when nothing is paid. So the fault showed on
 the owner's device with the demo data on, and in the suites — which is
 why there was no rollback and the fix went forward in place.
 
-### Two items of `336` could not both be true, and Rai chose
+### Two items of `336` could not both be true, and the owner chose
 Its item 2 asked for «no open row after the first closed one, **in the
 whole list**»; its item 3 asked for the closed subscribers to stand above
 everything else. **With one open subscriber, three closed ones and 176
 open free listings, item 3 puts a closed shop second with 176 open ones
 beneath it — which is precisely what item 2 forbids.**
 
-> **Rai's decision: with «مفتوح الآن» the openness is the primary key and
+> **the owner's decision: with «مفتوح الآن» the openness is the primary key and
 > the subscription is a tiebreak inside it.**
 
 **Somebody who taps «مفتوح الآن» wants to go now, and a closed shop at the
@@ -6341,10 +6351,10 @@ because it was right.
 ⚠️ **This is a correction of `345 · 5`, and the fault is in that file, not
 in what was built from it.** It read:
 
-> «تصنيفات عربنا» — Rai's decision: no arrow, its contents fixed.
+> «تصنيفات عربنا» — the owner's decision: no arrow, its contents fixed.
 > `becomes a section title, not a button · no arrow · rows always shown`
 
-**Rai decided no such thing.** What he said was «take the arrow off, and
+**the owner decided no such thing.** What he said was «take the arrow off, and
 when somebody taps categories it opens». **The folding was never in
 question; only the arrow was.** So it was built as written and the writing
 was wrong.
@@ -6414,7 +6424,7 @@ head is still a `<button>` that folds.
 the ordering of the most-opened screen in the app, so the full net runs
 with it.
 
-### Rai's complaint, and the half of it that is a decision
+### the owner's complaint, and the half of it that is a decision
 > «Katy is nearer than Houston — it should show me the nearer one, not the
 > further, even if it pays.»
 
@@ -6743,7 +6753,7 @@ The file says «صفحةٌ في حسابي». ⚠️ **`#/profile` for a visitor
 screen**, so the only door there would hide the page from exactly the people
 who need it — whoever has not signed up. It is a row in the **device** block
 of `#/settings`, which V.04.8 opened to everybody for this same reason.
-**Worth Rai's word if he wants it in both.**
+**Worth the owner's word if he wants it in both.**
 
 ### And no promise is sold that is not built
 ```
@@ -6781,7 +6791,7 @@ notification». It goes red the day somebody writes the sentence — and the
 day somebody adds the API, which is exactly when both halves are revisited
 together.
 
-### And two of the three answers were Rai's, with the better argument
+### And two of the three answers were the owner's, with the better argument
 - **The iOS steps stand as written**, and one thing is separated that this
   file was blurring: **`#/install` is the WEB road, and the App Store
   wrapper is `430`.** They are not alternatives — `APPSTORE_URL` filled in
@@ -6889,7 +6899,7 @@ writeState the only write — the four boot migrations and save() all call it
   opens the app tomorrow and finds nothing. Asserted, not merely intended.
 
 ### One way out, and it is `342`'s fault in a native costume
-Inside the iOS in-app browser the directions button once left Rai in a
+Inside the iOS in-app browser the directions button once left the owner in a
 window with no way back. **A native shell does the same thing to
 `window.open`** — it may open the map *inside* the app and trap the reader
 there.
@@ -7007,7 +7017,7 @@ alertSchedule, worst case       64
 
 ## V.07.8 — a hidden strip drew itself, and swallowed the touch
 
-**Rai found it on his own phone.** A fault this batch put into the
+**the owner found it on his own phone.** A fault this batch put into the
 published build in `425`, and it stood on **every screen**.
 
 ```html
@@ -7174,7 +7184,7 @@ installed it keeps a dead icon for ever and never receives an update.
 ### ⚠️ And whoever installed it before this fix
 Raising the version repairs everybody the update reaches. **It does not
 reach an icon that is already stuck, because the page does not open at
-all.** So, for Rai to pass on:
+all.** So, for the owner to pass on:
 
 ```
 1) delete the icon from the home screen
@@ -7210,7 +7220,7 @@ always comes from the network.
 
 ## V.08.0 — the city's name is not replaced by the nearest centre
 
-⚠️ **Rai's report: the screen said Sugar Land and he was not in it.**
+⚠️ **the owner's report: the screen said Sugar Land and he was not in it.**
 
 ### Half an old fix, still doing the thing its own comment condemns
 `cityNameFor` kept the reverse lookup's answer **only when the directory
@@ -7253,7 +7263,7 @@ a place the reader has left.**
 ### ⚠️ A hand-picked city is no longer frozen — V.04.0 reversed
 The old rule: a city somebody chose is never changed, and the quiet
 refresh asks «It looks like you are in {city}?» once a session; a «no» is
-final. **Rai reversed it with the better argument:**
+final. **the owner reversed it with the better argument:**
 
 > «I might pick Houston on purpose, then travel to another city. The
 > sensible thing is for it to update by itself so it knows where I am —
@@ -7322,7 +7332,7 @@ has, not the one the check imagined.**
 
 ## V.08.1 — the invented data is shown to nobody by default
 
-⚠️ **A publication gate, not an improvement.** Rai bought `arabna.app` and
+⚠️ **A publication gate, not an improvement.** the owner bought `arabna.app` and
 is about to connect it, and **the first stranger to open the real address
 would have seen invented businesses and reviews nobody wrote.**
 
@@ -7332,8 +7342,8 @@ showDemo: true,      // in DEFAULTS
 ```
 `DEFAULTS` is cloned into `state`, and `writeState` saves the whole of
 `state` into **this phone's own store**. ⚠️ **So the switch is a DEVICE
-preference, not an application setting**: turning it off on Rai's phone
-hid the invented data *on Rai's phone*, and every new visitor started from
+preference, not an application setting**: turning it off on the owner's phone
+hid the invented data *on the owner's phone*, and every new visitor started from
 the default and saw all of it. With no server, **while the default was
 `true` there was no way at all to hide it from people. Not one.**
 
@@ -7357,7 +7367,7 @@ demoShowSub   «مُطفأ = لا يراها أحد …»      describes a serve
 demoWarnBar   «بيانات تجريبية ظاهرة للمستخدمين»
 ```
 **The second is the worse one:** the bar is drawn from **this device's**
-state, so Rai turning the switch off made the warning vanish **while the
+state, so the owner turning the switch off made the warning vanish **while the
 invented data stayed visible to everybody else.** An alarm silenced by an
 act that fixes nothing is worse than no alarm — and it is our own rule
 verbatim: *a check that goes green without a fix guards nothing.* Both now
@@ -7365,7 +7375,7 @@ name **«هذا الجهاز»**, and the bar is kept: the owner has to know tha
 what he sees is not what people see, which is exactly what misled him.
 
 ### ⚠️ Changing the default reaches nobody who already opened the app
-`writeState` put `showDemo: true` into every existing phone's store, Rai's
+`writeState` put `showDemo: true` into every existing phone's store, the owner's
 two included. So it is turned off **once, at boot**, behind a mark.
 
 > **The mark is what makes it a migration rather than a lock.** Without it
@@ -7377,7 +7387,7 @@ again. And it writes through `writeState()`, not around it: **`430`'s rule
 that exactly one place in the app touches the browser store.**
 
 ### The reviews stay, and that is safe now
-Rai's decision: `DEMO_BUSINESSES` and `DEMO_REVIEWS` stay in `js/data.js`.
+the owner's decision: `DEMO_BUSINESSES` and `DEMO_REVIEWS` stay in `js/data.js`.
 **Safe because of the very thing that caused the fault** — the switch is
 per-device, so with the default off **no visitor can turn it on or see
 them.** Deleting them is written as a launch-gate item in
@@ -7437,7 +7447,7 @@ Two faults in the wrapper itself, measured rather than reasoned about:
 
 ## V.08.2 — the share card carried the old address
 
-⚠️ **Rai connected `arabna.app` on 1 September and the domain works.**
+⚠️ **the owner connected `arabna.app` on 1 September and the domain works.**
 Measured after connecting: three absolute URLs in `index.html` were still
 written, by hand, on the temporary host.
 
@@ -7501,7 +7511,7 @@ copy was updated when the reach widened from a city to a country **and
 the picture's copy was not**, because no batch reaches pixels. It will
 happen again with every change.
 
-**Rai's decision of 1 September: the line goes and the lockup stands
+**the owner's decision of 1 September: the line goes and the lockup stands
 alone.** ⚠️ **And that is the better design rather than a way around an
 obstacle** — the title and the description are printed **under** the
 image by WhatsApp and Facebook alike, so the sentence inside it was a
@@ -7552,7 +7562,7 @@ yesterday's card restored      → 3.3 red, reporting 2 blocks
 waiting: `SUPPORT_PHONE` has held `''` since V.03.6 — when `(713) 555-0199`,
 a reserved fictional exchange, was printing a `tel:` that rang nowhere —
 and the WhatsApp row in `SOCIAL` has stood dimmed behind «قريباً» since
-V.05.6. **Rai's number, and it is one number for both.**
+V.05.6. **the owner's number, and it is one number for both.**
 
 - **Nothing was hunted for and filled in.** The three places read the
   constant and appeared by themselves. Measured across seventeen routes:
@@ -7572,7 +7582,7 @@ V.05.6. **Rai's number, and it is one number for both.**
 - **The ready line is a fixed percent-encoded value**, «مرحباً، أكتب لكم
   من تطبيق عربنا», never built with `encodeURIComponent` at run time: a URL
   does not carry Arabic letters intact through every browser. ⚠️ **And it
-  is practical rather than decorative** — the number is Rai's own and the
+  is practical rather than decorative** — the number is the owner's own and the
   support line at once, so the ready line **sorts the app's messages from
   everyone else's on the first line.**
 - **WhatsApp left «قريباً» by itself.** `soonLineHtml` builds that line
@@ -7619,7 +7629,7 @@ somebody else's phone.
 
 ## V.08.4 — the house slide shows what can be sold, and does not vanish when it cannot
 
-⚠️ **Rai's question is what opened this:** «إذا انباعوا كلُّهم، كيف بيعرف
+⚠️ **the owner's question is what opened this:** «إذا انباعوا كلُّهم، كيف بيعرف
 اللي بيتفرّج إنّه ممكن يعلن هون بالمستقبل؟»
 
 **The capacity is written and respected in the SELLING** — `AD_SLOTS`,
@@ -7775,7 +7785,7 @@ of a clipped button — no behaviour, no screen, no route. The rule of
 
 ## V.08.5 — the capacity strip counts nothing, and shows only when there is no other door
 
-⚠️ **Rai saw `500` on his phone and refused the strip, and the reason is a
+⚠️ **the owner saw `500` on his phone and refused the strip, and the reason is a
 product rule rather than a taste** — written in his words because it will
 come up again on other screens:
 
@@ -7912,7 +7922,7 @@ the magazine named with no gate     → 7.1 red
 
 ## V.08.7 — the advertiser sees the ad as people will see it, before paying
 
-⚠️ **Rai's request** — «لمّا يدخل ويختار، يطلعله preview وين مكان الإعلان» —
+⚠️ **the owner's request** — «لمّا يدخل ويختار، يطلعله preview وين مكان الإعلان» —
 settled as two things: the wireframe before buying (`505`) and **the real
 preview, with his own ad, before paying.** And measuring what would be
 previewed found the paid slide breaking its own promise twice:
@@ -8356,6 +8366,85 @@ are still made out of the clock alone.**
 128 runs · 64 suites · 6,296 assertions · zero red · zero crash
 ```
 
+## The owner's name leaves the repository — and the string built from it
+
+⚠️ **The repository is public, and the decision of 30 August is that the
+owner's name is written nowhere.** This is the sweep for what was already
+written: **335 places** — CLAUDE.md 103 · `docs/الحالة.md` 42 ·
+`docs/سجل-القرارات.md` 23 · the rest of `docs/` 3 · comments in `js/` and
+`tools/` 152 · `styles/app.css` 3 · and the generated build, which comes
+out clean by itself. **Zero in the interface**: the reader never saw it on
+any screen, in either pack — so nothing about behaviour changes.
+
+### The dangerous line was not the name
+Published in `CLAUDE.md` **and** in `js/store.js`, beside the word
+«accepted»:
+
+```
+`Houston2026$` is refused and `Elby#Katy77` is not.
+```
+
+⚠️ **A string shaped like a password, built from the owner's surname and
+his city, in a public repository, with a note saying it passes.** Run
+through the app's own `passwordChecks` it clears all six conditions. **An
+example in a comment stops being an example when it is built out of a real
+identity** — and it is the first thing anyone would try against that
+account. It reads `Qamar#Nile42` now, **in all three places**: the two the
+spec named, and `tools/e2e/test_v27.mjs`, where the same string sat in a
+fixture table beside `true`.
+
+### And the name survived in forms a grep for it could not see
+⚠️ **This is the finding, and it is bigger than the list the batch was
+written from.** The sweep the spec describes (`رامي` and `Rai\b`) leaves
+every one of these standing:
+
+```
+البي                     the surname in Arabic — 12 fixture lines
+Rami2026$ · rami2026$    the transliterated first name INSIDE PASSWORD fixtures
+Rami٢٠٢٦$ · Café#Rami9   the same, in the Arabic-digit and accented cases
+rami@arabna.app          the fixture email, in nine suites
+rami@example.com         the same, in another
+rami dot elby at gmail dot com   ⚠️ THE OWNER'S REAL ADDRESS, SPELLED OUT,
+                                 in test_v3 and in a comment in store.js
+'Rami E.'                the author of a seed review in data.js
+```
+
+**All of them are gone** — `أحمد سالم`, `Qamar2026$`, `ahmad@arabna.app`,
+`ahmad dot salem at gmail dot com`, `Ahmad S.`. Every replacement was
+checked against the rule it has to satisfy: `Qamar2026$` still passes the
+six password conditions, `Qamar2026` still fails on the missing symbol,
+`qamar2026$` still fails on the missing capital — **so no fixture changed
+what it measures.**
+
+### What the sweep must not do, and what it did anyway once
+⚠️ **A capitalisation pass touched lines that never carried the name.**
+Lowering «The owner» to «the owner» where a sentence did not start caught
+**eight pre-existing comments** that had always read «The owner» about a
+business owner. Every line whose pre-batch text contained no name was
+**restored to exactly what `HEAD` had**, and the diff was re-measured until
+zero such lines remained. **A sweep that edits what it was not sent for is
+not a sweep, it is damage.**
+
+- **`ARABNA-preview.html` — an orphan from 16 August** that nothing
+  references, an old single-file build predating the build tool, and the
+  only file left carrying `'Rami E.'` inside its inlined modules. It is
+  **regenerated** rather than hand-edited, and comes out byte-identical to
+  `index-single-file.html`. ⚠️ **It is now a second copy of a generated
+  file under another name, which this project bans elsewhere — deleting it
+  is the owner's call, and it is written here rather than taken.**
+- **The commit messages are not rewritten**: 36 of them carry the name, and
+  changing them means rewriting history and a force-push over a branch that
+  is being worked on. **The rule is written instead** — rule 0 at the head
+  of this file — so it never comes back through a new message.
+- `@dbprime`, the domain and the Vercel team name stay: **a handle its
+  holder chose is not a personal name.**
+
+```
+grep 'رامي'   0        grep 'Rai\b'  0        grep -i 'rami'  0
+grep -i 'Elby'  0      the surname in Arabic, as a name   0
+i18n            416 derived keys · 1858 strings — unchanged, so no interface text was touched
+```
+
 ## Known open items
 - **The header image is still far larger than its box.** V.04.7 replaced
   the 831/837 KB lockups with the cropped marks at **333/338 KB** — 60% off
@@ -8375,7 +8464,7 @@ are still made out of the clock alone.**
 - **`APP_VERSION` in `data.js` is raised by hand** with the version line at
   the top of this file. It is one constant; two hand-typed literals is what
   it replaced.
-- **`SUPPORT_PHONE` is empty and needs a real number from Rai.** It held
+- **`SUPPORT_PHONE` is empty and needs a real number from the owner.** It held
   `(713) 555-0199` — a reserved fictional exchange — so every legal page
   published a `tel:` link that rang nowhere. One line in `js/store.js`
   brings the line back on all three pages at once; the email is published
@@ -8400,9 +8489,9 @@ are still made out of the clock alone.**
   owner or a review's author until V.02 brings accounts on a server.
 - **The admin users section is deferred to the server batch**, and so is any
   count that spans devices. One account exists on one device, so the screen
-  would show Rai looking at himself.
+  would show the owner looking at himself.
 - **The receipt has no issuer.** «عربنا — [الاسم القانوني والعنوان]» is a
-  literal `[TODO]` on every receipt until Rai gives the registered name
+  literal `[TODO]` on every receipt until the owner gives the registered name
   and address. A receipt with no issuing party is not a receipt, and this
   is not something to invent.
 - **Sales tax is unanswered.** The line is on every receipt at `$0.00` and
@@ -8422,7 +8511,7 @@ are still made out of the clock alone.**
   a password's strength lives in **where it is kept**.
 - **The descriptions repeat the city the address already gives.** «مطعم
   لبناني في Houston» sits two lines above `…, Houston, TX 77081`, and the
-  directory card says it as well. Rai asked for the city kept and written
+  directory card says it as well. The owner asked for the city kept and written
   in English, which is what shipped; dropping it from the descriptions
   entirely is a one-line change to the source file if he prefers it.
 - **«فانوس» returns two, and the wrong one leads.** V.03.0 tagged b226
@@ -8435,7 +8524,7 @@ are still made out of the clock alone.**
   change that belongs in a search batch, not at the end of this one.
 - **The newcomer's guide is a shell with working doorways.** Eight parts,
   eight buttons that all land on real listings, and placeholder copy that
-  says so. Rai writes the text; nothing may invent a government procedure.
+  says so. The owner writes the text; nothing may invent a government procedure.
 - **Ramadan has almost no data behind it.** Three seasonal attributes on
   four businesses, all of them demo seeds — no imported record carries one.
   The switch, the bar, the filters and the counts all work; filling

@@ -110,7 +110,7 @@ export function ProfileScreen(root) {
     </div>
 
     ${/* THE HUB. The drawer's «حسابي» group is deleted and its six rows stand
-         here — Rai's decision: «بتشيل حسابي من تحت كامل ... وبعد الضغط على
+         here — the owner's decision: «بتشيل حسابي من تحت كامل ... وبعد الضغط على
          حسابي اللي فوق تفتحله شاشة فيها كل الخيارات اللي كانت تحت». They are
          read from ACCOUNT_LINKS so there is one list and not two menus. */''}
     <div class="pad mt-20">
@@ -842,7 +842,7 @@ export function MyBusinessScreen(root) {
               <div class="row-sub">${icon('mapPin', 13)} <span class="ltr">${esc(x.address)}</span></div>
             </div>
           </div>`).join('') : ''}
-        ${/* Rai's own wording: «زرّ للإضافة اليدويّة لأكثر من محلّ، توصلنا
+        ${/* the owner's own wording: «زرّ للإضافة اليدويّة لأكثر من محلّ، توصلنا
              وننظر فيها». It goes to the EXISTING claim screen and the
              existing admin queue — no new screen, no invented review. */''}
         <button class="btn btn-ghost btn-block mt-8" data-route="#/claim">${icon('plus', 19)} ${t('claimAnother')}</button>
@@ -920,7 +920,7 @@ export function SettingsScreen(root) {
            about this phone, not about an account — the V.04.8 rule — and
            `#/profile` for a visitor is a sign-up screen, so putting the
            only door there would hide it from exactly the people who need
-           it most: whoever has not signed up yet. Rai's file says «صفحةٌ
+           it most: whoever has not signed up yet. The owner's file says «صفحةٌ
            في حسابي»; this is that screen, reached from the settings a
            visitor can already open. */''}
       <div class="dr-group-label">${t('instTitle')}</div>
@@ -1346,7 +1346,7 @@ export function AboutScreen(root) {
       <div class="contact-box mt-20">
         <div class="cb-title">${t('contactUsTitle')}</div>
         <div class="hint" style="margin-bottom:8px">${t('contactUsSub')}</div>
-        ${/* ⚠️ The address is NOT written out here any more — Rai's
+        ${/* ⚠️ The address is NOT written out here any more — the owner's
              decision: it is the first tile in the row below, beside the
              site and the four accounts, so the block reads as one row of
              icons instead of a line and then a row. It is still PUBLISHED
@@ -1358,7 +1358,7 @@ export function AboutScreen(root) {
              accounts, and a follow row above «طلبات إزالة المحتوى» reads
              wrong. And not in the drawer either — it is 112 over for a
              member and 195 for a visitor after 255, and another row adds
-             to that; Rai's answer to question 4 was to leave it.
+             to that; the owner's answer to question 4 was to leave it.
              ⚠️ The «سنرد خلال يومَي عمل» promise moved OUT of this block
              with this batch and is still published, unchanged, by
              `contactBlock` on «الخصوصية» و«الشروط» — a legal page has to

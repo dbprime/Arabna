@@ -129,7 +129,7 @@ ok('3.5 the iPhone status bar style follows', st.status === 'default', st.status
 ok('3.6 the choice is saved', st.saved === 'light');
 await page.reload(); await page.waitForTimeout(700);
 st = await state();
-/* REVERSED in V.06.0, Rai's decision: the choice is for the session and
+/* REVERSED in V.06.0, the owner's decision: the choice is for the session and
    the launch always starts from the device again — a phone that dims
    itself at night should dim the app with it. So a restart RESETS it,
    which is the opposite of what this line used to demand, and the check
@@ -182,7 +182,7 @@ console.log('--- the controls ---');
 await page.evaluate(() => {
   const s = JSON.parse(localStorage.getItem('arabna.v1'));
   s.theme = 'dark';
-  s.user = { name: 'رامي', email: 'r@a.app', phone: '(713) 466-9182', phoneVerified: true, emailVerified: true, tier: 2, joined: Date.now() };
+  s.user = { name: 'أحمد', email: 'r@a.app', phone: '(713) 466-9182', phoneVerified: true, emailVerified: true, tier: 2, joined: Date.now() };
   localStorage.setItem('arabna.v1', JSON.stringify(s));
 });
 await page.goto(BASE); await page.waitForTimeout(600);

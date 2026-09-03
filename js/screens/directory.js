@@ -1764,7 +1764,7 @@ export function ClaimScreen(root, params) {
           <div class="row-sub"><span class="ltr">${esc(b.address)}</span></div></div>
       </div>
       <div class="list-note" style="margin:0 0 14px">${icon('info', 18)}<span>${t('claimFormNote')}</span></div>
-      ${/* Rai's decision (question 2): ONE account, and the business mark is
+      ${/* the owner's decision (question 2): ONE account, and the business mark is
            added HERE — at the moment of pressing, which is the highest point
            of willingness there is. Not two kinds at sign-up, where nobody yet
            knows which they are and the question only costs registrations.
@@ -2116,7 +2116,7 @@ export function SubscribeScreen(root, params) {
       ${[
         ['image', 'planPhotos', ''],
         ['play', 'planVideo', ''],
-        /* Rai asked for the cold word «أهلية» to go, and it goes — but the
+        /* the owner asked for the cold word «أهلية» to go, and it goes — but the
            meaning stays: paying is the precondition for applying, never
            the badge itself. Somebody reading «نشاط موثّق» beside $29
            expects the mark tomorrow, and when it does not come they have

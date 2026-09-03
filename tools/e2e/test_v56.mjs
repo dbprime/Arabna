@@ -2,7 +2,7 @@
 
    ⚠️ A FATAL FAULT, LIVE ON THE PUBLISHED BUILD: the app added to an
    iPhone's home screen did not open at all — a white screen and
-   «Response served by service worker has redirections». Rai saw it on
+   «Response served by service worker has redirections». The owner saw it on
    his own phone.
 
    Three lines in three files made it together:

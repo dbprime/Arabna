@@ -108,7 +108,7 @@ const DEFAULTS = {
      `state.geo` cannot stand in for it: choosing a city by hand clears the
      point on purpose (it belonged to somewhere the reader has left), so
      the quiet refresh — gated on `!geo` — switched itself off for good and
-     froze the app on that city without saying so. Rai sat in Richmond and
+     froze the app on that city without saying so. The owner sat in Richmond and
      the app said Houston, for exactly this reason. */
   geoGranted: false,
   area: 'all',          // 'all' · 'city' · a number of miles
@@ -126,7 +126,7 @@ const DEFAULTS = {
      file is a brand-new visitor, never a test seat.** Any id written into
      it is a bug waiting for somebody's first launch. */
   myListings: [],           // classifieds owned by the current user
-  /* PLURAL since V.05.4. One account can own several listings — Rai's
+  /* PLURAL since V.05.4. One account can own several listings — the owner's
      question about a restaurant with three branches, each with its own
      phone number, was the case that exposed it. The singular field let
      `approveClaim` REPLACE, so approving a second branch silently dropped
@@ -173,7 +173,7 @@ const DEFAULTS = {
   /* ⚠️ OFF BY DEFAULT — and the reason is not tidiness, it is that this
      switch is a DEVICE preference, not an application setting. `DEFAULTS`
      is cloned into `state` and `writeState` saves the whole of `state`
-     into this phone's own store, so turning it off on Rai's phone hid the
+     into this phone's own store, so turning it off on the owner's phone hid the
      invented data ON RAI'S PHONE — and every new visitor started from the
      default and saw all of it. There is no server to correct that, so
      while the default was `true` there was NO WAY AT ALL to hide the
@@ -191,7 +191,7 @@ const DEFAULTS = {
   seasons: { ramadan: false },   // seasonal attribute groups the owner has switched on
   /* The two dates only a human can know. Ramadan begins when the crescent
      is sighted, not when a table says so, and the calendar's own figure is
-     labelled «تقديري» for exactly that reason. The moment Rai writes the
+     labelled «تقديري» for exactly that reason. The moment the owner writes the
      announced date the estimate has no business standing beside it. Empty
      strings, ISO 'YYYY-MM-DD' when set. */
   ramadanDates: { from: '', eid: '' },
@@ -266,7 +266,7 @@ if (state.location && state.location.city && state.location.manual === undefined
   writeState();
 }
 
-/* THE THEME IS NOT REMEMBERED ACROSS LAUNCHES — Rai's decision.
+/* THE THEME IS NOT REMEMBERED ACROSS LAUNCHES — the owner's decision.
    ⚠️ This REVERSES half of V.04.8: the tap still pins light or dark, and
    Settings still offers the three, but every launch starts from the
    device again. His reason is the one that matters: a phone that dims
@@ -302,7 +302,7 @@ if (state.myBusinessId !== undefined) {
 
 /* ⚠️ THE INVENTED DATA IS OFF BY DEFAULT NOW — and changing `DEFAULTS`
    reaches nobody who has already opened the app: `writeState` put
-   `showDemo: true` into every existing phone's own store, Rai's two
+   `showDemo: true` into every existing phone's own store, the owner's two
    included. So it is turned off once, at boot.
 
    ⚠️ THE MARK IS WHAT MAKES IT A MIGRATION RATHER THAN A LOCK. Without
@@ -443,7 +443,7 @@ export function peekPendingIntent() { return pendingIntent; }
 /* ============================================================
    Personal account or business account
    ------------------------------------------------------------
-   Rai's decision (question 2): ONE account with a flag added at the
+   The owner's decision (question 2): ONE account with a flag added at the
    moment somebody presses «هذا نشاطي» — not two kinds chosen at sign-up,
    where nobody yet knows which they are and the question only costs
    registrations.
@@ -527,9 +527,9 @@ const WORD_RE = new RegExp(
   '\\b(?:' + Object.keys(WORD_DIGITS).join('|') + ')\\b(?:[\\s,.\\-]+\\b(?:' +
   Object.keys(WORD_DIGITS).join('|') + ')\\b){6,}', 'gi');
 
-/* Emails, including the spelled-out dodge ("rami dot elby at gmail dot com").
+/* Emails, including the spelled-out dodge ("ahmad dot salem at gmail dot com").
    The match is anchored on a real TLD so ordinary prose containing the word
-   "at" is left alone — without that anchor, "email me at rami…" matched from
+   "at" is left alone — without that anchor, "email me at ahmad…" matched from
    the wrong word and only half the address was removed. */
 const TLD = '(?:com|net|org|edu|gov|mil|io|co|info|biz|app|me|sa|ae|eg|jo|kw|qa|bh|om|lb|sy|iq|ma|tn|dz|ly|ps|tr|uk|ca|de|fr|es|it|nl|se|no|dk|au|in|pk)';
 const SEP_DOT = '(?:\\.|\\(dot\\)|\\[dot\\]|\\bdot\\b)';
@@ -888,7 +888,7 @@ export function setSeason(season, on) {
 }
 
 /* ---------------- the order of the two blocks on #/prayer and #/mass ----
- * Occasions first is Rai's decision after the `pm.html` walkthrough, and
+ * Occasions first is the owner's decision after the `pm.html` walkthrough, and
  * it is deliberately reversible from the panel: mass times will arrive
  * from the churches themselves, and when they do the answer changes — so
  * the order flips with a tap rather than a batch and a session and a wait.
@@ -1037,7 +1037,7 @@ export function setPrayerMethod(m) {
 export function asrShadow() { return (state.prayer && state.prayer.asr) === 2 ? 2 : 1; }
 
 /* ---------------- the bar on Home: asked, not assumed ----------------
-   Rai asked for a hide switch, defaulted to HIDDEN, out of consideration
+   The owner asked for a hide switch, defaulted to HIDDEN, out of consideration
    for Christian readers. The intent is right and the default costs more
    than it saves:
 
@@ -1285,7 +1285,7 @@ export function clearUserLocation() {
 /**
  * The last failed location read — FOR DIAGNOSIS, and shown on no public
  * screen. A fault that leaves no trace is not diagnosed, it is guessed at:
- * the silent refresh failed silently for months and neither Rai could know
+ * the silent refresh failed silently for months and neither the owner could know
  * it had nor could anybody prove it. The reader is not frightened with a
  * fault they can do nothing about; we simply stop guessing.
  */
@@ -1520,7 +1520,7 @@ export function regionNameOf(id) {
 }
 
 /**
- * TWO LAYERS, not a chain of tiebreaks — Rai's decision: «whoever pays is
+ * TWO LAYERS, not a chain of tiebreaks — the owner's decision: «whoever pays is
  * always on top, and among them by how near they are to the reader».
  *
  * The chain this replaces did not deliver that, and the four reasons were
@@ -1580,7 +1580,7 @@ export function regionNameOf(id) {
    not chosen, and theirs governs when they have — so the branches are not
    merged: one branch would mean either ignoring them always or giving up
    our own rule always. With no manual sort, `330`'s order stands untouched.
-   ⚠️ AND WITH «مفتوح الآن» THE OPENNESS IS THE PRIMARY KEY — Rai's
+   ⚠️ AND WITH «مفتوح الآن» THE OPENNESS IS THE PRIMARY KEY — the owner's
    decision, and it settles a contradiction inside `336` itself: its item 2
    asked for «no open row after the first closed one, in the whole list»
    while its item 3 asked for the closed subscribers to sit above
@@ -1605,7 +1605,7 @@ export function regionNameOf(id) {
    `336`, both of which ask for the two layers to survive. One bucket is
    the plain partition; `groupOf` is what tells the two cases apart.
 
-   ⚠️ AND IT IS TWO ROWS, NOT EVERY SUBSCRIBER — `337`, Rai's decision of
+   ⚠️ AND IT IS TWO ROWS, NOT EVERY SUBSCRIBER — `337`, the owner's decision of
    29 August. `330` lifted the whole layer; that was right while a category
    held one subscriber and wrong the day it holds ten. `AD_SLOTS.dirTop`
    bounds it, and **from the third row down nothing is lifted for having
@@ -2494,7 +2494,7 @@ export function sectionAds(product) {
 /* ------------------------------------------------------------
    Rotation that is fair, and that survives Back
    ------------------------------------------------------------
-   Rai asked for the sponsored rows to change every time, and plain
+   The owner asked for the sponsored rows to change every time, and plain
    randomness gets that wrong twice.
 
    It breaks Back. Scroll the directory, open a shop, come back, and the
@@ -3362,7 +3362,7 @@ export function validEmail(v) {
      same word typed on another phone is a different string. The
      owner is locked out while reading their correct password off
      the screen, and nobody — not them, not us — can see why.
-   · Arabic-Indic digits are not digits to /\d/, so `Rami٢٠٢٦$`
+   · Arabic-Indic digits are not digits to /\d/, so `Qamar٢٠٢٦$`
      would be refused for «missing a number» with four of them
      on screen.
    ------------------------------------------------------------ */
@@ -3381,7 +3381,7 @@ const PW_ALWAYS = ['password', 'qwerty', 'letmein', 'iloveyou', 'welcome',
                    'admin', 'master'];
 /* The first things anybody signing up for an app called ARABNA in Houston
    will reach for. Matched WHOLE, not as a substring: `Houston2026$` is
-   refused (the city and some digits), `Elby#Katy77` is fine (a real name
+   refused (the city and some digits), `Qamar#Nile42` is fine (a real name
    as well). Using `includes` here would refuse every password that
    happens to contain a city, which is too much. */
 const PW_BRAND = ['arabna', 'houston', 'texas', 'katy', 'sugarland'];
@@ -3612,7 +3612,7 @@ export function updateProfile({ name, email, phone }) {
   } else if (email === u.email) {
     delete u.pendingEmail;
   }
-  /* ⚠️ THE NUMBER IS PARKED LIKE THE ADDRESS, and Rai's decision here is
+  /* ⚠️ THE NUMBER IS PARKED LIKE THE ADDRESS, and the owner's decision here is
      the same argument written for the email: a typo DROPS THE ACCOUNT OUT
      OF TIER 2, and with it posting, contacting a seller, claiming a
      business and buying any advertisement.
@@ -3690,7 +3690,7 @@ export function rejectAvatar(reason) {
           en: 'The photo broke the content rules and was removed. You can upload another.' } });
 }
 /* ---- the ready-made marks and the emoji ----
-   Rai's decision, reversing my recommendation: the pictures live in
+   the owner's decision, reversing my recommendation: the pictures live in
    `js/avatars.js` ONCE and the reader stores only the id. And the gain
    neither of us saw during the discussion is the larger one — an
    UPLOADED photo waits for the admin, and OUR OWN picture never does.

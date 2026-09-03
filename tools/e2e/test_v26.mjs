@@ -59,7 +59,7 @@ await patch(() => {
      it correctly — which keeps the most dangerous path in V.05.4 covered by
      five suites instead of one. */
   s.radius = 100; s.myBusinessIds = []; s.subscription = null; s.adminLog = [];
-  s.user = { name: 'رامي', email: 'r@a.app', phone: '(713) 466-9182',
+  s.user = { name: 'أحمد', email: 'r@a.app', phone: '(713) 466-9182',
              phoneVerified: true, emailVerified: true, tier: 2, joined: Date.now() };
   localStorage.setItem('arabna.v1', JSON.stringify(s));
 });
@@ -145,7 +145,7 @@ ok('2.4 b281 reads «بـHouston الكبرى»', await page.evaluate(() => {
   const b = window.__m.D.BUSINESSES.find(x => x.id === 'b281');
   return /Houston/.test(b.name.ar) && !/هيوستن/.test(b.name.ar);
 }));
-/* V.04.5 REVERSED the KEY, not the rule. Rai's rule is that the city name
+/* V.04.5 REVERSED the KEY, not the rule. The owner's rule is that the city name
    is written in English inside the Arabic sentence, and it still is — but
    `regionName` had «Houston» TYPED INTO IT, so it could only ever name one
    place. It is `regionAll: '{r} والمنطقة'` now, with the name substituted
@@ -162,7 +162,7 @@ ok('2.5b …and rendered it still reads «Houston والمنطقة»', await pag
   return U.regionAllLabel() === 'Houston والمنطقة';
 }));
 
-/* the other half of Rai's rule: search in Arabic, result in English */
+/* the other half of the owner's rule: search in Arabic, result in English */
 console.log('--- and Arabic still finds them ---');
 const search = (q) => page.evaluate((t) => {
   const { S, D } = window.__m;

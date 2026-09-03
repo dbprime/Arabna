@@ -1,6 +1,6 @@
 /* V.08.0 — the city's name is not replaced by the nearest centre.
 
-   ⚠️ Rai's report: the screen said Sugar Land and he was not in it.
+   ⚠️ the owner's report: the screen said Sugar Land and he was not in it.
 
    The fault was HALF AN OLD FIX. `cityNameFor` kept the reverse lookup's
    answer only when the directory covered it, and threw it away otherwise,
@@ -106,7 +106,7 @@ console.log('--- fix the name and empty the directory: the thing this forbids --
 }
 
 /* ============ 3 — a hand-picked city is no longer frozen ============ */
-console.log('--- Rai reversed V.04.0, and his argument is the stronger one ---');
+console.log('--- the owner reversed V.04.0, and his argument is the stronger one ---');
 {
   const home = read('js/screens/home.js');
   const code = home.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');

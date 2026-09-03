@@ -1487,7 +1487,7 @@ input[inputmode="tel"], input[type="email"], input[inputmode="decimal"], #zipIn 
 .dr-head { width: 100%; font-weight: 700; }
 /* ⚠️ THE ARROW IS GONE FROM THE MARKUP, and its rules go with it. Moving
    it to the end of the row was `345`'s answer to its displacing the
-   label; taking it out of both heads is Rai's. Hiding it with a rule here
+   label; taking it out of both heads is the owner's. Hiding it with a rule here
    would have been two sources of truth, and LEAVING its rules behind is
    the same debt as a dead export: read six months from now they say a
    fold indicator exists. `grep grp-arrow js/` returns nothing. */
@@ -2179,7 +2179,7 @@ input[inputmode="tel"], input[type="email"], input[inputmode="decimal"], #zipIn 
   /* 38, not 52. At 52 with a 22px lens there were fifteen pixels of air
      above it and fifteen below; at 38 there are eight. (My reservation is
      on the record once — search is the most important thing on the screen
-     and 42 was easier — and the decision is Rai's.) */
+     and 42 was easier — and the decision is the owner's.) */
   height: 38px;
   background: var(--surface-2);
   border: 1px solid var(--gold-wash-3);
@@ -2738,7 +2738,7 @@ input[inputmode="tel"], input[type="email"], input[inputmode="decimal"], #zipIn 
 
 /* ============================================================
    The drawer head's two buttons — V.05.5
-   Rai's decision: «حسابي» and sign-out sit UNDER THE NAME, so neither
+   the owner's decision: «حسابي» and sign-out sit UNDER THE NAME, so neither
    depends on the panel not scrolling. They are 50% each of one row, so
    the head grows by one row's height and no more.
    ============================================================ */

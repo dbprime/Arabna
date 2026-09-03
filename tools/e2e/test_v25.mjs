@@ -218,7 +218,7 @@ ok('3.18 …and no empty «offers» heading stands over the gap',
 /* the owner */
 await patch(() => {
   const s = JSON.parse(localStorage.getItem('arabna.v1') || '{}');
-  s.user = { name: 'رامي', email: 'r@a.app', phone: '(713) 466-9182', phoneVerified: true,
+  s.user = { name: 'أحمد', email: 'r@a.app', phone: '(713) 466-9182', phoneVerified: true,
              emailVerified: true, tier: 2, joined: Date.now() };
   s.myBusinessId = 'b1';
   localStorage.setItem('arabna.v1', JSON.stringify(s));

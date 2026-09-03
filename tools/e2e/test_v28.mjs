@@ -249,7 +249,7 @@ await page.reload(); await page.waitForTimeout(800); await mods();
 console.log('--- Settings -> text size ---');
 await patch(() => {
   const s = JSON.parse(localStorage.getItem('arabna.v1') || '{}');
-  s.user = { name: 'رامي', email: 'r@x.com', phone: '7134669182', phoneVerified: true,
+  s.user = { name: 'أحمد', email: 'r@x.com', phone: '7134669182', phoneVerified: true,
              emailVerified: true, joined: Date.now(), tier: 2 };
   s.fontScale = 17;
   localStorage.setItem('arabna.v1', JSON.stringify(s));

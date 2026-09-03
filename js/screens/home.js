@@ -290,7 +290,7 @@ function hintWords() {
    gets one still word. */
 /* Exported for the directory, which searches the same 514 businesses with
    the same words. NOT the marketplace: its sections are cars and furniture
-   and jobs, and `SEARCH_HINTS` are trades. Rai's decision. */
+   and jobs, and `SEARCH_HINTS` are trades. The owner's decision. */
 export function mountSearchHint(root, sel = '#homeSearch') {
   const input = root.querySelector(sel);
   if (!input) return;
@@ -781,7 +781,7 @@ export function shouldRefreshGeo(force = false) {
 /**
  * What to CALL the place the reader is standing in.
  *
- * If you asked Rai where he lives he would say Richmond. Nobody says "the
+ * If you asked the owner where he lives he would say Richmond. Nobody says "the
  * nearest city centre to me is Katy" — and that is what 77407 was being
  * told, because the reverse lookup's own answer was thrown away and
  * replaced by the nearest of the 25 centres we cover. 77036 is the same
@@ -867,7 +867,7 @@ export function refreshLocationQuietly(force = false) {
       const near = S.nearestCity(pt);
       const before = S.userCity();
       const city = cityNameFor(r, near);
-      /* ⚠️ A HAND-PICKED CITY IS NO LONGER FROZEN — Rai's reversal of
+      /* ⚠️ A HAND-PICKED CITY IS NO LONGER FROZEN — the owner's reversal of
          V.04.0, and his argument is the stronger one: «I might pick
          Houston on purpose, then travel to another city. The sensible
          thing is for it to update by itself so it knows where I am — and
@@ -915,7 +915,7 @@ export function refreshLocationQuietly(force = false) {
 /**
  * «حدّثنا موقعك إلى Rosenberg» — one transient line, and one undo.
  *
- * ⚠️ NOT A SHEET AND NOT A QUESTION. Rai's reversal of V.04.0: the city
+ * ⚠️ NOT A SHEET AND NOT A QUESTION. The owner's reversal of V.04.0: the city
  * updates by itself so the app knows where its reader is, and whoever
  * meant to browse another city takes their choice back in one tap.
  *

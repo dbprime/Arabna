@@ -135,7 +135,7 @@ for (const seed of ['مطعم الشام', 'فرن بيروت', 'عيادة ال
   ok('the development seed survives: ' + seed, all.some(x => x.includes(seed)));
 
 /* and the real ones arrived */
-/* Abdallah's reads «عبد الله» in Arabic now — Rai settled the 179 guessed
+/* Abdallah's reads «عبد الله» in Arabic now — the owner settled the 179 guessed
    names and 25 of them took an Arabic one */
 for (const real of ['عبد الله', 'Arabisca', 'Hermann Park', 'Houston Zoo'])
   ok('the imported listing is there: ' + real, all.some(x => x.includes(real)));

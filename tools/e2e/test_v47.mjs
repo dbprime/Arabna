@@ -48,7 +48,7 @@ const fresh = async () => {
     localStorage.removeItem('arabna.v1');
   });
   await p.evaluate(pw => {
-    window.__S.signUp({ name: 'رامي البي', email: 'a@b.c', phone: '7135550123', password: pw });
+    window.__S.signUp({ name: 'أحمد سالم', email: 'a@b.c', phone: '7135550123', password: pw });
     window.__S.confirmEmail('123456');
   }, PW);
   return { ctx, p };
@@ -98,7 +98,7 @@ const rows = p => p.evaluate(() =>
     S.startSubscription({ businessId: 'b1', plan: 'monthly' });
     S.state.messages.push({ id: 'm1', listingId: 'c1', from: 'x', text: 'hi' });
     S.state.messages.push({ id: 'm2', listingId: 'c2', from: 'x', text: 'hi' });
-    S.requestClaim('b3', { name: 'رامي', role: 'owner', phone: '7135550123', proof: 'x' });
+    S.requestClaim('b3', { name: 'أحمد', role: 'owner', phone: '7135550123', proof: 'x' });
     S.state.blocked = ['u1'];
     S.save();
   });
@@ -155,7 +155,7 @@ const rows = p => p.evaluate(() =>
      await p.evaluate(() => ((document.querySelector('#app') || {}).innerText || '').trim().length > 20));
 
   await p.evaluate(() => window.__S.requestClaim('b3',
-    { name: 'رامي', role: 'owner', phone: '7135550123', proof: 'x' }));
+    { name: 'أحمد', role: 'owner', phone: '7135550123', proof: 'x' }));
   await go(p, '#/home'); await go(p, '#/my-requests');
   const pend = await p.evaluate(() => (document.querySelector('#app') || {}).innerText || '');
   ok('4.2 a sent request is visible at once, with its status',

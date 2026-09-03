@@ -1179,7 +1179,7 @@ export function openDrawer() {
       `h` undefined  → the plain icon, exactly as before.
       `h` a number    → a filled tile in that hue, white glyph.
       `h === 'gold'`  → the reserved gold, for «أعلن معنا» ALONE.
-      A LEAF IS NEVER GIVEN ONE. Rai's decision, and it is a measurement,
+      A LEAF IS NEVER GIVEN ONE. The owner's decision, and it is a measurement,
       not a preference: tiles on the leaves grow the drawer's overflow
       195 -> 259, a full row. Top-level rows and group heads alone cost
       195 -> 231. So the leaves are not «tiles turned off in CSS» — they
@@ -1200,7 +1200,7 @@ export function openDrawer() {
   // A group head carries no route: it toggles its own group and nothing else.
   const group = (id, label, rows, ico, h) => `
     <div class="dr-group ${openGroup === id ? 'open' : ''}" data-group="${id}">
-      ${/* ⚠️ NO ARROW ON EITHER HEAD — Rai's decision, and it is taken out of
+      ${/* ⚠️ NO ARROW ON EITHER HEAD — the owner's decision, and it is taken out of
            the MARKUP, never hidden with a CSS rule: a stylesheet undoing
            what the template just asked for is two sources of truth.
            It sat between the tile and the label and pushed a head's text
@@ -1275,7 +1275,7 @@ export function openDrawer() {
       <div class="drawer-head">
         <img data-logo="stacked" src="${logoSrc('stacked')}" alt="ARABNA عربنا" />
         <div style="font-weight:700">${esc(u.name)}</div>
-        ${/* ⚠️ THE TIER IS GONE FROM THIS LINE — Rai's decision, the email
+        ${/* ⚠️ THE TIER IS GONE FROM THIS LINE — the owner's decision, the email
              stands alone. And it is gone from the DRAWER ONLY: `S.tier()`
              is untouched, because it is the gate on posting, messaging,
              claiming and buying any advertisement. What left is a line
@@ -1284,7 +1284,7 @@ export function openDrawer() {
              definition went with it: a variable that is worked out and
              never read is what makes a file longer than its job. */''}
         <div class="drawer-user">${esc(u.email)}</div>
-        ${/* Rai's decision: two buttons UNDER THE NAME. Sign-out was the last
+        ${/* the owner's decision: two buttons UNDER THE NAME. Sign-out was the last
              row of a drawer that scrolls, so it was the first thing to fall off
              the bottom — and «حسابي» was a GROUP whose six leaves are now the
              account hub at #/profile. Both live where the account is named. */''}
@@ -1326,7 +1326,7 @@ export function openDrawer() {
            NOT DRAWN AT ALL for a visitor — which was the fault itself,
            not merely where it sat. */''}
       ${/* ⚠️ EVERY HUE HERE IS A VALUE OUT OF `CAT_HUE`, not a colour
-           picked by eye — Rai's decision. Those twenty-one were already
+           picked by eye — the owner's decision. Those twenty-one were already
            measured for contrast when the categories were built, so nothing
            new has to be proved. And NONE of them is in the gold band
            35–55: that band is the button and the action, and a row wearing
@@ -1335,7 +1335,7 @@ export function openDrawer() {
       ${item('settings', t('settings'), '#/settings', 0, false, 232)}
       ${member ? item('bell', t('notifications'), '#/notifications', unread, false, 348) : ''}
       ${/* ⚠️ IT FOLDS, and starts folded. `345` made it a section title that
-           was always open — that was a misreading of Rai's words («take
+           was always open — that was a misreading of the owner's words («take
            the arrow off, and when somebody taps categories it opens»), and
            it cost the one rule the drawer had kept through every batch:
            measured, the panel went to 1049/844 for a visitor with nothing
@@ -1950,7 +1950,7 @@ export function mountOutsideBox(root, after) {
 /**
  * The areas, and nothing else.
  *
- * NO CITY IN THIS SHEET, no arrow, no list beneath a name — Rai's second
+ * NO CITY IN THIS SHEET, no arrow, no list beneath a name — the owner's second
  * correction, and the reason is exact: somebody outside Houston does not
  * know Katy from Sugar Land, and twenty-five suburbs mean nothing to them.
  * The existing city sheet stays exactly as it is for readers inside the
@@ -2262,7 +2262,7 @@ export function mapUrl(app, address) {
 
 /* ---------------- THE ONE WAY OUT ----------------
  * ⚠️ EVERY LINK THAT LEAVES THE APP GOES THROUGH HERE, and the reason is
- * a fault Rai has already seen with his own eyes: inside the iOS in-app
+ * a fault the owner has already seen with his own eyes: inside the iOS in-app
  * browser the directions button left him in a window with no way back
  * (`342`). A native shell does the same thing to `window.open` — it may
  * open the map INSIDE the app and trap the reader in it.

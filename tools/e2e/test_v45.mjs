@@ -33,7 +33,7 @@ const ok = (n, c, extra = '') => { if (c) { pass++; console.log('PASS ' + n + (e
 const NOW = Date.now();
 const PAY = '<img src=x onerror="window.__pwn=1">';
 const ACCOUNT = {
-  name: 'رامي البي', email: 'a@b.c', emailVerified: true,
+  name: 'أحمد سالم', email: 'a@b.c', emailVerified: true,
   phone: '7134669182', phoneVerified: true, joined: NOW - 9e8,
 };
 const ADMIN_PW = 'Zaytoun#4417q';

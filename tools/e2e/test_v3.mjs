@@ -199,13 +199,13 @@ ok('signed out: profile offers sign up', (await txt()).includes('إنشاء حس
 await go('#/auth/signup');
 // V.02.7: one name field became two, and the password is confirmed
 
-await page.fill('#sFirst', 'رامي');
+await page.fill('#sFirst', 'أحمد');
 
-await page.fill('#sLast', 'البي');
-await page.fill('#sEmail', 'rami@arabna.app');
-await page.fill('#sPass', 'Rami2026$');
+await page.fill('#sLast', 'سالم');
+await page.fill('#sEmail', 'ahmad@arabna.app');
+await page.fill('#sPass', 'Qamar2026$');
 
-await page.fill('#sPass2', 'Rami2026$');
+await page.fill('#sPass2', 'Qamar2026$');
 await page.check('#agree1'); await page.check('#agree2');
 await page.click('#suBtn'); await page.waitForTimeout(900);
 
@@ -236,8 +236,8 @@ await go('#/profile');
 
 /* ============ 1. profile shows real user data ============ */
 const prof = await txt();
-ok('profile shows the name', prof.includes('رامي البي'));
-ok('profile shows the email', prof.includes('rami@arabna.app'));
+ok('profile shows the name', prof.includes('أحمد سالم'));
+ok('profile shows the email', prof.includes('ahmad@arabna.app'));
 ok('profile shows a join date', prof.includes('عضو منذ'));
 ok('profile shows active listing count', prof.includes('إعلانات نشطة'));
 ok('profile shows favorites count', prof.includes('المفضلة'));
@@ -283,7 +283,7 @@ await go('#/profile/password');
 await page.fill('#cpCur', 'wrongpass'); await page.fill('#cpNew', 'Newpass1$'); await page.fill('#cpConf', 'Newpass1$');
 await page.click('#cpSave'); await page.waitForTimeout(400);
 ok('wrong current password is rejected', (await txt()).includes('غير صحيحة'));
-await page.fill('#cpCur', 'Rami2026$'); await page.fill('#cpNew', 'short'); await page.fill('#cpConf', 'short');
+await page.fill('#cpCur', 'Qamar2026$'); await page.fill('#cpNew', 'short'); await page.fill('#cpConf', 'short');
 await page.click('#cpSave'); await page.waitForTimeout(400);
 ok('a weak password is rejected, and the message names what is missing',
    (await page.textContent('#e_cpNew')).includes('ينقص'));
@@ -427,7 +427,7 @@ await page.fill('#msgIn', 'كلمني على 713-555-0100');
 await clearToasts(); await page.click('#msgSend'); await page.waitForTimeout(500);
 await page.fill('#msgIn', 'my number is seven one three five five five zero one zero zero');
 await page.click('#msgSend'); await page.waitForTimeout(500);
-await page.fill('#msgIn', 'email me at rami dot elby at gmail dot com');
+await page.fill('#msgIn', 'email me at ahmad dot salem at gmail dot com');
 await page.click('#msgSend'); await page.waitForTimeout(500);
 await page.fill('#msgIn', 'https://wa.me/17135550100 كلمني هنا');
 await page.click('#msgSend'); await page.waitForTimeout(500);
