@@ -163,7 +163,20 @@ money = await dollars();
 ok('directory: no subscription price in the upsell row', money.length === 0, money.join(' '));
 // V.03.4: «بزنسك» → «نشاطك», the glossary word
 ok('directory: the upsell still offers the upgrade', (await txt()).includes('رقّي صفحة نشاطك'));
-ok('directory: the row says prices come after signup', (await txt()).includes('الأسعار تظهر بعد'));
+/* ⚠️ REVERSED BY 565, and the rule it belongs to is untouched. This item
+   asserted that the visitor's upgrade card EXPLAINS why there is no number
+   — «الأسعار تظهر بعد إنشاء حساب». The owner's decision of 3 September is
+   that the sentence goes: the card is a door, and a door does not explain
+   the terms of entry; the truth is told inside #/subscribe to whoever
+   walked in. V.01.6 itself is untouched, and the two items above are what
+   guard it — no price for a visitor, and the offer still standing.
+   So this now measures the same row from the other side, and it keeps its
+   teeth: the sentence must be gone AND the card must still be a working
+   door, or «absent» would also pass if the whole card had vanished. */
+ok('directory: no placeholder sentence stands where the price would be',
+   !(await txt()).includes('الأسعار تظهر بعد'));
+ok('…and the card is still a door to the subscription',
+   await page.locator('.upsell-row[data-route="#/subscribe"]').count() === 1);
 
 await go('#/subscribe');
 money = await dollars();
