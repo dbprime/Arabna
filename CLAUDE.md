@@ -8246,6 +8246,10 @@ it with no decision. **The reader sees none of this until `030` does.** And
 no suite is added: a suite guarding what is not on screen is a green line
 that measures nothing.
 
+```
+126 runs · 63 suites · 6,260 assertions · zero red · zero crash
+```
+
 ## Known open items
 - **The header image is still far larger than its box.** V.04.7 replaced
   the 831/837 KB lockups with the cropped marks at **333/338 KB** — 60% off
