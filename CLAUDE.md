@@ -8170,6 +8170,10 @@ the inline style restored                → 1.2 · 2.1 · 1.1[en] red
 the animation outside the media query    → 3.2 red
 ```
 
+```
+126 runs · 63 suites · 6,260 assertions · zero red · zero crash
+```
+
 ## Known open items
 - **The header image is still far larger than its box.** V.04.7 replaced
   the 831/837 KB lockups with the cropped marks at **333/338 KB** — 60% off
