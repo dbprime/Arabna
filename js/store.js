@@ -2580,9 +2580,21 @@ export function businessPlan(b) {
 }
 export const PLAN_LIMITS = {
   free: { photos: 3, videos: 0, offers: false },
-  paid: { photos: Infinity, videos: 3, offers: true },
+  paid: { photos: 10, videos: 3, offers: true },
 };
 export function planLimits(b) { return PLAN_LIMITS[businessPlan(b)] || PLAN_LIMITS.free; }
+
+/* The number is written once, here, and every text that names it carries
+   {n} / {f} / {v} instead. «Unlimited» was three answers to one question:
+   the code said Infinity, an older text said ten, and the upload screen
+   stopped at twenty without telling anybody. A number said before the
+   purchase is truer than a promise with no limit that has one. */
+export function planText(s) {
+  return String(s)
+    .replace('{n}', PLAN_LIMITS.paid.photos)
+    .replace('{f}', PLAN_LIMITS.free.photos)
+    .replace('{v}', PLAN_LIMITS.paid.videos);
+}
 
 /* ------------------------------------------------------------
    OFFERS — the thing the $29 was already promising

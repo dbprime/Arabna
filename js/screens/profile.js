@@ -827,7 +827,7 @@ export function MyBusinessScreen(root) {
              ${bizStatsBlock(b)}
              <button class="btn btn-ghost btn-block mt-12" data-route="#/my-subscription">${t('mySubscription')}</button>`
           : `<div class="upsell" style="margin:14px 0">
-               <div class="upsell-txt"><b>${t('upgradeBanner')}</b><span>${fmtMoney(SUBSCRIPTION_PRICE)} ${t('month')}</span></div>
+               <div class="upsell-txt"><b>${S.planText(t('upgradeBanner'))}</b><span>${fmtMoney(SUBSCRIPTION_PRICE)} ${t('month')}</span></div>
                <button class="btn btn-gold btn-sm" data-route="#/subscribe/${b.id}">${t('upgradeBtn')}</button>
              </div>`}
         <button class="btn btn-ghost btn-block mt-8" data-route="#/advertise">${icon('megaphone', 19)} ${t('advertiseWithUs')}</button>
@@ -1261,7 +1261,7 @@ export function HelpScreen(root) {
             <button class="faq-head" aria-expanded="false" data-toggle="${n}">
               <span>${t('faqQ' + n)}</span>${icon('chevronD', 19, 'faq-arrow')}
             </button>
-            <div class="faq-body"><div class="faq-body-inner"><p>${t('faqA' + n)}</p></div></div>
+            <div class="faq-body"><div class="faq-body-inner"><p>${S.planText(t('faqA' + n))}</p></div></div>
           </div>`).join('')}
       </div>
     </div>

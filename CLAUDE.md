@@ -11,7 +11,7 @@ ARABNA · عربنا — a mobile-first web app for the Arab community in the U.
 **business directory + marketplace + events + magazine**, Arabic-first with a full English toggle.
 ("Classifieds / الإعلانات الشخصية" is now "Marketplace / السوق" — the old `#/classifieds`
 routes still resolve so shared links keep working.)
-Current version: **V.09.1 (prototype)**. Owner: dbprime. Deploys to Vercel (team DB Prime).
+Current version: **V.09.2 (prototype)**. Owner: dbprime. Deploys to Vercel (team DB Prime).
 
 ## Hard rules (from the product brief)
 0. ⚠️ **THE OWNER'S NAME IS NEVER WRITTEN — anywhere.** Not in this file, not
@@ -221,6 +221,14 @@ is no second flow to keep in sync.
 - **The pending intent carries its tier** (`setPendingIntent(route, label, tier)`).
   Guessing the tier from the route broke once `#/advertise` became browsable at
   tier 1: the same URL means "read the prices" or "pay", so only the intent knows.
+- **An upsell card shows a visitor no placeholder sentence (565)** — the
+  title and the door, and nothing standing where the price would be. The
+  card is a door, and a door does not explain the terms of entry; the
+  truth is told inside `#/subscribe` to whoever walked in. **`showsPrices()`
+  and `priceGate()` are untouched** — the rule is kept, the sentence is not.
+  ⚠️ **And `pricesAfterSignup` is NOT deleted**: `priceGate()` still reads
+  it, so deleting it would print a lock icon with no words on `#/subscribe`
+  and `#/advertise` — the rule broken by the batch that promises to keep it.
 - **The one exception is marketplace item prices** — a $14,500 car, a $650 sofa,
   "مجاني". Those are content, not our pricing, and are never hidden.
 - **Ad packages sort cheapest-first** from `prices.week1` (`ORDERED` in
@@ -8445,6 +8453,94 @@ the first name, in Arabic and in Latin, in every form above   0 · 0 · 0
 the surname, in Latin and in Arabic                          0 · 0
 i18n            416 derived keys · 1858 strings — unchanged, so no interface text was touched
 ```
+
+## V.09.2 — ten photos as a number, and the card stops saying «sign up first»
+
+Two decisions of the owner's, 3 September, after he saw the upgrade card
+on his phone.
+
+### «Was our agreement unlimited photos?» — there had never been a number
+**Measured before the answer, and it is three answers to one question:**
+
+```
+js/store.js · PLAN_LIMITS.paid.photos   Infinity   since 18 August
+i18n · faqA2 · photosUnlimited          «بلا حدّ» / «unlimited»
+i18n · subFeatures (before 555)         «حتى 10 صور»
+directory.js · the photo screen         max = limits.photos === Infinity ? 20 : limits.photos
+```
+
+**The code said no limit, an older text said ten, and the upload screen
+stopped at twenty without telling anybody.** The owner's decision is
+**ten**, and a number said before the purchase is truer than a promise
+with no limit that has one — «unlimited» on a server is storage the owner
+pays for.
+
+- **`PLAN_LIMITS.paid.photos = 10`, and the number is written nowhere
+  else in `js/`.** Every text carries `{n}` / `{f}` / `{v}` and
+  **`planText()` in `store.js`** fills them. ⚠️ **It is in `store.js` and
+  not `ui.js`** — the batch does not touch `ui.js`, and the number belongs
+  beside the table that holds it.
+- ⚠️ **The photo screen stopped asking «is it Infinity».** `10` is not
+  `Infinity`, so without this a **subscriber paying $29 would have been
+  shown «الباقة المجانية: حتى 3 صور» with an invitation to subscribe under
+  it.** `S.isPaid(b)` is the question — **the plan, never the arithmetic**
+  — and `test_v67 · 3.1` prints exactly that fault when the old line is
+  put back.
+- **Six keys carry the token**: `upgradeBanner` · `lockedSub` ·
+  `subFeatures` · `faqA2` · `photosPaidLimit` (renamed from
+  `photosUnlimited`, because a key that says «unlimited» is a lie in its
+  own name) · `photosUpsell`. **And `faqA2` is reached through the FAQ
+  loop in `profile.js`**, so the whole loop is wrapped — one line.
+
+### The sentence goes, the rule stays
+`pricesAfterSignup` stood where the price would be on the four upgrade
+cards. **The V.01.6 rule is untouched** — a visitor still sees no price,
+`showsPrices()` still guards every commercial figure, and the gate still
+stands at `#/subscribe`. **What goes is the sentence**: the card is a
+door, and a door does not explain the terms of entry. Same rule the owner
+set in `535` for the capacity strip.
+
+⚠️ **AND THE KEY IS NOT DELETED, which the batch file asked for — under
+its own condition, and the condition fails.** It says to delete it «after
+grep measures that no reader is left», and a reader IS left:
+**`priceGate()` in `ui.js`**, which the same file says must not change.
+Deleting it would print a lock icon with no words on `#/subscribe` and
+`#/advertise` for every visitor — **the V.01.6 rule broken by the batch
+that promises to keep it.** So the measurement was run, the reader was
+found, and the key stays.
+
+⚠️ **And one of the four cards was DEAD CODE, found by measuring rather
+than by reading.** The `.upsell` on a business page lives inside
+`if (mine)` — the owner box — so a visitor never reaches it; an owner is
+always a member, so `showsPrices()` was always true there and the
+placeholder branch at that site **could not render for anybody**. The two
+cards a visitor really meets are the list card and the marketplace's, and
+those are what `test_v67 · 2.1` and `2.4` measure.
+
+### `test_v67` — 35 assertions, and not one number written in it
+Every expected value is read out of `PLAN_LIMITS` in the running app: the
+day the limit moves, the texts and the screens are re-measured against
+the new number instead of against a literal that has gone stale. **A suite
+that hard-coded the ten would be committing the very fault the batch
+removes** — which is what `test_v27 · 4.4` did with its own `5`.
+
+```
+put `=== Infinity` back in the photo screen  → 3.1b · 3.1c · 3.1d · 3.4 red
+put the placeholder sentence back            → 2.1a · 2.1b red, both languages
+```
+
+⚠️ **And two of the suite's own checks were wrong first, and were
+corrected rather than the app.** A sweep for the paid number across the
+packs caught **`fileTooLarge` — «10 MB», a file SIZE** — so it is scoped
+to a photo *count*, the number standing beside its counted noun. And the
+business-page card was measured as owner-only, above.
+
+**Three items in `test_v64` were reversed, none softened**: they asked
+whether a number printed in the pack matched the table, and there is no
+printed number any more. They now demand the pack carry the token and
+**no digit at all** — stronger, because a hand-typed number turns them
+red — plus `2.3b`, that `planText` really fills from `PLAN_LIMITS`.
+**`test_v65` is green with no edit**, which was the batch's own condition.
 
 ## Known open items
 - **The header image is still far larger than its box.** V.04.7 replaced

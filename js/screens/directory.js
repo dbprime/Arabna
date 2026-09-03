@@ -962,10 +962,8 @@ function upsellHtml() {
   return `<div class="list-row upsell-row" data-route="#/subscribe">
     <span class="row-ico" style="color:var(--gold-bright)">${icon('crown', 22)}</span>
     <div class="row-main">
-      <div class="row-title">${t('upgradeBanner')}</div>
-      <div class="row-sub gold">${showsPrices()
-        ? `<span class="ltr">${fmtMoney(SUBSCRIPTION_PRICE)}</span> ${t('month')}`
-        : t('pricesAfterSignup')}</div>
+      <div class="row-title">${S.planText(t('upgradeBanner'))}</div>
+      ${showsPrices() ? `<div class="row-sub gold"><span class="ltr">${fmtMoney(SUBSCRIPTION_PRICE)}</span> ${t('month')}</div>` : ''}
     </div>
     <span class="chev">${icon(document.documentElement.dir === 'rtl' ? 'chevronL' : 'chevronR', 19)}</span>
   </div>`;
@@ -1181,8 +1179,8 @@ function ownerBlock(b, mine, paid, claim) {
                ${vs && vs.status === 'rejected' && vs.reason ? `<div class="err-msg">${icon('alert', 15)} ${esc(vs.reason)}</div>` : ''}`
             : `<div class="hint" style="text-align:center">${t('verifyNeedsPlan')}</div>`}
       ${publicPlace ? publicNote : !paid ? `<div class="upsell" style="margin:12px 0 0">
-        <div class="upsell-txt"><b>${t('upgradeBanner')}</b><span>${showsPrices()
-          ? fmtMoney(SUBSCRIPTION_PRICE) + ' ' + t('month') : t('pricesAfterSignup')}</span></div>
+        <div class="upsell-txt"><b>${S.planText(t('upgradeBanner'))}</b>${showsPrices()
+          ? `<span>${fmtMoney(SUBSCRIPTION_PRICE)} ${t('month')}</span>` : ''}</div>
         <button class="btn btn-gold btn-sm" data-route="#/subscribe/${b.id}">${t('upgradeBtn')}</button>
       </div>` : ''}
     </div>`;
@@ -1246,7 +1244,7 @@ export function openReplySheet(reviewId, onSaved) {
 function lockedBlock(title, sub) {
   return `<div class="locked mt-12">
     <div class="lk-ico">${icon('lock', 31)}</div>
-    <b>${title}</b><span>${sub || t('lockedSub')}</span>
+    <b>${title}</b><span>${sub || S.planText(t('lockedSub'))}</span>
     <button class="btn btn-outline-gold btn-sm" data-route="#/subscribe">${t('upgradeBtn')}</button>
   </div>`;
 }
@@ -1482,7 +1480,7 @@ export function AddBusinessScreen(root) {
       <div class="field mt-12"><label class="label">${t('descLabel')} <span class="muted">(${t('optional')})</span></label><textarea class="textarea" id="bDesc"></textarea></div>
       <div id="bDup"></div>
       <button class="btn btn-gold btn-block" id="bSave">${t('addBusiness')}</button>
-      <div class="hint" style="text-align:center;margin-top:10px">${t('lockedSub')}</div>
+      <div class="hint" style="text-align:center;margin-top:10px">${S.planText(t('lockedSub'))}</div>
     </div>`;
 
   /* The checkboxes are generated from the registry for the chosen category —
@@ -1953,19 +1951,19 @@ export function BusinessPhotosScreen(root, params) {
   renderHeader({ simple: true, title: t('managePhotos') });
 
   const limits = S.planLimits(b);
-  const max = limits.photos === Infinity ? 20 : limits.photos;
+  const max = limits.photos;
   const current = S.bizPhotos(b.id);
 
   root.innerHTML = `
     <div class="pad mt-16">
       <div class="list-note" style="margin:0 0 14px">${icon('info', 18)}<span>${t('photosReviewNote')}</span></div>
-      <div class="hint" style="margin-bottom:10px">${limits.photos === Infinity
-        ? t('photosUnlimited') : t('photosFreeLimit')}</div>
+      <div class="hint" style="margin-bottom:10px">${S.planText(S.isPaid(b)
+        ? t('photosPaidLimit') : t('photosFreeLimit'))}</div>
       <div id="phHost"></div>
       <button class="btn btn-gold btn-block mt-12" id="phSave">${icon('check', 19)} ${t('saveChanges')}</button>
-      ${limits.photos !== Infinity ? `<div class="upsell" style="margin:14px 0 0">
-        <div class="upsell-txt"><b>${t('photosUpsell')}</b><span>${showsPrices()
-          ? fmtMoney(SUBSCRIPTION_PRICE) + ' ' + t('month') : t('pricesAfterSignup')}</span></div>
+      ${!S.isPaid(b) ? `<div class="upsell" style="margin:14px 0 0">
+        <div class="upsell-txt"><b>${S.planText(t('photosUpsell'))}</b>${showsPrices()
+          ? `<span>${fmtMoney(SUBSCRIPTION_PRICE)} ${t('month')}</span>` : ''}</div>
         <button class="btn btn-gold btn-sm" data-route="#/subscribe/${b.id}">${t('upgradeBtn')}</button>
       </div>` : ''}
     </div>`;

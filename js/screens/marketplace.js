@@ -119,8 +119,8 @@ export function MarketplaceScreen(root) {
       el.innerHTML = `<div class="list-note">${icon('hammer', 18)}<span>${t('handymanRule')}</span></div>
         <div class="upsell" data-route="#/subscribe">
           <div class="tile-ico">${icon('crown', 22)}</div>
-          <div class="upsell-txt"><b>${t('handymanUpsell')}</b><span>${showsPrices()
-            ? fmtMoney(SUBSCRIPTION_PRICE) + ' ' + t('month') : t('pricesAfterSignup')}</span></div>
+          <div class="upsell-txt"><b>${t('handymanUpsell')}</b>${showsPrices()
+            ? `<span>${fmtMoney(SUBSCRIPTION_PRICE)} ${t('month')}</span>` : ''}</div>
           <span class="btn btn-gold btn-sm">${t('upgradeBtn')}</span>
         </div>`;
       wireRoutes(el);

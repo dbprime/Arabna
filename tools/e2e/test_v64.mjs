@@ -75,15 +75,33 @@ const FREE = tier('free'), PAID = tier('paid');
 /* ============ 2 — the numbers come from PLAN_LIMITS ============ */
 {
   const sf = vals(i18n, 'subFeatures');
-  ok('2.1 subFeatures says unlimited photos, and PLAN_LIMITS.paid.photos is Infinity',
-     PAID.photos === 'Infinity' && /بلا حدّ/.test(sf[0] || '') && /Unlimited/.test(sf[1] || ''), `paid.photos=${PAID.photos}`);
+  /* ⚠️ REVERSED BY 565, and the subject is unchanged: these three items have
+     always asked «do the texts and PLAN_LIMITS agree». They did it by
+     comparing a number PRINTED in the pack against the table. 565 removed
+     the printed number altogether — the owner decided ten photos, and the
+     figure is now written once in `store.js` while every text carries a
+     token that `planText()` fills. So agreement is no longer «the same
+     digits in two places»; it is «the pack names no digit at all, and the
+     token it carries is the one the table fills». Softening these to
+     accept anything would have thrown away the guard; they are stronger
+     now, because a hand-typed number in the pack turns them red. */
+  ok('2.1 subFeatures carries {n}, and PLAN_LIMITS.paid.photos is a finite number',
+     Number.isFinite(Number(PAID.photos)) && /\{n\}/.test(sf[0] || '') && /\{n\}/.test(sf[1] || ''),
+     `paid.photos=${PAID.photos}`);
   const ls = vals(i18n, 'lockedSub');
   const nums = (s) => s.match(/\d+/g) || [];
-  ok(`2.2 lockedSub carries PLAN_LIMITS.free.photos (${FREE.photos}) and no other number`,
-     ls.length === 2 && ls.every(s => nums(s).length >= 1 && nums(s).every(n => n === FREE.photos)),
-     ls.map(s => nums(s).join(',') || '—').join(' | '));
-  ok(`2.3 subFeatures carries PLAN_LIMITS.paid.videos (${PAID.videos})`,
-     sf.length === 2 && sf.every(s => nums(s).includes(PAID.videos)), sf.map(s => nums(s).join(',')).join(' | '));
+  ok('2.2 lockedSub carries {f} and {n}, and writes no number by hand',
+     ls.length === 2 && ls.every(s => /\{f\}/.test(s) && /\{n\}/.test(s) && nums(s).length === 0),
+     ls.map(s => nums(s).join(',') || 'no literal number').join(' | '));
+  ok('2.3 subFeatures carries {v} for the videos, and no number of its own',
+     sf.length === 2 && sf.every(s => /\{v\}/.test(s) && nums(s).length === 0),
+     sf.map(s => nums(s).join(',') || 'no literal number').join(' | '));
+  /* and the tokens really resolve to the table — the half a pack check
+     cannot see, since planText lives in store.js */
+  ok('2.3b …and planText fills them from PLAN_LIMITS itself',
+     /\{n\}'\s*,\s*PLAN_LIMITS\.paid\.photos/.test(store)
+     && /\{f\}'\s*,\s*PLAN_LIMITS\.free\.photos/.test(store)
+     && /\{v\}'\s*,\s*PLAN_LIMITS\.paid\.videos/.test(store));
   ok('2.4 …and «offers» is promised only because PLAN_LIMITS.paid.offers is true',
      PAID.offers === 'true' && /عروض/.test(sf[0] || '') && /Offers/.test(sf[1] || ''));
 }
