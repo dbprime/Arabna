@@ -9,7 +9,7 @@ import { CLASSIFIEDS, BUSINESSES, NOTIFICATIONS, SLIDER_ADS, HOUSE_SLIDE, MINI_A
          ATTRIBUTES, ATTR_GROUPS, CATEGORIES, DAY_KEYS, CHIP_MIN, CHIP_MAX_SHARE, EVENT_TYPES,
          GENERIC_WORDS, NAME_SIM_MIN, STREET_WORDS, SUBSCRIPTION_PRICE, AD_CARD_COLOR,
          CITY_POINTS, REGIONS, REGION_RADIUS_MI, STATE_SUGGEST,
-         AD_PRODUCTS, AD_SLOTS,
+         AD_PRODUCTS, AD_SLOTS, APP_VERSION,
          attrById, attrInCat, isAllDay, week, nextOccurrence } from './data.js';
 import { expandQuery, hayMatches, catMatches, squash } from './synonyms.js';
 
@@ -79,8 +79,15 @@ function readState() {
 /* ⚠️ AND THE ONLY WRITE. It stood as five identical `try { setItem } catch`
    lines — which is the rule written five times, and the fourth is the one
    nobody edits. That is `esc()`'s own fault in another file. */
+/* ⚠️ THE SHAPE NUMBER. `arabna.v1` is in the KEY's name, not in the data,
+   so a migration the day the shape changes has nothing to read to know
+   which shape it is looking at — and a migration that guesses erases. One
+   number, written today and read in a year. It lives in what is WRITTEN
+   rather than in DEFAULTS, so it is stamped on every save and cannot be
+   dropped by a sign-out reset. */
+export const SCHEMA = 1;
 function writeState() {
-  try { BACKEND.write(JSON.stringify(state)); return true; }
+  try { BACKEND.write(JSON.stringify(Object.assign({ schema: SCHEMA }, state))); return true; }
   catch (e) { return false; }        // quota full, or storage disabled
 }
 
@@ -841,7 +848,7 @@ export function saveGreeting(g) {
   const clash = greetingClash(from, to, g.id);
   if (clash) return { ok: false, err: 'clash', clash };
   const rec = {
-    id: g.id || 'g' + Date.now().toString(36),
+    id: g.id || mintId('g'),
     title, body, from, to,
     cta: g.cta && g.cta.label && g.cta.route ? { label: g.cta.label, route: g.cta.route } : null,
     off: !!g.off,
@@ -1068,7 +1075,7 @@ export function prayerBarAsked() { return prayerBarPref() !== null; }
  */
 export function suggestWorship({ name, address, phone, kind }) {
   const rec = {
-    id: 'u' + Date.now(),
+    id: mintId('u'),
     name: { ar: name, en: name },
     cat: 'worship',
     phone: String(phone || '').trim(),
@@ -1207,7 +1214,7 @@ export function saveWorshipTimes(bizId, worship) {
 export function reportWorshipTime(bizId, text) {
   const line = String(text || '').trim();
   if (!line) return null;
-  const item = { id: 'wf' + Date.now(), bizId, text: line, when: now(), status: 'pending' };
+  const item = { id: mintId('wf'), bizId, text: line, when: now(), status: 'pending' };
   state.worshipFixes = (state.worshipFixes || []).concat(item);
   save();
   return item;
@@ -2416,7 +2423,7 @@ export function markNotifRead(id) {
 /** Raise a notification for the listing owner (approve / reject / message). */
 export function pushNotif({ icon = 'bell', title, body, route }) {
   state.extraNotifs.unshift({
-    id: 'n' + Date.now() + Math.random().toString(36).slice(2, 6),
+    id: mintId('n'),
     icon, unread: true, title, body, route,
     when: { ar: 'الآن', en: 'just now' },
   });
@@ -2661,7 +2668,7 @@ export function addOffer(bizId, { text, price, endsAt }) {
   if (!end || end <= t) return { error: 'noEnd' };
   if (end > cap) return { error: 'tooLong' };
 
-  const item = { id: 'of' + t + Math.floor(Math.random() * 1e3), bizId,
+  const item = { id: mintId('of'), bizId,
                  text: body, price: stripPhones(String(price || '').trim()).text,
                  endsAt: end, status: 'pending', when: t };
   state.offers = Object.assign({}, state.offers, { [bizId]: allOffersFor(bizId).concat(item) });
@@ -2929,7 +2936,7 @@ export function requestClaim(bizId, details) {
   const existing = claimFor(bizId);
   if (existing && existing.status === 'pending') return existing;
   const rec = Object.assign({
-    id: 'cl' + Date.now() + '-' + ((state.claims || []).length + 1),
+    id: mintId('cl'),
     bizId, status: 'pending', when: Date.now(), reason: '',
   }, details || {});
   state.claims = (state.claims || []).filter(c => c.bizId !== bizId).concat([rec]);
@@ -3160,7 +3167,7 @@ export const DEMO_CODE = '123456';
  */
 export function runIdentityCheck() {
   return new Promise(res => setTimeout(() =>
-    res({ ok: true, ref: 'demo_' + Date.now().toString(36) }), 900));
+    res({ ok: true, ref: mintId('demo_') }), 900));
 }
 
 export function sendEmailCode(email) {
@@ -3211,7 +3218,7 @@ export function sendSmsCode(phone) {
    move rather than a rewrite.
    ============================================================ */
 export function chargeCard(amount, description) {
-  return new Promise(res => setTimeout(() => res({ ok: true, id: 'pay_' + Date.now(), amount, description }), 1400));
+  return new Promise(res => setTimeout(() => res({ ok: true, id: mintId('pay_'), amount, description }), 1400));
 }
 
 /* ============================================================
@@ -3767,7 +3774,7 @@ export function hasBadge() {
 }
 
 export function addClassified(item) {
-  const id = 'u' + Date.now();
+  const id = mintId('u');
   const rule = catRule(item.cat);
   const rec = Object.assign({
     id, daysLeft: rule.days, boosted: false, photos: [], owner: 'me',
@@ -3952,7 +3959,7 @@ export function addReview(bizId, rating, text) {
   const existing = myReviewFor(bizId);
   if (existing) return updateReview(existing.id, rating, text);
   const rec = {
-    id: 'r' + Date.now(), bizId, rating, mine: true,
+    id: mintId('r'), bizId, rating, mine: true,
     user: (state.user && state.user.name) || 'أنا',
     text: { ar: text, en: text },
     when: { ar: 'الآن', en: 'just now' },
@@ -4043,7 +4050,7 @@ export function addEvent(ev, status = 'pending') {
   if (status !== 'pending' && !adminSession) status = 'pending';
   if (ev && ev.featured && !adminSession) ev = Object.assign({}, ev, { featured: false });
   const rec = Object.assign({}, ev, {
-    id: 'ev' + Date.now(),
+    id: mintId('ev'),
     status,
     source: ev.source || 'manual',
     externalId: ev.externalId || '',
@@ -4104,7 +4111,7 @@ export function featureEvent(id, on = true) { updateEvent(id, { featured: !!on }
 
 export function addFlag({ kind, refId, reason, risk = 'medium', item }) {
   if (state.flags.some(f => f.refId === refId && f.kind === kind)) return;
-  state.flags.unshift({ id: 'f' + Date.now() + Math.random().toString(36).slice(2, 5),
+  state.flags.unshift({ id: mintId('f'),
                         kind, refId, reason, risk, item: item || null, created: Date.now() });
   save();
 }
@@ -4234,7 +4241,7 @@ export function sendMessage(listingId, text, lang = 'ar') {
   const clean = scrubContact(text, lang);
   const scan = scanMessage(text, listing);
   const msg = {
-    id: 'm' + Date.now(), listingId, from: 'me', text: clean.text,
+    id: mintId('m'), listingId, from: 'me', text: clean.text,
     offPlatform: OFF_PLATFORM.test(asciiDigits(String(text || ''))),
     scrubbed: clean.removed,
     when: { ar: 'الآن', en: 'just now' }, created: Date.now(),
@@ -4271,7 +4278,6 @@ export function sendMessage(listingId, text, lang = 'ar') {
   return { msg, removed: clean.removed, flagged: scan.flagged };
 }
 
-let bizSeq = 0;
 /**
  * Delete a listing from the directory. A user-added one goes out of
  * `extraBusinesses`; a seed cannot, because it lives in `data.js` and is
@@ -4300,7 +4306,7 @@ export function deleteBusiness(id) {
 export function addBusiness(biz, { pendingReview = false } = {}) {
   // a counter as well as the clock: two records added inside the same
   // millisecond must not share an id
-  const id = 'ub' + Date.now() + '-' + (++bizSeq);
+  const id = mintId('ub');
   const rec = Object.assign({ id, plan: 'free', verified: false, rating: 0, reviewCount: 0, needsGeo: true, claimed: true, photos: 0, videos: 0 }, biz);
   if (pendingReview) {
     // added over a certain duplicate match: the person said it is a
@@ -4355,6 +4361,33 @@ export function yearlySaving() {
  * data and goes with it.
  */
 export function now() { return Date.now() + (state.clockOffset || 0); }
+
+/* ---------- one id maker, and every record goes through it ----------
+   ⚠️ MEASURED, NOT ARGUED. Seventeen places in this file made a record id,
+   and eleven of them carried no randomness at all — the whole id was the
+   millisecond. Running this file's own expressions: 20,000 reviews minted
+   in a loop came out as SIX distinct ids, and two devices minting a claim
+   in the same millisecond produced the identical string, character for
+   character. The four that look safest are the worst: their suffix is a
+   counter ON THE DEVICE (`claims.length`, `myAds.length`, `bizSeq`), and a
+   counter that starts at zero on every device GUARANTEES the collision it
+   appears to prevent.
+   ⚠️ AND NOTHING HAS EVER SEEN IT, because the ids have never met: each
+   device writes its own localStorage. The day the server lands they become
+   primary keys in one table, and one person's review silently overwrites
+   another's — with no error anywhere.
+   The randomness is `randomSalt()`, already in this file and already
+   exercised: crypto.getRandomValues with a fallback. No library, and no
+   second source of randomness.
+   ⚠️ The time stays in the id, and it comes from `now()` — never
+   `Date.now()`. `now()` carries `state.clockOffset` (the admin test clock),
+   which every `when` field already reads: a record minted with the clock
+   wound forward would otherwise carry two different times. The time does
+   not do the separating — the random half does — it is there so an id read
+   by eye in the admin panel or a fault report still says when. */
+export function mintId(prefix) {
+  return String(prefix) + now().toString(36) + '-' + randomSalt().slice(0, 12);
+}
 export function advanceClock(days) {
   state.clockOffset = (state.clockOffset || 0) + days * DAY_MS;
   runSubscriptionCycle();
@@ -4616,7 +4649,7 @@ export function addCashOrder({ kind, bizId = null, product = '', cat = '',
     };
   } else {
     state.myAds.unshift({
-      id: 'ad' + t0 + '-' + (state.myAds || []).length,
+      id: mintId('ad'),
       product, cat, duration: 'cash', price: Number(amount) || 0,
       status: 'live', created: t0, startsAt: t0, endsAt,
       method, cash: { receivedBy, reference, note, receiptId: receipt.id },
@@ -4650,7 +4683,7 @@ export function addAdOrder(order) {
   const p = adProduct(order.product);
   const t = now();
   const rec = Object.assign({
-    id: 'ad' + t + '-' + (state.myAds || []).length,
+    id: mintId('ad'),
     status: 'pending', created: t,
     startsAt: t,
     endsAt: t + ((p && p.days) || 7) * 86400000,
@@ -4692,7 +4725,7 @@ export function renewAd(id) {
 
 /* ---- the waiting list, so a full placement does not lose the buyer ---- */
 export function joinAdWaitlist({ product, cat, name, phone, preferred }) {
-  const rec = { id: 'wl' + now() + '-' + (state.adWaitlist || []).length,
+  const rec = { id: mintId('wl'),
                 product, cat: cat || '', name, phone, preferred: preferred || '', when: now() };
   state.adWaitlist = (state.adWaitlist || []).concat([rec]);
   save();
@@ -5119,7 +5152,7 @@ export function impressionsByDay(n = 30) {
 }
 
 export function addArticle(a) {
-  const rec = Object.assign({ id: 'ua' + Date.now(), read: 3, media: 'image', icon: 'newspaper', published: true }, a);
+  const rec = Object.assign({ id: mintId('ua'), read: 3, media: 'image', icon: 'newspaper', published: true }, a);
   state.extraArticles.unshift(rec);
   save();
   return rec;
@@ -5162,7 +5195,7 @@ export function spawnRepeat(eventId) {
   const year = new Date(nextAt).getFullYear();
 
   const copy = Object.assign({}, src, {
-    id: 'ev' + Date.now() + '-' + year,
+    id: mintId('ev') + '-' + year,
     // a draft, never live: the venue and the price have to be checked first
     status: 'pending',
     startsAt: nextAt,
@@ -5485,7 +5518,10 @@ export function exportMyData() {
 
 export function exportBackup() {
   return JSON.stringify({
-    app: 'ARABNA', version: 'V.02.1', exportedAt: new Date().toISOString(),
+    /* ⚠️ READ, NEVER WRITTEN A SECOND TIME. This said 'V.02.1' while the
+       app was four and a half versions past it — the same fault as `esc()`:
+       a rule written twice, one copy edited and the other forgotten. */
+    app: 'ARABNA', version: APP_VERSION, schema: SCHEMA, exportedAt: new Date().toISOString(),
     seedCounts: { businesses: BUSINESSES.length, events: EVENTS.length },
     state,
   }, null, 2);

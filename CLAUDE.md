@@ -11,7 +11,7 @@ ARABNA · عربنا — a mobile-first web app for the Arab community in the U.
 **business directory + marketplace + events + magazine**, Arabic-first with a full English toggle.
 ("Classifieds / الإعلانات الشخصية" is now "Marketplace / السوق" — the old `#/classifieds`
 routes still resolve so shared links keep working.)
-Current version: **V.09.0 (prototype)**. Owner: Rai Elby (@dbprime). Deploys to Vercel (team DB Prime).
+Current version: **V.09.1 (prototype)**. Owner: Rai Elby (@dbprime). Deploys to Vercel (team DB Prime).
 
 ## Hard rules (from the product brief)
 1. **One repository, one Vercel project.** No duplicates, no stray preview projects.
@@ -8249,6 +8249,108 @@ that measures nothing.
 ```
 126 runs · 63 suites · 6,260 assertions · zero red · zero crash
 ```
+
+## V.09.1 — ids that hold the day the server arrives
+
+⚠️ **This batch shows the reader nothing, and is not measured by what is
+on screen.** It is measured by what does not break in six months — the
+owner's decision of 29 August: «everything is written on the assumption of
+a server, and the server is close, so build whatever can be built that way
+now.»
+
+### The fault: ids that had never met
+**Seventeen places in `js/store.js` minted a record id, and eleven carried
+no randomness at all** — the whole id was the millisecond. Measured by
+running this file's own expressions, not a model of them:
+
+```
+20,000 reviews minted in a loop      6 distinct ids
+two devices, same millisecond        cl1788027624216-1  ·  cl1788027624216-1
+the same, through mintId             0 duplicates in 20,000, clock frozen
+```
+
+- ⚠️ **Read the first line twice: it is not a two-device fault, it is a
+  ONE-device fault.** Twenty thousand reviews came out as six ids, because
+  everything in the id was the millisecond. Today's stock hides it — nobody
+  writes twenty thousand — and the server will not.
+- ⚠️ **The four that look safest are the worst.** Their suffix is a counter
+  **on the device** (`claims.length`, `myAds.length` twice, `bizSeq`), and a
+  counter that starts at zero on every device **guarantees** the collision
+  it appears to prevent: the first claim from one phone and the first claim
+  from another, in the same millisecond, are identical character for
+  character.
+- **Nothing has ever seen it because the ids have never met**: each device
+  writes its own `localStorage`. On one shared table they are primary keys,
+  and one person's review silently overwrites another's, with no error.
+- **`'wl'` used `now()` while the other thirteen used `Date.now()`** — one
+  rule written two ways in one file.
+
+### The fix, with the primitive that was already here
+`mintId(prefix)` — prefix + time + twelve hex from **`randomSalt()`**, the
+function this file already had (`crypto.getRandomValues`, with a fallback).
+No library and no second source of randomness.
+
+- ⚠️ **The time stays in the id, and it comes from `now()`, never
+  `Date.now()`.** `now()` carries `state.clockOffset`, the admin test clock,
+  which every `when` field already reads — a record minted with the clock
+  wound forward otherwise carries two different times. The time is not what
+  separates ids (the random half is); it is there so an id read by eye in
+  the admin panel still says when.
+- ⚠️ **No saved id is touched — new records only.** `#/marketplace/<id>` is
+  a link people send on WhatsApp, and re-numbering what is stored breaks
+  every one of them.
+- **And the shape was measured free before it was changed**: nothing in the
+  project reads an id's shape — no slice of its prefix, no time pulled out
+  of it, no ordering by it. Without that measurement this would have been a
+  guess.
+- **`bizSeq` is deleted, not left unused** — a dead counter reads months
+  later as a working mechanism.
+
+### Two lines about the data's identity
+- **`schema` is written into storage** (`SCHEMA = 1`, stamped by the only
+  write). `arabna.v1` is in the KEY's name, not in the data, so a migration
+  had nothing to read to know which shape it was looking at — **and a
+  migration that guesses erases.**
+- **`exportBackup` wrote `version: 'V.02.1'`** while the app was four and a
+  half versions past it — the `esc()` fault again, a rule written twice with
+  one copy edited. It reads `APP_VERSION` now, and carries `schema` with it.
+
+### What this batch deliberately does not build
+An async layer over `store.js` (**refused with a reason**: its purpose is to
+gather scattered doors into one, and measured, there is exactly one door —
+`localStorage` appears nowhere in `js/screens/`, `ui.js`, `app.js`,
+`prayer.js` or `i18n.js`), EXIF stripping (**already done**: every picker
+goes through one `canvas.drawImage` + `toDataURL`, which drops EXIF whole),
+merging two devices' data, and a server timestamp.
+
+### `test_v66` — 18 assertions, and the teeth are the point
+⚠️ **Any test that mints two records a moment apart passes with the old
+code too**, because the millisecond moves between them. So the clock is
+**frozen**, and the old expression is re-run under the same freeze and must
+collapse to one id — that assertion is inside the suite, so it can never
+go quietly green.
+
+```
+the claim id back to its old expression   → 11.2 red
+mintId without its random half            → 1.1 · 2.1 · 3.2 · 7.2 · 11.4 red
+the version literal back in exportBackup  → 10.1 red
+```
+
+⚠️ **And the spec's item 7 was measured wrong and is corrected here.** It
+said «spawnRepeat twice makes one copy — `repeat.spawned` prevents the
+second». Measured on the tree **before** this batch: two calls make two
+copies and neither returns null. What `repeat.spawned` governs is
+`dueRepeats`, which stops **offering** the event once the year is stamped —
+and that is the only door `spawnRepeat` is reached through. The suite
+checks the guard where it lives; making `spawnRepeat` refuse would be a
+behaviour change, and this batch is about ids.
+
+⚠️ **And the count is nineteen, not the fourteen the spec listed.** Its list
+predates the greetings card (`'g'`), and missed the second `'u'` and the
+`'ub'` business id; the two remaining sites are the simulated provider
+references (`pay_`, `demo_`) — values a gateway will return one day, ours
+until then, and stored in our own tables. All nineteen mint, and **zero ids
+are still made out of the clock alone.**
 
 ## Known open items
 - **The header image is still far larger than its box.** V.04.7 replaced
