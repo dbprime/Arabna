@@ -4,6 +4,12 @@
     "t": "Social Security (SSN)",
     "blocks": [
       {
+        "alert": "Information-only notice\nArabna provides this guide for general informational purposes only. It is not legal, tax, immigration, or other professional advice and does not create a professional-client relationship. Rules vary by jurisdiction, agency, and individual circumstances and may change after the “last reviewed” date shown. Do not rely on this guide to make a decision or meet a deadline. Confirm requirements with the responsible government agency and consult a licensed professional when appropriate. External links do not imply endorsement by Arabna."
+      },
+      {
+        "do": "Sources last reviewed: {ncReviewed}"
+      },
+      {
         "p": "**What it is:** a nine-digit number you need in order to work, to open accounts, and for taxes. **It is free** — nobody takes money from you for it."
       },
       {
@@ -584,7 +590,7 @@
         "p": "**A valid passport + a visa + a valid I-94.** This is written at the Department of Public Safety: [Lawful presence page](https://www.dps.texas.gov/section/driver-license/us-citizenship-or-lawful-presence-requirement)"
       },
       {
-        "alert": "**And a warning:** the department **has proposed a change** requiring **the visa itself to be valid**, rather than expired with a valid I-94. **It has not been adopted yet**, and the official page still carries the old wording. **So check the page before you rely on an expired visa.**"
+        "alert": "**And a warning:** the department **has proposed a change** requiring **the visa itself to be valid**, rather than expired with a valid I-94. **It has not been adopted yet**, and the official page still carries the old wording. **So check the page before you rely on an expired visa.**\nThe department has two official pages that say different things about the visa, and we quote both without choosing between them:\n· “Lawful presence” page: visa may be valid or expired, with a valid I-94 (page dated September 22, 2020 · accessed September 1, 2026)\n· “Identification requirements” page: valid, unexpired visa (page dated September 22, 2020 · accessed September 1, 2026)\nThe Texas Department of Public Safety decides; ask them through their [contact page](https://www.dps.texas.gov/section/driver-license/contact-us) before your appointment."
       },
       {
         "h": "The forms"
@@ -997,7 +1003,7 @@
         "h": "And the help with choosing is free"
       },
       {
-        "p": "**The Navigator** is trained **and required to be neutral**, **and the service is completely free** — do not pay anyone to enroll you. [localhelp.healthcare.gov](https://localhelp.healthcare.gov)"
+        "p": "**The Navigator** is trained **and required to be neutral**, **and the service is completely free** — do not pay anyone to enroll you. [healthcare.gov/find-local-help](https://www.healthcare.gov/find-local-help/)"
       },
       {
         "do": "Type the ZIP code to see who can help you face to face. **The help is free — and anyone who asks you for a fee is not one of them.**"
@@ -1185,7 +1191,7 @@
       {
         "ul": [
           "It helps with heating and cooling bills, **and it stops your service from being cut off**",
-          "[Program information](https://www.acf.hhs.gov/ocs/programs/liheap) · [1-866-674-6327](tel:+18666746327) (business days)",
+          "[Program information](https://acf.gov/ocs/programs/liheap) · [1-866-674-6327](tel:+18666746327) (business days)",
           "**Careful: this program does require a particular legal status** — unlike school meals"
         ]
       },
@@ -1229,7 +1235,7 @@
           ],
           [
             "Renew online",
-            "[renew.txdmv.gov](https://renew.txdmv.gov/Renew/RegistrationRenewalServlet)"
+            "[txdmv.gov/motorists](https://www.txdmv.gov/motorists/register-your-vehicle)"
           ],
           [
             "Title transfer",
@@ -1256,7 +1262,7 @@
         "p": "**You are asked for proof of insurance in two places:** when you register the car — **and without proof it is not registered** — **and any time a patrol pulls you over.**"
       },
       {
-        "p": "**If you have a dispute with your insurance company:** the Texas Department of Insurance — [1-800-252-3439](tel:+18002523439) · [File a complaint](https://www.tdi.texas.gov/consumer/complfrm.html)"
+        "p": "**If you have a dispute with your insurance company:** the Texas Department of Insurance — [1-800-252-3439](tel:+18002523439) · [File a complaint](https://www.tdi.texas.gov/consumer/get-help-with-an-insurance-complaint.html)"
       },
       {
         "do": "An insurance complaint needs: **the policy number, the company name, and what happened with its date.** Have them ready before you open the form."
@@ -1339,7 +1345,7 @@
         ]
       },
       {
-        "p": "To complain: [Complaint portal](https://ocrportal.hhs.gov/ocr/portal/lobby.jsf) · [1-877-696-6775](tel:+18776966775) — **and you have 180 days**"
+        "p": "To complain: [Complaint portal](https://ocrportal.hhs.gov/ocr/smartscreen/main.jsf) · [1-877-696-6775](tel:+18776966775) — **and you have 180 days**"
       },
       {
         "h": "At school"
@@ -1620,7 +1626,7 @@
           ],
           [
             "Texas Workforce Commission",
-            "[twc.texas.gov/posters](https://www.twc.texas.gov/programs/posters)"
+            "[twc.texas.gov/posters-workplace](https://www.twc.texas.gov/programs/unemployment-tax/posters-workplace)"
           ]
         ]
       },
@@ -1695,7 +1701,7 @@
           ],
           [
             "IRS impersonation",
-            "[tigta.gov/hotline](https://www.tigta.gov/hotline) · [800-366-4484](tel:+18003664484)"
+            "[tigta.gov/contact/hotline](https://www.tigta.gov/contact/hotline) · [800-366-4484](tel:+18003664484)"
           ],
           [
             "Fake tax email",

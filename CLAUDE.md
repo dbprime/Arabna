@@ -8174,6 +8174,78 @@ the animation outside the media query    → 3.2 red
 126 runs · 63 suites · 6,260 assertions · zero red · zero crash
 ```
 
+## Two official pages contradict each other, and the guide quoted one
+
+⚠️ **The Texas driver-licence section pointed at the department's «lawful
+presence» page alone.** Read from both pages today:
+
+```
+lawful presence page    "…visa (Visa may be valid or expired) with valid I-94"
+identification page     "…passport with attached valid, unexpired visa … and valid Form I-94"
+both dated              22 September 2020
+```
+
+**So somebody with an expired visa and a valid I-94 read here that they
+qualify, and stood in front of a clerk working from the other page.** A
+family that arrived a month ago, a day of hourly work lost, and trust that
+does not come back — the same rule that forbids inventing a jumuah time.
+
+- ⚠️ **We do not choose between them** — the lawyer's rule (Q21): quote
+  both, name the agency, date them, and point the reader at the body that
+  decides. **The earlier draft of this batch said «the enforced rule is the
+  first, so carry a printout», and that is cancelled**; not a letter of it
+  entered the guide.
+- **The standing alert keeps its words** and the neutral quotation follows
+  it **inside the same block**, so section 4 still shows one connected
+  alert and not two.
+- **The lawyer's information-only notice is the guide's first block**,
+  verbatim in both languages — a legal text is carried across, never
+  improved.
+- ⚠️ **And the «last reviewed» date is READ, never typed**: `{ncReviewed}`
+  in either pack is replaced at build time with the date of the newest
+  source-check report in `docs/تقارير/` (measured: 2026-08-31). A date
+  written by hand in the source is a date that goes stale with nobody
+  noticing.
+
+### Seven links replaced, and the reason is measurement, not caution
+The owner's rule of 1 September: «no wrong or misleading link, and no
+half-fact — dropping it beats stating it wrongly.» Of 75 distinct
+addresses, 55 are live and match what their path promises, 7 are replaced,
+and **13 could not be checked because the egress proxy blocks every
+external host — and «I could not reach it» is not «broken»**, so an
+official link is never deleted for a failure of mine.
+
+⚠️ **And this session could not re-measure any of the seven either**: the
+proxy refuses every host (`403` on the tunnel), so the measurements are the
+ones recorded in the spec, and this is said rather than implied. The one
+new link — the department's contact page — was confirmed through search
+results rather than opened, and that difference is stated too.
+
+⚠️ **Four of the seven labels WERE the old address, printed.** The spec
+says the sentence around a link is settled word for word — but a label
+that reads `renew.txdmv.gov` is not «the words around it», it is an
+address shown to the reader, and leaving it would print an address we had
+just decided not to send anybody to. Those four labels name their new
+destination; every prose label is untouched.
+
+### The counts, and the check that carried one by hand
+```
+sections 17 · phones 41 · links 86 → 87 · «what to write» lines 26 → 27
+```
+⚠️ **`check-render.mjs` had the literal 86**, so this batch would have
+turned it red with nothing wrong. The count is **derived from the packs**
+now — parsed independently of the renderer, with the tool block's `alt`
+link excluded exactly as `build.mjs` excludes it — so it still goes red if
+a link fails to render, and it moves by itself when content does.
+
+### What this batch does NOT do
+⚠️ **`js/newcomer-content.js` and the full-text markdown are generated for
+the check and then DELETED before the commit** — measured, `git status`
+names neither. `030` has not landed, so committing them would land half of
+it with no decision. **The reader sees none of this until `030` does.** And
+no suite is added: a suite guarding what is not on screen is a green line
+that measures nothing.
+
 ## Known open items
 - **The header image is still far larger than its box.** V.04.7 replaced
   the 831/837 KB lockups with the cropped marks at **333/338 KB** — 60% off

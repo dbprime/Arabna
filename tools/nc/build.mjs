@@ -22,7 +22,23 @@ const META = [
   ['taxes',      'creditCard',  'finance',      ''],
 ];
 
-const q = s => "'" + String(s).replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/\n/g,'\\n') + "'";
+/* ⚠️ THE «last reviewed» DATE IS READ, NEVER TYPED. The lawyer's notice at
+   the head of the guide carries a review date, and a date written by hand in
+   the source is a date that goes stale with nobody noticing. `{ncReviewed}`
+   in either pack is replaced here with the date of the newest source-check
+   report in docs/تقارير/ — the file that records when the links and the
+   official pages were last read. */
+const reviewed = (() => {
+  const dir = new URL('../../docs/\u062a\u0642\u0627\u0631\u064a\u0631/', import.meta.url);
+  const dates = fs.readdirSync(dir)
+    .filter(n => /\u0645\u0635\u0627\u062f\u0631/.test(n))
+    .map(n => (/^(\d{4}-\d{2}-\d{2})/.exec(n) || [])[1])
+    .filter(Boolean).sort();
+  if (!dates.length) { console.error('nc: no source-check report in docs — nothing to date the notice with'); process.exit(1); }
+  return dates[dates.length - 1];
+})();
+
+const q = s => "'" + String(s).split('{ncReviewed}').join(reviewed).replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/\n/g,'\\n') + "'";
 const IND = '        ';
 
 function blockLine(b){
