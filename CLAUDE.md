@@ -8854,6 +8854,83 @@ measurement**: it asked for `0.9.5 → 0.9.6`, but `575` had already taken
 while its own list holds fourteen (four names + ten texts) —
 `chk_i18n` reads **1859 → 1873**.
 
+## The server contract — `supabase/` (470)
+
+⚠️ **Not a line of `js/` changes, and the version is not raised.** The
+batch adds one folder and nothing else: two migrations, no key, no
+library, not one `fetch`. **Connecting is a later file; this is the
+contract it is built on.**
+
+### The division was already written, in `KEEPS_ON_SIGN_OUT`
+The usual mistake here is lifting all 63 `DEFAULTS` keys onto a server, so
+that the font size and the theme and the reader's own point become rows in
+a database and every table carries a question with no answer: **who reads
+this?** The right division is already in `js/store.js` — that list names
+three kinds, **the device's own · the operator's · one accounting record**
+— and those three ARE the protection rules. What stays on the device never
+rises; what is the operator's is read by everyone and written by the admin;
+what is in neither belongs to its subject alone.
+
+⚠️ **The sharpest of them is `geo`**, whose own comment reads «the user's
+own point, never sent anywhere». **The arrival of a server does not repeal
+it**: the point stays on the device and the distance is computed there, and
+**there is no reader `lat` or `lng` column in any table** — `test_v73 · 3.1`
+searches for one and fails the suite if it appears.
+
+### Three things the schema settles that the app could not
+- **`businesses.source`** — `owner` · `public` · `worship` · `consent`,
+  with `consent_at` and `consent_by`. **Nothing in the app records where a
+  record came from**, and Apple 5.1.1(viii) forbids gathering personal
+  information from anywhere but the person, «even from public databases».
+  Without the column there is no answer to give a reviewer.
+- **`receipts.payer_id` is `on delete set null`, never `cascade`.**
+  Deleting an account separates the person from the transaction and does
+  not erase that money was taken — which is what `deleteAccount` already
+  does, and deletion is a right Apple 5.1.1(v) requires.
+- **`unique (author_id, biz_id)` on reviews** is not invented: `addReview`
+  already diverts to `updateReview` when one exists. This moves the rule
+  from the device into the database.
+
+### What row level security changes, and it is not cosmetic
+Today a `pendingReview` record is hidden by a function in `js/store.js` —
+**running on the device of the person it hides from** — so anyone who
+edited the app file saw it. With `status = 'live' or owner_id = auth.uid()`
+**the row does not leave the database at all.** That is the difference
+between hiding and refusing.
+
+⚠️ **And not one table without it.** A `public` table with no
+`enable row level security` is open to the world through the `anon` key,
+and that key ships onto every phone.
+
+⚠️ **`is_admin` is refused at the database, not merely unsent.** The column
+has no write policy, and a `before update` trigger raises on any change
+from a client session — because «the app does not send it» is not a
+guarantee when the anon key is on every phone.
+
+### The item that stops the contract rotting
+**`test_v73 · 8.2` reads all 63 `DEFAULTS` keys and demands each one has a
+class** in the block written into `0001_schema.sql`. A key added to the
+state tomorrow with no place in the contract **turns the net red the same
+day** — proven: adding one produced `-> zzNewUnplacedKey`.
+
+```
+one table loses its RLS line       → 1.1 red, naming the table
+receipts set null → cascade        → 5.1 red
+a lat column on profiles           → 3.1 red
+a state key with no class          → 8.2 red, naming the key
+a JWT-shaped string under supabase/ → 7.1 red, naming the file
+the is_admin trigger commented out → 6.4 red
+```
+
+⚠️ **Two corrections to the batch file, both measured.** Its five classes
+covered **61 of 63 keys** — `demoDefaultOff` and `install` were missing,
+and both belong to «never uploads» on the same ground as the rest (both
+sit in `KEEPS_ON_SIGN_OUT`, and both are traces of a device). And it asks
+for `167` to be moved to the head of the server work: **`167` closed on 3
+September** (V.09.1, `mintId`), so the reordering is already satisfied and
+nothing was moved — the queue is written by whoever writes the files, never
+by a session.
+
 ## Known open items
 - **The header image is still far larger than its box.** V.04.7 replaced
   the 831/837 KB lockups with the cropped marks at **333/338 KB** — 60% off
