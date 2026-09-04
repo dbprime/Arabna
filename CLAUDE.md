@@ -8873,3 +8873,19 @@ routes, it now measures what its name says.
   arrive the app shows each listing's area name, never a figure in miles,
   the mile options stay out of the filter sheet, and "nearest" falls back to
   the reader's own city and the rating.
+- **The marketplace boost purchase flow charges before confirming
+  success.** In `js/screens/marketplace.js`'s `#payBtn` handler,
+  `await S.chargeCard(sel.price, 'Marketplace boost')` runs **before**
+  `if (!S.boostClassified(c.id))` is checked — so a boost that fails
+  after a (simulated) charge leaves the reader with no receipt and no
+  explanation, contradicting the handler's own comment three lines above
+  it ("nothing is charged and no receipt is written unless the boost
+  itself took"). Found and registered during `572`'s close (`test_v70`'s
+  pattern sweep of every "silent redirect"-shaped guard), deliberately
+  left unfixed — it is payment logic, out of scope for a routine
+  registration/redirect sweep, and a bigger, separate concern. Harmless
+  today only because `chargeCard()` is simulated (V.03.6: "says
+  `ok: true` to anything … unacceptable the moment the first dollar
+  moves"). Becomes a real bug the day a real payment gateway is wired
+  in; the fix is reordering the check before the charge, and belongs
+  with that work, not with a routine sweep.
