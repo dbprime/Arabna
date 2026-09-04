@@ -8,6 +8,7 @@ import { FREE_PRICE, APP_VERSION, CAT_HUE, CATEGORIES, SOCIAL } from './data.js'
 import * as S from './store.js';
 import { installMode, canInvite, promptInstall, canPromptNative,
          mountInstallPrompt, outerBrowser } from './install.js';
+import { HOLIDAY_LABEL_KEY } from './holidays.js';
 
 export const $ = (sel, root = document) => root.querySelector(sel);
 export const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
@@ -2162,19 +2163,31 @@ export function openBadgeSlotHtml(biz, now = new Date()) {
   return `<span data-openbadge="${biz.id}">${openBadgeHtml(biz, now)}</span>`;
 }
 
+/** the i18n key for one holiday's own name — the three shared with
+    feasts.js reuse feastChristmas/feastEidFitr/feastEidAdha */
+function holidayLabel(id) { return t(HOLIDAY_LABEL_KEY[id]); }
+
 export function openBadgeHtml(biz, now = new Date()) {
   const st = S.openState(biz, now);
   if (!st) return '';
+  if (st.holiday && st.holiday.mode === 'closed' && !st.open) {
+    return `<span class="open-pill closed">${icon('clock', 12)}${
+      t('holidayClosedToday').replace('{holiday}', holidayLabel(st.holiday.id))}</span>`;
+  }
   if (st.always) return `<span class="open-pill open">${icon('clock', 12)}${t('open24')}</span>`;
   if (st.open) {
     const soon = st.minsToClose !== null && st.minsToClose <= 60;
+    const note = st.holiday
+      ? ` · ${t('holidayDiffersToday').replace('{holiday}', holidayLabel(st.holiday.id))}` : '';
     return `<span class="open-pill ${soon ? 'soon' : 'open'}">${icon('clock', 12)}${
-      soon ? t('closesSoon') : t('openNow')}</span>`;
+      soon ? t('closesSoon') : t('openNow')}${note}</span>`;
   }
   // name the day only when it is not today — "opens Monday 9am" vs "opens 9am"
   const day = st.opensToday ? '' : t(S.DAY_KEYS[st.opensDay]) + ' ';
   const when = st.opensAt ? `${t('opensAt')} ${day}${fmtTime(st.opensAt)}` : t('closedNow');
-  return `<span class="open-pill closed">${icon('clock', 12)}${when.trim()}</span>`;
+  const note2 = st.holiday && st.holiday.mode === 'differs'
+    ? ` · ${t('holidayDiffersToday').replace('{holiday}', holidayLabel(st.holiday.id))}` : '';
+  return `<span class="open-pill closed">${icon('clock', 12)}${when.trim()}${note2}</span>`;
 }
 
 /**

@@ -11,7 +11,7 @@ ARABNA · عربنا — a mobile-first web app for the Arab community in the U.
 **business directory + marketplace + events + magazine**, Arabic-first with a full English toggle.
 ("Classifieds / الإعلانات الشخصية" is now "Marketplace / السوق" — the old `#/classifieds`
 routes still resolve so shared links keep working.)
-Current version: **V.09.6 (prototype)**. Owner: dbprime. Deploys to Vercel (team DB Prime).
+Current version: **V.09.7 (prototype)**. Owner: dbprime. Deploys to Vercel (team DB Prime).
 
 ## Hard rules (from the product brief)
 0. ⚠️ **THE OWNER'S NAME IS NEVER WRITTEN — anywhere.** Not in this file, not
@@ -311,6 +311,7 @@ hand. Treat it as immovable unless there is no choice.
   attributes: ['halalMeat', 'noAlcohol', …],       // ids only, never booleans
   worship: { kind, prayers, jumuah, mass, lang },  // places of worship only
   nonCommercial, entryPrice,                       // outings; both optional (V.02.1)
+  holidaysAffected, holidaysObserved, holidayOverride,  // owner-declared (V.09.7); undefined = unanswered
   plan, verified, rating, reviewCount, claimed, photos, videos,
   lat, lng, needsGeo,                              // V.02.3; never shown to a reader
   dist,                                            // dead since V.02.3 — nothing reads it
@@ -325,6 +326,16 @@ hand. Treat it as immovable unless there is no choice.
   **yesterday as well as today**, because at 00:30 on Saturday it is Friday's
   span that is still running. Everything else — the pill, "closes within the
   hour", "opens 9am", the `open now` filter, the `open first` sort — reads it.
+- **Holiday hours are owner-declared, never invented.** `holidaysAffected`
+  is `true`/`false`/`undefined` — **the third state is "not answered yet",
+  and it is not the same as `false`.** When `true`, `holidaysObserved` names
+  which of the seven holidays in `js/holidays.js` affect this business, and
+  `holidayOverride` is one shared `{mode:'closed'}` or
+  `{mode:'differs', from, to}` applied to every one of them — **one
+  question, not one per holiday**, which is what keeps it a job a shop owner
+  will actually finish. `openState()` in `store.js` is the only place that
+  reads it; a business with no answer shows exactly as it always has, plus
+  one soft disclaimer on its own detail page.
 - **Attributes are a registry, not fields.** `ATTRIBUTES` in `data.js` gives each
   one `cats` (where it applies), `quick` (where it earns a chip above the
   results), `group`, `exclusive` and `season`. The add/edit form, the filter
@@ -8773,6 +8784,75 @@ was counting every `[data-route]` in the list, cards included. Measured on
 the live page: **44 routes · 40 shops · 0 duplicated shops · 4 cards** —
 it reported 3 duplicates on a screen that has none. Narrowed to shop
 routes, it now measures what its name says.
+
+## V.09.7 — holiday hours are declared by the owner, never guessed
+
+The owner asked how to handle official holidays: the directory holds shops
+that exist and shops that will, their holiday hours differ shop by shop,
+and a shop may well be shut — **but nothing about that is knowable.** His
+mechanism: one question (do your hours change on official holidays,
+yes/no), then a pick-list, then **one shared answer for all of them** —
+closed, or a single range — rather than a range per holiday.
+
+⚠️ **It is the pattern this project already runs on twice.** The adhan is
+computed while the iqama and jumuah are the mosque's own to declare;
+Ramadan is estimated while a written date beats the estimate and drops the
+word «تقديري». The weekly hours stay computed; **the holiday hours become a
+declaration.** And with no declaration nothing is assumed — not closed, not
+open.
+
+### The third state is the whole design
+`holidaysAffected` is `true` / `false` / **`undefined`**, and "not answered
+yet" is not "no". **All 514 listings are in that state today**, and they
+behave exactly as they did before this batch — plus one soft line under
+their own weekly table. Answering either way removes the line; that is the
+`== null` in `hoursBlock`, and it is deliberate.
+
+### Where the seven dates come from
+`js/holidays.js` computes and stores nothing, exactly like `feasts.js`
+beside it. Four are pure civil arithmetic — two fixed dates, the first
+Monday of September, the fourth Thursday of November — so **nothing here is
+ever «estimated»**. The other three (Christmas, Eid al-Fitr, Eid al-Adha)
+are **asked of `feasts.js` rather than re-derived**, so a Ramadan or Eid
+date written by the owner moves the business calendar and the worship
+calendar together and they cannot disagree.
+
+⚠️ **The western Christmas only.** The Coptic 7 January is not a day an
+ordinary American shop closes, and printing both under a civil list would
+have the file guessing which denomination a shop owner belongs to — the
+inverse of `feasts.js`'s own founding rule.
+
+### What was deliberately not done
+- **`isOpenNow` and `closingSoon` are untouched** — both are pure reads of
+  `openState()`, so they inherit correctness rather than needing a change.
+- **`holidayOverrideOn` is not exported.** Every consumer reaches it
+  through `openState()`'s new `holiday` field: one function, many callers.
+- **`AddBusinessScreen` gains nothing.** The section appears only on the
+  edit form, after a claim — exactly like the jumuah and iqama fields.
+- ⚠️ **A holiday closes a DAY, not the tail of the night before it.** A
+  business trading 20:00–02:00 still reads open at 00:30 on a declared
+  closed day, because the span began the previous evening. Rare, and
+  **documented rather than handled** — `test_v72 · 8.1` asserts the limit
+  so it is a known edge and not a surprise.
+
+### `test_v72` — 42 assertions
+⚠️ **The two computed dates are re-derived by a different method** (walk
+the month, take the first Monday / fourth Thursday) and compared with what
+the app returns: a check that restated the app's own arithmetic would agree
+with any bug in it. And `3.2b` measures 15:00 — **inside** the weekly
+09:00–17:00 and **outside** the declared 11:00–14:00 — so passing it proves
+the declaration replaced the weekly hours rather than layering on them.
+
+```
+remove the closed branch from openBadgeHtml   → 4.1a · 4.1b red
+make holidaysOn always return []              → eight items red, blocks 1 and 3
+```
+
+⚠️ **And two of the batch file's own numbers were wrong, corrected by
+measurement**: it asked for `0.9.5 → 0.9.6`, but `575` had already taken
+`0.9.6`, so this is **`0.9.7`**; and it predicted twelve new i18n keys
+while its own list holds fourteen (four names + ten texts) —
+`chk_i18n` reads **1859 → 1873**.
 
 ## Known open items
 - **The header image is still far larger than its box.** V.04.7 replaced

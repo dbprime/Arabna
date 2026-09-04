@@ -12,6 +12,7 @@ import { CLASSIFIEDS, BUSINESSES, NOTIFICATIONS, SLIDER_ADS, HOUSE_SLIDE, MINI_A
          AD_PRODUCTS, AD_SLOTS, APP_VERSION,
          attrById, attrInCat, isAllDay, week, nextOccurrence } from './data.js';
 import { expandQuery, hayMatches, catMatches, squash } from './synonyms.js';
+import { holidaysOn } from './holidays.js';
 
 export { ATTRIBUTES, ATTR_GROUPS, DAY_KEYS, CHIP_MIN, CHIP_MAX_SHARE, EVENT_TYPES,
          attrById, attrInCat, isAllDay, week, nextOccurrence };
@@ -657,21 +658,57 @@ const MINS = (hhmm) => {
   return (h || 0) * 60 + (m || 0);
 };
 
-/** every span of `day` as absolute minutes relative to the start of today */
-function spansOn(hours, dayIndex, dayOffset) {
-  const spans = hours && hours[dayIndex];
-  if (!spans || !spans.length) return [];
-  return spans.map(([o, c]) => {
+/** raw [[from,to]] spans -> absolute minutes relative to the start of today */
+function toRanges(spans, dayOffset) {
+  return (spans || []).map(([o, c]) => {
     let start = MINS(o), end = MINS(c);
     if (end <= start) end += 1440;          // runs past midnight
     return { start: start + dayOffset * 1440, end: end + dayOffset * 1440 };
   });
 }
 
+/** every span of `day` as absolute minutes relative to the start of today */
+function spansOn(hours, dayIndex, dayOffset) {
+  const spans = hours && hours[dayIndex];
+  if (!spans || !spans.length) return [];
+  return toRanges(spans, dayOffset);
+}
+
+/**
+ * The owner's holiday declaration for one real calendar date, or null —
+ * mirrors worshipFields' own rule: unanswered (`holidaysAffected` not
+ * `true`) means every holiday computes and displays exactly as it always
+ * has. Never exported: every consumer reaches it through `openState()`'s
+ * own `holiday` field, one function many callers, same as `spansOn`.
+ * @returns {null|{id:string, estimated:boolean, mode:'closed'|'differs', spans:Array}}
+ */
+function holidayOverrideOn(biz, date) {
+  if (!biz || biz.holidaysAffected !== true) return null;
+  const list = biz.holidaysObserved;
+  if (!Array.isArray(list) || !list.length) return null;
+  const hit = holidaysOn(date, ramadanDates()).find(h => list.includes(h.id));
+  if (!hit) return null;
+  const ov = biz.holidayOverride || {};
+  const mode = ov.mode === 'differs' ? 'differs' : 'closed';
+  const spans = mode === 'differs' && ov.from && ov.to ? [[ov.from, ov.to]] : [];
+  return { id: hit.id, estimated: !!hit.estimated, mode, spans };
+}
+
+/** `spansOn`, but replaced for one calendar date by the owner's holiday
+    declaration when one is active — "closed" becomes no spans at all,
+    "differs" becomes the one shared range every picked holiday uses.
+    Never called for the -1 rollover offset; see openState's own note on
+    why a holiday closes a day and not the tail end of the night before it. */
+function spansOnDate(biz, hours, dayIndex, dayOffset, dateAtOffset) {
+  const ov = holidayOverrideOn(biz, dateAtOffset);
+  if (!ov) return spansOn(hours, dayIndex, dayOffset);
+  return toRanges(ov.mode === 'closed' ? [] : ov.spans, dayOffset);
+}
+
 /**
  * @returns {null|{open:boolean, always:boolean, minsToClose:number|null,
  *                 closesAt:string|null, opensAt:string|null, opensDay:number|null,
- *                 opensToday:boolean}}
+ *                 opensToday:boolean, holiday:null|{id:string, estimated:boolean, mode:'closed'|'differs'}}}
  * null when the business carries no structured hours at all.
  */
 export function openState(biz, now = new Date()) {
@@ -680,19 +717,32 @@ export function openState(biz, now = new Date()) {
 
   const today = now.getDay();
   const nowMins = now.getHours() * 60 + now.getMinutes();
+  /* The owner's declared holiday for TODAY, computed once and carried on
+     every return path below — the badge and the detail page both need to
+     say "today may be affected", whichever branch answers open/closed.
+     Only ever read from `now` itself: the -1 rollover check three lines
+     down deliberately keeps reading yesterday's plain weekly hours — a
+     holiday closes a DAY, not the tail end of the night before it. */
+  const todayHoliday = holidayOverrideOn(biz, now);
+  const holiday = todayHoliday
+    ? { id: todayHoliday.id, estimated: todayHoliday.estimated, mode: todayHoliday.mode } : null;
 
   // yesterday first, so a span that began before midnight is seen
   for (const offset of [-1, 0]) {
     const day = (today + offset + 7) % 7;
-    for (const sp of spansOn(hours, day, offset)) {
+    const spans = offset === 0
+      ? spansOnDate(biz, hours, day, offset, now)
+      : spansOn(hours, day, offset);
+    for (const sp of spans) {
       if (nowMins >= sp.start && nowMins < sp.end) {
-        const always = isAllDay(hours[day]) && isAllDay(hours[(day + 1) % 7]);
+        const always = !todayHoliday && isAllDay(hours[day]) && isAllDay(hours[(day + 1) % 7]);
         return {
           open: true,
           always,
           minsToClose: always ? null : sp.end - nowMins,
           closesAt: always ? null : fmtMins(sp.end % 1440),
           opensAt: null, opensDay: null, opensToday: false,
+          holiday,
         };
       }
     }
@@ -701,19 +751,23 @@ export function openState(biz, now = new Date()) {
   // closed: find the next opening within the coming week
   for (let offset = 0; offset < 8; offset++) {
     const day = (today + offset) % 7;
-    for (const sp of spansOn(hours, day, offset).sort((a, b) => a.start - b.start)) {
+    const dateAtOffset = new Date(now.getTime() + offset * 86400000);
+    const spans = spansOnDate(biz, hours, day, offset, dateAtOffset).sort((a, b) => a.start - b.start);
+    for (const sp of spans) {
       if (sp.start > nowMins) {
         return {
           open: false, always: false, minsToClose: null, closesAt: null,
           opensAt: fmtMins(sp.start % 1440),
           opensDay: day,
           opensToday: offset === 0,
+          holiday,
         };
       }
     }
   }
   return { open: false, always: false, minsToClose: null, closesAt: null,
-           opensAt: null, opensDay: null, opensToday: false };
+           opensAt: null, opensDay: null, opensToday: false,
+           holiday };
 }
 
 function fmtMins(m) {

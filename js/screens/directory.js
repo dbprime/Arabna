@@ -7,6 +7,7 @@ import { t, L, icon, $, $$, go, back, renderHeader, openSheet, closeSheet, confi
          openBadgeHtml, openBadgeSlotHtml, onMinute, distLabelHtml, cityChipLabel, fmtMiles, attrChipsHtml, fmtDay, fmtTime, bizBadgeHtml,
          historyKey, esc, outsideBoxHtml, mountOutsideBox, adSlideHtml } from '../ui.js';
 import { CATEGORIES, SUBSCRIPTION_PRICE, DAY_KEYS } from '../data.js';
+import { HOLIDAY_IDS, HOLIDAY_LABEL_KEY } from '../holidays.js';
 import * as S from '../store.js';
 import { catIcon, startSlider, repaintCityChips, mountSearchHint } from './home.js';
 import { mountPhotoPicker } from './marketplace.js';
@@ -708,6 +709,7 @@ function hoursBlock(b) {
           <span class="${spans && spans.length ? 'ltr' : 'muted'}">${fmtDay(spans)}</span>
         </div>`).join('')}
     </div>
+    ${b.holidaysAffected == null ? `<div class="hint mt-8">${icon('info', 15)} ${t('holidayUnknownNote')}</div>` : ''}
   </div>`;
 }
 
@@ -825,6 +827,64 @@ function worshipFields(b) {
                value="${esc((w.prayers && w.prayers[k]) || '')}" />
       </div>`).join('')}
     </div>`;
+}
+
+/**
+ * ساعات العطل — نفس نمط worshipFields/readWorshipFields: سؤالٌ أوّل
+ * (نعم/لا) بلا أيّ طرفٍ مُختاراً حين لم يُجب صاحب النشاط بعد — الحالة
+ * الثالثة «لم يُجَب» محفوظةٌ بصريّاً، لا مُقحَمة على «لا».
+ */
+function holidayFields(b) {
+  const ans = b.holidaysAffected === true ? 'yes' : b.holidaysAffected === false ? 'no' : '';
+  const picked = b.holidaysObserved || [];
+  const ov = b.holidayOverride || {};
+  const mode = ov.mode === 'differs' ? 'differs' : 'closed';
+  return `
+    <div class="field"><label class="label">${t('holidayQ')}</label>
+      <div class="hours-row">
+        <button type="button" class="chip ${ans === 'no' ? 'active' : ''}" id="eHolNo">${t('holidayNo')}</button>
+        <button type="button" class="chip ${ans === 'yes' ? 'active' : ''}" id="eHolYes">${t('yes')}</button>
+      </div>
+    </div>
+    <div id="eHolMore" ${ans === 'yes' ? '' : 'hidden'}>
+      <div class="field"><label class="label">${t('holidayPickTitle')}</label>
+        <div class="attr-pick" id="eHolPick">
+          ${HOLIDAY_IDS.map(id => `<button type="button" class="chip ${picked.includes(id) ? 'active' : ''}" data-h="${id}">
+            ${t(HOLIDAY_LABEL_KEY[id])}</button>`).join('')}
+        </div>
+      </div>
+      <div class="field"><label class="label">${t('holidayModeQ')}</label>
+        <div class="hours-row">
+          <button type="button" class="chip ${mode === 'closed' ? 'active' : ''}" id="eHolClosed">${t('holidayClosedOpt')}</button>
+          <button type="button" class="chip ${mode === 'differs' ? 'active' : ''}" id="eHolDiffers">${t('holidayDiffersOpt')}</button>
+        </div>
+      </div>
+      <div class="field" id="eHolRange" ${mode === 'differs' ? '' : 'hidden'}>
+        <label class="label">${t('holidayRangeLabel')}</label>
+        <div class="hours-row">
+          <input class="input hrs-t" type="time" id="eHolFrom" value="${esc(ov.from || '09:00')}" />
+          <span class="hrs-dash">–</span>
+          <input class="input hrs-t" type="time" id="eHolTo" value="${esc(ov.to || '18:00')}" />
+        </div>
+      </div>
+    </div>`;
+}
+
+/** لا شيء يُرجَع إذا لم يُلمَس القسم أصلاً — «لم يُجَب» تبقى «لم يُجَب» */
+function readHolidayFields() {
+  const yes = $('#eHolYes').classList.contains('active');
+  const no = $('#eHolNo').classList.contains('active');
+  if (!yes && !no) return {};
+  if (!yes) return { holidaysAffected: false, holidaysObserved: [], holidayOverride: null };
+  const observed = $$('#eHolPick .chip.active').map(x => x.dataset.h);
+  const mode = $('#eHolDiffers').classList.contains('active') ? 'differs' : 'closed';
+  return {
+    holidaysAffected: true,
+    holidaysObserved: observed,
+    holidayOverride: mode === 'differs'
+      ? { mode, from: $('#eHolFrom').value || '09:00', to: $('#eHolTo').value || '18:00' }
+      : { mode },
+  };
 }
 
 function readWorshipFields(b) {
@@ -1911,6 +1971,7 @@ export function BusinessEditScreen(root, params) {
         <input class="input ltr" id="eEntry" dir="ltr" value="${esc(b.entryPrice || '')}" placeholder="$12 / person" />
         <div class="hint">${t('entryPriceHint')}</div></div>` : ''}
       ${worshipFields(b)}
+      ${holidayFields(b)}
       <label class="consent-row" style="margin:4px 0 16px">
         <input type="checkbox" id="eNonComm" ${b.nonCommercial ? 'checked' : ''} />
         <span><b>${t('nonCommercial')}</b><br><span class="muted fs-12">${t('nonCommercialHint')}</span></span>
@@ -1941,6 +2002,24 @@ export function BusinessEditScreen(root, params) {
   };
   paintAttrs();
 
+  $('#eHolNo').addEventListener('click', () => {
+    $('#eHolNo').classList.add('active'); $('#eHolYes').classList.remove('active');
+    $('#eHolMore').hidden = true;
+  });
+  $('#eHolYes').addEventListener('click', () => {
+    $('#eHolYes').classList.add('active'); $('#eHolNo').classList.remove('active');
+    $('#eHolMore').hidden = false;
+  });
+  $$('#eHolPick .chip').forEach(x => x.addEventListener('click', () => x.classList.toggle('active')));
+  $('#eHolClosed').addEventListener('click', () => {
+    $('#eHolClosed').classList.add('active'); $('#eHolDiffers').classList.remove('active');
+    $('#eHolRange').hidden = true;
+  });
+  $('#eHolDiffers').addEventListener('click', () => {
+    $('#eHolDiffers').classList.add('active'); $('#eHolClosed').classList.remove('active');
+    $('#eHolRange').hidden = false;
+  });
+
   $('#eSave').addEventListener('click', () => {
     const name = $('#eName').value.trim();
     const nameAr = $('#eNameAr').value.trim();
@@ -1954,6 +2033,7 @@ export function BusinessEditScreen(root, params) {
       attributes: picked.slice(),
       nonCommercial: $('#eNonComm').checked,
       ...(b.cat === 'worship' ? { worship: readWorshipFields(b) } : {}),
+      ...readHolidayFields(),
       entryPrice: cat === 'outings' ? $('#eEntry').value.trim() : (b.entryPrice || ''),
     });
     toast(t('done'), 'ok');
