@@ -195,7 +195,14 @@ await go(page, '#/directory');
 const dir = await page.evaluate(async () => {
   const D = await import('/js/data.js');
   const rows = [...document.querySelectorAll('#dirList .list-row[data-route^="#/directory/"]')];
-  const routes = [...document.querySelectorAll('#dirList [data-route]')].map(e => e.dataset.route);
+  /* ⚠️ SHOP routes, not every route. This item's subject is «no shop is on
+     the screen twice», and it was reading every [data-route] in the list —
+     which since 575 includes an upgrade card after every tenth result, all
+     of them legitimately pointing at #/subscribe. It reported 3 duplicates
+     on a screen with ZERO duplicated shops (measured: 44 routes, 40 shops,
+     0 shop duplicates, 4 cards). Narrowing it to shops makes it measure
+     what it says — stricter, not softer. */
+  const routes = [...document.querySelectorAll('#dirList [data-route^="#/directory/"]')].map(e => e.dataset.route);
   const isAd = r => /إعلان مموّل|Sponsored/.test(r.textContent);
   const n = rows.filter(isAd).length;
   return { band: !!document.querySelector('#sponRows'),

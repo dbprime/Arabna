@@ -92,8 +92,18 @@ let dark;
 {
   const { page, ctx } = await open('#/directory');
   dark = await readCard(page);
-  ok('1.1 exactly one upgrade card, and it is the sixth row — after five businesses',
-     dark.count === 1 && dark.rows > 5 && dark.idx === 5, `cards ${dark.count} · index ${dark.idx} of ${dark.rows}`);
+  /* ⚠️ REVERSED BY 575, and this suite was NOT supposed to move — its batch
+     file said 560's and 565's suites «measure the card's shape and its text,
+     not its count or its position», and a red in either would mean something
+     unrequested was broken. Measured, that claim was wrong about THIS line:
+     it asserts both the count and the index. The rest of the file really is
+     about look, and really did stay green.
+     What survives is the half that belongs here: the card follows results
+     rather than standing above them, and there IS one to measure the look
+     of. Its count and spacing are v71's subject, derived there from the
+     rows the page drew. */
+  ok('1.1 the upgrade card follows results, and the first is the eleventh row',
+     dark.count >= 1 && dark.rows > 10 && dark.idx === 10, `cards ${dark.count} · index ${dark.idx} of ${dark.rows}`);
   ok('1.2 no inline style on the card', dark.inlineStyle === null, String(dark.inlineStyle));
   /* ⚠️ «differs from the row» alone was measured to be TOOTHLESS: the rows
      carry --line-soft, so even the old inline var(--line) differed. The
@@ -142,7 +152,8 @@ let dark;
 {
   const { page, ctx } = await open('#/directory', { lang: 'en' });
   const c = await readCard(page);
-  ok('1.1 [en] one card, sixth, no inline style, gradient on', c.count === 1 && c.idx === 5 && c.inlineStyle === null && /linear-gradient/.test(c.bgImage));
+  /* ⚠️ the same reversal — see 1.1 above */
+  ok('1.1 [en] card present, eleventh, no inline style, gradient on', c.count >= 1 && c.idx === 10 && c.inlineStyle === null && /linear-gradient/.test(c.bgImage));
   await ctx.close();
 }
 

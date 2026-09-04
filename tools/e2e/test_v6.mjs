@@ -175,8 +175,13 @@ ok('directory: the upsell still offers the upgrade', (await txt()).includes('ر�
    door, or «absent» would also pass if the whole card had vanished. */
 ok('directory: no placeholder sentence stands where the price would be',
    !(await txt()).includes('الأسعار تظهر بعد'));
+/* ⚠️ MY OWN CHECK, written in 570 when the list carried exactly one card,
+   and 575 repeats it every ten. What it guards is that «no placeholder
+   sentence» has not been achieved by the card VANISHING — so what it needs
+   is at least one working door, never a count. The count itself is v71's
+   subject, where it is derived from the rows drawn. */
 ok('…and the card is still a door to the subscription',
-   await page.locator('.upsell-row[data-route="#/subscribe"]').count() === 1);
+   await page.locator('.upsell-row[data-route="#/subscribe"]').count() >= 1);
 
 await go('#/subscribe');
 money = await dollars();

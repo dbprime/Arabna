@@ -226,7 +226,11 @@ const upsellPos = await page.evaluate(() => {
   const rows = Array.from(document.querySelectorAll('#dirList .list-row'));
   return rows.findIndex(r => r.getAttribute('data-route') === '#/subscribe');
 });
-ok('upsell sits after the first five results', upsellPos === 5, 'index ' + upsellPos);
+/* ⚠️ REVERSED BY 575: the card was spliced in once at position 5; the
+   owner's call of 3 Sep is one after every tenth result. The subject is
+   unchanged — the card follows results rather than standing above them —
+   and it is asserted at the new position rather than relaxed away. */
+ok('upsell sits after the first ten results, not above them', upsellPos === 10, 'index ' + upsellPos);
 const heights = await page.evaluate(() => {
   const rows = Array.from(document.querySelectorAll('#dirList .list-row'));
   const up = rows.find(r => r.getAttribute('data-route') === '#/subscribe');

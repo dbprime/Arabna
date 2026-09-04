@@ -8750,12 +8750,29 @@ were measured, not taken from the docs: **beauty 24 · lawyers 10 · doctors
 
 ```
 put `rowsAll.splice(5, …)` back   → nine items red, across all four blocks
-test_v65 (560, the card's look) and test_v67 (565, its text)  → green, untouched
 ```
 
-That last line is the batch's own condition: those two measure the card's
-shape and its words, never its count or its position, **and a red in either
-would mean something unrequested had been broken.**
+⚠️ **AND A CLAIM I MADE HERE WAS WRONG, MEASURED IN THE WRONG STATE.** The
+batch file said `560`'s and `565`'s suites would stay green untouched —
+they «measure the card's shape and its text, not its count or its
+position» — and I wrote that down as verified. **I had run `test_v65`
+during the TOOTH, with the old rule restored**, which is precisely the
+state in which it passes. Re-run against the new code, `v65 · 1.1` is red
+in both languages: it asserts `count === 1 && idx === 5`, so it measures
+both the count and the position after all. **A verification run in the
+state you are trying to disprove is not a verification.**
+
+Four older suites were reversed, each rewritten to its new subject and
+none softened: `v4` (the card follows results — at ten now, not five),
+`v65 · 1.1` (the same, keeping the half that belongs to a look suite),
+`v6` (my own line from `570`, written `count() === 1` when there was one
+card; what it guards is that a working door still exists, so it is `>= 1`
+and the counting is `v71`'s job), and **`v21 · 4.1d`, which was not a
+reversal at all**: its subject is «no shop is on the screen twice» and it
+was counting every `[data-route]` in the list, cards included. Measured on
+the live page: **44 routes · 40 shops · 0 duplicated shops · 4 cards** —
+it reported 3 duplicates on a screen that has none. Narrowed to shop
+routes, it now measures what its name says.
 
 ## Known open items
 - **The header image is still far larger than its box.** V.04.7 replaced
