@@ -11,7 +11,7 @@ ARABNA · عربنا — a mobile-first web app for the Arab community in the U.
 **business directory + marketplace + events + magazine**, Arabic-first with a full English toggle.
 ("Classifieds / الإعلانات الشخصية" is now "Marketplace / السوق" — the old `#/classifieds`
 routes still resolve so shared links keep working.)
-Current version: **V.09.7 (prototype)**. Owner: dbprime. Deploys to Vercel (team DB Prime).
+Current version: **V.09.8 (prototype)**. Owner: dbprime. Deploys to Vercel (team DB Prime).
 
 ## Hard rules (from the product brief)
 0. ⚠️ **THE OWNER'S NAME IS NEVER WRITTEN — anywhere.** Not in this file, not
@@ -8930,6 +8930,57 @@ for `167` to be moved to the head of the server work: **`167` closed on 3
 September** (V.09.1, `mintId`), so the reordering is already satisfied and
 nothing was moved — the queue is written by whoever writes the files, never
 by a session.
+
+## V.09.8 — the article form was wearing the marketplace's sign (605)
+
+The magazine editor's title field read **«عنوان الإعلان»**, so whoever
+opened that tab to write an ARTICLE was greeted by the word «إعلان».
+
+⚠️ **The key was not written wrong — it was borrowed wrong.**
+`t('titleLabel')` is a SHARED key whose owner is the post-a-listing form,
+where «عنوان الإعلان» is exactly right. Two screens read one key and only
+one of them meant it.
+
+**And the fix follows the local idiom rather than inventing one**: of the
+six fields in `magHtml()`, four already carry their own inline conditional
+(`Media` · `Excerpt` · `Body` · `Advertiser`), so the title field joins
+them. **No new i18n key** — one that contradicts the settled convention in
+its own function is debt, and `chk_i18n` is unchanged at 416 / 1873.
+
+⚠️ **`js/screens/marketplace.js` is not touched, and neither is the
+neighbouring `category` field** — that one reads `t('category')`, a
+general key with nothing wrong with it. **Fixing one screen by breaking
+another is not a fix**, and `4.6` is what holds that.
+
+### Two corrections to the batch file, both measured
+⚠️ **Its premise about the suite was wrong.** It said `run.sh` runs the
+suite «in Arabic and in English», so the expected label would differ per
+run. Measured: `run.sh` varies the **BUILD** (`index.html` ·
+`index-single-file.html`), and `test_v38` seeds `lang: 'ar'`
+unconditionally — **it never runs in English at all.** The fix is a
+conditional on the language, so asserting one side would have left the
+other half of the very line being fixed unguarded. **`4.5b` and `4.6b`
+seed a second context in English**, which is how `v40` and `v65` do it.
+
+⚠️ **And its own `4.6` would have been RED on a correct tree.** It compares
+the label's whole `textContent` against the bare string, and the
+marketplace label wraps a live character counter — the node reads
+«عنوان الإعلان\n 0 / 80». The check removes `.ch-count` from a clone and
+reads the label's own words.
+
+⚠️ **The language is SEEDED, never switched in place.** `admin.js` reads
+`S.state.lang` — the store's value — while i18n's own `setLang` moves a
+variable inside that module; switching one leaves the other saying Arabic,
+and the check would measure the harness rather than the app.
+
+```
+put t('titleLabel') back        → 4.5 and 4.5b red · 4.6 GREEN
+change the shared key in i18n   → 4.6 red ALONE · 4.5 and 4.5b GREEN
+```
+
+⚠️ **The second tooth is the one that matters**: `4.5` staying green while
+the shared key changed under it is the proof that the article field is
+genuinely decoupled, not merely reading a different string today.
 
 ## Known open items
 - **The header image is still far larger than its box.** V.04.7 replaced

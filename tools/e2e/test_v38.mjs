@@ -162,6 +162,95 @@ const BASE_STATE = {
     });
     ok(`4.4 tab ${tab} draws clean`, info.n > 20 && !info.raw && !info.nul, info.n + ' chars');
   }
+
+  /* 605 — the article form was borrowing the marketplace's sign.
+     `t('titleLabel')` is a SHARED key and its owner is the post-a-listing
+     form, where it correctly reads «عنوان الإعلان». The magazine editor
+     reached for the same key, so whoever opened that tab to write an
+     ARTICLE was greeted by the word «إعلان». The key was not written
+     wrong — it was borrowed wrong, and the fix follows the local idiom:
+     four of the six fields around it already carry their own conditional.
+
+     ⚠️ AND BOTH LANGUAGES ARE MEASURED HERE, which the batch file did not
+     ask for and its reasoning shows why it should be. It said run.sh runs
+     the suite «in Arabic and in English» — measured, run.sh varies the
+     BUILD (index.html · index-single-file.html) and this suite seeds
+     `lang: 'ar'` unconditionally, so it never runs in English at all.
+     The fix is a conditional on the language, so asserting one side would
+     leave the other half of the very line being fixed unguarded. */
+  const titleLabelOf = () => page.evaluate(() => {
+    const input = document.querySelector('#artTitle');
+    const field = input && input.closest('.field');
+    const label = field && field.querySelector('.label');
+    return label ? label.textContent.trim() : null;
+  });
+
+  await page.click('[data-t="mag"]');
+  await page.waitForTimeout(400);
+  const magAr = await titleLabelOf();
+  ok('4.5 the article title field carries its own label, not the marketplace one',
+     magAr === 'عنوان المقال', String(magAr));
+
+  /* ⚠️ and the shared key's real owner is untouched: fixing one screen by
+     breaking another is not a fix. */
+  await page.evaluate(() => { location.hash = '#/post'; });
+  await page.waitForTimeout(800);
+  /* ⚠️ the label's OWN words, not its textContent: the marketplace label
+     wraps a live character counter (`.ch-count`), so the whole node reads
+     «عنوان الإعلان\n 0 / 80». The batch file's own version of this check
+     compared the full textContent against the bare string and would have
+     been red on a correct tree. */
+  const mkt = await page.evaluate(() => {
+    const l = [...document.querySelectorAll('.field .label')]
+      .find(el => /عنوان/.test(el.textContent));
+    if (!l) return null;
+    const c = l.cloneNode(true);
+    c.querySelectorAll('.ch-count').forEach(x => x.remove());
+    return c.textContent.trim();
+  });
+  ok('4.6 the marketplace post form keeps its own title label', mkt === 'عنوان الإعلان', String(mkt));
+  await ctx.close();
+}
+
+/* ---------- 4b) the same two fields, with the interface in English ----------
+   ⚠️ the language is SEEDED and the page loaded with it, never switched in
+   place: `admin.js` reads `S.state.lang` — the store's value — while
+   i18n's own `setLang` moves a variable inside that module. Switching one
+   would leave the other saying Arabic, and the check would measure the
+   harness rather than the app. This is how v40 and v65 do it. */
+{
+  const { ctx, page } = await asReader(Object.assign({}, BASE_STATE, { lang: 'en' }));
+  await at(page, '#/admin');
+  for (const el of await page.$$('input#aUser, input#aNew, input#aNew2')) {
+    const type = await el.getAttribute('type');
+    await el.fill(type === 'password' ? 'Aud#2026check' : 'auditor');
+  }
+  const set = await page.$('#aSet');
+  if (set) await set.click();
+  await page.waitForTimeout(900);
+
+  await page.click('[data-t="mag"]');
+  await page.waitForTimeout(400);
+  const magEn = await page.evaluate(() => {
+    const input = document.querySelector('#artTitle');
+    const field = input && input.closest('.field');
+    const label = field && field.querySelector('.label');
+    return label ? label.textContent.trim() : null;
+  });
+  ok('4.5b …and its English half is the article\'s too', magEn === 'Article title', String(magEn));
+
+  await page.evaluate(() => { location.hash = '#/post'; });
+  await page.waitForTimeout(800);
+  const mktEn = await page.evaluate(() => {
+    const l = [...document.querySelectorAll('.field .label')]
+      .find(el => /title/i.test(el.textContent));
+    if (!l) return null;
+    const c = l.cloneNode(true);
+    c.querySelectorAll('.ch-count').forEach(x => x.remove());
+    return c.textContent.trim();
+  });
+  ok('4.6b …and the marketplace keeps its own in English too',
+     mktEn === 'Listing title', String(mktEn));
   await ctx.close();
 }
 

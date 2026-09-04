@@ -1117,7 +1117,7 @@ function magHtml() {
   const all = S.state.extraArticles.concat(ARTICLES);
   return `<div class="pad mt-16">
     <div class="section-title">${S.state.lang === 'en' ? 'New article' : 'مقال جديد'}</div>
-    <div class="field mt-12"><label class="label">${t('titleLabel')}</label><input class="input" id="artTitle" /></div>
+    <div class="field mt-12"><label class="label">${S.state.lang === 'en' ? 'Article title' : 'عنوان المقال'}</label><input class="input" id="artTitle" /></div>
     <div class="field"><label class="label">${t('category')}</label>
       <select class="select" id="artCat">${MAG_CATS.map(c => `<option value="${c.id}">${t(c.key)}</option>`).join('')}</select></div>
     <div class="field"><label class="label">${S.state.lang === 'en' ? 'Media' : 'الوسائط'}</label>
