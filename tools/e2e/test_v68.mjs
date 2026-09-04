@@ -154,6 +154,6 @@ if (!SINGLE) {
   ok('3.4 (tool check, module build only)', true);
 }
 
-console.log(`\nv68: ${pass} passed, ${fail} failed`);
+console.log(`\n${pass} passed, ${fail} failed`);
 await browser.close();
 process.exit(fail ? 1 : 0);

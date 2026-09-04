@@ -299,6 +299,6 @@ async function photoScreen(bizId) {
   ok('5.1 not one screen prints {n}, {f} or {v} as a character', leaked.length === 0, leaked.join(', ') || 'seven screens clean');
 }
 
-console.log(`\nv67: ${pass} passed, ${fail} failed`);
+console.log(`\n${pass} passed, ${fail} failed`);
 await browser.close();
 process.exit(fail ? 1 : 0);
