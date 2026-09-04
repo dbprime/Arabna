@@ -11,7 +11,7 @@ ARABNA · عربنا — a mobile-first web app for the Arab community in the U.
 **business directory + marketplace + events + magazine**, Arabic-first with a full English toggle.
 ("Classifieds / الإعلانات الشخصية" is now "Marketplace / السوق" — the old `#/classifieds`
 routes still resolve so shared links keep working.)
-Current version: **V.09.4 (prototype)**. Owner: dbprime. Deploys to Vercel (team DB Prime).
+Current version: **V.09.5 (prototype)**. Owner: dbprime. Deploys to Vercel (team DB Prime).
 
 ## Hard rules (from the product brief)
 0. ⚠️ **THE OWNER'S NAME IS NEVER WRITTEN — anywhere.** Not in this file, not
@@ -8658,6 +8658,53 @@ it redirects a non-owner to the business's public page, which exists.
 Telling them «this is no longer available» would be false, and a sweep that
 lumps a permission guard in with a missing record is a sweep that has
 stopped reading.
+
+## V.09.5 — the eleventh, and the family closed by pattern rather than by name
+
+`570` nine, `571` the tenth, `572` this. One line in `ReceiptScreen`,
+reusing `gone`, destination unchanged: `#/receipt/<id>` with an id that
+matches no receipt for this account — an old link, or one saved from
+another device — was bouncing the reader to the list with nothing said.
+
+⚠️ **AND THE FAMILY IS NOW ASSERTED CLOSED, NOT DECLARED CLOSED.**
+`test_v70 · 3` sweeps `js/` for the shape **by pattern, never by variable
+name** — the exact failure that let the eleventh survive `570` — and
+classifies every guard it finds. Measured: **15 guards · 11 speak · 3 are
+permission · 1 is a failed operation**, and anything that is none of those
+is a missing-record guard that lost its word, which turns `3.2` red **and
+names the file and the line**. Proven: removing the toast from this one
+site turns three items red, one of them printing `js/screens/receipts.js`.
+
+⚠️ **And the check committed the batch's own fault first.** Its sweep was
+written `toast\([^)]*\)`, which cannot match `toast(t('gone'), 'err')` —
+the inner `)` ends it — so it reported **4 guards where there are 15**.
+The body is matched as «anything up to the `go(`» now. *A check written
+around the shape of the examples in front of you is the same mistake as a
+sweep written around their names.*
+
+### Two exclusions, both deliberate and both named so they survive
+- **`ownerOnly`** sends a non-owner to the business's public page, **which
+  exists**. «This is no longer available» there would be false. Asserted by
+  name in `3.4` so that a later sweep cannot quietly "fix" it into a lie.
+- **`boostClassified`** is a failed *operation*, not a missing record —
+  nothing is gone, an action did not take, and that wants its own sentence.
+
+⚠️ **AND A THIRD THING WAS FOUND WHILE CLASSIFYING IT, WHICH IS NOT FIXED
+HERE AND IS THE MORE SERIOUS OF THE TWO.** That guard runs **after**
+`await S.chargeCard(...)`:
+
+```
+await S.chargeCard(sel.price, 'Marketplace boost');
+if (!S.boostClassified(c.id)) { go('#/marketplace/' + c.id); return; }
+```
+
+So the card is charged, the boost fails, and the reader is returned **with
+no receipt written and no word said**. The comment three lines above it
+states the intended rule — «nothing is charged and no receipt is written
+unless the boost itself took» — **and the code charges first.** It is
+harmless today only because `chargeCard` is simulated and no money moves;
+it stops being harmless on the day the gateway is real. **Recorded, not
+fixed: it touches payment, and payment is not this batch's.**
 
 ## Known open items
 - **The header image is still far larger than its box.** V.04.7 replaced

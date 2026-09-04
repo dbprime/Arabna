@@ -59,7 +59,7 @@ export function ReceiptsScreen(root) {
 
 export function ReceiptScreen(root, params) {
   const r = S.receiptById(params[0]);
-  if (!r) { go('#/receipts'); return; }
+  if (!r) { toast(t('gone'), 'err'); go('#/receipts'); return; }
   renderHeader({ simple: true, title: t('receiptTitle') });
 
   const covers = coversLabel(r.covers);
