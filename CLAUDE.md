@@ -11,7 +11,7 @@ ARABNA · عربنا — a mobile-first web app for the Arab community in the U.
 **business directory + marketplace + events + magazine**, Arabic-first with a full English toggle.
 ("Classifieds / الإعلانات الشخصية" is now "Marketplace / السوق" — the old `#/classifieds`
 routes still resolve so shared links keep working.)
-Current version: **V.09.5 (prototype)**. Owner: dbprime. Deploys to Vercel (team DB Prime).
+Current version: **V.09.6 (prototype)**. Owner: dbprime. Deploys to Vercel (team DB Prime).
 
 ## Hard rules (from the product brief)
 0. ⚠️ **THE OWNER'S NAME IS NEVER WRITTEN — anywhere.** Not in this file, not
@@ -8705,6 +8705,57 @@ unless the boost itself took» — **and the code charges first.** It is
 harmless today only because `chargeCard` is simulated and no money moves;
 it stops being harmless on the day the gateway is real. **Recorded, not
 fixed: it touches payment, and payment is not this batch's.**
+
+## V.09.6 — the upgrade card repeats every ten results
+
+The owner, 3 September, on the restaurant list on his phone: «why not show
+the upgrade card after every five or ten shops and repeat it, so a shop
+owner feels that upgrading puts him on top.»
+
+⚠️ **The other reader was weighed before answering, and that is what set
+the number.** This is the list every visitor hunting a restaurant or a
+doctor scrolls, and most of them are customers rather than shop owners — a
+paid card every five rows tires whoever came for a real result. **Ten is
+the owner's decision**: the offer is met more than once without the list
+becoming an advertisement.
+
+```
+before   one card, spliced in at position 5   (560's decision)
+after    one after every tenth result
+short    ten results or fewer: one card at the end — UNCHANGED
+```
+
+⚠️ **The short-list branch is deliberately untouched.** Repeating a paid
+card inside a list of four would be the entire screen.
+
+### The half that does not look broken when it is wrong
+`growList` draws its batch from `rowsAll`, which now holds cards as well as
+listings, so **the first batch must be `PAGE + every card that falls inside
+its own forty real rows`** — four, not one. Get it wrong and nothing looks
+faulty: the reader silently gets 36 businesses before scrolling instead of
+40. The old line read `rowsAll.length > list.length ? 1 : 0`, which was
+right for exactly one card and wrong for four.
+
+⚠️ **And the batch file said its own arithmetic was a proposal, not text to
+obey** — «the test decides, not this line». Measured on the running page:
+**40 real rows and 4 cards in the first paint, gaps 10 · 10 · 10 · 10.**
+
+### `test_v71` — 16 assertions, and not one count written into it
+The expected number of cards is derived from the real rows the page drew
+(`floor(n / 10)`), so the day the directory's contents change the check
+re-measures instead of going stale — the fault `test_v27 · 4.4` committed
+with its own `5` and `test_v56 · 3.6` with a frozen version. The fixtures
+were measured, not taken from the docs: **beauty 24 · lawyers 10 · doctors
+11 · restaurants 138.**
+
+```
+put `rowsAll.splice(5, …)` back   → nine items red, across all four blocks
+test_v65 (560, the card's look) and test_v67 (565, its text)  → green, untouched
+```
+
+That last line is the batch's own condition: those two measure the card's
+shape and its words, never its count or its position, **and a red in either
+would mean something unrequested had been broken.**
 
 ## Known open items
 - **The header image is still far larger than its box.** V.04.7 replaced

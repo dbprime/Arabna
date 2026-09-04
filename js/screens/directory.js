@@ -454,10 +454,26 @@ export function DirectoryScreen(root) {
       el.innerHTML = (stSug && stSug.isCode) ? ''
         : emptyState('search', t('emptyDirTitle'), t('emptyDirSub'), t('setLocation'), '#/directory');
     } else {
-      // the subscription upsell sits after the first five results, not above them
-      rowsAll = list.map(b => rowHtml(b, sponsored.has(b.id)));
-      if (rowsAll.length > 5) rowsAll.splice(5, 0, upsellHtml());
-      else rowsAll.push(upsellHtml());
+      /* The subscription upsell repeats after every ten results — the
+         owner's call, 3 Sep: «a shop owner should feel that upgrading puts
+         him on top», and he should meet the offer more than once while
+         scrolling. Ten and not five, weighed against the other reader: most
+         of the people on this screen are looking for a restaurant or a
+         doctor, not buying a subscription, and a paid card every five rows
+         tires whoever came for a real result.
+         ⚠️ A SHORT LIST IS UNCHANGED: ten results or fewer keep the single
+         card at the end, exactly as before. */
+      const real = list.map(b => rowHtml(b, sponsored.has(b.id)));
+      if (real.length > 10) {
+        rowsAll = [];
+        real.forEach((r, i) => {
+          rowsAll.push(r);
+          if ((i + 1) % 10 === 0) rowsAll.push(upsellHtml());
+        });
+      } else {
+        rowsAll = real.slice();
+        rowsAll.push(upsellHtml());
+      }
 
       el.innerHTML = '<div id="dirEnd" style="height:1px"></div>';
       /* 600px of margin so the next batch is drawn BEFORE the reader
@@ -468,9 +484,15 @@ export function DirectoryScreen(root) {
         ? new IntersectionObserver(es => { if (es.some(e => e.isIntersecting)) growList(); },
                                    { root: $('#app'), rootMargin: '600px' })
         : null;
-      /* The upsell card is not a result, so it does not eat one of the
-         forty. Forty listings and the card: forty-one children. */
-      const extra = rowsAll.length > list.length ? 1 : 0;
+      /* The upsell cards are not results, so they must not eat any of the
+         forty. ⚠️ AND IT IS EVERY CARD THAT FALLS INSIDE THE FIRST FORTY
+         REAL ROWS, not just the first one: with one after every tenth,
+         forty listings carry four, so the first batch is 44 entries and
+         still forty businesses. Getting this wrong does not look broken —
+         it silently shows 36 or 39 shops before the reader scrolls. */
+      const extra = real.length > 10
+        ? Math.floor(Math.min(PAGE, real.length) / 10)
+        : (real.length ? 1 : 0);
       growList(Math.max(PAGE + extra, resume));
       resume = 0;
       if (io) io.observe($('#dirEnd')); else growList(rowsAll.length);
