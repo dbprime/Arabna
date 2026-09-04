@@ -1738,7 +1738,7 @@ export function ClaimScreen(root, params) {
   if (!bizId) { pickBusinessToClaim(root); return; }
 
   const b = S.businessById(bizId);
-  if (!b) { go('#/claim'); return; }
+  if (!b) { toast(t('gone'), 'err'); go('#/claim'); return; }
   renderHeader({ simple: true, title: t('claimBusiness') });
 
   const existing = S.claimFor(bizId);

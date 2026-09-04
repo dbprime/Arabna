@@ -91,7 +91,7 @@ export const CLASSIFIED_CATS = MARKET_CATS;
    hand-typed «0.1» while the project had reached V.03.6 — two literals,
    both stale, and a reader reporting a fault could not tell us which build
    they were on. Raise it here when CLAUDE.md's version line moves. */
-export const APP_VERSION = '0.9.3';
+export const APP_VERSION = '0.9.4';
 
 /* ============================================================
    Where the app lives outside itself

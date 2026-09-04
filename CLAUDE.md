@@ -11,7 +11,7 @@ ARABNA · عربنا — a mobile-first web app for the Arab community in the U.
 **business directory + marketplace + events + magazine**, Arabic-first with a full English toggle.
 ("Classifieds / الإعلانات الشخصية" is now "Marketplace / السوق" — the old `#/classifieds`
 routes still resolve so shared links keep working.)
-Current version: **V.09.3 (prototype)**. Owner: dbprime. Deploys to Vercel (team DB Prime).
+Current version: **V.09.4 (prototype)**. Owner: dbprime. Deploys to Vercel (team DB Prime).
 
 ## Hard rules (from the product brief)
 0. ⚠️ **THE OWNER'S NAME IS NEVER WRITTEN — anywhere.** Not in this file, not
@@ -8618,6 +8618,46 @@ than swept in**: `ClaimScreen` bounces to `#/claim` for an id that does not
 resolve. It is outside the spec's nine, it is reached from inside the app
 rather than from a shared link, and its landing is a purposeful screen and
 not a generic list — **but it is silent, and it is the owner's call.**
+
+**The owner's call came, and it is `571`:** `ClaimScreen` now says why,
+reusing `gone` — no new key, one line, the destination unchanged. **Someone
+who arrived meaning to claim their own shop was landing in a general list
+with nothing said**, and concluding the link they held was wrong.
+
+⚠️ **AND THE FAMILY WAS BIGGER THAN TEN.** The sweep that found the tenth
+was written as `if (!b|!c|!a|!e)` — the letters the nine happened to use —
+so it could not see a guard written with any other variable. Swept again
+with no assumption about the name, **an eleventh appeared: `ReceiptScreen`
+in `js/screens/receipts.js`**, silent in exactly the same way.
+**It is recorded here and not fixed** — the same rule that produced `571`
+out of the tenth. ⚠️ **And `ownerOnly` is deliberately NOT in this family**:
+it sends a non-owner to the business's public page, which exists and is
+correct; «this is no longer available» there would be false.
+
+**The lesson, and it cost two rounds to learn:** when a class of fault is
+found, sweep for the CLASS — and write the sweep so it cannot depend on
+what the instances happened to be called.
+
+## V.09.4 — the tenth, and the eleventh that the tenth's own sweep missed
+
+`570` closed nine silent redirects. This closes the tenth — `ClaimScreen`,
+one line, reusing `gone`, destination unchanged — and finds an eleventh
+while doing it.
+
+⚠️ **The eleventh is the interesting half.** The sweep that produced the
+tenth was written as `if (!b) | (!c) | (!a) | (!e)` — the four variable
+names the nine happened to use. **A pattern shaped around the instances
+cannot find an instance shaped differently**, and `ReceiptScreen` uses
+`!r`. Re-swept with no assumption about the name, it appeared at once.
+
+**It is recorded, not fixed** — the rule that turned the tenth into its own
+numbered file rather than smuggling it into `570`.
+
+⚠️ **And `ownerOnly` was checked and deliberately left out of the family**:
+it redirects a non-owner to the business's public page, which exists.
+Telling them «this is no longer available» would be false, and a sweep that
+lumps a permission guard in with a missing record is a sweep that has
+stopped reading.
 
 ## Known open items
 - **The header image is still far larger than its box.** V.04.7 replaced
