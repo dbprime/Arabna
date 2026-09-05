@@ -2,6 +2,7 @@
 import { t, arCount, icon, $, $$, go, back, renderHeader, toast, wireRoutes, logoSrc,
          openSheet, closeSheet, esc } from '../ui.js';
 import * as S from '../store.js';
+import { PHONE_AUTH } from '../data.js';
 import { passwordField, passwordChecklist, wirePasswordField,
          wirePasswordToggles, TermsScreen, PrivacyScreen } from './profile.js';
 
@@ -268,7 +269,10 @@ export function EmailVerifyScreen(root) {
     // Only continue into phone verification when the pending action really
     // needs tier 2. Reading ad prices needs tier 1, and #/advertise is the
     // same route either way — so the intent carries the tier, not the URL.
-    if (p && (p.tier || 2) >= 2) { go('#/auth/phone'); return; }
+    /* ⚠️ And gated on the switch: while phone verification is off, tier 2
+       was just earned by this very email, so the reader carries on to
+       what they were going to in the first place — not to another screen. */
+    if (PHONE_AUTH && p && (p.tier || 2) >= 2) { go('#/auth/phone'); return; }
     afterAuth();
   });
 }

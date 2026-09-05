@@ -91,7 +91,15 @@ export const CLASSIFIED_CATS = MARKET_CATS;
    hand-typed «0.1» while the project had reached V.03.6 — two literals,
    both stale, and a reader reporting a fault could not tell us which build
    they were on. Raise it here when CLAUDE.md's version line moves. */
-export const APP_VERSION = '0.9.8';
+export const APP_VERSION = '0.9.9';
+
+/* ⚠️ توثيق الجوال مؤجَّلٌ إلى ما بعد الإطلاق على App Store — قرار مالك
+   البرنامج، وسببه الكلفة: مزوّد الرسائل حسابٌ مدفوعٌ بكلفةٍ لكلّ رسالة،
+   ولا تُصرَف قبل أن يُعرَف هل يُقبَل البرنامج.
+   ⚠️ ولا شيء يُحذَف من أجل هذا: `PhoneVerifyScreen` قائمةٌ بحرفها،
+   ومفاتيح الترجمة قائمة، والحقول قائمة. هذا السطر وحده يفتحها ويغلقها.
+   ⚠️ وقلبُه إلى true يفتح المسار كلَّه — ولا يُنزِل أحداً، بـ`tier2By`. */
+export const PHONE_AUTH = false;
 
 /* ============================================================
    Where the app lives outside itself
