@@ -664,7 +664,16 @@ There are three gates, and **the session goes into the work, not into the
 tests**. ⚠️ **The whole set is every `tools/e2e/test_v<n>.mjs` × 2 builds
 and takes about an hour and three quarters** — measured 1h44 over 144 runs
 on 5 September 2026, and it grows with every suite added, so read that
-figure as «the last time it was timed», never as a constant. The count is deliberately NOT written
+figure as «the last time it was timed», never as a constant.
+⚠️ **And the same figure is written in FIVE other places** — the gate table
+below, the command list further down, two lines in `tools/e2e/run.sh`'s own
+head and one in `tools/audit/daily.sh`'s. They are one measurement, so they
+are re-timed together or not at all: **correcting one of them alone is
+worse than leaving all six stale, because the file then contradicts itself
+and whoever reads it first works from whichever they hit.** That is exactly
+what happened here — the paragraph was corrected and the table was not —
+and it is how the table and the command list came to give **~50 min and ~20
+minutes for the very same script** for months before that. The count is deliberately NOT written
 here: `run.sh` derives the list from the files and prints the number at
 the head and the tail of every run. It was a hand-written figure and it
 dried out twice in a single day — 48 → 49 → 50 — **and correcting it each
@@ -679,7 +688,7 @@ written. And more parallelism does not help: the machine has two cores and
 |---|---|---|
 | **after every change** | `tools/audit/quick.sh` | **~100s** — the static pass and all 42 screens in both languages |
 | **while working on one area** | `SUITES="33 37" tools/e2e/run.sh` | seconds to a minute — only what your change touches |
-| **once, at the end of a GROUP** | `tools/audit/daily.sh` | **~50 min** — the second build, the four roles, the admin panel, everything |
+| **once, at the end of a GROUP** | `tools/audit/daily.sh` | **~1h45** (measured 5 Sep 2026 · 72 suites × 2 builds) — the second build, the four roles, the admin panel, everything |
 
 `quick.sh` is `index.html` only, on purpose: the single-file build comes
 from the same source, and a fault in it alone is rare and of a known kind
@@ -858,7 +867,7 @@ being correct and has to be rewritten in the same batch.
 python3 -m http.server 8099        # from the repo root
 node tools/e2e/chk_i18n.mjs        # both packs, every derived key, seconds
 tools/audit/quick.sh               # the fast gate — ~100 seconds
-tools/audit/daily.sh               # everything, once at the end — ~20 minutes
+tools/audit/daily.sh               # everything, once at the end — ~1h45 (measured 5 Sep 2026)
 python3 tools/build_single.py > index-single-file.html
 node tools/audit/provenance.mjs  # يُولَّد docs/AI-PROVENANCE.md ويدخل كومِتَ الإغلاق
 ```
