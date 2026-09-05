@@ -31,7 +31,16 @@ let reqs = 0;
    counted our OWN files as outside requests and printed a red FAIL on a
    clean build. A check that lies about a green build is worse than no check. */
 const ORIGIN = new URL(BASE).origin;
-page.on('request', r => { if (/^https?:/.test(r.url()) && !r.url().startsWith(ORIGIN) && !/fonts\.(googleapis|gstatic)/.test(r.url())) reqs++; });
+/* ⚠️ 610 adds ONE legitimate outside call at boot — the live rows — and the
+   identity host is excluded here for that reason alone. What this counter
+   guards is unchanged and is not relaxed: THE CALENDAR FETCHES NOTHING.
+   `feasts.js` imports nothing and asks nobody, and any request from any
+   other host still turns 15.2 red. Excluding the one call the app really
+   makes is what keeps this check about the calendar rather than about the
+   app having a server at all. */
+page.on('request', r => { if (/^https?:/.test(r.url()) && !r.url().startsWith(ORIGIN)
+  && !/fonts\.(googleapis|gstatic)/.test(r.url())
+  && !/ijubbqvbkfzillkhwdzp\.supabase\.co/.test(r.url())) reqs++; });
 page.on('console', m => { if (m.type() === 'error' && !/ERR_CONNECTION|ERR_CERT|ERR_TUNNEL|ERR_NAME|ERR_FAILED|fonts\.googleapis/.test(m.text())) errors.push(m.text().slice(0, 130)); });
 page.on('pageerror', e => errors.push('PAGEERROR ' + e.message.slice(0, 130)));
 

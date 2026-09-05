@@ -1,5 +1,6 @@
 /* V.02.7 — batch six (a): numerals, MSA, the header flip, and twelve screens */
 import { chromium } from '/opt/node22/lib/node_modules/playwright/index.mjs';
+import { mockSupabase } from './_supabase.mjs';
 import { phoneAuthOn } from './_phoneauth.mjs';
 import { withDemoData } from './_demo.mjs';
 
@@ -24,6 +25,8 @@ const installPatch = (p) => p.addInitScript(() => {
 
 const openPage = async (opts = {}) => {
   const ctx = await browser.newContext(Object.assign({ colorScheme: 'dark', viewport: { width: 390, height: 844 } }, opts));
+  /* 610: see tools/e2e/_supabase.mjs */
+  await mockSupabase(ctx);
   /* ⚠️ REVERSAL (475): items 11.15–11.17 measure the phone screen's own
      mismatch message, and 475 switched that screen off. It is switched ON
      here rather than the items being deleted — they guard the road 475

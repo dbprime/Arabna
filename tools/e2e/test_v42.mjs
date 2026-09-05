@@ -24,6 +24,7 @@
    the leak on a device that still carries the old state, with no
    `signOut` ever having run. That case is asserted here too (block 4). */
 import { chromium } from '/opt/node22/lib/node_modules/playwright/index.mjs';
+import { mockSupabase } from './_supabase.mjs';
 
 const BASE = process.env.BASE || 'http://localhost:8099/index.html';
 let pass = 0, fail = 0;
@@ -74,6 +75,8 @@ const mount = p => p.evaluate(async () => {
 const DEMO_ON = { showDemo: true, demoDefaultOff: true };
 const openWith = async (state) => {
   const ctx = await browser.newContext({ viewport: { width: 390, height: 844 } });
+  /* 610: see tools/e2e/_supabase.mjs */
+  await mockSupabase(ctx);
   await ctx.addInitScript(s => localStorage.setItem('arabna.v1', JSON.stringify(s)),
                           Object.assign({}, DEMO_ON, state));
   const p = await ctx.newPage(); wire(p);
@@ -87,6 +90,8 @@ const openWith = async (state) => {
    reopening the app really is. */
 const reopen = async (storage) => {
   const ctx = await browser.newContext({ viewport: { width: 390, height: 844 } });
+  /* 610: see tools/e2e/_supabase.mjs */
+  await mockSupabase(ctx);
   await ctx.addInitScript(s => { if (!localStorage.getItem('arabna.v1')) localStorage.setItem('arabna.v1', s); }, storage);
   const p = await ctx.newPage(); wire(p);
   await p.goto(BASE + '#/home', { waitUntil: 'networkidle' });

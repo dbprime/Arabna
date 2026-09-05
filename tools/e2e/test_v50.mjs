@@ -22,6 +22,7 @@
       there and the greeting vanishes five hours early. Item 5 is that
       exact case, and it fails on the naive implementation. */
 import { chromium } from '/opt/node22/lib/node_modules/playwright/index.mjs';
+import { mockSupabase } from './_supabase.mjs';
 
 const BASE = process.env.BASE || 'http://localhost:8099/index.html';
 let pass = 0, fail = 0;
@@ -74,6 +75,8 @@ const mount = p => p.evaluate(async () => {
 const open = async (state, hash = '') => {
   const ctx = await browser.newContext({ viewport: { width: 390, height: 844 },
                                          timezoneId: 'America/Chicago' });
+  /* 610: see tools/e2e/_supabase.mjs */
+  await mockSupabase(ctx);
   /* ⚠️ SEEDED ONCE, NOT ON EVERY LOAD. `addInitScript` runs before every
      navigation, so seeding unconditionally would rewrite `seenGreetings`
      back to empty on the reload that item 1.7 depends on — and the suite
@@ -298,10 +301,13 @@ console.log('--- the device, not the account ---');
 {
   const { ctx, p } = await open({ lang: 'ar', user: ACCOUNT,
     greetings: [card()], seenGreetings: ['g1'] });
-  const r = await p.evaluate(() => {
+  const r = await p.evaluate(async () => {
     const S = window.__S;
-    return { inExport: /seenGreetings/.test(S.exportMyData()),
-             keptOnSignOut: (() => { S.signOut(); return (S.state.seenGreetings || []).includes('g1'); })(),
+    const inExport = /seenGreetings/.test(S.exportMyData());
+    /* 610: it ends the server session first, so it is awaited */
+    await S.signOut();
+    return { inExport,
+             keptOnSignOut: (S.state.seenGreetings || []).includes('g1'),
              greetingsKept: S.greetings().length };
   });
   ok('10.1 it is not in the reader\'s copy of their data — it is a device trace', !r.inExport);
