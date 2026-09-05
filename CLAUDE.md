@@ -9107,6 +9107,105 @@ switch is off, the queue is the only guard.** ⚠️ **The switch is flipped
 to `true` the moment the app is accepted on the store and the SMS provider
 is connected. That is one line, and `test_v74 · 8` guards the flip.**
 
+### And the switch left a dead end that no suite covered — the owner widened `475` for it
+⚠️ **It turned not one suite red, because nothing guarded it.** Measured
+after the batch above had landed:
+
+```js
+updateProfile   parks the new number in `pendingPhone` — with no condition on the switch
+confirmPhone    is reached from `PhoneVerifyScreen` alone
+PhoneVerifyScreen  is filtered out of `ROUTES` by this very batch
+```
+
+**So the number was parked FOR EVER**: the old one stayed the account's,
+and the edit screen went on saying «بانتظار التأكيد» about a code nothing
+could ever send. ⚠️ **And changing the number is the one thing in the app
+that costs a re-verification**, so this is the field most likely to be
+touched.
+
+**The owner's decision: the confirmation moves from the mobile to the
+email** — the code reaches the account's confirmed address and stands in
+for the SMS, **on the same shape the email change already uses**
+(`#/auth/email`, one screen, one code) rather than a new one.
+
+### ⚠️ THE LIMIT OF THAT DECISION IS ITS CONDITION, NOT A DETAIL IN IT
+> **The code confirms the CHANGE. It does not verify the NUMBER.**
+
+```js
+export function confirmPhone(phone, via)   // two roads, written apart
+  'email'  → phone promoted · phoneVerified STAYS false · tier2By untouched
+  'phone'  → phone promoted · phoneVerified true · tier2By 'phone'
+```
+
+- **`phoneVerified` stays `false`** — nothing contacted the number, and a
+  green «موثَّق» beside it would be a claim we cannot support.
+- ⚠️ **`tier2By` is NEVER written `'phone'` on this road.** That field
+  exists to protect whoever reached tier 2 by email the day the switch is
+  flipped; writing it here would mint «phone-verified» numbers **no
+  message ever reached**, indistinguishable from the real ones the day the
+  SMS provider comes back — destroying the one thing the field is for.
+- **The two roads are two branches, and each call site names its own** —
+  `confirmPhone(…, 'phone')` in the SMS screen, `confirmPhone(null,
+  'email')` in the email screen. **Neither leans on a default**, and
+  `test_v74 · 11` reads the source to hold it there.
+- **Three new keys, and not one borrowed word that says «توثيق»** —
+  `phoneChangeRuleEmail` · `phoneChangeSentEmail` ·
+  `emailCodeConfirmsPhone` («هذا الرمز يؤكّد تغيير رقمك، ولا يوثّق
+  الرقم»), printed on the code screen itself. `chk_i18n` 1874 → 1877.
+
+**Measured end to end:**
+```
+the hint            «تغيير الرقم يحتاج رمز تأكيد يصل إلى بريدك.»
+after «حفظ»          #/auth/email
+the code screen     says it confirms the change and does not verify the number
+before the code     phone 713…9182 · pending (713) 555-0134
+after the code      phone (713) 555-0134 · pending null
+                    phoneVerified FALSE · tier2By 'email' · tier() 2
+```
+
+### The fourth site of 5b's class, reported before it was fixed
+The hint under the phone field read
+«رقم غير مؤكد — تغيير الرقم يُلغي التوثيق ويحتاج رمزاً جديداً», and
+**both halves were wrong while the switch was off**: the first describes a
+state with no way to change it, the second promises a code no screen could
+ask for. ⚠️ **It was measured and recorded as a deferred gap rather than
+swept in on my own judgement** — `475` named three sites by the letter —
+and the owner's decision brought it inside the batch, where it belongs
+beside the road that makes it true.
+
+### Two faults of my own in this extension, recorded rather than smoothed
+- ⚠️ **A template comment inside a ternary expression broke `js/screens/
+  profile.js` entirely** — `SyntaxError`, and **zero content on every
+  screen**. Inside a `${…}` expression a comment is a plain `/* */`, never
+  a second `${…}`. **The first measurement caught it; reading it had
+  not.**
+- ⚠️ **A tooth that did not bite, twice, for two different reasons.**
+  First the mutation never landed — a `$` escaped through a double-quoted
+  shell string corrupted the anchor, so the app stayed whole and the check
+  looked asleep. **Prove the break happened before concluding a check is
+  asleep** (`500`'s rule), and a mutation now lives in a file that fails
+  loudly when its anchor is missing. Then, with the break real, **`10.2`
+  stayed green over the very line it exists to forbid**: the pack writes
+  «غير مؤكد» for the phone and «موثَّق» for the badge, and the regex knew
+  only the second. **A check that cannot see the thing it guards is worse
+  than no check.**
+
+### The nine suites the net turned red, and why none was a fault in the app
+⚠️ **Seven CRASHED rather than failed** — a `TimeoutError` on a screen that
+is no longer registered — and a crash leaves every assertion after it
+unmeasured, which is how a batch reports green while it is not. They are
+three kinds, and telling them apart is the whole of the work:
+
+| suite | what it is | what was done |
+|---|---|---|
+| v3 · v20 · v48 | **the phone screen IS their subject** | they flip the switch through `tools/e2e/_phoneauth.mjs` and measure it exactly as before — the honest answer rather than seeding around it, **and a third proof that the screen is switched off and not deleted** |
+| v8 · v11 · v12 | the phone was **setup**, not subject | the step is deleted: tier 2 is reached by the email now, so the fixture measures the app **as it actually is** rather than freezing it in the old environment |
+| v9 | a **true reversal** | «claiming needs a verified mobile» is no longer true; what those lines were ever about is that the claim is GATED, and that is asserted without a detour |
+| v5 · v47 | a true reversal | the step count and the prompt are **derived from `PHONE_AUTH`**, never written — the day the switch is flipped they follow it instead of going stale, which is the fault `v27 · 4.4` committed with a literal `5` |
+
+**`tools/e2e/_phoneauth.mjs` is one file because three suites need it** —
+a rule written three times has three versions two batches later.
+
 ### `test_v74` — 40 assertions, and the teeth measured five ways
 ⚠️ **And one of them did not bite, which is the finding worth keeping.**
 Reverting the `requireTier` guard alone leaves **every behavioural item
