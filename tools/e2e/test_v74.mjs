@@ -20,6 +20,16 @@
    reached tier 2 by email is demoted the day the switch is flipped on
    (item 8 — `tier2By`).
 
+   ⚠️ AND THE GUARD IN `requireTier` IS A SECOND LAYER, measured and said
+   plainly rather than claimed: while the switch is off `tier()` never
+   returns 1, so that branch is not reached at all — reverting it alone
+   leaves every behavioural item green. That is the design working (485's
+   own lesson: each layer alone already saves the reader, so with either
+   one present the behavioural checks cannot see the other missing), and it
+   is exactly why the structural assertions in block 9 stand beside them.
+   Reverting `tier()` instead turns eight items red, and reverting BOTH is
+   the dead end the file exists to prevent.
+
    ⚠️ Items 7 and 8 flip the flag by rewriting what the server SERVES, not
    by patching the tree: a suite that edits a source file races every other
    suite in the net. On the single-file build the module is a base64 data:
@@ -260,8 +270,34 @@ if (!SINGLE) {
   const i18n = readFileSync(ROOT + 'js/i18n.js', 'utf8');
   for (const k of ['verifyPhone', 'needPhone', 'verifyPhoneSub', 'stepVerifyPhone', 'phoneNotVerified'])
     ok('9.4 translation key kept: ' + k, i18n.includes(k + ':'));
+
+  /* ⚠️ The second layer, which no behavioural item in this file can reach
+     while the first one stands — see the head of the file. */
+  const store = readFileSync(ROOT + 'js/store.js', 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
+  const phoneGoes = [...store.matchAll(/(\S[^\n]*)go\('#\/auth\/phone'\)/g)].map(m => m[1].trim());
+  ok('9.5 requireTier never sends anybody to the closed door unguarded',
+     phoneGoes.length === 1 && /else if \(PHONE_AUTH\)/.test(phoneGoes[0]), phoneGoes.join(' | '));
+  ok('9.6 …and the fall-through goes somewhere that exists',
+     /else go\('#\/profile'\);/.test(store));
+  const authSrc = auth.replace(/\/\*[\s\S]*?\*\//g, '');
+  ok('9.7 the redirect after confirming the email is gated too',
+     /if \(PHONE_AUTH && p && \(p\.tier \|\| 2\) >= 2\)/.test(authSrc));
+  const prof = readFileSync(ROOT + 'js/screens/profile.js', 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
+  ok('9.8 the never-ending step is gated',
+     /if \(PHONE_AUTH && !u\.phoneVerified\) steps\.push/.test(prof));
+  ok('9.9 …and so is the save that follows a changed number',
+     /go\(pend && PHONE_AUTH \? '#\/auth\/phone' : '#\/profile'\)/.test(prof));
+  const appSrc = app.replace(/\/\*[\s\S]*?\*\//g, '');
+  ok('9.10 the route is filtered out of the table, not deleted from it',
+     /const ROUTES = PHONE_AUTH[\s\S]{0,120}filter\(r => r\.screen !== PhoneVerifyScreen\)/.test(appSrc));
+  /* ⚠️ tier2By is written in exactly two places and nowhere else — a third
+     writer is how a record of HOW somebody got in stops being true. */
+  const writers = [...store.matchAll(/tier2By\s*=\s*'(email|phone)'/g)].map(m => m[1]).sort();
+  ok('9.11 tier2By has exactly two writers, one each',
+     writers.length === 2 && writers[0] === 'email' && writers[1] === 'phone', writers.join(','));
 } else {
-  for (const n of ['9.1', '9.2', '9.3']) ok(n + ' (source check, module build only)', true);
+  for (const n of ['9.1', '9.2', '9.3', '9.5', '9.6', '9.7', '9.8', '9.9', '9.10', '9.11'])
+    ok(n + ' (source check, module build only)', true);
   for (const k of ['verifyPhone', 'needPhone', 'verifyPhoneSub', 'stepVerifyPhone', 'phoneNotVerified'])
     ok('9.4 translation key kept: ' + k + ' (source check, module build only)', true);
 }
