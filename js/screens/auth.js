@@ -212,6 +212,13 @@ export function EmailVerifyScreen(root) {
       <div class="empty-ico">${icon('mail', 33)}</div>
       <b style="font-size:1.0625rem">${t('checkYourEmail')}</b>
       <span class="muted fs-13">${t('verifyEmailSub')} <b class="gold ltr">${email}</b></span>
+      ${/* ⚠️ While phone verification is switched off a parked number is
+           confirmed by THIS code, so the screen says so — and says the
+           whole truth: it confirms the CHANGE and does not verify the
+           number. Borrowing a word that says «توثيق» here would be the
+           app claiming a message reached a phone that nothing called. */''}
+      ${!PHONE_AUTH && S.pendingPhone()
+        ? `<span class="muted fs-13 mt-8">${t('emailCodeConfirmsPhone')}</span>` : ''}
     </div>
     <div class="pad mt-16">
       ${otpRow('e')}
@@ -263,6 +270,11 @@ export function EmailVerifyScreen(root) {
     if (S.pendingVerify() && S.pendingVerify().expired) { toast(t('codeExpired'), 'err'); return; }
     if (otpValue('e') !== S.DEMO_CODE) { toast(t('wrongCode'), 'err'); return; }
     S.confirmEmail();
+    /* ⚠️ A SECOND CALL, not a branch inside `confirmEmail`. Each promotion
+       stays in the one function that is never reached without a correct
+       code, and neither writes the other's fields — which is what keeps a
+       number confirmed by email from ever reading as one verified by SMS. */
+    if (!PHONE_AUTH && S.pendingPhone()) S.confirmPhone(null, 'email');
     S.clearPendingVerify();
     toast(t('emailVerified'), 'ok');
     const p = S.peekPendingIntent();
@@ -357,7 +369,8 @@ export function PhoneVerifyScreen(root) {
 
   $('#vBtn').addEventListener('click', () => {
     if (otpValue('p') !== S.DEMO_CODE) { toast(t('wrongCode'), 'err'); return; }
-    S.confirmPhone($('#phIn').value.trim());
+    /* the SMS road names itself — the two are never told apart by a default */
+    S.confirmPhone($('#phIn').value.trim(), 'phone');
     toast(t('phoneVerified'), 'ok');
     afterAuth();
   });

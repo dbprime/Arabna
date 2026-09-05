@@ -1,5 +1,6 @@
 /* V.02.7 — batch six (a): numerals, MSA, the header flip, and twelve screens */
 import { chromium } from '/opt/node22/lib/node_modules/playwright/index.mjs';
+import { phoneAuthOn } from './_phoneauth.mjs';
 import { withDemoData } from './_demo.mjs';
 
 const BASE = process.env.BASE || 'http://localhost:8099/index.html';
@@ -23,6 +24,11 @@ const installPatch = (p) => p.addInitScript(() => {
 
 const openPage = async (opts = {}) => {
   const ctx = await browser.newContext(Object.assign({ colorScheme: 'dark', viewport: { width: 390, height: 844 } }, opts));
+  /* ⚠️ REVERSAL (475): items 11.15–11.17 measure the phone screen's own
+     mismatch message, and 475 switched that screen off. It is switched ON
+     here rather than the items being deleted — they guard the road 475
+     promises is intact, and flipping it is what proves that promise. */
+  await phoneAuthOn(ctx, BASE);
   const p = await ctx.newPage();
   p.on('console', m => { if (m.type() === 'error' && !/ERR_CONNECTION|ERR_CERT|ERR_TUNNEL|fonts\.googleapis/.test(m.text())) errors.push(m.text()); });
   p.on('pageerror', e => errors.push('PAGEERROR ' + e.message));

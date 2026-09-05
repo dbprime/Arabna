@@ -124,11 +124,26 @@ const rows = p => p.evaluate(() =>
   await go(p, '#/profile');
   const steps = p => p.evaluate(() =>
     [...document.querySelectorAll('#app .list-note')].map(e => e.innerText.split('\n')[0].trim()));
+  /* ⚠️ REVERSAL (475): the number step is offered only while phone
+     verification is switched ON — with it off there is no way to finish
+     it, and an unfinishable step is worse than one struck through. So the
+     COUNT is derived from `PHONE_AUTH` rather than written: the day the
+     switch is flipped these lines follow it instead of going stale, which
+     is the fault `v27 · 4.4` committed with a literal 5. */
+  const phoneAuth = await p.evaluate(async () => {
+    let D; try { D = await import('arabna/js/data.js'); } catch (e) { D = await import('./js/data.js'); }
+    return D.PHONE_AUTH;
+  });
+  const expect = phoneAuth ? 3 : 2;
   const first = await steps(p);
-  ok('3.1 a new account is offered all three steps', first.length === 3, first.join(' · '));
+  ok('3.1 a new account is offered every step it can finish',
+     first.length === expect, first.join(' · ') + ' | PHONE_AUTH=' + phoneAuth);
   /* ⚠️ THE VERIFIED NUMBER IS THE GATE ON EVERYTHING THAT EARNS — posting,
-     contacting a seller, claiming a business, buying an advertisement. */
-  ok('3.2 …the number among them', first.some(x => /رقم|number/i.test(x)), first.join(' · '));
+     contacting a seller, claiming a business, buying an advertisement —
+     which is why it is named when it CAN be reached, and never when it
+     cannot. */
+  ok('3.2 …the number among them exactly while the road exists',
+     first.some(x => /رقم|number/i.test(x)) === phoneAuth, first.join(' · '));
 
   await p.evaluate(() => { window.__S.state.user.phoneVerified = true; window.__S.save(); });
   await go(p, '#/home'); await go(p, '#/profile');

@@ -3627,13 +3627,32 @@ export function pendingPhone() {
 export function cancelPhoneChange() {
   if (state.user) { delete state.user.pendingPhone; save(); }
 }
-export function confirmPhone(phone) {
+/** Confirm a parked number. `via` is the road the code travelled and the
+    two roads are written apart on purpose — one branch writing both would
+    be exactly the merge this is here to prevent.
+
+    'phone'  a code sent BY SMS TO THE NUMBER. It proves the number, so it
+             verifies it and records how tier 2 was reached.
+    'email'  a code sent to the account's confirmed address while phone
+             verification is switched off. ⚠️ IT CONFIRMS THE CHANGE AND
+             NOTHING ELSE: nothing has contacted the number, so
+             `phoneVerified` stays false and `tier2By` is never written
+             'phone' — inventing a «phone-verified» number no message ever
+             reached would be indistinguishable from a real one the day the
+             SMS provider comes back, which is the whole value of the field. */
+export function confirmPhone(phone, via) {
   if (!state.user) return;
   /* the promotion lives here and ONLY here, exactly as `confirmEmail`'s
      does: this is the one function never called without a correct code. */
-  state.user.phone = phone || state.user.pendingPhone || state.user.phone;
-  state.user.phoneVerified = true;
-  state.user.tier2By = 'phone';   // the other of the two
+  const next = phone || state.user.pendingPhone || state.user.phone;
+  if (via === 'email') {
+    state.user.phone = next;
+    state.user.phoneVerified = false;
+  } else {
+    state.user.phone = next;
+    state.user.phoneVerified = true;
+    state.user.tier2By = 'phone';
+  }
   delete state.user.pendingPhone;
   save();
 }

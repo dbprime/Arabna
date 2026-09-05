@@ -22,6 +22,7 @@
    it there; empty took a message that names no field and is gone in under
    three seconds. The difference was never importance — it was place. */
 import { chromium } from '/opt/node22/lib/node_modules/playwright/index.mjs';
+import { phoneAuthOn } from './_phoneauth.mjs';
 
 const BASE = process.env.BASE || 'http://localhost:8099/index.html';
 let pass = 0, fail = 0;
@@ -41,6 +42,12 @@ const wire = p => {
 };
 const fresh = async (verified = true) => {
   const ctx = await browser.newContext({ viewport: { width: 390, height: 844 } });
+  /* ⚠️ REVERSAL (475): this whole suite is about the PARKED NUMBER on the
+     phone screen — the typo that locked itself in — and 475 switched that
+     screen off. The flag is flipped rather than the suite gutted: what it
+     guards is the SMS road, which 475 keeps whole and reopens with one
+     line. The email road 475 adds is guarded by `test_v74` instead. */
+  await phoneAuthOn(ctx, BASE);
   const p = await ctx.newPage(); wire(p);
   await p.goto(BASE + '#/home', { waitUntil: 'domcontentloaded' });
   await p.waitForTimeout(900);

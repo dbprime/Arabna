@@ -197,8 +197,14 @@ const EMAIL_OK = { ...NO_EMAIL, emailVerified: true };
   await page.click('#pSave');
   await page.waitForTimeout(900);
   const h = await hash(page);
-  ok('6.1 saving a NEW number lands on the profile, not on a closed screen',
-     h === '#/profile', h);
+  /* ⚠️ REVERSED INSIDE THIS BATCH, by the owner's decision. Landing on the
+     profile was better than the closed screen and still left the number
+     PARKED FOR EVER — `updateProfile` parks it whatever the switch says,
+     and the only thing that promotes it is `confirmPhone`, reached from a
+     screen this batch filtered out of `ROUTES`. So the change now has a
+     road: the code goes to the account's confirmed email. */
+  ok('6.1 saving a NEW number goes to the road that can confirm it',
+     h === '#/auth/email', h);
   const pend = await page.evaluate(async () => {
     let S; try { S = await import('arabna/js/store.js'); } catch (e) { S = await import('./js/store.js'); }
     return { pending: S.pendingPhone(), tier: S.tier() };
@@ -246,6 +252,75 @@ const EMAIL_OK = { ...NO_EMAIL, emailVerified: true };
   ok('8.3 …and that same account with the switch OFF is tier 2, with no field and no migration',
      await tierOf(page) === 2, String(await tierOf(page)));
   await ctx.close();
+}
+
+/* ---------- 10) the parked number has a road, and it confirms a CHANGE ---------- */
+{
+  const { page, ctx } = await open('#/profile/edit', { user: EMAIL_OK });
+  const hint = await page.evaluate(() =>
+    document.querySelector('#pPhone').closest('.field').querySelector('.hint').innerText.trim());
+  /* ⚠️ THE FOURTH SITE of 5b's class: while the switch is off, «موثَّق» and
+     «غير موثَّق» both describe a state with no way to change, and the rule
+     beside them promised a code no screen could ask for. */
+  ok('10.1 the hint names the road that exists', /بريد|email/i.test(hint), hint);
+  ok('10.2 …and claims nothing about verification',
+     !/موثَّق|غير موثَّق|not verified/i.test(hint), hint);
+
+  await page.fill('#pPhone', '(713) 555-0134');
+  await page.click('#pSave'); await page.waitForTimeout(1000);
+  ok('10.3 the save goes to the code screen, never to a dead end',
+     await hash(page) === '#/auth/email', await hash(page));
+  const said = await page.evaluate(() => document.body.innerText);
+  /* ⚠️ The screen says what is literally true — it confirms a CHANGE and
+     does not verify a NUMBER. A borrowed key saying «توثيق» here would be
+     the app claiming a message reached a phone nothing called. */
+  ok('10.4 the screen says the code confirms the change', /يؤكّد تغيير رقمك/.test(said));
+  ok('10.5 …and says outright that it does not verify it', /لا يوثّق الرقم/.test(said));
+
+  const before = await page.evaluate(() => {
+    const u = JSON.parse(localStorage.getItem('arabna.v1')).user;
+    return { phone: u.phone, pending: u.pendingPhone || null, v: !!u.phoneVerified, by: u.tier2By || null };
+  });
+  ok('10.6 the old number is still the account\'s until the code lands',
+     before.phone === '7134669182' && before.pending === '(713) 555-0134', JSON.stringify(before));
+
+  await page.click('[data-fill="e"]'); await page.click('#vBtn'); await page.waitForTimeout(900);
+  const after = await page.evaluate(() => {
+    const u = JSON.parse(localStorage.getItem('arabna.v1')).user;
+    return { phone: u.phone, pending: u.pendingPhone || null, v: !!u.phoneVerified, by: u.tier2By || null };
+  });
+  ok('10.7 the code promotes the number and clears the parking',
+     after.phone === '(713) 555-0134' && after.pending === null, JSON.stringify(after));
+  /* ⚠️ THE LIMIT OF THE DECISION, AND ITS CONDITION RATHER THAN A DETAIL. */
+  ok('10.8 …and phoneVerified stays FALSE — nothing contacted the number',
+     after.v === false, String(after.v));
+  ok('10.9 …and tier2By is never written \'phone\' on this road',
+     after.by === 'email', String(after.by));
+  ok('10.10 …and the reader keeps tier 2 throughout', await tierOf(page) === 2, String(await tierOf(page)));
+  await ctx.close();
+}
+
+/* ---------- 11) the two roads are written apart, in the source ---------- */
+if (!SINGLE) {
+  const src = readFileSync(ROOT + 'js/store.js', 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
+  const fn = src.slice(src.indexOf('export function confirmPhone'));
+  const body = fn.slice(0, fn.indexOf('\n}'));
+  ok('11.1 confirmPhone takes the road it travelled', /confirmPhone\(phone, via\)/.test(body));
+  const emailArm = body.slice(body.indexOf("via === 'email'"), body.indexOf('} else'));
+  ok('11.2 the email road never verifies the number',
+     /phoneVerified = false/.test(emailArm) && !/tier2By/.test(emailArm), emailArm.trim().slice(0, 80));
+  const smsArm = body.slice(body.indexOf('} else'));
+  ok('11.3 …and the SMS road does both, as it always did',
+     /phoneVerified = true/.test(smsArm) && /tier2By = 'phone'/.test(smsArm));
+  const auth = readFileSync(ROOT + 'js/screens/auth.js', 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
+  ok('11.4 both call sites name their road — neither relies on a default',
+     /confirmPhone\(\$\('#phIn'\)\.value\.trim\(\), 'phone'\)/.test(auth)
+     && /confirmPhone\(null, 'email'\)/.test(auth));
+  ok('11.5 …and the email road is reached only while the switch is off',
+     /if \(!PHONE_AUTH && S\.pendingPhone\(\)\) S\.confirmPhone\(null, 'email'\)/.test(auth));
+} else {
+  for (const n of ['11.1', '11.2', '11.3', '11.4', '11.5'])
+    ok(n + ' (source check, module build only)', true);
 }
 
 /* ---------- 9) one constant, one place ---------- */

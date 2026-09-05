@@ -351,10 +351,10 @@ await page.fill('#sPass2', 'Qamar2026$');
 await page.check('#agree1'); await page.check('#agree2');
 await page.click('#suBtn'); await page.waitForTimeout(900);
 await page.click('[data-fill="e"]'); await page.click('#vBtn'); await page.waitForTimeout(900);
-await go('#/auth/phone');
-await page.fill('#phIn', '(713) 466-9182');
-await page.click('#sendBtn'); await page.waitForTimeout(1600);
-await page.click('[data-fill="p"]'); await page.click('#vBtn'); await page.waitForTimeout(1000);
+/* ⚠️ REVERSAL (475): tier 2 is reached by the EMAIL while phone
+   verification is switched off, so the phone step this fixture used to
+   need does not exist and is not needed. The SETUP is repaired rather
+   than the subject changed — nothing below this line measures the phone. */
 
 await go('#/add-business');
 ok('the add form has the non-commercial checkbox', await page.locator('#bNonComm').count() === 1);

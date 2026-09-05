@@ -352,7 +352,20 @@ ok('profile shows the name', pt.includes('أحمد سالم'));
 ok('profile shows the email', pt.includes('ahmad@arabna.app'));
 ok('profile shows the join date label', pt.includes('عضو منذ'));
 ok('profile shows the account tier', pt.includes('حساب مؤكد'));
-ok('profile prompts phone verification', pt.includes('وثّق رقمك'));
+/* ⚠️ REVERSAL (475): the «verify your number» step is offered only while
+   phone verification is switched ON. With it off the step could never be
+   finished — a gold button pointing at a screen that is not registered —
+   so the prompt is absent, and its ABSENCE is what must be guarded.
+   ⚠️ Read from `PHONE_AUTH` and never written as a verdict: the day the
+   switch is flipped this line follows it instead of going stale. */
+{
+  const on = await page.evaluate(async () => {
+    let D; try { D = await import('arabna/js/data.js'); } catch (e) { D = await import('./js/data.js'); }
+    return D.PHONE_AUTH;
+  });
+  ok('profile prompts phone verification only while the road exists',
+     pt.includes('وثّق رقمك') === on, 'PHONE_AUTH=' + on);
+}
 ok('profile keeps edit + change-password', pt.includes('تعديل الملف') && pt.includes('كلمة المرور'));
 
 const stats = await page.evaluate(() => Array.from(document.querySelectorAll('.stat-row .stat'))

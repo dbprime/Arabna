@@ -205,7 +205,16 @@ export function EditProfileScreen(root) {
              toast after a save, which is where it is true. */''}
         <div class="hint">${S.pendingPhone()
           ? `<span class="ink-danger">${t('phonePending').replace('{p}', esc(fmtPhone(S.pendingPhone())))}</span>`
-          : `${u.phoneVerified ? t('verified') : t('phoneNotVerified')} — ${t('phoneChangeRule')}`}</div>
+          /* ⚠️ THE FOURTH SITE of the same class as the profile row, and it
+             was reported before it was fixed. While the switch is off BOTH
+             halves of this line were wrong: «موثَّق / غير موثَّق» describes
+             a state with no way to change, and the rule beside it promised
+             a code that no screen could ask for. What is true instead is
+             the one thing the reader is about to do — change the number —
+             and how it is confirmed now. */
+          : PHONE_AUTH
+            ? `${u.phoneVerified ? t('verified') : t('phoneNotVerified')} — ${t('phoneChangeRule')}`
+            : t('phoneChangeRuleEmail')}</div>
         ${/* drawn on the SAME condition as the line, so the two cannot
              say different things — the shape the address already uses */''}
         ${S.pendingPhone() ? `<button class="mini-btn" id="pCancelPhone">${icon('x', 15)} ${t('phoneCancelChange')}</button>` : ''}</div>
@@ -306,6 +315,26 @@ export function EditProfileScreen(root) {
        that «you changed your number», which was true of a change that had
        already taken effect and is no longer what happens. */
     const pend = r && r.phonePending;
+    /* ⚠️ THE DEAD END THIS BATCH OPENED, AND NO SUITE COVERED IT.
+       `updateProfile` parks the new number whatever the switch says, and
+       the only thing that promotes it is `confirmPhone` — reached from
+       `PhoneVerifyScreen`, which this same batch filtered out of `ROUTES`.
+       So the number was parked FOR EVER: the old one stayed the account's,
+       and the screen went on saying «بانتظار التأكيد» about a code nothing
+       could ever send.
+       The owner's decision: the confirmation moves from the mobile to the
+       email — the code reaches the account's confirmed address and stands
+       in for the SMS, on the SAME shape the email change already uses
+       (`#/auth/email`, one screen, one code) rather than a new one.
+       ⚠️ And the code confirms the CHANGE, never the NUMBER: see
+       `confirmPhone`'s two roads in `store.js`. */
+    if (pend && !PHONE_AUTH) {
+      S.sendEmailCode(u.email);
+      S.setPendingVerify('email', u.email);
+      toast(t('phoneChangeSentEmail'), 'ok');
+      go('#/auth/email');
+      return;
+    }
     toast(pend ? t('phoneChangeSent') : t('profileSaved'), pend ? 'ok' : 'ok');
     /* ⚠️ The most dangerous of the three and the best hidden: the number
        is a field people fill in today, and changing it is the one thing in
