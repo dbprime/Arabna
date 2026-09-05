@@ -22,6 +22,7 @@
    it there; empty took a message that names no field and is gone in under
    three seconds. The difference was never importance — it was place. */
 import { chromium } from '/opt/node22/lib/node_modules/playwright/index.mjs';
+import { mockSupabase } from './_supabase.mjs';
 import { phoneAuthOn } from './_phoneauth.mjs';
 
 const BASE = process.env.BASE || 'http://localhost:8099/index.html';
@@ -42,6 +43,9 @@ const wire = p => {
 };
 const fresh = async (verified = true) => {
   const ctx = await browser.newContext({ viewport: { width: 390, height: 844 } });
+  /* 610: the account lives on a server now — the endpoint is answered by
+     a stand-in rather than the app's own rule being softened. */
+  await mockSupabase(ctx);
   /* ⚠️ REVERSAL (475): this whole suite is about the PARKED NUMBER on the
      phone screen — the typo that locked itself in — and 475 switched that
      screen off. The flag is flipped rather than the suite gutted: what it
@@ -55,7 +59,7 @@ const fresh = async (verified = true) => {
     window.__S = await import('arabna/js/store.js').catch(() => import('./js/store.js'));
     localStorage.removeItem('arabna.v1');
     await window.__S.signUp({ name: 'أحمد سالم', email: mail, phone: old, password: pw });
-    window.__S.confirmEmail('123456');
+    await window.__S.confirmEmail('123456');
     if (v) window.__S.confirmPhone(old);
   }, [PW, MAIL, OLD, verified]);
   return { ctx, p };
@@ -213,6 +217,9 @@ const user = p => p.evaluate(() => ({
 /* ---- 8. and the two ticks at sign-up, which is all that was left of the age item ---- */
 {
   const ctx = await browser.newContext({ viewport: { width: 390, height: 844 } });
+  /* 610: the account lives on a server now — the endpoint is answered by
+     a stand-in rather than the app's own rule being softened. */
+  await mockSupabase(ctx);
   const p = await ctx.newPage(); wire(p);
   await p.goto(BASE + '#/auth/signup', { waitUntil: 'domcontentloaded' });
   await p.waitForTimeout(900);

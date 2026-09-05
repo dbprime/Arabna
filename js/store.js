@@ -5074,7 +5074,7 @@ export function deletionSummary() {
  * device goes: their listings, reviews, messages, favourites, ad orders,
  * subscription and any page they owned.
  */
-export function deleteAccount() {
+export async function deleteAccount() {
   const mine = state.myListings || [];
   state.extraClassifieds = (state.extraClassifieds || []).filter(c => !mine.includes(c.id));
   state.messages = (state.messages || []).filter(m => !mine.includes(m.listingId) && m.from !== 'me');
@@ -5088,8 +5088,12 @@ export function deleteAccount() {
      So it calls the SAME function rather than a copy of it, and the order
      below is binding: `receipts` is in the keep-list, so the reset does
      not touch them and the identity is stripped AFTER it. Reversed, the
-     names would come back. */
-  signOut();
+     names would come back.
+     ⚠️ And it is AWAITED, which is why this function is async: `signOut`
+     ends the server session before the local reset, and letting that run
+     unawaited would return here — and to the caller — while the identity
+     it is deleting is still signed in. */
+  await signOut();
 
   state.myListings = [];
   state.extraBusinesses = (state.extraBusinesses || []).filter(b => !b.claimed);

@@ -1165,8 +1165,8 @@ export function SettingsScreen(root) {
       <button class="btn btn-danger btn-block mt-8" id="delGo">${t('delete')}</button>
       <button class="btn btn-plain btn-block mt-8" id="delNo">${t('cancel')}</button>
     `, (panel) => {
-      panel.querySelector('#delGo').addEventListener('click', () => {
-        S.deleteAccount();
+      panel.querySelector('#delGo').addEventListener('click', async () => {
+        await S.deleteAccount();
         closeSheet();
         toast(t('deleteConfirm'), 'ok');
         go('#/home');
