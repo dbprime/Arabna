@@ -11,7 +11,7 @@ ARABNA · عربنا — a mobile-first web app for the Arab community in the U.
 **business directory + marketplace + events + magazine**, Arabic-first with a full English toggle.
 ("Classifieds / الإعلانات الشخصية" is now "Marketplace / السوق" — the old `#/classifieds`
 routes still resolve so shared links keep working.)
-Current version: **V.09.8 (prototype)**. Owner: dbprime. Deploys to Vercel (team DB Prime).
+Current version: **V.09.9 (prototype)**. Owner: dbprime. Deploys to Vercel (team DB Prime).
 
 ## Hard rules (from the product brief)
 0. ⚠️ **THE OWNER'S NAME IS NEVER WRITTEN — anywhere.** Not in this file, not
@@ -662,7 +662,18 @@ number that is not their build's, and the report cannot be placed.
 
 There are three gates, and **the session goes into the work, not into the
 tests**. ⚠️ **The whole set is every `tools/e2e/test_v<n>.mjs` × 2 builds
-and takes about fifty minutes.** The count is deliberately NOT written
+and takes about an hour and three quarters** — measured 1h44 over 144 runs
+on 5 September 2026, and it grows with every suite added, so read that
+figure as «the last time it was timed», never as a constant.
+⚠️ **And the same figure is written in FIVE other places** — the gate table
+below, the command list further down, two lines in `tools/e2e/run.sh`'s own
+head and one in `tools/audit/daily.sh`'s. They are one measurement, so they
+are re-timed together or not at all: **correcting one of them alone is
+worse than leaving all six stale, because the file then contradicts itself
+and whoever reads it first works from whichever they hit.** That is exactly
+what happened here — the paragraph was corrected and the table was not —
+and it is how the table and the command list came to give **~50 min and ~20
+minutes for the very same script** for months before that. The count is deliberately NOT written
 here: `run.sh` derives the list from the files and prints the number at
 the head and the tail of every run. It was a hand-written figure and it
 dried out twice in a single day — 48 → 49 → 50 — **and correcting it each
@@ -677,7 +688,7 @@ written. And more parallelism does not help: the machine has two cores and
 |---|---|---|
 | **after every change** | `tools/audit/quick.sh` | **~100s** — the static pass and all 42 screens in both languages |
 | **while working on one area** | `SUITES="33 37" tools/e2e/run.sh` | seconds to a minute — only what your change touches |
-| **once, at the end of a GROUP** | `tools/audit/daily.sh` | **~50 min** — the second build, the four roles, the admin panel, everything |
+| **once, at the end of a GROUP** | `tools/audit/daily.sh` | **~1h45** (measured 5 Sep 2026 · 72 suites × 2 builds) — the second build, the four roles, the admin panel, everything |
 
 `quick.sh` is `index.html` only, on purpose: the single-file build comes
 from the same source, and a fault in it alone is rare and of a known kind
@@ -758,11 +769,11 @@ guard whose only guard has already failed is not a guard.**
   the very fault being removed. A partial run now prints
   «PARTIAL, not the full net».
 - **The manual override stays** (`SUITES="8 33" tools/e2e/run.sh`):
-  running three while you work is what keeps a batch from paying fifty
-  minutes, and removing it would slow every batch down.
+  running three while you work is what keeps a batch from paying the
+  full hour and three quarters, and removing it would slow every batch down.
 
 ### The full net runs once per GROUP, and the closing file says so at its head
-the owner's decision of 28 August: the full net is about fifty minutes, and
+the owner's decision of 28 August: the full net is the better part of two hours, and
 running it after every batch pays that four times inside one group. So a
 batch runs **only the suites it touches**, and the net runs **once, at the
 end of the group**.
@@ -773,6 +784,32 @@ end of the group**.
 > times. And a red at the end is attributed **by reading** which batch
 > touched which file — every batch names its files at its head — never by
 > guessing.
+
+**Reaffirmed by the owner on 5 September, from the next batch onward and not
+retroactively, because the price stopped being an estimate:** the net was 43
+suites and is 72, and one run measured **1h44 over 144 runs** on 5 September.
+**Four runs inside one group is close to seven hours** — which is how a
+single batch came to stretch over a night and the day after it.
+
+⚠️ **AND THE RULE WAS NOT BROKEN — IT WAS MADE VACUOUS, WHICH IS HARDER TO
+SEE.** Measured: the last five closing commits (`605` · `600` · `575` ·
+`470` · `475`) each say «the full net is green on both builds», and each was
+within its letter, because **each batch declared itself a group of one** —
+«this file closes its own group, and its group is itself» is written twice
+in this file. A rule that every batch may opt into by naming itself a group
+costs exactly what the rule was written to stop paying. **So a group of one
+is the exception and needs its reason at the file's head, never the default
+shape.**
+
+**Three of them are genuinely groups of one and stay so** — a batch touching
+`js/store.js`, the boot path, or authentication is treated as its group's
+closer even when it is not last, because a fault in those three reaches
+every screen. That is the test, not the batch's own preference.
+
+**And nothing else moves with this:** `main` is still production and nothing
+red lands on it; **a batch that closes a group pays the whole net, both
+builds, no shortcut**; and **no suite is ever skipped for being slow** —
+slowness is measured and treated in its own file, never stepped over.
 
 ⚠️ **AND THE FILE THAT CLOSES A GROUP SAYS SO INSIDE ITSELF, AT ITS HEAD.**
 The owner's rule from 29 August, and he writes it in the head rather than the
@@ -856,7 +893,7 @@ being correct and has to be rewritten in the same batch.
 python3 -m http.server 8099        # from the repo root
 node tools/e2e/chk_i18n.mjs        # both packs, every derived key, seconds
 tools/audit/quick.sh               # the fast gate — ~100 seconds
-tools/audit/daily.sh               # everything, once at the end — ~20 minutes
+tools/audit/daily.sh               # everything, once at the end — ~1h45 (measured 5 Sep 2026)
 python3 tools/build_single.py > index-single-file.html
 node tools/audit/provenance.mjs  # يُولَّد docs/AI-PROVENANCE.md ويدخل كومِتَ الإغلاق
 ```
@@ -8981,6 +9018,285 @@ change the shared key in i18n   → 4.6 red ALONE · 4.5 and 4.5b GREEN
 ⚠️ **The second tooth is the one that matters**: `4.5` staying green while
 the shared key changed under it is the proof that the article field is
 genuinely decoupled, not merely reading a different string today.
+
+## V.09.9 — phone verification is switched off by a flag, never deleted (475)
+
+**The owner's decision:** phone verification waits until after the App
+Store launch. **The reason is sound** — the SMS provider is a paid account
+billed per message, and spending that before the app is known to be
+accepted is spending for nothing. The email is enough on its own.
+
+**And the decision, carried out by switching the SCREEN off alone, stops
+the app dead.** Measured, in `js/store.js`:
+
+```js
+export function tier() {
+  if (!state.user) return 0;
+  if (state.user.phoneVerified) return 2;   // ← the ONLY road to tier 2
+  if (state.user.emailVerified) return 1;
+  return 0;
+}
+```
+
+And what tier 2 guards, read off every `requireTier` call:
+
+```
+js/screens/marketplace.js   #/post            posting to the marketplace
+js/screens/directory.js     #/add-business    adding a business
+js/screens/advertise.js     #/advertise/<id>  buying an advertisement
+js/screens/profile.js       #/profile/edit    editing the profile
+```
+
+⚠️ **So switching the phone off alone means: nobody posts, nobody adds a
+business, nobody buys an advertisement. The whole revenue path closes.**
+
+⚠️ **And worse, and invisible except by trying it:** `requireTier` sends
+whoever has not reached the tier to `'#/auth/phone'` — **the screen that
+has just been switched off.** The reader presses «publish», lands on a
+closed door, goes back, presses again. **With not one error message.**
+
+**So this is not a switching-off. It is the switching-off and the ladder
+that stands in its place.**
+
+### The switch is in one place, and nothing is deleted for it
+`PHONE_AUTH = false` in `js/data.js`, beside `APP_VERSION`. ⚠️ **No second
+copy of the constant in any file** — two constants of one name in two
+files is the fault somebody hunts for a month. `test_v74 · 9.1` walks
+`js/` and demands exactly one declaration.
+
+- **`PhoneVerifyScreen` stays written, exported and imported.** Deleting
+  it would make opening the path later a rebuild, **which is precisely
+  what this file prevents.**
+- **The route line stays written exactly as it is**, and what the switch
+  governs is whether it is **registered**: `ROUTES` is `ALL_ROUTES`
+  filtered by the screen while it is off. Whoever types the address by
+  hand meets the router's own fallback — **the screen really is not there
+  in this build, which is the honest answer.**
+- **Not one translation key is deleted.**
+
+### Tier 2 is reached by email, and tier 1 disappears
+⚠️ **Deliberately.** A middle rung that separates nothing confuses and
+guards nothing: **whoever verified their email is a full member, whoever
+did not is a visitor.** And `isMember` / `isLoggedIn` / `isPhoneVerified`
+are untouched — all three are built on `tier()`, so they come right with
+it. That is why they are one function.
+
+### `tier2By` — the field whose whole value is on a day that has not come
+⚠️ **This item shows nothing today and shows everything the day the switch
+is flipped.** Without it, every reader who reached tier 2 by email drops
+to tier 1 in the same instant — **so people who published and paid lose
+the right to publish**, and nothing in the app knows they came in by a
+road that was open to them.
+
+```js
+tier2By: null,        // 'email' · 'phone'
+```
+
+- **Written in exactly two places** — `confirmEmail` (while the switch is
+  off) and `confirmPhone` — and `test_v74 · 9.11` holds it at two. A third
+  writer is how a record of *how* somebody got in stops being true.
+- ⚠️ **An account created before this version has no field at all**, so
+  `tier2By` is `undefined` and falls into the right branch by itself.
+  **No boot migration is written for it, and none is needed.**
+- ⚠️ **It is a column in the server contract too** (`470`, `profiles`),
+  added there when the wiring batch is written. **`supabase/` is not
+  touched from here.**
+
+### The dead end is closed at its source
+`requireTier` gains `else if (PHONE_AUTH) go('#/auth/phone'); else
+go('#/profile');`, and the redirect in `js/screens/auth.js` after the
+email code is gated the same way — ⚠️ **and that is the gain the decision
+buys and must not waste: whoever wants to publish verifies their email and
+then publishes in the same step.** It was two steps and is now one.
+
+### Three places the reader would have met a task that cannot be finished
+- **«أكمل حسابك»** would have carried «وثّق رقمك» for ever, with a gold
+  button pointing at a closed door. ⚠️ **The block's own comment says «a
+  finished step disappears rather than standing struck through» — a step
+  that CANNOT be finished is worse than either.**
+- **The phone row** stops printing «رقم غير مؤكد» in red: it describes a
+  shortcoming with no way to repair it. One new key —
+  **`phoneVerifyLater`** — says what is true instead. **The number itself
+  stays: what is deferred is the verification, never the number.**
+- ⚠️ **And the most dangerous of the three, and the best hidden:** the
+  number is a field people fill in today, and changing it is the one thing
+  in the whole app that costs a re-verification. Whoever changed it after
+  the switch went off would have been thrown at the closed screen **in the
+  middle of a half-finished save.** ⚠️ **`pendingPhone` is untouched** — a
+  parked, unverified number is a correct state in a build with no
+  verification.
+
+### And not one `requireTier` call was touched
+⚠️ **That is the measure by which the fix is known to be in the right
+place.** If a single screen had needed editing, the switch was put in the
+wrong one: the screens ask `requireTier`, and it alone knows the ladder.
+
+### The price, recorded rather than hidden
+⚠️ **Tying publishing to a verified mobile was not decoration**, and
+`profile.js` says so in its own comment: the verified number is the gate
+on everything that earns. **And a mobile is harder for a fraudster than an
+email**, which is created in seconds and costs nothing.
+
+**So this decision lowers the barrier to a deceitful listing in the
+marketplace.** It does not overturn the decision — the cost is a real
+reason — **but it raises what falls on the moderation queue: while the
+switch is off, the queue is the only guard.** ⚠️ **The switch is flipped
+to `true` the moment the app is accepted on the store and the SMS provider
+is connected. That is one line, and `test_v74 · 8` guards the flip.**
+
+### And the switch left a dead end that no suite covered — the owner widened `475` for it
+⚠️ **It turned not one suite red, because nothing guarded it.** Measured
+after the batch above had landed:
+
+```js
+updateProfile   parks the new number in `pendingPhone` — with no condition on the switch
+confirmPhone    is reached from `PhoneVerifyScreen` alone
+PhoneVerifyScreen  is filtered out of `ROUTES` by this very batch
+```
+
+**So the number was parked FOR EVER**: the old one stayed the account's,
+and the edit screen went on saying «بانتظار التأكيد» about a code nothing
+could ever send. ⚠️ **And changing the number is the one thing in the app
+that costs a re-verification**, so this is the field most likely to be
+touched.
+
+**The owner's decision: the confirmation moves from the mobile to the
+email** — the code reaches the account's confirmed address and stands in
+for the SMS, **on the same shape the email change already uses**
+(`#/auth/email`, one screen, one code) rather than a new one.
+
+### ⚠️ THE LIMIT OF THAT DECISION IS ITS CONDITION, NOT A DETAIL IN IT
+> **The code confirms the CHANGE. It does not verify the NUMBER.**
+
+```js
+export function confirmPhone(phone, via)   // two roads, written apart
+  'email'  → phone promoted · phoneVerified STAYS false · tier2By untouched
+  'phone'  → phone promoted · phoneVerified true · tier2By 'phone'
+```
+
+- **`phoneVerified` stays `false`** — nothing contacted the number, and a
+  green «موثَّق» beside it would be a claim we cannot support.
+- ⚠️ **`tier2By` is NEVER written `'phone'` on this road.** That field
+  exists to protect whoever reached tier 2 by email the day the switch is
+  flipped; writing it here would mint «phone-verified» numbers **no
+  message ever reached**, indistinguishable from the real ones the day the
+  SMS provider comes back — destroying the one thing the field is for.
+- **The two roads are two branches, and each call site names its own** —
+  `confirmPhone(…, 'phone')` in the SMS screen, `confirmPhone(null,
+  'email')` in the email screen. **Neither leans on a default**, and
+  `test_v74 · 11` reads the source to hold it there.
+- **Three new keys, and not one borrowed word that says «توثيق»** —
+  `phoneChangeRuleEmail` · `phoneChangeSentEmail` ·
+  `emailCodeConfirmsPhone` («هذا الرمز يؤكّد تغيير رقمك، ولا يوثّق
+  الرقم»), printed on the code screen itself. `chk_i18n` 1874 → 1877.
+
+**Measured end to end:**
+```
+the hint            «تغيير الرقم يحتاج رمز تأكيد يصل إلى بريدك.»
+after «حفظ»          #/auth/email
+the code screen     says it confirms the change and does not verify the number
+before the code     phone 713…9182 · pending (713) 555-0134
+after the code      phone (713) 555-0134 · pending null
+                    phoneVerified FALSE · tier2By 'email' · tier() 2
+```
+
+### The fourth site of 5b's class, reported before it was fixed
+The hint under the phone field read
+«رقم غير مؤكد — تغيير الرقم يُلغي التوثيق ويحتاج رمزاً جديداً», and
+**both halves were wrong while the switch was off**: the first describes a
+state with no way to change it, the second promises a code no screen could
+ask for. ⚠️ **It was measured and recorded as a deferred gap rather than
+swept in on my own judgement** — `475` named three sites by the letter —
+and the owner's decision brought it inside the batch, where it belongs
+beside the road that makes it true.
+
+### Two faults of my own in this extension, recorded rather than smoothed
+- ⚠️ **A template comment inside a ternary expression broke `js/screens/
+  profile.js` entirely** — `SyntaxError`, and **zero content on every
+  screen**. Inside a `${…}` expression a comment is a plain `/* */`, never
+  a second `${…}`. **The first measurement caught it; reading it had
+  not.**
+- ⚠️ **A tooth that did not bite, twice, for two different reasons.**
+  First the mutation never landed — a `$` escaped through a double-quoted
+  shell string corrupted the anchor, so the app stayed whole and the check
+  looked asleep. **Prove the break happened before concluding a check is
+  asleep** (`500`'s rule), and a mutation now lives in a file that fails
+  loudly when its anchor is missing. Then, with the break real, **`10.2`
+  stayed green over the very line it exists to forbid**: the pack writes
+  «غير مؤكد» for the phone and «موثَّق» for the badge, and the regex knew
+  only the second. **A check that cannot see the thing it guards is worse
+  than no check.**
+
+### The nine suites the net turned red, and why none was a fault in the app
+⚠️ **Seven CRASHED rather than failed** — a `TimeoutError` on a screen that
+is no longer registered — and a crash leaves every assertion after it
+unmeasured, which is how a batch reports green while it is not. They are
+three kinds, and telling them apart is the whole of the work:
+
+| suite | what it is | what was done |
+|---|---|---|
+| v3 · v20 · v48 | **the phone screen IS their subject** | they flip the switch through `tools/e2e/_phoneauth.mjs` and measure it exactly as before — the honest answer rather than seeding around it, **and a third proof that the screen is switched off and not deleted** |
+| v8 · v11 · v12 | the phone was **setup**, not subject | the step is deleted: tier 2 is reached by the email now, so the fixture measures the app **as it actually is** rather than freezing it in the old environment |
+| v9 | a **true reversal** | «claiming needs a verified mobile» is no longer true; what those lines were ever about is that the claim is GATED, and that is asserted without a detour |
+| v5 · v47 | a true reversal | the step count and the prompt are **derived from `PHONE_AUTH`**, never written — the day the switch is flipped they follow it instead of going stale, which is the fault `v27 · 4.4` committed with a literal `5` |
+
+**`tools/e2e/_phoneauth.mjs` is one file because three suites need it** —
+a rule written three times has three versions two batches later.
+
+### `test_v74` — 40 assertions, and the teeth measured five ways
+⚠️ **And one of them did not bite, which is the finding worth keeping.**
+Reverting the `requireTier` guard alone leaves **every behavioural item
+green**: while the switch is off `tier()` never returns 1, so that branch
+is not reached at all. **That is the design working — 485's lesson, that
+each layer alone already saves the reader, so the presence of one hides
+the absence of the other from any behavioural check — and it is exactly
+why the structural assertions stand beside them rather than instead of
+them.**
+
+```
+requireTier reverted to the closed door   → 9.5 · 9.6 red
+tier() reverted to the pre-batch body     → 2.1 · 2.3–2.6 · 6.3 · 8.1 · 8.3 red
+the route registered again                → 4.1 · 4.2 · 9.10 red
+confirmEmail stops recording HOW          → 2.2 · 9.11 red
+the two profile.js sites un-gated         → 5.1 · 5.2 · 6.1 · 9.8 · 9.9 red
+```
+
+⚠️ **And a fault in the suite's own first tooth is recorded too:**
+replacing one line of `tier()` left the `tier2By` clause below it standing,
+so the account was still tier 2 and the "revert" reverted nothing.
+**Prove the break happened before concluding a check is asleep** — the
+same rule this file already carries from `500`.
+
+⚠️ **Items 7 and 8 flip the flag by rewriting what the server serves, not
+by patching the tree** — a suite that edits a source file races every other
+suite in the net. On the single-file build the module is a base64 `data:`
+URI inside the importmap, so the document itself is rewritten. **The two
+builds are different environments, not copies.**
+
+### And the group closes — the full net, run once
+```
+144 runs · 72 suites · 6,732 assertions · zero red · zero crash
+```
+⚠️ **This file closes its own group, and its group is itself** — the switch
+governs `tier()`, which every `requireTier` in the app stands on, so the
+batch is not measured by the suites it happens to name. **Nine older suites
+were red on the first run and every one was attributed by reading**, into
+the three kinds tabled above; none was softened and each carries a comment
+naming its reversal.
+
+⚠️ **And the run's own duration was a stale figure in this file: measured
+1h44, against the «about fifty minutes» written when the net held 43
+suites.** It holds 72 now. The number is corrected with its date beside it,
+because a bare figure with no date is the very fault this file hunts.
+
+⚠️ **AND «a duration cannot be derived the way the suite count is» — which
+this file said a day ago — IS FALSE, and the owner corrected it on 5
+September.** A counter around the loop in `run.sh` prints each suite's time
+on every run, so the figure stops being hand-written at all and what is in
+hand is **a table of per-suite times** — which is the precondition for ever
+thinning the net. **That is a numbered file (`615`) and is not to be
+pre-empted**: nothing here implements it, and until it lands the six sites
+above are hand-written and stale by construction.
 
 ## Known open items
 - **The header image is still far larger than its box.** V.04.7 replaced

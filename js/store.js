@@ -10,7 +10,7 @@ import { CLASSIFIEDS, BUSINESSES, NOTIFICATIONS, SLIDER_ADS, HOUSE_SLIDE, MINI_A
          GENERIC_WORDS, NAME_SIM_MIN, STREET_WORDS, SUBSCRIPTION_PRICE, AD_CARD_COLOR,
          CITY_POINTS, REGIONS, REGION_RADIUS_MI, STATE_SUGGEST,
          AD_PRODUCTS, AD_SLOTS, APP_VERSION,
-         attrById, attrInCat, isAllDay, week, nextOccurrence } from './data.js';
+         attrById, attrInCat, isAllDay, week, nextOccurrence, PHONE_AUTH } from './data.js';
 import { expandQuery, hayMatches, catMatches, squash } from './synonyms.js';
 import { holidaysOn } from './holidays.js';
 
@@ -414,7 +414,17 @@ export async function checkAdmin(user, pass) {
 /* ---------------- auth tiers ---------------- */
 export function tier() {
   if (!state.user) return 0;
-  if (state.user.phoneVerified) return 2;
+  /* ⚠️ While phone verification is switched off (PHONE_AUTH in data.js)
+     tier 2 is reached by EMAIL. Without this nobody reaches it at all: no
+     posting, no adding a business, no buying an advertisement — and no
+     error message saying why.
+     ⚠️ And tier 1 disappears while it is off, deliberately: a middle rung
+     that separates nothing confuses and guards nothing. Whoever verified
+     their email is a full member, whoever did not is a visitor. */
+  if (!PHONE_AUTH) return state.user.emailVerified ? 2 : 0;
+  /* ⚠️ And whoever earned it while the door was open to them is not
+     demoted the day it closes — that is what `tier2By` records. */
+  if (state.user.phoneVerified || state.user.tier2By === 'email') return 2;
   if (state.user.emailVerified) return 1;
   return 0;
 }
@@ -481,7 +491,13 @@ export function requireTier(needed, route, go) {
   // account" — they only need to finish the step they are missing.
   if (!state.user) go('#/auth/signup');
   else if (!state.user.emailVerified) go('#/auth/email');
-  else go('#/auth/phone');
+  /* ⚠️ And nobody is sent to a closed door. While phone verification is
+     off the email IS the last step before tier 2, so the condition above
+     catches everyone who is missing anything — and this branch is the
+     one that would otherwise bounce a reader into a screen that is not
+     registered: press «publish», land nowhere, go back, press again. */
+  else if (PHONE_AUTH) go('#/auth/phone');
+  else go('#/profile');
   return false;
 }
 
@@ -3572,6 +3588,12 @@ export async function signUp({ name, email, password, phone }) {
     // collected at sign-up and stored unverified; the code is asked for at
     // the first action that actually needs it
     emailVerified: false, phone: phone || null, phoneVerified: false,
+    /* HOW tier 2 was reached — 'email' while PHONE_AUTH is off, 'phone'
+       once it is on. Read by `tier()` so that flipping the switch on does
+       not demote people who published and paid under the rung that was
+       open to them. An older account has it `undefined`, which falls into
+       the right branch by itself and needs no migration. */
+    tier2By: null,
     joined: Date.now(),
     avatar: null,          // { url, status: 'pending' | 'live' }
     badge: null,           // { status: 'pending' | 'live', since }
@@ -3594,6 +3616,8 @@ export function confirmEmail() {
     delete state.user.pendingEmail;
   }
   state.user.emailVerified = true;
+  /* one of the two places `tier2By` is ever written */
+  if (!PHONE_AUTH && !state.user.tier2By) state.user.tier2By = 'email';
   save();
 }
 /** the number waiting on a code, or null — never shown as the account's */
@@ -3603,12 +3627,32 @@ export function pendingPhone() {
 export function cancelPhoneChange() {
   if (state.user) { delete state.user.pendingPhone; save(); }
 }
-export function confirmPhone(phone) {
+/** Confirm a parked number. `via` is the road the code travelled and the
+    two roads are written apart on purpose — one branch writing both would
+    be exactly the merge this is here to prevent.
+
+    'phone'  a code sent BY SMS TO THE NUMBER. It proves the number, so it
+             verifies it and records how tier 2 was reached.
+    'email'  a code sent to the account's confirmed address while phone
+             verification is switched off. ⚠️ IT CONFIRMS THE CHANGE AND
+             NOTHING ELSE: nothing has contacted the number, so
+             `phoneVerified` stays false and `tier2By` is never written
+             'phone' — inventing a «phone-verified» number no message ever
+             reached would be indistinguishable from a real one the day the
+             SMS provider comes back, which is the whole value of the field. */
+export function confirmPhone(phone, via) {
   if (!state.user) return;
   /* the promotion lives here and ONLY here, exactly as `confirmEmail`'s
      does: this is the one function never called without a correct code. */
-  state.user.phone = phone || state.user.pendingPhone || state.user.phone;
-  state.user.phoneVerified = true;
+  const next = phone || state.user.pendingPhone || state.user.phone;
+  if (via === 'email') {
+    state.user.phone = next;
+    state.user.phoneVerified = false;
+  } else {
+    state.user.phone = next;
+    state.user.phoneVerified = true;
+    state.user.tier2By = 'phone';
+  }
   delete state.user.pendingPhone;
   save();
 }

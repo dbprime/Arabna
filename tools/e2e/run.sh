@@ -2,7 +2,7 @@
 # Every suite against both builds, two at a time.
 #
 #   python3 -m http.server 8099        # from the repo root
-#   tools/e2e/run.sh                   # ~25 minutes
+#   tools/e2e/run.sh                   # ~1h45 (measured 5 Sep 2026 · 72 suites × 2 builds)
 #
 # These live in the repository ON PURPOSE. They spent five batches in a
 # scratch directory and a container reset destroyed three of them at once,
@@ -43,12 +43,12 @@ if [ "$DERIVED_N" -lt 40 ]; then
   exit 2
 fi
 # ⚠️ The manual override stays. Running three suites while you work is what
-# keeps a batch from paying the full fifty minutes, and deleting it would
+# keeps a batch from paying the full hour and three quarters, and deleting it would
 # slow every batch down. The derived list is the DEFAULT, nothing more.
 SUITES="${SUITES:-$DERIVED}"
 RUN_N=$(echo $SUITES | wc -w)
 # ⚠️ Printed in full, once, at the head: a stray file is seen in the first
-# line rather than fifty minutes later. And the COUNT is printed at both
+# line rather than an hour and three quarters later. And the COUNT is printed at both
 # ends, so the report carries the number instead of somebody counting the
 # lines by hand — which is exactly how «48» happened.
 #

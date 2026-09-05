@@ -1,4 +1,5 @@
 import { chromium } from '/opt/node22/lib/node_modules/playwright/index.mjs';
+import { phoneAuthOn } from './_phoneauth.mjs';
 import { withDemoData } from './_demo.mjs';
 
 const BASE = process.env.BASE || 'http://localhost:8123/index.html';
@@ -10,7 +11,13 @@ const browser = await chromium.launch();
    turned them off by default. It turns them on for itself — the
    default is not reverted and no assertion is softened. */
 await withDemoData(browser);
-const page = await (await browser.newContext({ colorScheme: 'dark', viewport: { width: 420, height: 900 } })).newPage();
+/* ⚠️ REVERSAL (475): `#/auth/phone` is switched off by `PHONE_AUTH`, and
+   section 10 below measures that very screen — which 475 promises is
+   switched OFF and not deleted. The flag is flipped for this whole file
+   rather than the section being deleted: what it guards is still real. */
+const __ctx3 = await browser.newContext({ colorScheme: 'dark', viewport: { width: 420, height: 900 } });
+await phoneAuthOn(__ctx3, BASE);
+const page = await __ctx3.newPage();
 const errors = [];
 page.on('console', m => { if (m.type() === 'error') errors.push(m.text()); });
 page.on('pageerror', e => errors.push('PAGEERROR ' + e.message));

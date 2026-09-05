@@ -1,7 +1,7 @@
 # سجلُّ مصدر التطوير بالذكاء الاصطناعيّ — مولَّدٌ من المستودع
 
 يُولَّد بـ `tools/audit/provenance.mjs` عند كلّ إغلاق. لا يُحرَّر بيد.
-آخرُ توليد: 2026-09-05 · على `7ef9aba` (HEAD) · آخرُ كومِتٍ فيه 2026-09-04 · 252 كومِتاً
+آخرُ توليد: 2026-09-05 · على `2b02485` (HEAD) · آخرُ كومِتٍ فيه 2026-09-05 · 261 كومِتاً
 كومِتُ الإغلاق الأخير يدخل السجلَّ في الإغلاق الذي يليه.
 
 كيف يُقرأ: كلُّ دفعةٍ تبدأ بملفّ مواصفةٍ يكتبه مالكُ البرنامج ويقرّره
@@ -14,6 +14,15 @@ git لا يدخل الجدول. والخانةُ التي لا مصدرَ لها
 
 | التاريخ | الرقم | النوع | الكومِت | المواصفة | الجلسة | الشبكة | قبولُ المالك |
 |---|---|---|---|---|---|---|---|
+| 2026-09-05 | — | وثائق | `2b02485` | — | [جلسة](https://claude.ai/code/session_01FQktTvq1yNPmo67XBoW8hs) | — | — |
+| 2026-09-05 | 475 | وثائق | `d9d7ab4` | 475 | [جلسة](https://claude.ai/code/session_01FQktTvq1yNPmo67XBoW8hs) | — | owner ✓ |
+| 2026-09-05 | 475 | وثائق | `9f89cfb` | 475 | [جلسة](https://claude.ai/code/session_01FQktTvq1yNPmo67XBoW8hs) | — | owner ✓ |
+| 2026-09-05 | 475 | وثائق | `803aa06` | 475 | [جلسة](https://claude.ai/code/session_01FQktTvq1yNPmo67XBoW8hs) | — | owner ✓ |
+| 2026-09-05 | 475 | وثائق | `66526d1` | 475 | [جلسة](https://claude.ai/code/session_01FQktTvq1yNPmo67XBoW8hs) | — | owner ✓ |
+| 2026-09-05 | 475 | وثائق | `12d12d7` | 475 | [جلسة](https://claude.ai/code/session_01FQktTvq1yNPmo67XBoW8hs) | — | owner ✓ |
+| 2026-09-05 | 475 | وثائق | `5ed32a7` | 475 | [جلسة](https://claude.ai/code/session_01FQktTvq1yNPmo67XBoW8hs) | — | owner ✓ |
+| 2026-09-05 | 475 | شغل | `25ff329` | 475 | [جلسة](https://claude.ai/code/session_01FQktTvq1yNPmo67XBoW8hs) | — | owner ✓ |
+| 2026-09-05 | 605 | وثائق | `d55bee6` | 605 | [جلسة](https://claude.ai/code/session_01FQktTvq1yNPmo67XBoW8hs) | 142 · 71 · 6,624 | owner ✓ |
 | 2026-09-04 | 605 | شغل | `7ef9aba` | 605 | [جلسة](https://claude.ai/code/session_01FQktTvq1yNPmo67XBoW8hs) | — | owner ✓ |
 | 2026-09-04 | 470 | وثائق | `e2eb525` | 470 | [جلسة](https://claude.ai/code/session_01FQktTvq1yNPmo67XBoW8hs) | 142 · 71 · 6,616 | owner ✓ |
 | 2026-09-04 | 470 | وثائق | `3c99cf4` | 470 | [جلسة](https://claude.ai/code/session_01FQktTvq1yNPmo67XBoW8hs) | — | owner ✓ |

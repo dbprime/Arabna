@@ -5,7 +5,7 @@ import { t, arCount, L, icon, $, $$, go, renderHeader, toast, wireRoutes, emptyS
          mapChoices, esc, bizBadgeHtml, avatarHtml, socialRowHtml, fmtPhone,
          installStepsHtml, appLink } from '../ui.js';
 import { installMode, promptInstall, canPromptNative, mountInstallPrompt } from '../install.js';
-import { SUBSCRIPTION_PRICE, CATEGORIES, APP_VERSION } from '../data.js';
+import { SUBSCRIPTION_PRICE, CATEGORIES, APP_VERSION, PHONE_AUTH } from '../data.js';
 import * as S from '../store.js';
 import { catIcon } from './home.js';
 import { openReviewSheet, fmtDate } from './directory.js';
@@ -65,7 +65,13 @@ export function ProfileScreen(root) {
           <span>${u.phone
             ? (u.phoneVerified
                 ? `<span class="ok-inline">${icon('check', 12)} ${t('verified')}</span>`
-                : `<span class="ink-danger">${t('phoneNotVerified')}</span>`)
+                /* ⚠️ «not verified» in red describes a shortcoming with no
+                   way to repair it while the switch is off, so it is not
+                   shown. The number itself stays: what is deferred is the
+                   verification, never the number. */
+                : PHONE_AUTH
+                  ? `<span class="ink-danger">${t('phoneNotVerified')}</span>`
+                  : `<span>${t('phoneVerifyLater')}</span>`)
             : t('phoneNumber')}</span>
         </div>
       </div>
@@ -83,7 +89,12 @@ export function ProfileScreen(root) {
          through, and the whole block goes when the last one does. */''}
     ${(() => {
       const steps = [];
-      if (!u.phoneVerified) steps.push([t('stepVerifyPhone'), '#/auth/phone', t('verifyBtn')]);
+      /* ⚠️ And gated on the switch: otherwise a step that can never be
+         finished stands in this list for ever, with a gold button pointing
+         at a closed door — and a step that cannot be finished is worse
+         than one struck through. If it is the last one the whole block
+         goes, which the comment above already provides for. */
+      if (PHONE_AUTH && !u.phoneVerified) steps.push([t('stepVerifyPhone'), '#/auth/phone', t('verifyBtn')]);
       if (!S.avatarView()) steps.push([t('stepAddPhoto'), '#/profile/edit', t('addBtn')]);
       if (!S.myBusinesses().length) steps.push([t('stepAddBusiness'), '#/claim', t('addBtn')]);
       if (!steps.length) return '';
@@ -194,7 +205,16 @@ export function EditProfileScreen(root) {
              toast after a save, which is where it is true. */''}
         <div class="hint">${S.pendingPhone()
           ? `<span class="ink-danger">${t('phonePending').replace('{p}', esc(fmtPhone(S.pendingPhone())))}</span>`
-          : `${u.phoneVerified ? t('verified') : t('phoneNotVerified')} — ${t('phoneChangeRule')}`}</div>
+          /* ⚠️ THE FOURTH SITE of the same class as the profile row, and it
+             was reported before it was fixed. While the switch is off BOTH
+             halves of this line were wrong: «موثَّق / غير موثَّق» describes
+             a state with no way to change, and the rule beside it promised
+             a code that no screen could ask for. What is true instead is
+             the one thing the reader is about to do — change the number —
+             and how it is confirmed now. */
+          : PHONE_AUTH
+            ? `${u.phoneVerified ? t('verified') : t('phoneNotVerified')} — ${t('phoneChangeRule')}`
+            : t('phoneChangeRuleEmail')}</div>
         ${/* drawn on the SAME condition as the line, so the two cannot
              say different things — the shape the address already uses */''}
         ${S.pendingPhone() ? `<button class="mini-btn" id="pCancelPhone">${icon('x', 15)} ${t('phoneCancelChange')}</button>` : ''}</div>
@@ -295,8 +315,33 @@ export function EditProfileScreen(root) {
        that «you changed your number», which was true of a change that had
        already taken effect and is no longer what happens. */
     const pend = r && r.phonePending;
+    /* ⚠️ THE DEAD END THIS BATCH OPENED, AND NO SUITE COVERED IT.
+       `updateProfile` parks the new number whatever the switch says, and
+       the only thing that promotes it is `confirmPhone` — reached from
+       `PhoneVerifyScreen`, which this same batch filtered out of `ROUTES`.
+       So the number was parked FOR EVER: the old one stayed the account's,
+       and the screen went on saying «بانتظار التأكيد» about a code nothing
+       could ever send.
+       The owner's decision: the confirmation moves from the mobile to the
+       email — the code reaches the account's confirmed address and stands
+       in for the SMS, on the SAME shape the email change already uses
+       (`#/auth/email`, one screen, one code) rather than a new one.
+       ⚠️ And the code confirms the CHANGE, never the NUMBER: see
+       `confirmPhone`'s two roads in `store.js`. */
+    if (pend && !PHONE_AUTH) {
+      S.sendEmailCode(u.email);
+      S.setPendingVerify('email', u.email);
+      toast(t('phoneChangeSentEmail'), 'ok');
+      go('#/auth/email');
+      return;
+    }
     toast(pend ? t('phoneChangeSent') : t('profileSaved'), pend ? 'ok' : 'ok');
-    go(pend ? '#/auth/phone' : '#/profile');
+    /* ⚠️ The most dangerous of the three and the best hidden: the number
+       is a field people fill in today, and changing it is the one thing in
+       the whole app that costs a re-verification. Without the switch here
+       whoever changes their number is thrown at the closed screen, in the
+       middle of a half-finished save. */
+    go(pend && PHONE_AUTH ? '#/auth/phone' : '#/profile');
   });
 
   const bb = $('#badgeBtn');

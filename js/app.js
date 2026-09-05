@@ -24,6 +24,7 @@ import { ProfileScreen, EditProfileScreen, ChangePasswordScreen, SavedScreen, My
          HelpScreen, AboutScreen, PrivacyScreen, TermsScreen, BlockedScreen } from './screens/profile.js';
 import { SignUpScreen, SignInScreen, EmailVerifyScreen, PhoneVerifyScreen, ForgotScreen } from './screens/auth.js';
 import { AdvertiseScreen } from './screens/advertise.js';
+import { PHONE_AUTH } from './data.js';
 import { PrayerScreen } from './screens/prayer.js';
 import { MassScreen } from './screens/mass.js';
 import { mountInstallPrompt } from './install.js';
@@ -49,7 +50,7 @@ function adminLazy(root, params) {
   });
 }
 
-const ROUTES = [
+const ALL_ROUTES = [
   { re: /^#\/home$/,              screen: HomeScreen,        nav: 'home' },
   { re: /^#\/categories$/,        screen: CategoriesScreen,  nav: 'home' },
   { re: /^#\/prayer$/,            screen: PrayerScreen,      nav: 'home' },
@@ -113,6 +114,16 @@ const ROUTES = [
      browser that runs modules runs this. */
   { re: /^#\/admin$/,             screen: adminLazy,         nav: null },
 ];
+
+/* ⚠️ The phone-verification line above stays written exactly as it is —
+   nothing is deleted for the switch, so opening the path later is one
+   `false → true` and not a rebuild. What the switch governs is whether it
+   is REGISTERED: while it is off the route is not matched, and whoever
+   types the address by hand meets the router's own fallback. The screen
+   really is not there in this build, which is the honest answer. */
+const ROUTES = PHONE_AUTH
+  ? ALL_ROUTES
+  : ALL_ROUTES.filter(r => r.screen !== PhoneVerifyScreen);
 
 /* Screens that must always open at the top: a form, a sign-up step, or
    anything reached straight after finishing something. Restoring a

@@ -5,7 +5,7 @@
 #   tools/audit/daily.sh
 #
 # The static pass runs FIRST because it takes seconds and needs no
-# browser: if a key is missing, knowing that before thirty-five minutes of
+# browser: if a key is missing, knowing that before an hour and three quarters of
 # browser work is worth the two seconds.
 cd "$(dirname "$0")/../.."
 echo "=== ARABNA · $(date -u '+%Y-%m-%d %H:%M UTC') · $(git rev-parse --short HEAD) ==="

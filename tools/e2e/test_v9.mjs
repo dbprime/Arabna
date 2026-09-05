@@ -191,18 +191,16 @@ ok('the form asks who is claiming', await page.locator('#cName').count() === 1
 await page.fill('#cName', 'أحمد سالم');
 await page.fill('#cPhone', '(713) 466-9182');
 await page.fill('#cProof', 'رخصة رقم 44821');
-await page.click('#cSend'); await page.waitForTimeout(700);
-ok('claiming needs a verified mobile', (await hash()).startsWith('#/auth/phone'), await hash());
-
-await page.fill('#phIn', '(713) 466-9182');
-await page.click('#sendBtn'); await page.waitForTimeout(1600);
-await page.click('[data-fill="p"]'); await page.click('#vBtn'); await page.waitForTimeout(1000);
-ok('after verifying, the claim form is back', (await hash()) === '#/claim/b2', await hash());
-
-await page.fill('#cName', 'أحمد سالم');
-await page.fill('#cPhone', '(713) 466-9182');
-await page.fill('#cProof', 'رخصة رقم 44821');
+/* ⚠️ REVERSAL (475): claiming is gated at TIER 2, and this measured the
+   gate through the mobile because the mobile was the only road to it.
+   With phone verification switched off the road is the EMAIL — verified
+   at the head of this suite — so the claim goes straight through and
+   there is no second step. The GATE is what these two lines were ever
+   about, and it is still measured: `test_v74 · 2` drives
+   `requireTier(2, '#/claim/…')` on both sides of the email. */
 await page.click('#cSend'); await page.waitForTimeout(800);
+ok('an email-verified account is past the claim gate — no detour to any auth step',
+   !(await hash()).startsWith('#/auth/'), await hash());
 let st = await ls();
 ok('the claim was recorded as pending',
    (st.claims || []).length === 1 && st.claims[0].status === 'pending',
