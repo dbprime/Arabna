@@ -769,8 +769,8 @@ guard whose only guard has already failed is not a guard.**
   the very fault being removed. A partial run now prints
   «PARTIAL, not the full net».
 - **The manual override stays** (`SUITES="8 33" tools/e2e/run.sh`):
-  running three while you work is what keeps a batch from paying fifty
-  minutes, and removing it would slow every batch down.
+  running three while you work is what keeps a batch from paying the
+  full hour and three quarters, and removing it would slow every batch down.
 
 ### The full net runs once per GROUP, and the closing file says so at its head
 the owner's decision of 28 August: the full net is the better part of two hours, and
@@ -784,6 +784,32 @@ end of the group**.
 > times. And a red at the end is attributed **by reading** which batch
 > touched which file — every batch names its files at its head — never by
 > guessing.
+
+**Reaffirmed by the owner on 5 September, from the next batch onward and not
+retroactively, because the price stopped being an estimate:** the net was 43
+suites and is 72, and one run measured **1h44 over 144 runs** on 5 September.
+**Four runs inside one group is close to seven hours** — which is how a
+single batch came to stretch over a night and the day after it.
+
+⚠️ **AND THE RULE WAS NOT BROKEN — IT WAS MADE VACUOUS, WHICH IS HARDER TO
+SEE.** Measured: the last five closing commits (`605` · `600` · `575` ·
+`470` · `475`) each say «the full net is green on both builds», and each was
+within its letter, because **each batch declared itself a group of one** —
+«this file closes its own group, and its group is itself» is written twice
+in this file. A rule that every batch may opt into by naming itself a group
+costs exactly what the rule was written to stop paying. **So a group of one
+is the exception and needs its reason at the file's head, never the default
+shape.**
+
+**Three of them are genuinely groups of one and stay so** — a batch touching
+`js/store.js`, the boot path, or authentication is treated as its group's
+closer even when it is not last, because a fault in those three reaches
+every screen. That is the test, not the batch's own preference.
+
+**And nothing else moves with this:** `main` is still production and nothing
+red lands on it; **a batch that closes a group pays the whole net, both
+builds, no shortcut**; and **no suite is ever skipped for being slow** —
+slowness is measured and treated in its own file, never stepped over.
 
 ⚠️ **AND THE FILE THAT CLOSES A GROUP SAYS SO INSIDE ITSELF, AT ITS HEAD.**
 The owner's rule from 29 August, and he writes it in the head rather than the
@@ -9261,8 +9287,16 @@ naming its reversal.
 ⚠️ **And the run's own duration was a stale figure in this file: measured
 1h44, against the «about fifty minutes» written when the net held 43
 suites.** It holds 72 now. The number is corrected with its date beside it,
-because a duration cannot be derived by a script the way the suite count
-is — and a bare figure with no date is the very fault this file hunts.
+because a bare figure with no date is the very fault this file hunts.
+
+⚠️ **AND «a duration cannot be derived the way the suite count is» — which
+this file said a day ago — IS FALSE, and the owner corrected it on 5
+September.** A counter around the loop in `run.sh` prints each suite's time
+on every run, so the figure stops being hand-written at all and what is in
+hand is **a table of per-suite times** — which is the precondition for ever
+thinning the net. **That is a numbered file (`615`) and is not to be
+pre-empted**: nothing here implements it, and until it lands the six sites
+above are hand-written and stale by construction.
 
 ## Known open items
 - **The header image is still far larger than its box.** V.04.7 replaced
