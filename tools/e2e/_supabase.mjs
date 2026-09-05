@@ -157,8 +157,14 @@ export async function mockSupabase(ctx, opts = {}) {
     if (path.startsWith('/rest/v1/')) {
       const table = path.slice('/rest/v1/'.length);
       if (req.method() === 'GET') {
+        const wantsOne = /pgrst\.object/.test(req.headers()['accept'] || '');
         if (table === 'profiles') {
           const rows = db.session ? [db.profiles.get(db.session.user.id)].filter(Boolean) : [];
+          if (wantsOne) {
+            return rows.length
+              ? route.fulfill(json(rows[0]))
+              : route.fulfill(json({ code: 'PGRST116', message: 'no rows' }, 406));
+          }
           return route.fulfill(json(rows));
         }
         return route.fulfill(json(db[table] || []));
@@ -167,7 +173,13 @@ export async function mockSupabase(ctx, opts = {}) {
         if (!db.session) return route.fulfill(json({ message: 'new row violates row-level security policy' }, 401));
         const row = Object.assign({ id: 'mock-row-' + (++db.seq) }, body);
         (db[table] = db[table] || []).push(row);
-        return route.fulfill(json([row], 201));
+        /* ⚠️ `.single()` asks PostgREST for ONE OBJECT through the Accept
+           header, and the client rejects an array when it did. Answering
+           with the array either way is the kind of near-enough mock that
+           passes the request and fails the caller — the insert really did
+           return 201 and `addClassified` really did hand back null. */
+        const wantsOne = /pgrst\.object/.test(req.headers()['accept'] || '');
+        return route.fulfill(json(wantsOne ? row : [row], 201));
       }
       return route.fulfill(json([], 200));
     }
