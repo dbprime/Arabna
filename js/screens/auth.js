@@ -126,7 +126,15 @@ export function SignUpScreen(root) {
     if (!boxErr) return;
 
     e.target.innerHTML = `<span class="spinner"></span>`;
-    await S.signUp({ name: first + ' ' + last, email, password: pass, phone });
+    /* ⚠️ The server's refusal is printed under the email field and the
+       button is given back. Before the live connection there was nothing
+       that could refuse, so nothing read a return value. */
+    const err = await S.signUp({ name: first + ' ' + last, email, password: pass, phone });
+    if (err) {
+      e.target.innerHTML = t('createAccount');
+      setErr('email', t('signUpFailed'));
+      return;
+    }
     await S.sendEmailCode(email);
     S.setPendingVerify('email', email);
     go('#/auth/email');
@@ -167,8 +175,16 @@ export function SignInScreen(root) {
     const email = $('#iEmail').value.trim();
     const pass = $('#iPass').value;
     if (!email) { toast(t('required'), 'err'); return; }
-    await S.signUp({ name: email.split('@')[0], email, password: pass });
-    S.confirmEmail();
+    /* ⚠️ THIS WAS `signUp` FOLLOWED BY `confirmEmail`, and it was not a
+       sign-in at all: any address and any password — an empty one included
+       — created an account and confirmed it on the spot, overwriting an
+       existing one's name, verified number and tier without a word. And
+       `475` had turned that from a door into an account into a door into a
+       PERMISSION, because a confirmed address is tier two while phone
+       verification is off. The password is checked by the server now, and
+       a wrong one is refused. */
+    const err = await S.signInWithPassword(email, pass);
+    if (err) { toast(t('wrongCredentials'), 'err'); return; }
     toast(t('done'), 'ok');
     afterAuth();
   });
@@ -198,6 +214,22 @@ export function ForgotScreen(root) {
 }
 
 /* ------------------------ EMAIL VERIFICATION ------------------------ */
+/* ⚠️ THE DEMO-CODE CARD IS GONE FROM THIS SCREEN, AND ONLY FROM THIS ONE.
+   The email code is checked by Supabase now, so a card printing the fixed
+   demo digits over a «fill demo code» button would show a number that is
+   refused the instant it is submitted — a screen lying to the reader at the
+   exact moment they are looking at it. It stays on the PHONE screen, where
+   the code really is simulated (`sendSmsCode` still answers with it and
+   `confirmPhone` still compares it in the page): the card belongs to
+   whatever is still a prototype, and to nothing else.
+
+   ⚠️ AND THE NOTE LIVES HERE RATHER THAN AT THE PLACE IT DESCRIBES,
+   because that place is inside a template literal — where an HTML comment
+   is part of the string, and one backtick in it ends the template. That is
+   the V.09.9 fault in another costume — an ordinary block comment there,
+   never a second interpolation — and it cost this batch its first gate: the
+   parse error took down `auth.js` and, through the import graph, `app.js`
+   with it — every screen blank. */
 export function EmailVerifyScreen(root) {
   renderHeader({ simple: true, title: t('verifyEmail') });
   /* the address the code was sent to — the NEW one while a change waits,
@@ -222,7 +254,8 @@ export function EmailVerifyScreen(root) {
     </div>
     <div class="pad mt-16">
       ${otpRow('e')}
-      ${demoCodeCard('e')}
+      <!-- the demo-code card is deliberately absent here; see the note
+           above this function -->
       ${pv && pv.expired ? `<div class="err-msg">${icon('alert', 15)} ${t('codeExpired')}</div>` : ''}
       <button class="btn btn-gold btn-block mt-16" id="vBtn">${t('verifyBtn')}</button>
       <button class="btn btn-ghost btn-block mt-8" id="rsBtn" disabled>${t('resendNow')}</button>
@@ -232,7 +265,7 @@ export function EmailVerifyScreen(root) {
     </div>`;
 
   wireOtp('e');
-  wireDemoFill('e');
+  /* no `wireDemoFill('e')` — the card it wires is gone from this screen */
 
   /* A resend button that works instantly invites ten of them. The counter
      starts from when the code was actually sent, so coming back to this
@@ -266,10 +299,14 @@ export function EmailVerifyScreen(root) {
   });
   $('#guestBtn').addEventListener('click', () => go('#/home'));
 
-  $('#vBtn').addEventListener('click', () => {
+  $('#vBtn').addEventListener('click', async () => {
     if (S.pendingVerify() && S.pendingVerify().expired) { toast(t('codeExpired'), 'err'); return; }
-    if (otpValue('e') !== S.DEMO_CODE) { toast(t('wrongCode'), 'err'); return; }
-    S.confirmEmail();
+    /* ⚠️ THE CODE IS NO LONGER COMPARED HERE. It was measured against a
+       fixed `DEMO_CODE` in the page — a prototype affordance, and the one
+       thing that must not survive a live server: whoever can read the file
+       knows the code. The six digits go to Supabase and it decides. */
+    const err = await S.confirmEmail(otpValue('e'));
+    if (err) { toast(t('wrongCode'), 'err'); return; }
     /* ⚠️ A SECOND CALL, not a branch inside `confirmEmail`. Each promotion
        stays in the one function that is never reached without a correct
        code, and neither writes the other's fields — which is what keeps a

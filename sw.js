@@ -22,6 +22,13 @@ const CACHE = 'arabna-' + self.SW_VERSION;
 const NETWORK_ONLY = [
   'api.zippopotam.us',
   'api.bigdatacloud.net',
+  /* ⚠️ AND THE LIVE DATABASE, for a reason of the same family and one
+     sharper: a cached auth response is a session decided yesterday, and a
+     cached row is a listing that may since have been taken down. The
+     directory still works with no connection because `data.js` is
+     precached — never because a stale answer was kept. Hostname only, no
+     scheme: the comparison is on `url.hostname`. */
+  'ijubbqvbkfzillkhwdzp.supabase.co',
 ];
 
 /* ⚠️ A RESPONSE THAT CARRIES A REDIRECT CANNOT ANSWER A NAVIGATION —

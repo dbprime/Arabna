@@ -1307,6 +1307,10 @@ export const STRINGS = {
     voipRejected: 'هذا رقم إنترنت (VOIP) وغير مقبول — استخدم رقم هاتف حقيقي',
     landlineRejected: 'هذا رقم أرضي وغير مقبول — استخدم رقم هاتف محمول',
     wrongCode: 'الرمز غير صحيح، حاول مرة أخرى',
+    /* ⚠️ «البريد أو كلمة المرور» ولا يُقال أيُّهما — تمييزُ الاثنين يخبر من
+       يجرّب العناوين أيُّها مسجَّلٌ عندنا، وهو نصفُ ما يحتاجه. */
+    wrongCredentials: 'البريد أو كلمة المرور غير صحيحة',
+    signUpFailed: 'تعذّر إنشاء الحساب — تأكّد من اتصالك وحاول مرة أخرى',
     demoCode: 'وضع تجريبي: الرمز هو',
     emailVerified: 'تم تأكيد بريدك — أهلاً بك في عربنا',
     phoneVerified: 'تم تأكيد رقم هاتفك',
@@ -2986,6 +2990,8 @@ export const STRINGS = {
     voipRejected: 'This is an internet (VOIP) number and is not accepted — use a real mobile',
     landlineRejected: 'This is a landline and is not accepted — use a mobile number',
     wrongCode: 'Incorrect code, try again',
+    wrongCredentials: 'Wrong email or password',
+    signUpFailed: 'Could not create the account — check your connection and try again',
     demoCode: 'Demo mode: the code is',
     emailVerified: 'Email verified — welcome to ARABNA',
     phoneVerified: 'Mobile number verified',

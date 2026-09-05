@@ -273,7 +273,7 @@ export function EditProfileScreen(root) {
     EditProfileScreen(root);
   });
 
-  $('#pSave').addEventListener('click', () => {
+  $('#pSave').addEventListener('click', async () => {
     const name = $('#pName').value.trim();
     const email = $('#pEmail').value.trim();
     const phone = $('#pPhone').value.trim();
@@ -282,7 +282,7 @@ export function EditProfileScreen(root) {
     if (!fine) return;
 
     const phoneChanged = phone !== (u.phone || '');
-    const r = S.updateProfile({ name, email, phone });
+    const r = await S.updateProfile({ name, email, phone });
 
     // photo: only re-queue it when it actually changed
     /* ⚠️ Only the PHOTO half is touched here. Reading `u.avatar.url` on a

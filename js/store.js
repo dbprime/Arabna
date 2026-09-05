@@ -22,6 +22,24 @@ export { blankEvent };
 import { avatarSvg, AVATARS } from './avatars.js';
 export { AVATARS, avatarSvg };
 
+/* ---------------- THE LIVE CONNECTION ----------------
+ * ⚠️ المكتبةُ مودَعةٌ في `js/vendor/`، لا محمَّلةٌ من CDN — قرارُ مالك
+ * البرنامج في `610`، وسببُه مقيسٌ ومكتوبٌ في رأس ذلك الملفّ: عاملُ
+ * الخدمة يتجاهل كلَّ ما ليس من أصلِنا، فسكربتٌ خارجيٌّ لا يُخزَّن
+ * أبداً وأوّلُ فتحةٍ بلا شبكة شاشةٌ بيضاء — نقضاً لوعد `420`.
+ * ولذلك أيضاً يبقى `script-src 'self'` بلا حرفٍ يُضاف إليه.
+ * ------------------------------------------------------------
+ * ⚠️ وهذا الاتصالُ يربط **الهويّة** وحدَها في هذه الدفعة (مَن أنت)،
+ * لا كلَّ ما تملكه. والخادمُ لا يقرّر درجةَ أحد: `tier()` تعيش في
+ * هذا الملفّ وحدَه، وهو ما بُني `475` كلُّه ليحفظه.
+ */
+import { createClient } from './vendor/supabase.js';
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from './supabase-config.js';
+
+export const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+  auth: { persistSession: true, autoRefreshToken: true },
+});
+
 const KEY = 'arabna.v1';
 
 /* ---------------- THE STORAGE GATE ----------------
@@ -2330,12 +2348,69 @@ export function purgeDemoData() {
 export function everyBusiness() {
   const dropped = (state.mergedBusinesses || []).map(m => m.dropId)
     .concat(state.removedBusinesses || []);
+  /* ⚠️ THE LIVE ROWS ARE A COAT OVER `data.js`, NEVER A REPLACEMENT FOR IT.
+     The 485 real listings are NOT copied into the table — `0001_schema.sql`
+     says so in as many words — because a second permanent copy of them
+     drifts from the first the day a phone number is corrected in one and
+     not the other. What the table holds is what somebody ADDED and what the
+     admin EDITED on top, keyed by `seed_id`; a listing with no live row is
+     read from `data.js` alone, which is the offline promise of `420` still
+     working exactly as it did.
+     ⚠️ And the signature stays SYNCHRONOUS. Twenty-three call sites across
+     eight files read it, and not one of them gains an `await`: the rows are
+     fetched once at boot into `_liveBiz` and merged here. */
+  const liveById = new Map((_liveBiz || []).map(r => [r.seed_id, r]));
   return withoutDemo(state.extraBusinesses.concat(BUSINESSES))
     .filter(b => !dropped.includes(b.id))
     .map(b => {
       const edit = state.businessEdits && state.businessEdits[b.id];
-      return edit ? Object.assign({}, b, edit) : b;
+      const base = edit ? Object.assign({}, b, edit) : b;
+      const live = liveById.get(b.id);
+      return live ? Object.assign({}, base, mapLiveRowToJs(live)) : base;
     });
+}
+
+/* ---------------- THE LIVE DIRECTORY ----------------
+ * `null` = nothing has arrived yet (a first launch with no connection);
+ * `[]` = the table really answered and is empty. The two are different and
+ * the difference matters: neither erases `data.js`, but only the second
+ * means «we asked».
+ */
+let _liveBiz = null;
+let _liveBizAt = 0;
+
+/** when the live rows last arrived, or 0 — read by the suite, not by a screen */
+export function liveBizLoadedAt() { return _liveBizAt; }
+
+/** Fetch the live rows once. ⚠️ IT NEVER THROWS AND NEVER EMPTIES WHAT IT
+    HOLDS: a network failure leaves the last good answer standing, or `null`
+    if none ever came, and `everyBusiness()` reads both safely. */
+export async function loadLiveBusinesses() {
+  try {
+    const { data, error } = await sb.from('businesses').select('*').eq('status', 'live');
+    if (error) throw error;
+    _liveBiz = data || [];
+    _liveBizAt = Date.now();
+  } catch (e) { /* the last good answer stands */ }
+  return _liveBiz;
+}
+
+/** One map from a live row to the shape `data.js` uses, written once and
+    read by everything that ever reads a live business row — two copies of a
+    column mapping part company on the first column that is added. */
+export function mapLiveRowToJs(r) {
+  const out = {};
+  if (r.name_ar || r.name_en) out.name = { ar: r.name_ar || r.name_en || '', en: r.name_en || '' };
+  if (r.desc_ar || r.desc_en) out.desc = { ar: r.desc_ar || '', en: r.desc_en || '' };
+  for (const k of ['cat', 'phone', 'address', 'hours', 'tags', 'attributes', 'worship',
+                   'plan', 'verified', 'rating', 'claimed', 'photos', 'videos',
+                   'lat', 'lng', 'status']) {
+    if (r[k] !== undefined && r[k] !== null) out[k] = r[k];
+  }
+  if (r.review_count !== undefined && r.review_count !== null) out.reviewCount = r.review_count;
+  if (r.non_commercial !== undefined && r.non_commercial !== null) out.nonCommercial = r.non_commercial;
+  if (r.entry_price !== undefined && r.entry_price !== null) out.entryPrice = r.entry_price;
+  return out;
 }
 
 /**
@@ -3582,7 +3657,21 @@ export async function checkUserPassword(pw) {
   return (await hashPassword(pw, u.pwSalt || '')) === u.pwHash;
 }
 
+/** Create a real account on the server, then mirror the identity locally.
+    ⚠️ THE SERVER GOES FIRST AND ITS REFUSAL IS FINAL. There is no local
+    fallback when it cannot be reached: an account that exists on one
+    device and nowhere else is a lie its owner only discovers on their
+    second phone, and this project's rule is that a control which cannot
+    do what it says is worse than no control. Browsing still works with no
+    connection (420) — creating an account does not, and says so.
+    Returns null on success, or a short reason the screen can print. */
 export async function signUp({ name, email, password, phone }) {
+  const { error } = await sb.auth.signUp({
+    email,
+    password: password || '',
+    options: { data: { display_name: name } },
+  });
+  if (error) return error.message || 'signUpFailed';
   state.user = {
     name, email,
     // collected at sign-up and stored unverified; the code is asked for at
@@ -3605,9 +3694,23 @@ export async function signUp({ name, email, password, phone }) {
   state.myListings = [];
   save();
   await setUserPassword(password || '');
+  return null;
 }
-export function confirmEmail() {
-  if (!state.user) return;
+/** ⚠️ THE CODE IS CHECKED BY THE SERVER, NOT BY US.
+    A local comparison against a fixed code is a prototype affordance; the
+    moment there is a server, the only thing that may promote an address is
+    the server agreeing that the code it mailed is the code that came back.
+    The argument is the six digits the reader typed.
+    Returns null on success, or a short reason the screen can print. */
+export async function confirmEmail(code) {
+  if (!state.user) return 'noUser';
+  const target = state.user.pendingEmail || state.user.email;
+  const { error } = await sb.auth.verifyOtp({
+    email: target,
+    token: String(code || ''),
+    type: state.user.pendingEmail ? 'email_change' : 'signup',
+  });
+  if (error) return error.message || 'wrongCode';
   /* a change waiting on this very code is promoted here, and ONLY here —
      this is the one function that is never called without a correct code,
      and a promotion anywhere else would undo the whole guard. */
@@ -3619,6 +3722,7 @@ export function confirmEmail() {
   /* one of the two places `tier2By` is ever written */
   if (!PHONE_AUTH && !state.user.tier2By) state.user.tier2By = 'email';
   save();
+  return null;
 }
 /** the number waiting on a code, or null — never shown as the account's */
 export function pendingPhone() {
@@ -3681,7 +3785,12 @@ const KEEPS_ON_SIGN_OUT = new Set([
 /* `state.user = null` alone left every owned thing behind: a visitor on
    the same phone read the previous account's receipts ($29 · ARB-26-5UQQ4)
    and CANCELLED its subscription — measured on V.05.0, not supposed. */
-export function signOut() {
+export async function signOut() {
+  /* ⚠️ THE SERVER SESSION IS ENDED FIRST, AND ITS FAILURE DOES NOT STOP
+     THE LOCAL RESET. Whoever pressed «sign out» has to end up signed out on
+     the phone in their hand whatever the network is doing; a refresh token
+     left alive on a server is the smaller harm of the two. */
+  try { await sb.auth.signOut(); } catch (e) { /* the local reset still runs */ }
   const fresh = JSON.parse(JSON.stringify(DEFAULTS));
   for (const k of Object.keys(DEFAULTS)) {
     if (!KEEPS_ON_SIGN_OUT.has(k)) state[k] = fresh[k];
@@ -3703,7 +3812,7 @@ export function signOut() {
    an address nobody can receive a code at, and there is no way back.
    So the NEW address is held aside until a code confirms it, the OLD one
    keeps working meanwhile, and an abandoned change costs nothing. */
-export function updateProfile({ name, email, phone }) {
+export async function updateProfile({ name, email, phone }) {
   const u = state.user;
   if (!u) return null;
   if (name) u.name = name;
@@ -3714,6 +3823,14 @@ export function updateProfile({ name, email, phone }) {
   if (email && email !== u.email) {
     u.pendingEmail = email;
     emailPending = true;
+    /* ⚠️ THE SERVER IS TOLD, AND ITS REFUSAL DOES NOT UNPARK THE ADDRESS.
+       `updateUser` is what makes Supabase mail the code to the new address;
+       without it the code screen would wait for a message nobody sent. And
+       a network failure here leaves the change parked rather than losing
+       what the reader typed — the old address keeps working meanwhile, so
+       nothing is broken by waiting, and `confirmEmail` is still the only
+       thing that can promote it. */
+    try { await sb.auth.updateUser({ email }); } catch (e) { /* stays parked */ }
   /* ⚠️ AND UNDOING IT CANCELS IT. The pending address was written and never
      cleared, so a typo waited for ever: retyping the real address left the
      wrong one parked, and any later visit to the code screen with the right
@@ -3748,6 +3865,58 @@ export function updateProfile({ name, email, phone }) {
   save();
   return Object.assign({}, u, { emailPending, phonePending });
 }
+/** Sign in with a real password against the server.
+    ⚠️ THIS IS THE FUNCTION THE SIGN-IN SCREEN NEVER HAD. It called
+    `signUp` with whatever was typed and then `confirmEmail`, so any
+    address and any password — an empty one included — «signed somebody
+    in», and an existing account's name, verified number and tier were
+    overwritten without a word. `475` made that heavier rather than
+    lighter: `confirmEmail` writes `tier2By = 'email'` and `tier()` grants
+    tier two to a confirmed address, so those two lines had stopped being a
+    door into an account and become a door into a PERMISSION — posting,
+    contacting a seller, buying an advertisement.
+    Returns null on success, or a short reason the screen can print. */
+export async function signInWithPassword(email, password) {
+  const { error } = await sb.auth.signInWithPassword({ email, password: password || '' });
+  if (error) return error.message || 'wrongCredentials';
+  await hydrateUserFromSession();
+  return null;
+}
+
+/** Build `state.user` from the live session rather than from a local object.
+    ⚠️ AND `tier2By` IS READ BACK FROM THE SERVER, which is what makes its
+    column worth having. Without this line somebody who earned tier two by a
+    verified phone, then signed in on a second device, would arrive with an
+    empty field and be treated as though they had earned it by email — and
+    the harm would not show on that day but on the day the switch is flipped
+    back, when they are demoted while holding a genuinely verified number
+    and nothing on the new device can speak for them. A field written to the
+    server and never read back is a local field with an extra step. */
+export async function hydrateUserFromSession() {
+  const { data: { session } = {} } = await sb.auth.getSession();
+  if (!session) return null;
+  let profile = null;
+  try {
+    const r = await sb.from('profiles').select('*').eq('id', session.user.id).single();
+    profile = r.data;
+  } catch (e) { /* the session alone is enough to name the reader */ }
+  const prev = state.user || {};
+  state.user = Object.assign({}, prev, {
+    name: (profile && profile.display_name) || prev.name || '',
+    email: session.user.email,
+    emailVerified: !!(profile ? profile.email_verified : session.user.email_confirmed_at),
+    /* ⚠️ THE PHONE STAYS LOCAL AND IS NOT READ FROM THE PROFILE. Nothing has
+       contacted a number in this build — `PHONE_AUTH` is off — so a
+       `phone_verified` read back from a column nothing writes would be a
+       claim with nobody behind it. */
+    phone: prev.phone || null,
+    phoneVerified: prev.phoneVerified || false,
+    tier2By: (profile && profile.tier2_by) || prev.tier2By || null,
+  });
+  save();
+  return state.user;
+}
+
 /** the address waiting on a code, or null — never shown as the account's */
 export function pendingEmail() {
   return (state.user && state.user.pendingEmail) || null;
@@ -3883,9 +4052,31 @@ export function hasBadge() {
   return !!(state.user && state.user.badge && state.user.badge.status === 'live');
 }
 
-export function addClassified(item) {
-  const id = mintId('u');
+export async function addClassified(item) {
   const rule = catRule(item.cat);
+  /* ⚠️ THE ROW IS WRITTEN ON THE SERVER FIRST AND ITS ID IS THE SERVER'S.
+     A listing is the one thing here that another person has to be able to
+     see, so a local-only one would be a post nobody receives — and the id
+     has to be the row's, or the link somebody sends points at nothing.
+     ⚠️ And the LOCAL copy is kept as well, deliberately: the owner sees
+     their own listing the instant they publish, exactly as before, without
+     waiting for the next boot to fetch it back. */
+  const { data: { session } = {} } = await sb.auth.getSession();
+  if (!session) return null;              // `requireTier` bars the door already
+  let id = null;
+  try {
+    const { data, error } = await sb.from('classifieds').insert({
+      owner_id: session.user.id,
+      cat: item.cat,
+      title: (item.title && (item.title.ar || item.title.en)) || item.title || '',
+      body: (item.desc && (item.desc.ar || item.desc.en)) || item.desc || '',
+      price: item.price === FREE_PRICE ? null : item.price,
+      status: 'pending',
+    }).select().single();
+    if (error) throw error;
+    id = data && data.id;
+  } catch (e) { return null; }
+  if (!id) return null;
   const rec = Object.assign({
     id, daysLeft: rule.days, boosted: false, photos: [], owner: 'me',
     status: 'pending', created: Date.now(), when: { ar: 'الآن', en: 'now' },

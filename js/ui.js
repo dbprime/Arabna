@@ -1382,7 +1382,7 @@ export function openDrawer() {
   const out = $('#drOut');
   if (out) out.addEventListener('click', () => {
     closeDrawer();
-    confirmSheet({ title: t('signOut'), sub: '', confirmText: t('signOut'), danger: true, onConfirm: () => { S.signOut(); toast(t('done'), 'ok'); go('#/home'); } });
+    confirmSheet({ title: t('signOut'), sub: '', confirmText: t('signOut'), danger: true, onConfirm: async () => { await S.signOut(); toast(t('done'), 'ok'); go('#/home'); } });
   });
 }
 /**

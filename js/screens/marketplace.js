@@ -581,7 +581,7 @@ export function PostScreen(root) {
   paintCatRules();
   catSel.addEventListener('change', paintCatRules);
 
-  $('#pubBtn').addEventListener('click', () => {
+  $('#pubBtn').addEventListener('click', async () => {
     const cat = catSel.value;
     const rule = S.catRule(cat);
     const lang = getLang();
@@ -691,7 +691,9 @@ export function PostScreen(root) {
       return;
     }
 
-    const rec = S.addClassified(payload);
+    /* ⚠️ The one line in `js/screens/*` that gains an `await` for the live
+       row: the listing is written on the server before it is anybody's. */
+    const rec = await S.addClassified(payload);
     if (!rec) { toast(t('storageFull'), 'err'); return; }
     if (flagged) {
       S.addFlag({ kind: 'listing', refId: rec.id, risk: 'high', item: rec.title,
