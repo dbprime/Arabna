@@ -1,6 +1,7 @@
 /* V.02.1 — the outings category, the entry price, the halal strip
    and the non-commercial flag */
 import { chromium } from '/opt/node22/lib/node_modules/playwright/index.mjs';
+import { mockSupabase } from './_supabase.mjs';
 import { withDemoData } from './_demo.mjs';
 import { readFileSync, existsSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
 
@@ -34,6 +35,9 @@ const browser = await chromium.launch();
    default is not reverted and no assertion is softened. */
 await withDemoData(browser);
 const ctx = await browser.newContext({ colorScheme: 'dark', viewport: { width: 390, height: 844 }, acceptDownloads: true });
+/* 610: the account lives on a server now — the endpoint is answered by a
+   stand-in rather than the app's own rule being softened (_supabase.mjs). */
+await mockSupabase(ctx);
 const page = await ctx.newPage();
 const errors = [];
 page.on('console', m => { if (m.type() === 'error') errors.push(m.text()); });
@@ -350,7 +354,7 @@ await page.fill('#sPass', 'Qamar2026$');
 await page.fill('#sPass2', 'Qamar2026$');
 await page.check('#agree1'); await page.check('#agree2');
 await page.click('#suBtn'); await page.waitForTimeout(900);
-await page.click('[data-fill="e"]'); await page.click('#vBtn'); await page.waitForTimeout(900);
+await page.$$eval('#otp-e .otp-box', bs => bs.forEach((b, i) => { b.value = '123456'[i] || ''; }))  /* 610: the fill card left the email screen; the code is typed */; await page.click('#vBtn'); await page.waitForTimeout(900);
 /* ⚠️ REVERSAL (475): tier 2 is reached by the EMAIL while phone
    verification is switched off, so the phone step this fixture used to
    need does not exist and is not needed. The SETUP is repaired rather

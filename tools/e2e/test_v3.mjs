@@ -1,4 +1,5 @@
 import { chromium } from '/opt/node22/lib/node_modules/playwright/index.mjs';
+import { mockSupabase } from './_supabase.mjs';
 import { phoneAuthOn } from './_phoneauth.mjs';
 import { withDemoData } from './_demo.mjs';
 
@@ -16,6 +17,9 @@ await withDemoData(browser);
    switched OFF and not deleted. The flag is flipped for this whole file
    rather than the section being deleted: what it guards is still real. */
 const __ctx3 = await browser.newContext({ colorScheme: 'dark', viewport: { width: 420, height: 900 } });
+/* 610: the account lives on a server now — the endpoint is answered by a
+   stand-in rather than the app's own rule being softened (_supabase.mjs). */
+await mockSupabase(__ctx3);
 await phoneAuthOn(__ctx3, BASE);
 const page = await __ctx3.newPage();
 const errors = [];
@@ -234,7 +238,7 @@ ok('unverified user is sent to verify, not to signup',
    (await page.evaluate(() => location.hash)).startsWith('#/auth/email'),
    await page.evaluate(() => location.hash));
 
-await page.click('[data-fill="e"]'); await page.click('#vBtn'); await page.waitForTimeout(900);
+await page.$$eval('#otp-e .otp-box', bs => bs.forEach((b, i) => { b.value = '123456'[i] || ''; }))  /* 610: the fill card left the email screen; the code is typed */; await page.click('#vBtn'); await page.waitForTimeout(900);
 await go('#/profile');
 ok('signed in: no "create account" button on profile', !(await txt()).includes('إنشاء حساب'));
 await page.click('#hMenu'); await page.waitForTimeout(360);

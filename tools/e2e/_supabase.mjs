@@ -73,13 +73,26 @@ function sessionFor(u) {
 /**
  * Install the stand-in on a browser context.
  * @param {import('playwright').BrowserContext} ctx
- * @param {{ preConfirm?: boolean }} [opts] — `preConfirm` makes sign-up
- *   land already verified, for the suites whose subject is downstream of
- *   the code screen and which only ever needed an account to exist.
+ * @param {{ preConfirm?: boolean, users?: string[] }} [opts]
+ *   `preConfirm` makes sign-up land already verified, for the suites whose
+ *   subject is downstream of the code screen and which only ever needed an
+ *   account to exist.
+ *   `users` pre-registers addresses. ⚠️ It is for the suites that SEED
+ *   `state.user` instead of signing up: from 610 `confirmEmail` promotes
+ *   nothing by itself, so an address the server has never heard of is
+ *   refused — correctly. Pre-registering says «this account exists on the
+ *   server», which is what those suites always assumed and never had to
+ *   state, and keeps their subject (the tier ladder) intact.
  */
 export async function mockSupabase(ctx, opts = {}) {
   const db = freshDb();
   const preConfirm = !!opts.preConfirm;
+  for (const email of (opts.users || [])) {
+    const id = 'mock-uuid-' + (++db.seq);
+    db.users.set(String(email).toLowerCase(),
+      { id, email: String(email).toLowerCase(), password: null, confirmed: false, meta: {} });
+    db.profiles.set(id, { id, display_name: '', email_verified: false, tier2_by: null });
+  }
 
   await ctx.route(`https://${HOST}/**`, async (route) => {
     const req = route.request();

@@ -1,5 +1,6 @@
 /* V.01.7 — safe-area header, drawer polish, the price is the button */
 import { chromium } from '/opt/node22/lib/node_modules/playwright/index.mjs';
+import { mockSupabase } from './_supabase.mjs';
 import { withDemoData } from './_demo.mjs';
 
 const BASE = process.env.BASE || 'http://localhost:8123/index.html';
@@ -12,6 +13,9 @@ const browser = await chromium.launch();
    default is not reverted and no assertion is softened. */
 await withDemoData(browser);
 const ctx = await browser.newContext({ colorScheme: 'dark', viewport: { width: 390, height: 844 } });
+/* 610: the account lives on a server now — the endpoint is answered by a
+   stand-in rather than the app's own rule being softened (_supabase.mjs). */
+await mockSupabase(ctx);
 const page = await ctx.newPage();
 const errors = [];
 page.on('console', m => { if (m.type() === 'error') errors.push(m.text()); });
@@ -355,7 +359,7 @@ await page.fill('#sPass', 'Qamar2026$');
 await page.fill('#sPass2', 'Qamar2026$');
 await page.check('#agree1'); await page.check('#agree2');
 await page.click('#suBtn'); await page.waitForTimeout(900);
-await page.click('[data-fill="e"]'); await page.click('#vBtn'); await page.waitForTimeout(900);
+await page.$$eval('#otp-e .otp-box', bs => bs.forEach((b, i) => { b.value = '123456'[i] || ''; }))  /* 610: the fill card left the email screen; the code is typed */; await page.click('#vBtn'); await page.waitForTimeout(900);
 
 await go('#/home');
 await openDrawer();
@@ -522,13 +526,18 @@ ok('the gate starts signup', (await hash()).startsWith('#/auth/signup'), await h
 await page.fill('#sFirst', 'أحمد');
 
 await page.fill('#sLast', 'سالم');
-await page.fill('#sEmail', 'ahmad@arabna.app');
+/* ⚠️ A DIFFERENT ADDRESS FROM THE FIRST JOURNEY. Both used to be
+   'ahmad@arabna.app', and while the account was made in the page a
+   second sign-up simply overwrote the first. From 610 the server
+   refuses a duplicate registration — as it should — so the second
+   journey is a second person and says so. */
+await page.fill('#sEmail', 'salma@arabna.app');
 await page.fill('#sPass', 'Qamar2026$');
 
 await page.fill('#sPass2', 'Qamar2026$');
 await page.check('#agree1'); await page.check('#agree2');
 await page.click('#suBtn'); await page.waitForTimeout(900);
-await page.click('[data-fill="e"]'); await page.click('#vBtn'); await page.waitForTimeout(1000);
+await page.$$eval('#otp-e .otp-box', bs => bs.forEach((b, i) => { b.value = '123456'[i] || ''; }))  /* 610: the fill card left the email screen; the code is typed */; await page.click('#vBtn'); await page.waitForTimeout(1000);
 ok('returns to the very package chosen', (await hash()) === '#/advertise/event', await hash());
 ok('…open, with its own price on the button', await page.evaluate(() => {
   const b = document.querySelector('#prods .ad-card.selected [data-start]');
