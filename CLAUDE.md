@@ -662,7 +662,9 @@ number that is not their build's, and the report cannot be placed.
 
 There are three gates, and **the session goes into the work, not into the
 tests**. ⚠️ **The whole set is every `tools/e2e/test_v<n>.mjs` × 2 builds
-and takes about fifty minutes.** The count is deliberately NOT written
+and takes about an hour and three quarters** — measured 1h44 over 144 runs
+on 5 September 2026, and it grows with every suite added, so read that
+figure as «the last time it was timed», never as a constant. The count is deliberately NOT written
 here: `run.sh` derives the list from the files and prints the number at
 the head and the tail of every run. It was a hand-written figure and it
 dried out twice in a single day — 48 → 49 → 50 — **and correcting it each
@@ -762,7 +764,7 @@ guard whose only guard has already failed is not a guard.**
   minutes, and removing it would slow every batch down.
 
 ### The full net runs once per GROUP, and the closing file says so at its head
-the owner's decision of 28 August: the full net is about fifty minutes, and
+the owner's decision of 28 August: the full net is the better part of two hours, and
 running it after every batch pays that four times inside one group. So a
 batch runs **only the suites it touches**, and the net runs **once, at the
 end of the group**.
@@ -9235,6 +9237,23 @@ by patching the tree** — a suite that edits a source file races every other
 suite in the net. On the single-file build the module is a base64 `data:`
 URI inside the importmap, so the document itself is rewritten. **The two
 builds are different environments, not copies.**
+
+### And the group closes — the full net, run once
+```
+144 runs · 72 suites · 6,732 assertions · zero red · zero crash
+```
+⚠️ **This file closes its own group, and its group is itself** — the switch
+governs `tier()`, which every `requireTier` in the app stands on, so the
+batch is not measured by the suites it happens to name. **Nine older suites
+were red on the first run and every one was attributed by reading**, into
+the three kinds tabled above; none was softened and each carries a comment
+naming its reversal.
+
+⚠️ **And the run's own duration was a stale figure in this file: measured
+1h44, against the «about fifty minutes» written when the net held 43
+suites.** It holds 72 now. The number is corrected with its date beside it,
+because a duration cannot be derived by a script the way the suite count
+is — and a bare figure with no date is the very fault this file hunts.
 
 ## Known open items
 - **The header image is still far larger than its box.** V.04.7 replaced
