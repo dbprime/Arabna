@@ -263,8 +263,12 @@ const EMAIL_OK = { ...NO_EMAIL, emailVerified: true };
      «غير موثَّق» both describe a state with no way to change, and the rule
      beside them promised a code no screen could ask for. */
   ok('10.1 the hint names the road that exists', /بريد|email/i.test(hint), hint);
+  /* ⚠️ «مؤكد» AND «موثَّق» — the pack uses the first for the phone and the
+     second for the badge, and a regex that knew only one stayed green over
+     the exact line this item exists to forbid. A check that cannot see the
+     thing it guards is worse than none. */
   ok('10.2 …and claims nothing about verification',
-     !/موثَّق|غير موثَّق|not verified/i.test(hint), hint);
+     !/مؤكد|موثَّق|verified/i.test(hint), hint);
 
   await page.fill('#pPhone', '(713) 555-0134');
   await page.click('#pSave'); await page.waitForTimeout(1000);
