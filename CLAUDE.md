@@ -8982,6 +8982,161 @@ change the shared key in i18n   → 4.6 red ALONE · 4.5 and 4.5b GREEN
 the shared key changed under it is the proof that the article field is
 genuinely decoupled, not merely reading a different string today.
 
+## V.09.9 — phone verification is switched off by a flag, never deleted (475)
+
+**The owner's decision:** phone verification waits until after the App
+Store launch. **The reason is sound** — the SMS provider is a paid account
+billed per message, and spending that before the app is known to be
+accepted is spending for nothing. The email is enough on its own.
+
+**And the decision, carried out by switching the SCREEN off alone, stops
+the app dead.** Measured, in `js/store.js`:
+
+```js
+export function tier() {
+  if (!state.user) return 0;
+  if (state.user.phoneVerified) return 2;   // ← the ONLY road to tier 2
+  if (state.user.emailVerified) return 1;
+  return 0;
+}
+```
+
+And what tier 2 guards, read off every `requireTier` call:
+
+```
+js/screens/marketplace.js   #/post            posting to the marketplace
+js/screens/directory.js     #/add-business    adding a business
+js/screens/advertise.js     #/advertise/<id>  buying an advertisement
+js/screens/profile.js       #/profile/edit    editing the profile
+```
+
+⚠️ **So switching the phone off alone means: nobody posts, nobody adds a
+business, nobody buys an advertisement. The whole revenue path closes.**
+
+⚠️ **And worse, and invisible except by trying it:** `requireTier` sends
+whoever has not reached the tier to `'#/auth/phone'` — **the screen that
+has just been switched off.** The reader presses «publish», lands on a
+closed door, goes back, presses again. **With not one error message.**
+
+**So this is not a switching-off. It is the switching-off and the ladder
+that stands in its place.**
+
+### The switch is in one place, and nothing is deleted for it
+`PHONE_AUTH = false` in `js/data.js`, beside `APP_VERSION`. ⚠️ **No second
+copy of the constant in any file** — two constants of one name in two
+files is the fault somebody hunts for a month. `test_v74 · 9.1` walks
+`js/` and demands exactly one declaration.
+
+- **`PhoneVerifyScreen` stays written, exported and imported.** Deleting
+  it would make opening the path later a rebuild, **which is precisely
+  what this file prevents.**
+- **The route line stays written exactly as it is**, and what the switch
+  governs is whether it is **registered**: `ROUTES` is `ALL_ROUTES`
+  filtered by the screen while it is off. Whoever types the address by
+  hand meets the router's own fallback — **the screen really is not there
+  in this build, which is the honest answer.**
+- **Not one translation key is deleted.**
+
+### Tier 2 is reached by email, and tier 1 disappears
+⚠️ **Deliberately.** A middle rung that separates nothing confuses and
+guards nothing: **whoever verified their email is a full member, whoever
+did not is a visitor.** And `isMember` / `isLoggedIn` / `isPhoneVerified`
+are untouched — all three are built on `tier()`, so they come right with
+it. That is why they are one function.
+
+### `tier2By` — the field whose whole value is on a day that has not come
+⚠️ **This item shows nothing today and shows everything the day the switch
+is flipped.** Without it, every reader who reached tier 2 by email drops
+to tier 1 in the same instant — **so people who published and paid lose
+the right to publish**, and nothing in the app knows they came in by a
+road that was open to them.
+
+```js
+tier2By: null,        // 'email' · 'phone'
+```
+
+- **Written in exactly two places** — `confirmEmail` (while the switch is
+  off) and `confirmPhone` — and `test_v74 · 9.11` holds it at two. A third
+  writer is how a record of *how* somebody got in stops being true.
+- ⚠️ **An account created before this version has no field at all**, so
+  `tier2By` is `undefined` and falls into the right branch by itself.
+  **No boot migration is written for it, and none is needed.**
+- ⚠️ **It is a column in the server contract too** (`470`, `profiles`),
+  added there when the wiring batch is written. **`supabase/` is not
+  touched from here.**
+
+### The dead end is closed at its source
+`requireTier` gains `else if (PHONE_AUTH) go('#/auth/phone'); else
+go('#/profile');`, and the redirect in `js/screens/auth.js` after the
+email code is gated the same way — ⚠️ **and that is the gain the decision
+buys and must not waste: whoever wants to publish verifies their email and
+then publishes in the same step.** It was two steps and is now one.
+
+### Three places the reader would have met a task that cannot be finished
+- **«أكمل حسابك»** would have carried «وثّق رقمك» for ever, with a gold
+  button pointing at a closed door. ⚠️ **The block's own comment says «a
+  finished step disappears rather than standing struck through» — a step
+  that CANNOT be finished is worse than either.**
+- **The phone row** stops printing «رقم غير مؤكد» in red: it describes a
+  shortcoming with no way to repair it. One new key —
+  **`phoneVerifyLater`** — says what is true instead. **The number itself
+  stays: what is deferred is the verification, never the number.**
+- ⚠️ **And the most dangerous of the three, and the best hidden:** the
+  number is a field people fill in today, and changing it is the one thing
+  in the whole app that costs a re-verification. Whoever changed it after
+  the switch went off would have been thrown at the closed screen **in the
+  middle of a half-finished save.** ⚠️ **`pendingPhone` is untouched** — a
+  parked, unverified number is a correct state in a build with no
+  verification.
+
+### And not one `requireTier` call was touched
+⚠️ **That is the measure by which the fix is known to be in the right
+place.** If a single screen had needed editing, the switch was put in the
+wrong one: the screens ask `requireTier`, and it alone knows the ladder.
+
+### The price, recorded rather than hidden
+⚠️ **Tying publishing to a verified mobile was not decoration**, and
+`profile.js` says so in its own comment: the verified number is the gate
+on everything that earns. **And a mobile is harder for a fraudster than an
+email**, which is created in seconds and costs nothing.
+
+**So this decision lowers the barrier to a deceitful listing in the
+marketplace.** It does not overturn the decision — the cost is a real
+reason — **but it raises what falls on the moderation queue: while the
+switch is off, the queue is the only guard.** ⚠️ **The switch is flipped
+to `true` the moment the app is accepted on the store and the SMS provider
+is connected. That is one line, and `test_v74 · 8` guards the flip.**
+
+### `test_v74` — 40 assertions, and the teeth measured five ways
+⚠️ **And one of them did not bite, which is the finding worth keeping.**
+Reverting the `requireTier` guard alone leaves **every behavioural item
+green**: while the switch is off `tier()` never returns 1, so that branch
+is not reached at all. **That is the design working — 485's lesson, that
+each layer alone already saves the reader, so the presence of one hides
+the absence of the other from any behavioural check — and it is exactly
+why the structural assertions stand beside them rather than instead of
+them.**
+
+```
+requireTier reverted to the closed door   → 9.5 · 9.6 red
+tier() reverted to the pre-batch body     → 2.1 · 2.3–2.6 · 6.3 · 8.1 · 8.3 red
+the route registered again                → 4.1 · 4.2 · 9.10 red
+confirmEmail stops recording HOW          → 2.2 · 9.11 red
+the two profile.js sites un-gated         → 5.1 · 5.2 · 6.1 · 9.8 · 9.9 red
+```
+
+⚠️ **And a fault in the suite's own first tooth is recorded too:**
+replacing one line of `tier()` left the `tier2By` clause below it standing,
+so the account was still tier 2 and the "revert" reverted nothing.
+**Prove the break happened before concluding a check is asleep** — the
+same rule this file already carries from `500`.
+
+⚠️ **Items 7 and 8 flip the flag by rewriting what the server serves, not
+by patching the tree** — a suite that edits a source file races every other
+suite in the net. On the single-file build the module is a base64 `data:`
+URI inside the importmap, so the document itself is rewritten. **The two
+builds are different environments, not copies.**
+
 ## Known open items
 - **The header image is still far larger than its box.** V.04.7 replaced
   the 831/837 KB lockups with the cropped marks at **333/338 KB** — 60% off
