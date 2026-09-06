@@ -10184,7 +10184,22 @@ send the price as the display string             → 8.1 red (the mock refuses i
 read the flag off the device instead of the door → 6.3 red
 ```
 
-__NET_LINE__
+### And the group closes — the net, run on segments over one frozen tree
+```
+154 runs · 77 suites · 7,193 assertions · zero red · zero crash
+```
+Twenty-six segments over `c448c04`, `HEAD` re-checked at the head of each,
+**77 present and 77 run, each twice, and no result borrowed.** The
+arithmetic closes itself: 7,113 + 84 (`v79` × 2) − 2 (`v22`: the five
+device-lock items became four gate items) − 2 (`v45`: block 7, one lock
+item fewer) = **7,193**. ⚠️ **And the container was restarted between
+segments 6 and 7, taking the static server with it** — the first attempt
+at segment 7 crashed all three suites in three seconds, on the harness and
+not the app. The server was restarted, **the segment was re-run whole and
+never patched from its crashed file**, and the segment script now checks
+the server before every run. ⚠️ **`v53` reads 22 on the module build and 21
+on the single-file one by design** — two weight checks against one — as
+written in `610`.
 
 ## Known open items
 - **The header image is still far larger than its box.** V.04.7 replaced
