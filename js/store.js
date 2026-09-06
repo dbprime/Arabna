@@ -2535,13 +2535,18 @@ export function checkListingDesc(raw) {
 }
 export const MAX_PHOTOS = 5;
 
-/* ---- per-section rules (Handyman = 1 listing / 14 days, Free = no price) ---- */
+/* ---- per-section rules (Handyman = 1 listing / 14 days, Free = no price) ----
+   freeOnly and noPrice are two different facts and must not be merged:
+   «Free stuff» HAS a price and it is the word «مجاني»; «Jobs» has none at
+   all, and printing «مجاني» on a job wanted says «I work for nothing». */
 export function catRule(catId) {
   const c = MARKET_CATS.find(x => x.id === catId) || {};
   return {
     maxActive: c.maxActive || MAX_ACTIVE_LISTINGS,
     days: c.days || LISTING_DAYS,
     freeOnly: !!c.freeOnly,
+    noPrice: !!c.noPrice,
+    hourly: !!c.hourly,
     upsell: !!c.upsell,
   };
 }

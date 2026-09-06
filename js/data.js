@@ -67,14 +67,22 @@ export const HOME_CATS = ['restaurants', 'grocery', 'doctors', 'worship', 'auto'
 
 /* ---- Marketplace sections ----
    maxActive / days / freeOnly override the account-wide defaults
-   (4 active listings, 14 days) for that one section. */
+   (4 active listings, 14 days) for that one section.
+
+   noPrice says the section has no price at all — not a free one, none.
+   A job wanted is not sold, so the field is not shown, not required and
+   not stored; asking for a number that has no meaning is what made
+   somebody type «00» to get past it, and 0 in this app is «مجاني», so a
+   job advert published saying «I work for nothing». The rule is DERIVED
+   here and read by catRule(); the screen never states it itself, or the
+   next section with no price is declared in two places that part. */
 export const MARKET_CATS = [
   { id: 'cars',       key: 'filterCars',       icon: 'car',       emptyKey: 'emptyCars' },
   { id: 'furniture',  key: 'filterFurniture',  icon: 'sofa',      emptyKey: 'emptyFurniture' },
   { id: 'realestate', key: 'filterRealEstate', icon: 'key',       emptyKey: 'emptyRealEstate' },
-  { id: 'jobs',       key: 'filterJobs',       icon: 'briefcase', emptyKey: 'emptyJobs' },
+  { id: 'jobs',       key: 'filterJobs',       icon: 'briefcase', emptyKey: 'emptyJobs',     noPrice: true },
   { id: 'pets',       key: 'filterPets',       icon: 'paw',       emptyKey: 'emptyPets' },
-  { id: 'handyman',   key: 'filterHandyman',   icon: 'hammer',    emptyKey: 'emptyHandyman', maxActive: 1, days: 14, upsell: true },
+  { id: 'handyman',   key: 'filterHandyman',   icon: 'hammer',    emptyKey: 'emptyHandyman', maxActive: 1, days: 14, upsell: true, hourly: true },
   { id: 'free',       key: 'filterFree',       icon: 'gift',      emptyKey: 'emptyFree',     freeOnly: true },
   { id: 'other',      key: 'filterOther',      icon: 'bag',       emptyKey: 'emptyOther' },
 ];

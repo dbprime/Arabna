@@ -9877,7 +9877,149 @@ the rule rather than an exception to it.** A session never places a line
 there on its own judgement.
 
 > **And the mark still walks behind the net, never ahead** — `[x]` went in
-> after the 150 runs were green, not with the work.
+### Appendix 3 — the price knows its section
+
+⚠️ **Found on the live host too, and it is the same shape as the two
+above**: a batch green from end to end, and the fault waiting for the
+first person to walk past. A **job wanted** was posted, a price was
+demanded that has no meaning, and `00` was typed to get past the field.
+
+```js
+// «0» is not a cheap price, it is «مجاني»      ← checkListingPrice's own comment
+```
+
+**So the advert published saying, to everybody who read it, «I work for
+nothing».**
+
+⚠️ **And the whole chain came from ONE fault: the field did not go away.**
+A meaningless field asked for → a meaningless number typed → the app read
+it as a real value and printed it. Only the first is a defect; everything
+after it is the correct behaviour of the app on a wrong input.
+
+- ⚠️ **The handle to hide it had been sitting there unused since the
+  screen was written.** `grep -n 'priceField'` returned **one line** — the
+  `id` — and nothing read it. And the machinery was half-built and
+  running: `paintCatRules` fires on every section change and carried a
+  real rule **for one section only**, `freeOnly`.
+
+### The rule is derived from `MARKET_CATS`, and named nowhere else
+```
+jobs      →  noPrice: true    no price field at all: not asked, not stored, not shown
+handyman  →  hourly:  true    the field stays, and the unit is SAID
+the rest  →  untouched, to the letter
+```
+
+- ⚠️ **`freeOnly` and `noPrice` are two different facts and must never
+  merge.** «Free stuff» **has** a price and it is the word «مجاني»; a job
+  wanted has none at all. Collapsing them is how «مجاني» reached a job in
+  the first place.
+- **`catRule()` reads both**, and `'jobs'` appears in **neither**
+  `js/screens/marketplace.js` nor `js/ui.js` — measured, and asserted as
+  `v78 · 1.6`. The next section of either kind is declared in one place.
+  **That is the `worship` lesson again: a rule is derived, not copied.**
+- ⚠️ **The stored value is `FREE_PRICE`, not `0` and not `''`.** The row
+  carries a sentinel the app knows, while `priceLabel` answers it with
+  **nothing** for that section — which is how the card shows no «$0», no
+  empty slot, and above all no «مجاني».
+- **On the server it is already right and needed no change**:
+  `addClassified` writes `price: item.price === FREE_PRICE ? null : …`, so
+  a job's row has a null price in the database.
+- ⚠️ **An old job advert carrying a real price is corrected on the first
+  edit and is never refused.** There is no data migration: the correction
+  lands where somebody is already standing.
+
+### The unit is shown where the figure is shown, or it is not written
+Three places, and the middle one is the item:
+
+1. the field's label — «السعر بالساعة» / «Hourly rate»
+2. ⚠️ **a suffix glued to the box itself**, appearing and disappearing
+   live with the section
+3. the card — `priceLabel` appends it wherever the figure is printed
+
+⚠️ **The label alone is decoration.** A heading is read once and
+forgotten, and **the poster is looking at the box while typing**, with the
+price of the whole job in mind. And a label in the form never reaches the
+card: **whoever reads `$50` on a listing understands the price of the
+whole job.**
+
+> **THE GENERAL RULE THIS LEAVES BEHIND: the poster sees their own box the
+> way the card will show it.** What they type should look, in the form,
+> like what somebody else will read in the marketplace — so they are not
+> surprised by a meaning they did not intend after publishing. That is
+> exactly the fault that created this appendix: a field asked with no
+> meaning, filled with no meaning, read with a meaning nobody intended.
+
+- ⚠️ **The unit is derived at display and NEVER stored in the row.** Baked
+  into the data it freezes: changing the word later becomes a migration of
+  rows, and an admin edit doubles it.
+- ⚠️ **`--text-2` and not `--muted` on the box.** Measured on the input's
+  own ground (`--input-bg` over the card), `--muted` is **3.96 in dark** —
+  under the 4.5 line, and the same family as the standing rule that
+  `--muted` is never put on `--surface-2`. `--text-2` measures **9.62 dark
+  and 11.32 light**. *(And `.input::placeholder` is `--muted` on that same
+  ground — measured here, not touched: it is transient hint text and
+  belongs to a colour batch, not to this one.)*
+
+### `priceLabel(price, cat)` — and the argument has no lying default
+A call that passes no section prints the figure bare exactly as before, so
+a call site nobody found is not broken and «/ساعة» is never glued to
+something that is not a service.
+
+⚠️ **And the spec named five call sites where there are eight.** Measured:
+it missed `marketplace.js:742`, `profile.js:740` and `profile.js:807`.
+
+⚠️ **Three of the eight print the price beside something else**, so a bare
+`''` would leave « · » standing where the figure was expected — a blank
+slot, which is precisely what a job row must not show any more than «$0».
+`priceDotHtml(price, cat)` returns the figure **and its separator, or
+nothing at all**; it returns markup, so it is named `Html` and escapes what
+it wraps.
+
+### And one thing measured and deliberately not fixed
+`catKeyOf()` in `js/screens/admin.js` is a **hand-written copy of the
+`MARKET_CATS` id→key map**, sitting in the same file as `mktCatKey()`,
+which derives it. It is the `esc()` fault in miniature and it is real —
+**and it is not this appendix's, which is about the price.** Registered
+rather than swept in.
+
+### The suite, and four teeth each aimed at a different thing
+`test_v78` — **41 assertions**, and every break was proved to land where it
+was aimed rather than merely to produce a red:
+
+```
+noPrice removed from the jobs row   → 17 red, and 3.1 prints the original
+                                       fault in one line: «مجاني»
+the rule copied into the screen     → 1.6 ALONE — the item guards the shape,
+                                       not the outcome, and the outcome is
+                                       identical
+the unit left in the label only     → 5.2 · 5.3 · 5.5
+a lying default on the argument     → 3.6
+```
+
+⚠️ **And two of its own items were wrong first and were corrected, not
+softened.** `4.5` swept the whole detail page for «مجاني» and caught
+`classifiedsNote` — «حساب مجاني: حتى 4 إعلانات نشطة» — which is the
+**account's** word and has nothing to do with a price; it is scoped to the
+price element now. And `5.8` read an **empty** «cars» list, because the
+invented records are off by default since `510`: `!cars.some(…)` over
+nothing is green while measuring nothing, so the section is published into
+first and `cars.length > 0` is part of the assertion.
+
+⚠️ **No version raise.** An appendix rides its batch, and `625` raised to
+V.10.2 — the same rule the two appendices to `620` followed. And that
+version has never been published: `main` still stands at V.10.1, so the
+service worker's cache bump still happens exactly once, on the merge.
+
+```
+152 runs · 76 suites · 7,113 assertions · zero red · zero crash
+```
+Twenty-three segments over `8f2ec3a`, `HEAD` re-checked at the head of each,
+76 present and 76 run, each twice, and no result borrowed. ⚠️ **The
+arithmetic closes itself: 7,031 + 82 (`v78` × 2), and not one older suite
+moved** — which is what an appendix that adds a section rule should look
+like. **And the container was restarted mid-net**, killing a segment before
+any suite in it reported: **that segment was re-run whole, never patched
+from its partial file** — a suite not run on this tree is a suite not run.
 
 ## Known open items
 - **The header image is still far larger than its box.** V.04.7 replaced

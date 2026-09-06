@@ -1,7 +1,7 @@
 /* ======================= PROFILE & ACCOUNT SCREENS ======================= */
 import { t, arCount, L, icon, $, $$, go, renderHeader, toast, wireRoutes, emptyState, confirmSheet,
          openSheet, closeSheet,
-         fmtMoney, priceLabel, statusBadgeHtml, stars, logoSrc, shareItem,
+         fmtMoney, priceLabel, priceDotHtml, statusBadgeHtml, stars, logoSrc, shareItem,
          mapChoices, esc, bizBadgeHtml, avatarHtml, socialRowHtml, fmtPhone,
          installStepsHtml, appLink } from '../ui.js';
 import { installMode, promptInstall, canPromptNative, mountInstallPrompt } from '../install.js';
@@ -737,7 +737,7 @@ export function SavedScreen(root) {
         ${cls.map(c => `<div class="list-row" data-route="#/marketplace/${c.id}">
             <span class="row-ico">${icon(c.icon || 'image', 24)}</span>
             <div class="row-main"><div class="row-title">${esc(L(c.title))}</div>
-              <div class="row-sub gold"><span class="ltr">${priceLabel(c.price)}</span></div></div></div>`).join('')}
+              <div class="row-sub gold"><span class="ltr">${priceLabel(c.price, c.cat)}</span></div></div></div>`).join('')}
       </div>`;
   wireRoutes(root);
 }
@@ -804,7 +804,7 @@ export function MyAdsScreen(root) {
             : icon(c.icon || 'image', 24)}</span>
           <div class="row-main">
             <div class="row-title">${esc(L(c.title))} ${c.boosted ? `<span class="badge badge-boost">${t('boosted')}</span>` : ''} ${statusBadgeHtml(c, true)}</div>
-            <div class="row-sub gold"><span class="ltr">${priceLabel(c.price)}</span> · ${t('expiresIn')} ${c.daysLeft} ${t('days')}</div>
+            <div class="row-sub gold">${priceDotHtml(c.price, c.cat)}${t('expiresIn')} ${c.daysLeft} ${t('days')}</div>
             <div class="row-actions">
               <button class="mini-btn gold" data-route="#/boost/${c.id}">${icon('bolt', 15)} ${t('boost')}</button>
               <button class="mini-btn" data-route="#/post?edit=${c.id}">${icon('edit', 15)} ${t('edit')}</button>
