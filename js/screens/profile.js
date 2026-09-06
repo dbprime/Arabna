@@ -400,14 +400,14 @@ export function ChangePasswordScreen(root) {
 
   root.innerHTML = `
     <div class="pad mt-16">
-      ${passwordField('cpCur', t('currentPassword'))}
-      ${passwordField('cpNew', t('newPassword'))}
+      ${passwordField('cpCur', t('currentPassword'), 'current-password')}
+      ${passwordField('cpNew', t('newPassword'), 'new-password')}
       ${/* This screen used to accept `length < 6` and nothing else, which
            made the sign-up rule worth nothing: register strong, change to
            123456 a minute later. It asks the same function now. */''}
       ${passwordChecklist('cpNew')}
       <div class="field-err" id="e_cpNew"></div>
-      ${passwordField('cpConf', t('confirmPassword'))}
+      ${passwordField('cpConf', t('confirmPassword'), 'new-password')}
       <div id="cpErr"></div>
       <button class="btn btn-gold btn-block mt-8" id="cpSave">${icon('lock', 19)} ${t('changePassword')}</button>
     </div>`;
@@ -442,14 +442,33 @@ export function ChangePasswordScreen(root) {
 function errMsg(m) { return `<div class="err-msg">${icon('alert', 15)} ${m}</div>`; }
 
 /** A password input with a working show / hide eye. */
-export function passwordField(id, label) {
+/**
+ * ⚠️ `autocomplete` IS AN ARGUMENT NOW, AND IT WAS `off` ON ALL OF THEM.
+ * One function serves every password field in the app, so a single word
+ * meant NO password manager anywhere could offer to save, to fill, or to
+ * generate a strong one.
+ *
+ * ⚠️ And that is a loss of SECURITY, not of convenience — it is this
+ * batch's own argument turned on us: somebody who cannot save a password
+ * picks one they can hold in their head, which means short, or the one
+ * they already use everywhere else. `passwordChecks` then demands eight
+ * characters with a letter and a digit and a symbol, which pushes them
+ * harder toward the single password they reuse — exactly the danger the
+ * comment above `setUserPassword` in `store.js` spells out.
+ *
+ * ⚠️ NOTHING ELSE ON THE ELEMENT MOVES. `lang`, `inputmode`,
+ * `autocapitalize`, `autocorrect` and `spellcheck` are there for a written
+ * reason — autocorrect breaks a password silently — and that reason has
+ * not changed. `autocomplete` alone was the mistake.
+ */
+export function passwordField(id, label, ac = 'current-password') {
   return `<div class="field"><label class="label">${label}</label>
     <div class="pass-wrap">
       ${/* A hint to the system, never a command — no web app can force a
            phone's keyboard language (same limit as the maps sheet). What
            these DO stop is autocorrect and the capitalised first letter,
            both of which break a password silently. */''}
-      <input class="input" id="${id}" type="password" autocomplete="off"
+      <input class="input" id="${id}" type="password" autocomplete="${ac}"
              lang="en" inputmode="text" autocapitalize="off"
              autocorrect="off" spellcheck="false" />
       <button type="button" class="pass-eye" data-eye="${id}" aria-label="${t('showPassword')}">${icon('eye', 19)}</button>

@@ -58,7 +58,7 @@ export function SignUpScreen(root) {
         <input class="input ltr" id="sPhone" dir="ltr" inputmode="tel" placeholder="(713) 555-0000" autocomplete="tel" />
         <div class="hint">${t('phoneLater')}</div></div>
 
-      ${passwordField('sPass', t('password') + ' *')}
+      ${passwordField('sPass', t('password') + ' *', 'new-password')}
       ${/* The list replaces the strength meter. «ضعيفة / متوسّطة / قوية»
            measures nothing once the rule is absolute — a password is
            accepted or it is not — while the list says WHICH condition is
@@ -66,7 +66,7 @@ export function SignUpScreen(root) {
       ${passwordChecklist('sPass')}
       <div class="field-err" id="e_sPass"></div>
 
-      ${passwordField('sPass2', t('confirmPassword') + ' *')}
+      ${passwordField('sPass2', t('confirmPassword') + ' *', 'new-password')}
       <div class="field-err" id="e_sPass2"></div>
 
       <label class="setting-row" style="padding:8px 0;border:none;cursor:pointer">
@@ -165,11 +165,19 @@ export function SignInScreen(root) {
   root.innerHTML = `
     <div class="pad mt-16 center-col"><img data-logo="wide" src="${logoSrc('wide')}" style="height:56px" alt="ARABNA" /></div>
     <div class="pad mt-16">
-      <div class="field"><label class="label">${t('email')}</label><input class="input" id="iEmail" type="email" /></div>
-      ${passwordField('iPass', t('password'))}
+      ${/* ⚠️ `username` on the field BEFORE the password, or a manager has
+           nothing to bind the saved password to — the pair is what makes it
+           offer the right one back. Measured: it carried no description at
+           all, which §6.2's last paragraph asks to be checked and filled. */''}
+      <div class="field"><label class="label">${t('email')}</label>
+        <input class="input" id="iEmail" type="email" autocomplete="username" inputmode="email" /></div>
+      ${passwordField('iPass', t('password'), 'current-password')}
       <button class="btn btn-gold btn-block" id="siBtn">${t('signIn')}</button>
-      <button class="btn btn-ghost btn-block mt-8" data-route="#/auth/forgot">${t('forgotPassword')}
-        <span class="soon-tag">${t('soon')}</span></button>
+      ${/* ⚠️ THE «قريباً» TAG IS GONE. It sat on the button leading to the very
+           screen item 4 rebuilt — the same fault, surviving one step up the
+           road: a promise that the thing does not work, over a thing that
+           now does. */''}
+      <button class="btn btn-ghost btn-block mt-8" data-route="#/auth/forgot">${t('forgotPassword')}</button>
       <button class="btn btn-ghost btn-block mt-8" data-route="#/auth/signup">${t('noAccount')}</button>
     </div>`;
 
@@ -244,10 +252,10 @@ export function NewPasswordScreen(root) {
   root.innerHTML = `
     <div class="pad mt-16">
       <div class="list-note" style="margin-inline:0">${icon('info', 18)}<span>${t('setNewPasswordSub')}</span></div>
-      ${passwordField('npNew', t('newPassword'))}
+      ${passwordField('npNew', t('newPassword'), 'new-password')}
       ${passwordChecklist('npNew')}
       <div class="field-err" id="e_npNew"></div>
-      ${passwordField('npConf', t('confirmPassword'))}
+      ${passwordField('npConf', t('confirmPassword'), 'new-password')}
       <div id="npErr"></div>
       <button class="btn btn-gold btn-block mt-8" id="npSave">${icon('lock', 19)} ${t('setNewPassword')}</button>
     </div>`;
@@ -517,13 +525,36 @@ function wireDemoFill(ns) {
 
 function otpRow(ns) {
   return `<div class="otp-row" id="otp-${ns}">
-    ${Array.from({ length: 6 }).map((_, i) => `<input class="otp-box" inputmode="numeric" maxlength="1" data-i="${i}" />`).join('')}
+    ${/* ⚠️ `one-time-code` ON THE FIRST BOX ALONE, and the reason is what the
+         system does with it: it fills the WHOLE code into one field and
+         leaves the spreading to the page. Six boxes all carrying the same
+         description make it put one digit in each — or give up. So the
+         description goes on the first and the spreading is ours.
+         ⚠️ And its absence was the one gap in a row of careful neighbours:
+         given-name · family-name · email · tel — and then nothing on the
+         only field where a suggestion has real work to do. */''}
+    ${Array.from({ length: 6 }).map((_, i) => `<input class="otp-box" inputmode="numeric" maxlength="1" data-i="${i}"${
+      i === 0 ? ' autocomplete="one-time-code" name="one-time-code"' : ''} />`).join('')}
   </div>`;
 }
 function wireOtp(ns) {
   const boxes = $$(`#otp-${ns} .otp-box`);
+  /* ⚠️ ONE SPREADER, CALLED FROM TWO DOORS. It already existed inside the
+     paste handler; what it lacked was a second caller. When the system
+     fills the suggested code it arrives as SIX CHARACTERS IN THE FIRST
+     BOX — and the `slice(0, 1)` below would cut it to one digit, so the
+     suggestion would look broken while working perfectly. */
+  const spread = (raw) => {
+    const txt = String(raw || '').replace(/\D/g, '').slice(0, 6);
+    if (!txt.length) return false;
+    boxes.forEach((x, k) => { x.value = txt[k] || ''; });
+    boxes[Math.min(txt.length, 5)].focus();
+    return true;
+  };
   boxes.forEach((b, i) => {
     b.addEventListener('input', () => {
+      /* the autofilled code lands whole in the first box */
+      if (i === 0 && b.value.replace(/\D/g, '').length > 1 && spread(b.value)) return;
       b.value = b.value.replace(/\D/g, '').slice(0, 1);
       if (b.value && i < boxes.length - 1) boxes[i + 1].focus();
     });
@@ -531,8 +562,8 @@ function wireOtp(ns) {
       if (e.key === 'Backspace' && !b.value && i > 0) boxes[i - 1].focus();
     });
     b.addEventListener('paste', (e) => {
-      const txt = (e.clipboardData.getData('text') || '').replace(/\D/g, '').slice(0, 6);
-      if (txt.length) { e.preventDefault(); boxes.forEach((x, k) => x.value = txt[k] || ''); boxes[Math.min(txt.length, 5)].focus(); }
+      const txt = (e.clipboardData.getData('text') || '');
+      if (/\d/.test(txt)) { e.preventDefault(); spread(txt); }
     });
   });
   if (boxes[0]) boxes[0].focus();

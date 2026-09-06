@@ -365,6 +365,144 @@ const signUp = (p, email, password, confirm = true) => p.evaluate(async ([e, pw,
   await ctx.close();
 }
 
+/* ====== 9. the fields say what they are (appendix 1) ====== */
+{
+  const auth = read('js/screens/auth.js');
+  const prof = read('js/screens/profile.js');
+  const adm  = read('js/screens/admin.js');
+
+  /* ⚠️ NOT ONE password field may be hidden from a password manager. That
+     is a loss of SECURITY and not of convenience: somebody who cannot save
+     a password picks one they can hold in their head — short, or the one
+     they already reuse — and `passwordChecks` then pushes them harder
+     toward that single reused one. */
+  const offCount = [auth, prof, adm].join('\n').match(/autocomplete="off"/g) || [];
+  ok('9.1 no field in the app carries autocomplete="off" any more',
+     offCount.length === 0, String(offCount.length));
+
+  /* ⚠️ And each carries the description NAMED FOR ITS ROLE, not «any
+     description»: `new-password` is what makes a manager offer to generate
+     one, `current-password` is what makes it offer the saved one. */
+  const want = {
+    sPass: 'new-password', sPass2: 'new-password', iPass: 'current-password',
+    npNew: 'new-password', npConf: 'new-password',
+    cpCur: 'current-password', cpNew: 'new-password', cpConf: 'new-password',
+    aNew: 'new-password', aPass: 'current-password',
+    apCur: 'current-password', apNew: 'new-password', apConf: 'new-password',
+  };
+  const src = [auth, prof, adm].join('\n');
+  const wrong = Object.entries(want).filter(([id, v]) =>
+    /* ⚠️ NOT `[^)]*` — the label argument is `t('password')`, whose own
+       bracket ends the class and the check then measures nothing. */
+    !new RegExp("passwordField\\('" + id + "',[\\s\\S]{0,60}?'" + v + "'\\)").test(src));
+  /* ⚠️ The spec named six; measured, there are THIRTEEN — five in the panel
+     and two this very batch added. A mapping that covered only the six
+     would have left the newest screen with the original fault. */
+  ok('9.2 all thirteen password fields carry the description of their role',
+     wrong.length === 0, wrong.map(w => w[0]).join(','));
+  ok('9.3 …and the helper takes it as an argument rather than fixing one',
+     /export function passwordField\(id, label, ac = 'current-password'\)/.test(prof)
+     && /autocomplete="\$\{ac\}"/.test(prof));
+  /* ⚠️ Everything else on that element stays: autocorrect breaks a password
+     silently, and that reason has not changed. */
+  ok('9.4 …and nothing else on the element moved',
+     /autocapitalize="off"[\s\S]{0,60}autocorrect="off"[\s\S]{0,40}spellcheck="false"/.test(prof));
+
+  /* ⚠️ The pair is what a manager binds: a lone password field has nothing
+     to save it against. */
+  ok('9.5 the sign-in address is described as the username',
+     /id="iEmail"[^>]*autocomplete="username"/.test(auth));
+  ok('9.6 …and so is the panel\'s, beside its own password',
+     (adm.match(/id="aUser" autocomplete="username"/g) || []).length === 2);
+
+  /* ⚠️ ONE box carries `one-time-code`. The system fills the WHOLE code
+     into a single field; six identical descriptions make it put one digit
+     in each, or give up. */
+  ok('9.7 the first code box says what it is, and only the first',
+     /i === 0 \? ' autocomplete="one-time-code" name="one-time-code"' : ''/.test(auth));
+  ok('9.8 …and the spreading is one function with two callers',
+     /const spread = \(raw\)/.test(auth)
+     && /if \(i === 0 && b\.value\.replace\(\/\\D\/g, ''\)\.length > 1 && spread\(b\.value\)\) return;/.test(auth)
+     && /e\.preventDefault\(\); spread\(txt\);/.test(auth));
+
+  /* the behaviour: six digits arriving in the first box reach all six —
+     which is what an autofilled code looks like */
+  const { ctx, p } = await fresh();
+  await open(p, '#/auth/signup');
+  await p.evaluate(() => { location.hash = '#/auth/forgot'; });
+  await p.waitForTimeout(500);
+  await p.fill('#fgEmail', 'spread@a.app');
+  await p.click('#fgGo');
+  await p.waitForTimeout(700);
+  const spread = await p.evaluate(() => {
+    const boxes = [...document.querySelectorAll('.otp-box')];
+    if (!boxes.length) return 'no boxes';
+    boxes[0].value = '135790';
+    boxes[0].dispatchEvent(new Event('input', { bubbles: true }));
+    return boxes.map(b => b.value).join('');
+  });
+  /* ⚠️ THIS IS THE TOOTH FOR THE WHOLE ITEM: without the second caller the
+     existing `slice(0, 1)` cuts the code to one digit, and the suggestion
+     looks broken while working perfectly. */
+  ok('9.9 a whole code arriving in the first box reaches all six', spread === '135790', spread);
+
+  /* ⚠️ And the «قريباً» tag over the button that leads to a screen which
+     now works — the same fault as the screen's own sentence, one step up
+     the road. */
+  ok('9.10 the sign-in screen no longer tags forgot-password «soon»',
+     !/#\/auth\/forgot[\s\S]{0,160}soon-tag/.test(auth));
+  await ctx.close();
+}
+
+/* ====== 10. the profile row is really created (appendix 2) ====== */
+{
+  const sql = sqlCode('supabase/migrations/0006_profiles_on_signup.sql');
+  /* ⚠️ `0001` promised this trigger in a comment and it was never written.
+     Measured live after the first real sign-up: users 1 · profiles 0 ·
+     triggers 0 — and nothing looked broken, because the app falls back to
+     local values. It shows on a SECOND device, where there are none. */
+  ok('10.1 the row is made by a trigger on auth.users',
+     /create trigger on_auth_user_created\s+after insert on auth\.users/.test(sql));
+  ok('10.2 …and the verified column follows the account instead of going stale',
+     /create trigger on_auth_user_verified\s+after update on auth\.users/.test(sql));
+  ok('10.3 …and both are security definer with a pinned search_path',
+     (sql.match(/security definer\s+set search_path = public, auth/g) || []).length === 2);
+  /* ⚠️ Re-running must be harmless: this file is the repository catching up
+     with a database the statements have already run against. */
+  ok('10.4 …and every statement is idempotent',
+     /create or replace function public\.handle_new_user/.test(sql)
+     && /drop trigger if exists on_auth_user_created/.test(sql)
+     && /on conflict \(id\) do nothing/.test(sql));
+  ok('10.5 …and the accounts made before it are backfilled',
+     /left join public\.profiles p on p\.id = u\.id\s+where p\.id is null/.test(sql));
+  /* ⚠️ 0001's comment is quoted exactly as it is written — across two
+     lines — because it is the promise this migration finally keeps. */
+  ok('10.6 the promise 0001 made in a comment is now kept',
+     /a trigger on\s*--\s*auth\.users creates the row at sign-up/
+       .test(read('supabase/migrations/0001_schema.sql')));
+
+  /* the name reaches the server, which it never did */
+  const { ctx, p } = await fresh({ preConfirm: true });
+  await open(p);
+  await signUp(p, 'nm@a.app', 'Qamar#2026x');
+  const r = await p.evaluate(async () => {
+    const S = window.__S;
+    await S.hydrateUserFromSession();
+    const hadId = !!S.state.user.id;
+    await S.updateProfile({ name: 'Renamed Person', phone: '' });
+    const row = await S.sb.from('profiles').select('*').eq('id', S.state.user.id).single();
+    return { hadId, server: (row.data || {}).display_name, local: S.state.user.name };
+  });
+  /* ⚠️ Without the id on `state.user` the write addresses nothing and the
+     line silently never runs. */
+  ok('10.7 the account carries its own id', r.hadId === true);
+  ok('10.8 a rename is saved locally', r.local === 'Renamed Person');
+  /* ⚠️ It was written once at sign-up and never again, so the first open on
+     a second device handed the OLD name back. */
+  ok('10.9 …and reaches the server, which it never did', r.server === 'Renamed Person', String(r.server));
+  await ctx.close();
+}
+
 /* ============ 8. nothing shouted in the console ============ */
 ok('8.1 no console errors anywhere in the batch', errors.length === 0, errors.slice(0, 3).join(' | '));
 

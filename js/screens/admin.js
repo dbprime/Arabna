@@ -36,9 +36,9 @@ function setupView(root) {
     <div class="pad mt-16">
       ${canSet ? `
       <div class="field"><label class="label">${t('adminUser')}</label>
-        <input class="input" id="aUser" autocomplete="off" autocapitalize="none"
+        <input class="input" id="aUser" autocomplete="username" autocapitalize="none"
                autocorrect="off" spellcheck="false" inputmode="email" /></div>
-      ${passwordField('aNew', t('password'))}
+      ${passwordField('aNew', t('password'), 'new-password')}
       ${passwordChecklist('aNew')}
       <div class="field-err" id="e_aNew"></div>
       <div id="aErr"></div>
@@ -75,9 +75,9 @@ function lockView(root) {
     </div>
     <div class="pad mt-16">
       <div class="field"><label class="label">${t('adminUser')}</label>
-        <input class="input" id="aUser" autocomplete="off" autocapitalize="none"
+        <input class="input" id="aUser" autocomplete="username" autocapitalize="none"
                autocorrect="off" spellcheck="false" inputmode="email" /></div>
-      ${passwordField('aPass', t('password'))}
+      ${passwordField('aPass', t('password'), 'current-password')}
       <div id="aErr"></div>
       <button class="btn btn-gold btn-block mt-8" id="aGo">${t('signIn')}</button>
     </div>`;
@@ -1167,14 +1167,14 @@ function setHtml() {
     ${/* ⚠️ The form read the new password and its confirmation and NOT the
          current one, so anybody reaching an open panel could replace it in
          silence and lock its owner out. */''}
-    ${passwordField('apCur', t('currentPassword'))}
+    ${passwordField('apCur', t('currentPassword'), 'current-password')}
     <div class="field-err" id="e_apCur"></div>
-    ${passwordField('apNew', t('newPassword'))}
+    ${passwordField('apNew', t('newPassword'), 'new-password')}
     ${/* The panel is the FIRST place this rule belongs, not the last:
          whoever gets in sees everything and can change everything. */''}
     ${passwordChecklist('apNew')}
     <div class="field-err" id="e_apNew"></div>
-    ${passwordField('apConf', t('confirmPassword'))}
+    ${passwordField('apConf', t('confirmPassword'), 'new-password')}
     <button class="btn btn-gold btn-block" id="apSave">${icon('lock', 19)} ${t('changePassword')}</button>
   </div>`;
 }

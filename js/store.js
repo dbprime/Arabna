@@ -3889,6 +3889,22 @@ export async function updateProfile({ name, email, phone, password }) {
     if (error) return { error: 'password', message: error.message || '' };
   }
   if (name) u.name = name;
+  /* ⚠️ THE NAME REACHES THE SERVER TOO, and until now it did not: it was
+     written once at sign-up (`options.data.display_name`) and never again,
+     so whoever renamed themselves was saved locally while the server kept
+     the first name — and THE FIRST OPEN ON A SECOND DEVICE handed the old
+     one back. `profiles` carries an «own row: update» policy keyed on
+     `auth.uid()`, so this is the account writing its own row and needs no
+     new permission.
+     ⚠️ It is guarded and its failure is swallowed on purpose: the name is
+     already correct on this device, and losing a rename to a dropped
+     connection is not worth refusing the whole save over. The address and
+     the password are the two that may not be half-done, and both of those
+     stop on a refusal above. */
+  if (name && u.id) {
+    try { await sb.from('profiles').update({ display_name: name }).eq('id', u.id); }
+    catch (e) { /* local is right; the server catches up on the next save */ }
+  }
   let emailPending = false;
   /* ⚠️ `email !== u.email`: without it a «change» is parked every time
      «حفظ» is pressed even when the field was never touched, and a code is
@@ -3984,6 +4000,11 @@ export async function hydrateUserFromSession() {
        claim with nobody behind it. */
     phone: prev.phone || null,
     phoneVerified: prev.phoneVerified || false,
+    /* ⚠️ THE ID IS KEPT, and without it nothing can address its own row.
+       `updateProfile` writes `display_name` back with `.eq('id', u.id)`,
+       and a `state.user` that never carried an id would have made that a
+       line that silently never runs. */
+    id: session.user.id,
     tier2By: (profile && profile.tier2_by) || prev.tier2By || null,
     /* ⚠️ THE FIRST READER OF `is_admin` IN THE WHOLE APP. The column has
        been written since `470` and measured, nothing read it — the same

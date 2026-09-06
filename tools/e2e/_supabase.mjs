@@ -262,6 +262,18 @@ export async function mockSupabase(ctx, opts = {}) {
         }
         return route.fulfill(json(db[table] || []));
       }
+      /* ⚠️ PATCH is how PostgREST updates, and `updateProfile` now writes
+         `display_name` back through it. Without this the write fell to the
+         501 below and the check for it could never be green. */
+      if (req.method() === 'PATCH') {
+        if (!db.session) return route.fulfill(json({ message: 'row-level security' }, 401));
+        if (table.startsWith('profiles')) {
+          const pr = db.profiles.get(db.session.user.id);
+          if (pr) Object.assign(pr, body);
+          return route.fulfill(json(pr ? [pr] : []));
+        }
+        return route.fulfill(json([]));
+      }
       if (req.method() === 'POST') {
         if (!db.session) return route.fulfill(json({ message: 'new row violates row-level security policy' }, 401));
         const row = Object.assign({ id: 'mock-row-' + (++db.seq) }, body);
