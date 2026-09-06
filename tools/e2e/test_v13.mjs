@@ -2,6 +2,7 @@
 import { chromium } from '/opt/node22/lib/node_modules/playwright/index.mjs';
 import { withDemoData } from './_demo.mjs';
 
+import { unlockAdmin } from './_admin.mjs';
 /* V.02.7 removed the quick-chip row: «مفتوح الآن» and the specialities are
    reached through the ⚙ sheet now. These do through the sheet exactly what
    a tap on the old chip did, so the behaviour under test is unchanged and
@@ -178,19 +179,7 @@ await go('#/admin');
    CLAIMED before it can be logged into. This is the fixture doing what
    the owner does once on the first run; the route is re-entered because
    the setup screen is already on screen by the time we get here. */
-await page.evaluate(async () => {
-  const S = (window.__m && window.__m.S)
-    || await import('arabna/js/store.js').catch(() => import('./js/store.js'));
-  if (!S.adminIsSet()) { await S.setAdminPass('Arabna@2026!', 'arabna.admin'); location.hash = '#/home'; }
-});
-await page.waitForTimeout(200);
-await page.evaluate(() => { location.hash = '#/admin'; });
-await page.waitForTimeout(600);
-if (await page.locator('#aUser').count()) {
-  await page.fill('#aUser', 'arabna.admin');
-  await page.fill('#aPass', 'Arabna@2026!');
-  await page.click('#aGo'); await page.waitForTimeout(600);
-}
+await unlockAdmin(page);
 await page.click('[data-t="dir"]'); await page.waitForTimeout(500);
 /* V.04.0: `isNonCommercial` derives from the category, so the 35 places of
    worship joined the 28 free outings — a mosque has nobody to sell $29 to,

@@ -1,6 +1,7 @@
 import { chromium } from '/opt/node22/lib/node_modules/playwright/index.mjs';
 import { withDemoData } from './_demo.mjs';
 
+import { unlockAdmin } from './_admin.mjs';
 const BASE = process.env.BASE || 'http://localhost:8099/index.html';
 let pass = 0, fail = 0;
 const ok = (n, c, extra = '') => { if (c) { pass++; console.log('PASS ' + n + (extra ? ' -> ' + extra : '')); } else { fail++; console.log('FAIL ' + n + (extra ? ' -> ' + extra : '')); } };
@@ -51,19 +52,7 @@ const adminLogin = async () => {
      CLAIMED before it can be logged into. This is the fixture doing what
      the owner does once on the first run; the route is re-entered because
      the setup screen is already on screen by the time we get here. */
-  await page.evaluate(async () => {
-    const S = (window.__m && window.__m.S)
-      || await import('arabna/js/store.js').catch(() => import('./js/store.js'));
-    if (!S.adminIsSet()) { await S.setAdminPass('Arabna@2026!', 'arabna.admin'); location.hash = '#/home'; }
-  });
-  await page.waitForTimeout(200);
-  await page.evaluate(() => { location.hash = '#/admin'; });
-  await page.waitForTimeout(600);
-  if (await page.locator('#aUser').count()) {
-    await page.fill('#aUser', 'arabna.admin');
-    await page.fill('#aPass', 'Arabna@2026!');
-    await page.click('#aGo'); await page.waitForTimeout(800);
-  }
+  await unlockAdmin(page);
 };
 const tab = async (id) => { await page.click(`[data-t="${id}"]`); await page.waitForTimeout(600); };
 
@@ -78,29 +67,22 @@ await mods();
 /* ---- 1. the way in ---- */
 console.log('--- the way in ---');
 await go('#/admin');
-/* V.03.6: no password is shipped any more, so a device that has never been
-   used shows the SETUP screen — it is claimed, not guessed into. That is
-   the state a first-run panel is really in, and it is asserted here before
-   the fixture claims it. */
-ok('1.0 an unclaimed device is asked to set a password, not to guess one',
-   (await page.locator('#aSet').count()) === 1 && (await page.locator('#aGo').count()) === 0);
-await page.evaluate(async () => {
-  const S = (window.__m && window.__m.S)
-    || await import('arabna/js/store.js').catch(() => import('./js/store.js'));
-  if (!S.adminIsSet()) await S.setAdminPass('Arabna@2026!', 'arabna.admin');
-});
-await go('#/home'); await go('#/admin');
-ok('1.1 the panel asks before it opens', await page.locator('#aUser').count() === 1);
-await page.fill('#aUser', 'arabna.admin');
-await page.fill('#aPass', 'wrong');
-await page.click('#aGo'); await page.waitForTimeout(500);
-ok('1.2 a wrong password does not open it', await page.locator('#aTabs').count() === 0);
-await page.fill('#aPass', 'Arabna@2026!');
-await page.click('#aGo'); await page.waitForTimeout(800);
-ok('1.3 the right one does', await page.locator('#aTabs').count() === 1);
-ok('1.4 iOS auto-capitalisation cannot lock the owner out', await page.evaluate(() => {
+/* ⚠️ REVERSED BY 630: there is no device password any more. The panel
+   opens for ONE thing — a live session for an account the SERVER marks
+   `is_admin` — so the way in is asserted on that, and the old setup / login
+   screens (`#aSet`, `#aUser`, `#aGo`) must not exist at all. */
+ok('1.0 with no staff session the panel is shut, and says the true reason',
+   (await page.locator('#adminDenied').count()) === 1
+   && (await page.locator('#aTabs').count()) === 0
+   && (await page.locator('#aSet, #aGo, #aUser').count()) === 0);
+await unlockAdmin(page);
+ok('1.1 a staff session opens it', await page.locator('#aTabs').count() === 1);
+ok('1.2 …and no second password stands in the way',
+   await page.locator('#aUser, #aPass, #aSet, #aGo').count() === 0);
+ok('1.3 the device-lock machinery is gone from the store', await page.evaluate(() => {
   const S = window.__m.S;
-  return S.adminLogin ? S.adminLogin(' Arabna.Admin ', 'Arabna@2026!') !== false : true;
+  return S.checkAdmin === undefined && S.setAdminPass === undefined && S.adminIsSet === undefined
+      && S.adminUnlocked === undefined && S.state.adminAuth === undefined;
 }));
 
 /* ---- 2. the tabs ---- */

@@ -12,6 +12,7 @@ import { chromium } from '/opt/node22/lib/node_modules/playwright/index.mjs';
 import { mockSupabase } from './_supabase.mjs';
 import { withDemoData } from './_demo.mjs';
 
+import { unlockAdmin } from './_admin.mjs';
 const BASE = process.env.BASE || 'http://localhost:8099/index.html';
 let pass = 0, fail = 0;
 const ok = (n, c, extra = '') => { if (c) { pass++; console.log('PASS ' + n + (extra ? ' -> ' + extra : '')); } else { fail++; console.log('FAIL ' + n + (extra ? ' -> ' + extra : '')); } };
@@ -87,17 +88,7 @@ await clean('the profile', '#/profile', '1.5');
 /* the decisive one: an advertisement waiting for approval is drawn INSIDE
    the owner's own panel, so reaching it needs no break-in, only patience */
 await page.goto(BASE + '#/admin'); await page.waitForTimeout(900);
-await page.evaluate(async () => {
-  const S = (window.__m && window.__m.S)
-    || await import('arabna/js/store.js').catch(() => import('./js/store.js'));
-  if (!S.adminIsSet()) { await S.setAdminPass('Arabna@2026!', 'arabna.admin'); location.hash = '#/home'; }
-});
-await page.waitForTimeout(250);
-await go('#/admin');
-if (await page.locator('#aUser').count()) {
-  await page.fill('#aUser', 'arabna.admin'); await page.fill('#aPass', 'Arabna@2026!');
-  await page.click('#aGo'); await page.waitForTimeout(1000);
-}
+await unlockAdmin(page);
 ok('1.6 the admin moderation queue: the tag is text, not an element',
    !(await page.evaluate(() => !!document.querySelector('#pX')))
    && (await page.evaluate(() => document.body.textContent.includes('arabna-probe'))));
@@ -173,7 +164,7 @@ ok('2.6 the font and the logo still load', await page.evaluate(async () => {
    ====================================================================== */
 console.log('--- who may change what ---');
 await S(() => {const S = window.__m.S;
-  S.setAdminUnlocked(false);
+  /* 630: staff is the ACCOUNT the server marks — a plain member carries no flag */
   S.state.user = { name: 'غريب', email: 'x@x.com', phone: '7134669182',
                    phoneVerified: true, emailVerified: true, joined: Date.now(), tier: 2 };
   S.state.myListings = [];                    // owns nothing
@@ -228,14 +219,14 @@ await go('#/post?edit=cMine');
 ok('3.9 my own listing still edits',
    (await page.evaluate(() => { const i = document.querySelector('#pTitle'); return i ? i.value : ''; })) === 'سيارتي');
 ok('3.10 the panel keeps every power it had', await S(() => {const S = window.__m.S;
-  S.setAdminUnlocked(true);
+  S.state.user.isAdmin = true;                 // 630: the account is the lock
   const r = S.addEvent({ title: { ar: 'ت', en: 't' }, startsAt: '2027-01-01T10:00' }, 'pending');
   S.approveEvent(r.id);
   S.featureEvent(r.id, true);
   const e = S.eventById(r.id);
   const okk = e.status === 'live' && e.featured === true;
   S.state.extraEvents = S.state.extraEvents.filter(x => x.id !== r.id);
-  S.setAdminUnlocked(false); S.save();
+  S.state.user.isAdmin = false; S.save();
   return okk;
 }));
 
@@ -258,25 +249,25 @@ const shipped = bodies.trim() ? bodies : await page.content();
 ok('4.1 no password literal in the shipped code',
    !/Arabna@2026!/.test(shipped.replace(/ADMIN_USER` and `ADMIN_PASS`/g, '')));
 ok('4.2 the two constants are gone', !/export const ADMIN_(USER|PASS)\s*=/.test(shipped));
-ok('4.3 only a salt and a hash are stored', await page.evaluate(() => {
-  const a = (JSON.parse(localStorage.getItem('arabna.v1')) || {}).adminAuth || {};
-  return !!a.hash && !!a.salt && a.pass === undefined;
-}));
-ok('4.4 the panel refuses when nothing has been set', await S(async () => {
+/* ⚠️ REVERSED BY 630: the device password is gone altogether, so what is
+   asserted is its ABSENCE — nothing of it in storage, nothing of it
+   exported, and a device with no staff session refused with the true
+   reason rather than asked to set anything. */
+ok('4.3 nothing of a device password is stored', await page.evaluate(() =>
+  (JSON.parse(localStorage.getItem('arabna.v1')) || {}).adminAuth === undefined));
+ok('4.4 the device-password machinery is not exported at all', await S(() => {
   const S = window.__m.S;
-  const keep = S.state.adminAuth;
-  S.state.adminAuth = null;
-  const refused = !(await S.checkAdmin('arabna.admin', 'Arabna@2026!')) && !S.adminIsSet();
-  S.state.adminAuth = keep; S.save();
-  return refused;
+  return S.checkAdmin === undefined && S.setAdminPass === undefined
+      && S.adminIsSet === undefined && S.adminUnlocked === undefined;
 }));
-ok('4.5 an unclaimed device is asked to SET one, not to guess', await (async () => {
+ok('4.5 a device with no staff session is refused, and told why', await (async () => {
   const c2 = await browser.newContext({ viewport: { width: 390, height: 844 } });
   /* 610: see tools/e2e/_supabase.mjs */
   await mockSupabase(c2);
   const p2 = await c2.newPage();
   await p2.goto(BASE + '#/admin'); await p2.waitForTimeout(1100);
-  const r = (await p2.locator('#aSet').count()) === 1 && (await p2.locator('#aGo').count()) === 0;
+  const r = (await p2.locator('#adminDenied').count()) === 1
+         && (await p2.locator('#aSet, #aGo, #aTabs').count()) === 0;
   await c2.close();
   return r;
 })());

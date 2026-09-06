@@ -150,10 +150,10 @@ Screens never touch storage directly — they only call `store.js`.
 Verification code `123456` (the verify screen shows it and has a "fill demo code" button) ·
 accepted mobile `(713) 466-9182` · rejected as VOIP: anything starting 555/800/888 ·
 admin panel reachable **only** by typing `#/admin` (not linked from the drawer or profile).
-**No staff password ships any more (V.03.6)** — the first `#/admin` on a device asks the owner
-to set one, and only its salted SHA-256 is kept in `state.adminAuth`. The username compare is
-case-insensitive + trimmed so iOS auto-capitalisation cannot lock you out · payments are
-simulated.
+**There is no device password on the panel any more (630, V.10.4)** — it opens on one
+condition, a live session for an account the server marks `profiles.is_admin`, and it asks
+the server again at its own door (`verifyAccountAdmin`). The old `state.adminAuth` lock of
+V.03.6 is deleted from every device at boot · payments are simulated.
 
 ## Interface rules (V.01.4 — simplification pass)
 Nothing is shown unless the user needs it at that moment; anything advanced or
@@ -10029,6 +10029,162 @@ moved** — which is what an appendix that adds a section rule should look
 like. **And the container was restarted mid-net**, killing a segment before
 any suite in it reported: **that segment was re-run whole, never patched
 from its partial file** — a suite not run on this tree is a suite not run.
+
+## V.10.4 — what the admin sees comes from the server (630)
+
+⚠️ **This file closes its own group, and its group is itself** — it touches
+`js/store.js` and authentication.
+
+⚠️ **MEASURED ON THE LIVE HOST, NOT INFERRED.** A real listing was published
+from one browser; the panel was opened from another and read «لا شيء بانتظار
+الموافقة». `addClassified` wrote to the server, `allClassifieds` read the
+device, and `grep "from('classifieds').select" js/` returned **zero**. A
+listing written where it is never read: **the admin saw nobody's listing but
+his own, and the moderation queue — the panel's first job — did not work
+with real people at all.** Not a fault of `620` or `625`: half a step of
+`610`, which built the write and had the read taken out of its scope. No
+reading, no moderation; no moderation, no opening. **A launch condition, not
+an improvement.**
+
+### The pattern is copied, not invented
+The directory has read from the server since `610` — `_liveBiz`,
+`loadLiveBusinesses()`, `mapLiveRowToJs()`, merged inside `everyBusiness()`,
+fetched after the paint from `app.js`. The marketplace gets the same four,
+letter for letter: `_liveCls` · `loadLiveClassifieds()` ·
+`mapLiveClsRowToJs()` · merged by `mergedClassifieds()` into
+`allClassifieds()`, `pendingListings()` and `adminListings()`. The three
+decisions travel with it and are not re-argued: **`null` is not `[]`**, the
+loader **never throws and never empties what it holds**, and **the readers
+stay synchronous** — measured, not one of their call sites gains an `await`.
+
+- ⚠️ **Measured at execution: `classifieds` carries no `seed_id` column.**
+  So unlike the directory these rows are not coats over seeds — they are
+  new listings, and `data.js`'s are demo seeds, not records of people. A
+  row this device also holds (the owner's instant copy) takes the server's
+  **status**, so a listing approved elsewhere is approved here.
+- **The five filters in `allClassifieds()` are untouched to the letter.**
+
+### The filter is left to RLS — and putting it back turns the queue red
+```js
+sb.from('businesses').select('*').eq('status', 'live')     // before
+```
+**That line filtered in the CLIENT what the database was ready to give.**
+`0002_rls.sql` already hands a stranger the live rows, an owner their own,
+and staff everything — so with the filter on top, **the directory's queue of
+held businesses was blind for exactly the accounts RLS had opened it to.**
+Deleted, and never written in the marketplace reader. ⚠️ **What a stranger
+receives does not change by one row**; what changed is that we stopped
+hiding from ourselves what the database allowed us. **A policy in the
+database is truer than a filter in a page the reader owns.** Proven: the
+filter put back turns `v79 · 2.2` red **and `1.3` with it**, because the
+stand-in server applies the query string exactly as PostgREST does.
+
+### The decision reaches the server first
+`approveClassified` and `rejectClassified` began `state.extraClassifieds.find`
+— **they moderated what this device had published and returned in silence on
+anything else.** A listing read from the server and then «approved» stayed
+pending on the server while the admin believed he had acted. Both write the
+status through `update({ status }).eq('id', id)` first, in `620`'s order:
+**the server first, and the local state is only the trace of its yes.** On a
+refusal nothing local changes, no line reaches `adminLog`, no notification
+goes out — and both are `async` now, so **their three call sites in
+`admin.js` await them and say a refusal**; a repaint before the answer would
+draw the row still pending under a green toast. ⚠️ **The owner's bell rings
+only for the owner's own listing** (`ownsListing`): notifications are this
+device's list until they live on a server, and «your listing is published» on
+the admin's phone about a stranger's listing was a lie.
+
+### `0007_admin_insert_businesses.sql`
+The gap `610` recorded, due now: approving a **seed** business creates its
+first live row, which is not the admin's, and `own: insert` refused it.
+`create policy "admin: insert" on public.businesses for insert with check
+(public.is_admin())` — **insert only, staff only, and not widened to
+`classifieds`**, where the row exists and `own: update` already grants staff
+the update. **No policy is worked around by weakening another.**
+
+### The account is the lock — the owner's decision of 6 September, reversing `620`
+One day of use measured the cost of the device password: **he was locked out
+of his own panel on his phone with no recovery anywhere**, the stored
+username showed only *inside* the panel, every browser needed setting up
+again — and the argument it was built on had fallen: **the lock sat in the
+same storage as the session, so whoever reached the device reached both.** It
+guarded a rare case and broke the ordinary one. The account's password is
+stronger, not weaker: it lives on the server, the server limits the
+attempts, and «forgot my password» works since `620`.
+
+- **`#/admin` opens on one condition: a live session for an account the
+  server marks `is_admin`.** Deleted from `store.js`: `adminAuth` in
+  `DEFAULTS` and in `KEEPS_ON_SIGN_OUT`, `adminIsSet` · `adminCanSet` ·
+  `setAdminPass` · `checkAdmin` · `adminUser` · `adminUnlocked` ·
+  `setAdminUnlocked`, **and every reader** — `adminEditing`, `addEvent`,
+  `ownerOnly` in the directory and the event form all stand on
+  `isAccountAdmin()`. From `admin.js`: the setup and login screens, the lock
+  button, the change-password form and the username line. **Twelve i18n
+  keys left both packs**, each measured for readers first; `adminLog` stays
+  — it is the record of what staff did, not the lock.
+- ⚠️ **The decision the spec left open is taken: `is_admin` is READ AGAIN at
+  the door.** `verifyAccountAdmin()` asks the server at every entry to
+  `#/admin` and corrects the boot-time flag either way — so an account
+  raised to staff while its session is open sees the panel without signing
+  in again, **and a flag typed into the device's storage opens nothing**
+  (`v79 · 6.3`: it is refused and cleared). The panel paints what the flag
+  says first and swaps on the answer, so staff meet no spinner.
+- **The refusal says the true reason** — «هذه اللوحة لحساب إدارة» — never
+  «اسم المستخدم أو كلمة المرور غير صحيحة», a sentence about a lock that no
+  longer exists; a visitor gets the sign-in door under it.
+- **The stale `adminAuth` is deleted from every existing device at boot**,
+  the `myBusinessId` migration's shape (`!== undefined`, once per device).
+  `v42 · 3.3` seeds it on purpose and asserts it gone.
+- ⚠️ **And a consequence the owner owes an action for: nobody opens the panel
+  until his own row carries `is_admin = true`.** That is one line of SQL on
+  the dashboard (`0002`'s trigger refuses it from a client session, which
+  is right) — it was a manual step before and is a **launch condition** now.
+
+### Found on the way: the price never reached the server
+`addClassified` sent `price: item.price` — the **display string**
+«⁦$1,250⁩», a dollar sign and two bidi isolates — into a `numeric` column,
+which PostgreSQL refuses outright. **So a priced listing was never written at
+all**; the one real listing on the live host got through because it was the
+job-wanted at «00», which is the sentinel and maps to `null`. `priceNumber()`
+sends the number, the row maps back to the display string, and **the stand-in
+server refuses a non-number in that column exactly as the database does** —
+the permissive mock had kept this green. Measured by reading, not on the live
+host; acceptance test 5 of `610` is where it is seen.
+
+### `tools/e2e/_admin.mjs`, and twenty-one suites
+Twenty-one suites claimed the device lock, seventeen of them with a copied
+twelve-line dance. **One helper replaces it and does what the owner does**:
+makes sure a session exists, has the stand-in server mark that account staff,
+opens `#/admin`. ⚠️ **It promotes the account already signed in rather than
+signing a second one up** — `signUp` clears `myListings`, and a suite that
+published as a member and then moderates as staff would lose its own listings
+under it. ⚠️ **And the flag is set on the stand-in server, never in the
+page's storage** — a helper that bypassed the door would test its bypass.
+`mockSupabase` gains `db` (one server shared by two browser contexts — the
+shape of the original fault) and mirrors the RLS of `0002`: **a stand-in that
+could not tell staff from a member would keep block 1 green while measuring
+nothing.**
+
+| suite | asserted | now |
+|---|---|---|
+| v22 · 1.0–1.4 | setup screen, wrong password, iOS capitalisation | shut with the true reason · opens for a staff session · no second password · machinery gone |
+| v29 · 4.3–4.5 | salt and hash stored · refuses when unset · unclaimed device asked to SET | nothing stored · nothing exported · a device with no session refused and told why |
+| v3 · 7 | the username field is iPhone-safe | a member who is not staff is refused; there is no field left to capitalise |
+| v30 · 4.2 | `#aSet` or `#aGo` proves the module ran | `#adminDenied` does |
+| v38 · 4.1 · 4.3 | password field shown · hash and salt in storage | no password field · no credential of any kind in storage |
+| v42 · 3.3 | `adminAuth` survives sign-out | the seeded stale key is deleted at boot |
+| v45 · 7 | lock button · change-password form · both flags cleared | a member refused · the same account opens it once staff · no lock button, no form, nothing exported |
+| v76 · 7 · 9 | «two locks» · five panel password fields described | one lock, the account · the five fields left with it |
+
+### `test_v79` — 42 assertions
+```
+put `.eq('status', 'live')` back in the reader   → 2.2 · 1.3 red
+approve locally before the server answers        → 3.1 · 3.2 red
+send the price as the display string             → 8.1 red (the mock refuses it as the database does)
+read the flag off the device instead of the door → 6.3 red
+```
+
+__NET_LINE__
 
 ## Known open items
 - **The header image is still far larger than its box.** V.04.7 replaced

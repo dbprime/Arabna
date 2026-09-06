@@ -256,12 +256,12 @@ export function EventScreen(root, params) {
 export function EventFormScreen(root, params) {
   const editId = params && params[0] ? params[0] : (query().edit || '');
   const editing = editId ? S.eventById(editId) : null;
-  /* NOT `query().admin`. Reading it off the URL let anybody — signed in or
-     not — open the admin form, publish an event LIVE to everyone and tick
-     `featured`, which is the $99/week pin. A flag in the address bar is a
-     request, never a permission; `adminUnlocked()` is the session, and it
-     is memory-only so a reload asks for the password again. */
-  const isAdmin = S.adminUnlocked() && !!query().admin;
+  /* NOT `query().admin` alone. Reading it off the URL let anybody — signed
+     in or not — open the admin form, publish an event LIVE to everyone and
+     tick `featured`, which is the $99/week pin. A flag in the address bar
+     is a request, never a permission; the permission is the signed-in
+     account the SERVER marks staff (`630`), and `addEvent` checks it again. */
+  const isAdmin = S.isAccountAdmin() && !!query().admin;
 
   renderHeader({ simple: true, title: editing ? t('editEvent') : (isAdmin ? t('addEvent') : t('proposeEvent')) });
 

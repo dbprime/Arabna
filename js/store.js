@@ -172,7 +172,6 @@ const DEFAULTS = {
   hiddenEvents: [],          // seed events the admin deleted
   eventEdits: {},            // admin edits applied on top of a seed event
   draft: null,               // half-finished listing kept across a verification detour
-  adminAuth: null,           // { user, pass } once the owner changes the defaults
   businessEdits: {},         // admin edits layered on top of a seed business
   bizPhotos: {},             // { bizId: [{ url, status, when }] } — reviewed like avatars
   bizVerify: {},             // { bizId: { status, ref, reason } } — never derived from plan
@@ -336,6 +335,16 @@ if (!state.demoDefaultOff) {
   writeState();
 }
 
+/* 630: the panel's device lock is gone and `adminAuth` left DEFAULTS —
+   but the key is still sitting in every existing device's storage, and a
+   stale credential hash that nothing reads any more is a thing to delete,
+   not to carry. Same shape as `myBusinessId` above: `!== undefined`, so a
+   `null` is removed too, and it runs at most once per device. */
+if (state.adminAuth !== undefined) {
+  delete state.adminAuth;
+  writeState();
+}
+
 /** Last write result — false when the browser refused (quota full, private mode). */
 export let lastSaveOk = true;
 
@@ -352,82 +361,16 @@ export function resetAll() {
 }
 
 /* ---------------- staff access ----------------
-   THE PASSWORD IS NOT IN THIS FILE, and it never will be again.
-
-   It used to be: `ADMIN_USER` and `ADMIN_PASS` were two exported constants
-   in a module the browser downloads, which means they were published, not
-   stored. Any reader of the deployed app had them. They are gone, and
-   nothing replaced them in the file — instead the panel is CLAIMED on
-   first use: the first time `#/admin` is opened on a device that has no
-   staff password yet, the screen asks the owner to set one, and from then
-   on it asks for it.
-
-   What is kept is a salted SHA-256 of it and nothing else — the exact
-   `pwSalt` / `pwHash` path the app already uses for a user's own password
-   (`setUserPassword`). This was the one place that had been left out of it.
-
-   That first-run screen is also the honest shape of what this is while
-   there is no server: an admin password on a phone unlocks the panel over
-   THAT phone's own localStorage, which holds that phone's own data. With
-   Supabase, staff access becomes a claim on an account and this whole
-   block goes.
-
-   `state.adminAuth` = { user, salt, hash }. No plaintext, ever. */
-
-/* Whether the admin panel is unlocked in THIS session. Memory only and
-   never saved: a reload must ask for the password again. The edit screen
-   reads it so the panel's ✎ can open the very same form the owner uses —
-   a second form would be a second shape of the same data. */
-let adminSession = false;
-export function adminUnlocked() { return adminSession; }
-export function setAdminUnlocked(on) { adminSession = !!on; }
-
-/** has a staff password been set on this device yet? */
-export function adminIsSet() {
-  const a = state.adminAuth;
-  return !!(a && a.user && a.hash);
-}
-/** the staff username, for the line that prints it. Never the password. */
-export function adminUser() { return (state.adminAuth && state.adminAuth.user) || ''; }
-
-/**
- * Hashing needs `crypto.subtle`, which a browser only exposes in a secure
- * context — https, or localhost. Opened straight off the disk there is
- * none, so rather than storing something weaker and calling it a password,
- * the panel says so and stays shut.
- */
-export function adminCanSet() { return !!PW_SUBTLE(); }
-
-/**
- * Set (or change) the staff password. The username is stored as typed;
- * only its comparison is case-insensitive.
- */
-export async function setAdminPass(newPass, user) {
-  const name = String(user == null ? adminUser() : user).trim();
-  const pw = String(newPass || '');
-  if (!name || !pw) return false;
-  const salt = randomSalt();
-  const hash = await hashPassword(pw, salt);
-  if (!hash) return false;              // no subtle crypto: store nothing
-  state.adminAuth = { user: name, salt, hash };
-  save();
-  return true;
-}
-
-/**
- * Username is compared case-insensitively and trimmed: iOS auto-capitalises
- * the first letter of a text field, which used to lock the owner out on an
- * iPhone. The password stays exactly as typed.
- *
- * Async now, because a hash comparison is. It refuses when nothing has been
- * set — an unset panel is claimed, not guessed into.
- */
-export async function checkAdmin(user, pass) {
-  const a = state.adminAuth;
-  if (!a || !a.user || !a.hash) return false;
-  if (String(user || '').trim().toLowerCase() !== String(a.user).toLowerCase()) return false;
-  return (await hashPassword(String(pass || ''), a.salt || '')) === a.hash;
-}
+   ⚠️ THERE IS NO DEVICE LOCK ANY MORE — the owner's decision of 6 September
+   2026, reversing `620`. `#/admin` opens on one condition: a live session
+   for an account the SERVER marks `is_admin`. The old lock (`adminAuth`, a
+   name and a salted hash in this phone's own storage) was built the day no
+   server knew who the admin was; it locked the owner out of his own panel
+   with no way back, had to be set again in every browser, and sat in the
+   very storage a session sits in — so whoever reached the device reached
+   both. It guarded a rare case and broke the ordinary one.
+   `isAccountAdmin()` and `verifyAccountAdmin()` below are the whole of it;
+   `adminLog` stays — it is the record of what staff did, not the lock. */
 
 /* ---------------- auth tiers ---------------- */
 export function tier() {
@@ -2387,7 +2330,15 @@ export function liveBizLoadedAt() { return _liveBizAt; }
     if none ever came, and `everyBusiness()` reads both safely. */
 export async function loadLiveBusinesses() {
   try {
-    const { data, error } = await sb.from('businesses').select('*').eq('status', 'live');
+    /* ⚠️ NO `.eq('status', 'live')` HERE, AND NONE IN ANY READER FROM THE
+       SERVER. The policy in `0002_rls.sql` already decides who sees what:
+       a stranger gets the live rows, an owner their own, staff everything.
+       A filter written here on top of it filtered in the CLIENT what the
+       database was ready to give — so the admin's queue of held listings
+       was blind for exactly the accounts RLS had opened it to. What a
+       stranger receives does not change by one row; what changes is that
+       we stopped hiding from ourselves what the database allowed us. */
+    const { data, error } = await sb.from('businesses').select('*');
     if (error) throw error;
     _liveBiz = data || [];
     _liveBizAt = Date.now();
@@ -2453,8 +2404,86 @@ export function businessById(id) { return allBusinesses().find(b => b.id === id)
  * plus their own listings still waiting on the admin. A pending listing is
  * never visible to anyone else.
  */
+/* ---------------- THE LIVE MARKETPLACE ----------------
+ * The directory's pattern, copied to the letter (`_liveBiz` above):
+ * `null` = nothing has arrived yet, `[]` = the table answered and is empty;
+ * the loader never throws and never empties what it holds; and the readers
+ * stay synchronous — the rows are fetched once at boot and merged here.
+ * ⚠️ WHY IT EXISTS: `addClassified` wrote every listing to the server and
+ * nothing in the app ever read one back — measured, zero selects on the
+ * table — so a listing was written where it was never read, and the admin
+ * saw nobody's listing but his own. No reading, no moderation; no
+ * moderation, no opening.
+ * ⚠️ Measured at execution: `classifieds` carries NO `seed_id` column, so
+ * unlike the directory these rows are not coats over seeds — they are new
+ * listings, and `data.js`'s are demo seeds, not records of people.
+ */
+let _liveCls = null;
+let _liveClsAt = 0;
+
+/** when the live listings last arrived, or 0 — read by the suite */
+export function liveClsLoadedAt() { return _liveClsAt; }
+
+/** Fetch the live listings once. ⚠️ NO `.eq('status', …)`: RLS decides
+    who receives a pending row, and a filter here would blind the queue. */
+export async function loadLiveClassifieds() {
+  try {
+    const { data, error } = await sb.from('classifieds').select('*');
+    if (error) throw error;
+    _liveCls = data || [];
+    _liveClsAt = Date.now();
+  } catch (e) { /* the last good answer stands */ }
+  return _liveCls;
+}
+
+/** «قبل n يوم» in the four Arabic forms, without importing i18n */
+function agoLabel(created) {
+  const days = Math.max(0, Math.floor((now() - created) / 86400000));
+  if (days === 0) return { ar: 'اليوم', en: 'today' };
+  if (days === 1) return { ar: 'أمس', en: 'yesterday' };
+  const ar = days === 2 ? 'قبل يومين' : days <= 10 ? `قبل ${days} أيام` : `قبل ${days} يوماً`;
+  return { ar, en: `${days} days ago` };
+}
+
+/** One map from a live listing row to the shape `data.js` uses — written
+    once, read by everything that reads a live row. */
+export function mapLiveClsRowToJs(r) {
+  const created = r.created_at ? Date.parse(r.created_at) : now();
+  const rule = catRule(r.cat);
+  /* the server holds a NUMBER or null; the app shows the display string it
+     always did, built the same way the publish screen builds it */
+  const price = r.price == null ? FREE_PRICE
+    : '\u2066$' + Number(r.price).toLocaleString('en-US',
+        { minimumFractionDigits: 0, maximumFractionDigits: 2 }) + '\u2069';
+  return {
+    id: r.id, ownerId: r.owner_id || null, cat: r.cat,
+    title: { ar: r.title || '', en: r.title || '' },
+    desc: { ar: r.body || '', en: r.body || '' },
+    price, city: '', photos: [],
+    status: r.status || 'live', hidden: !!r.hidden,
+    created, when: agoLabel(created),
+    daysLeft: Math.max(0, rule.days - Math.floor((now() - created) / 86400000)),
+    owner: (state.user && state.user.id && r.owner_id === state.user.id) ? 'me' : undefined,
+  };
+}
+
+/** This device's own listings with the server's rows merged in: a row the
+    device also holds takes the server's STATUS (approved elsewhere is
+    approved here), a row it does not hold is appended as it came. */
+function mergedClassifieds() {
+  const local = state.extraClassifieds || [];
+  const liveById = new Map((_liveCls || []).map(r => [r.id, mapLiveClsRowToJs(r)]));
+  const out = local.map(c => {
+    const l = liveById.get(c.id);
+    if (!l) return c;
+    liveById.delete(c.id);
+    return Object.assign({}, c, { status: l.status, hidden: l.hidden });
+  });
+  return out.concat(Array.from(liveById.values()));
+}
+
 export function allClassifieds() {
-  const list = withoutDemo(state.extraClassifieds.concat(CLASSIFIEDS));
+  const list = withoutDemo(mergedClassifieds().concat(CLASSIFIEDS));
   return list
     .filter(c => !isBlocked(c))
     .filter(c => c.status !== 'rejected')
@@ -3145,9 +3174,9 @@ export function pendingClaims() { return (state.claims || []).filter(c => c.stat
    ------------------------------------------------------------ */
 export const ADMIN_LOG_MAX = 500;
 
-/** the panel is open and this is somebody else's shop */
+/** a staff account is signed in and this is somebody else's shop */
 export function adminEditing(bizId) {
-  return adminUnlocked() && !ownsBusiness(bizId);
+  return isAccountAdmin() && !ownsBusiness(bizId);
 }
 
 /** a value short enough to read in a list, whatever its shape */
@@ -3833,7 +3862,7 @@ const KEEPS_ON_SIGN_OUT = new Set([
   'lang', 'theme', 'fontScale', 'location', 'geo', 'geoAsked', 'geoDenied',
   'geoGranted', 'area', 'mapsApp', 'install',
   // the admin panel's, and the operator's: not a reader's to lose
-  'adminAuth', 'adminLog', 'businessEdits', 'extraArticles', 'extraEvents',
+  'adminLog', 'businessEdits', 'extraArticles', 'extraEvents',
   'hiddenEvents', 'eventEdits', 'bizPhotos', 'bizVerify', 'mergedBusinesses',
   'removedBusinesses', 'adWaitlist', 'adStats', 'bizStats', 'clockOffset',
   'showDemo', 'demoPurged', 'demoDefaultOff', 'seasons', 'ramadanDates', 'greetings', 'prayer',
@@ -4034,12 +4063,36 @@ export async function hydrateUserFromSession() {
 }
 
 /** Is the SIGNED-IN ACCOUNT staff, as the server says — never as a URL or
-    a device says. ⚠️ It is a second lock and not a replacement for the
-    first: `adminUnlocked()` is a password on THIS DEVICE and has never had
-    anything to do with an account, so a screen that prints other people's
-    data asks for both. */
+    a device says. ⚠️ Since `630` it is THE lock and not a second one: the
+    device password is gone, so every reader of this — the panel, the edit
+    form's admin pass, the event form, `addEvent` — stands on the server's
+    word alone. It reads the flag hydrated at sign-in; `verifyAccountAdmin`
+    is the fresh read the panel takes at its own door. */
 export function isAccountAdmin() {
   return !!(state.user && state.user.isAdmin);
+}
+
+/** Ask the server NOW whether the live session is staff, and keep the
+    answer on `state.user`. ⚠️ `is_admin` was read at sign-in alone (a gap
+    `620` recorded), so an account raised to staff while its session was
+    open did not see the panel until it signed in again. The panel calls
+    this at every entry instead of trusting the boot-time flag — and it is
+    also what makes a flag typed into this device's storage worth nothing:
+    no live session, no panel. Never throws; a failed read answers false
+    and clears the local flag, because «maybe staff» is not a state. */
+export async function verifyAccountAdmin() {
+  let ok = false;
+  try {
+    const { data: { session } = {} } = await sb.auth.getSession();
+    if (session) {
+      const r = await sb.from('profiles').select('is_admin').eq('id', session.user.id).single();
+      ok = !!(r && r.data && r.data.is_admin);
+    }
+  } catch (e) { ok = false; }
+  if (state.user) {
+    if (!!state.user.isAdmin !== ok) { state.user.isAdmin = ok; save(); }
+  }
+  return ok;
 }
 
 /** Ask the server to mail a recovery code. ⚠️ It answers the same way for
@@ -4237,6 +4290,12 @@ export function hasBadge() {
   return !!(state.user && state.user.badge && state.user.badge.status === 'live');
 }
 
+/** the number inside a display price — «⁦$1,250.50⁩» → 1250.5, or null */
+function priceNumber(p) {
+  const n = Number(String(p == null ? '' : p).replace(/[^\d.]/g, ''));
+  return isFinite(n) && String(p).replace(/[^\d.]/g, '') !== '' ? n : null;
+}
+
 export async function addClassified(item) {
   const rule = catRule(item.cat);
   /* ⚠️ THE ROW IS WRITTEN ON THE SERVER FIRST AND ITS ID IS THE SERVER'S.
@@ -4255,7 +4314,12 @@ export async function addClassified(item) {
       cat: item.cat,
       title: (item.title && (item.title.ar || item.title.en)) || item.title || '',
       body: (item.desc && (item.desc.ar || item.desc.en)) || item.desc || '',
-      price: item.price === FREE_PRICE ? null : item.price,
+      /* ⚠️ A NUMBER, NEVER THE DISPLAY STRING. The column is `numeric`
+         and what the screen holds is «⁦$1,250⁩» — a dollar sign and two
+         bidi isolates — which the database refuses outright, so a priced
+         listing never reached the table at all. (The one that did was a
+         job-wanted at «00», which is the sentinel and maps to null.) */
+      price: item.price === FREE_PRICE ? null : priceNumber(item.price),
       status: 'pending',
     }).select().single();
     if (error) throw error;
@@ -4353,34 +4417,60 @@ export function renewClassified(id) {
   save();
 }
 
-/* ---- moderation decisions (admin panel) ---- */
-export function approveClassified(id) {
+/* ---- moderation decisions (admin panel) ----
+   ⚠️ THE SERVER FIRST, AND THE LOCAL STATE IS ONLY THE TRACE OF ITS YES —
+   the order `620` set for the password. Before `630` both worked on
+   `state.extraClassifieds` alone, so they moderated what THIS device had
+   published and returned in silence on anything else: a listing read from
+   the server and then «approved» stayed pending on the server, and the
+   admin believed he had acted. On a refusal nothing local changes, no
+   notification goes out and no line reaches `adminLog` — a record of an
+   approval that did not happen is worse than an empty record. */
+async function setListingStatus(id, status) {
+  try {
+    const { error } = await sb.from('classifieds').update({ status }).eq('id', id);
+    return !error;
+  } catch (e) { return false; }
+}
+/** flip the row we hold in memory so the queue drops it without a refetch */
+function markLiveCls(id, status) {
+  if (!_liveCls) return;
+  _liveCls = _liveCls.map(r => r.id === id ? Object.assign({}, r, { status }) : r);
+}
+
+export async function approveClassified(id) {
+  if (!await setListingStatus(id, 'live')) return false;
   logAdminAction(id, 'approveListing', '', '');
+  markLiveCls(id, 'live');
   const c = state.extraClassifieds.find(x => x.id === id);
-  if (!c) return;
-  c.status = 'live';
+  if (c) c.status = 'live';
   state.flags = state.flags.filter(f => f.refId !== id);
-  pushNotif({ icon: 'checkCircle', route: '#/marketplace/' + id,
+  /* the bell is this device's own until notifications live on a server, so
+     it rings only when the listing is this account's — «your listing is
+     published» on the admin's phone about a stranger's listing is a lie */
+  if (ownsListing(id)) pushNotif({ icon: 'checkCircle', route: '#/marketplace/' + id,
     title: { ar: 'إعلانك صار منشوراً', en: 'Your listing is published' },
     body: { ar: 'اعتُمد إعلانك وصار ظاهراً لكل المستخدمين.', en: 'Your listing was approved and is now visible to everyone.' } });
   save();
+  return true;
 }
 /**
  * Reject a listing. The reason the admin types is delivered to the owner,
  * so a rejection is never silent.
  */
-export function rejectClassified(id, reason) {
+export async function rejectClassified(id, reason) {
+  if (!await setListingStatus(id, 'rejected')) return false;
   logAdminAction(id, 'rejectListing', '', reason || '');
-  const c = state.extraClassifieds.find(x => x.id === id);
-  if (!c) return;
+  markLiveCls(id, 'rejected');
   const why = String(reason || '').trim();
-  pushNotif({ icon: 'alert', route: '#/my-ads',
+  if (ownsListing(id)) pushNotif({ icon: 'alert', route: '#/my-ads',
     title: { ar: 'إعلانك لم يُعتمد', en: 'Your listing was not approved' },
     body: why
       ? { ar: `سبب الرفض: ${why}`, en: `Reason: ${why}` }
       : { ar: 'إعلانك خالف شروط النشر وتم حذفه. تقدر تنشر إعلاناً جديداً مطابقاً للشروط.',
           en: 'Your listing broke the posting rules and was removed. You can post a new one that follows the rules.' } });
   deleteClassified(id);
+  return true;
 }
 
 /* ---- draft rescue ----
@@ -4533,8 +4623,8 @@ export function ownsEvent(id) {
  * `?admin=1` was doing.
  */
 export function addEvent(ev, status = 'pending') {
-  if (status !== 'pending' && !adminSession) status = 'pending';
-  if (ev && ev.featured && !adminSession) ev = Object.assign({}, ev, { featured: false });
+  if (status !== 'pending' && !isAccountAdmin()) status = 'pending';
+  if (ev && ev.featured && !isAccountAdmin()) ev = Object.assign({}, ev, { featured: false });
   const rec = Object.assign({}, ev, {
     id: mintId('ev'),
     status,
@@ -4607,7 +4697,7 @@ export function resolveFlag(id) {
 }
 /** listings still waiting on a human decision */
 export function pendingListings() {
-  return state.extraClassifieds.filter(c => c.status === 'pending');
+  return mergedClassifieds().filter(c => c.status === 'pending');
 }
 
 /**
@@ -4618,7 +4708,7 @@ export function pendingListings() {
  */
 export function adminListings() {
   const seen = new Set();
-  const all = (state.extraClassifieds || []).concat(CLASSIFIEDS)
+  const all = mergedClassifieds().concat(CLASSIFIEDS)
     .filter(c => { if (seen.has(c.id)) return false; seen.add(c.id); return true; })
     .map(c => Object.assign({ status: 'live' }, c));
   return all.map(c => Object.assign({}, c, {

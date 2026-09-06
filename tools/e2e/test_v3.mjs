@@ -3,6 +3,7 @@ import { mockSupabase } from './_supabase.mjs';
 import { phoneAuthOn } from './_phoneauth.mjs';
 import { withDemoData } from './_demo.mjs';
 
+import { unlockAdmin } from './_admin.mjs';
 const BASE = process.env.BASE || 'http://localhost:8123/index.html';
 let pass = 0, fail = 0;
 const ok = (n, c, extra = '') => { if (c) { pass++; console.log('PASS ' + n + (extra ? ' -> ' + extra : '')); } else { fail++; console.log('FAIL ' + n + (extra ? ' -> ' + extra : '')); } };
@@ -75,19 +76,7 @@ const adminLogin = async () => {
      CLAIMED before it can be logged into. This is the fixture doing what
      the owner does once on the first run; the route is re-entered because
      the setup screen is already on screen by the time we get here. */
-  await page.evaluate(async () => {
-    const S = (window.__m && window.__m.S)
-      || await import('arabna/js/store.js').catch(() => import('./js/store.js'));
-    if (!S.adminIsSet()) { await S.setAdminPass('Arabna@2026!', 'arabna.admin'); location.hash = '#/home'; }
-  });
-  await page.waitForTimeout(200);
-  await page.evaluate(() => { location.hash = '#/admin'; });
-  await page.waitForTimeout(600);
-  if (await page.locator('#aUser').count()) {
-    await page.fill('#aUser', 'arabna.admin');
-    await page.fill('#aPass', 'Arabna@2026!');
-    await page.click('#aGo'); await page.waitForTimeout(420);
-  }
+  await unlockAdmin(page);
 };
 
 await page.goto(BASE);
@@ -489,33 +478,24 @@ await page.locator('[data-bgok]').first().click(); await page.waitForTimeout(500
 await go('#/profile');
 ok('verified badge shows next to the name', await page.evaluate(() => !!document.querySelector('.badge-check')));
 
-/* ============ 7. admin login is iPhone-safe ============ */
-const caps = await page.evaluate(async () => {
+/* ============ 7. staff is the account, not a device password ============ */
+/* ⚠️ REVERSED BY 630: the username / password screen is gone, and with it
+   the iPhone auto-capitalisation trap it guarded against — there is no
+   field left to capitalise. A signed-in MEMBER who is not staff meets a
+   closed door that says why; the panel opens only when the server calls
+   the account staff. */
+const shutForMember = await page.evaluate(async () => {
   location.hash = '#/admin';
-  await new Promise(r => setTimeout(r, 300));
-  const el = document.querySelector('#aUser');
-  return el ? { cap: el.getAttribute('autocapitalize'), cor: el.getAttribute('autocorrect'), sp: el.getAttribute('spellcheck') } : null;
+  await new Promise(r => setTimeout(r, 900));
+  return { denied: !!document.querySelector('#adminDenied'),
+           tabs: !!document.querySelector('#aTabs'),
+           oldDoor: !!document.querySelector('#aUser, #aPass, #aSet, #aGo') };
 });
-ok('username field disables autocapitalise / autocorrect',
-   !caps || (caps.cap === 'none' && caps.cor === 'off' && caps.sp === 'false'),
-   caps ? JSON.stringify(caps) : 'already unlocked');
-/* V.03.6: `checkAdmin` is async now — it compares a salted hash instead of
-   a string, because the password is no longer a constant in a downloadable
-   file. The rule it enforces is unchanged and is what is asserted. */
-ok('username compare is case-insensitive', await page.evaluate(async () => {
-  /* On the single-file build `import('./js/store.js')` fetches the file
-     again and hands back a SECOND instance with its own state — the app's
-     own lives behind the importmap. */
+ok('a member who is not staff is refused, and told the true reason',
+   shutForMember.denied && !shutForMember.tabs && !shutForMember.oldDoor, JSON.stringify(shutForMember));
+ok('the device-password machinery is gone from the store', await page.evaluate(async () => {
   const S = await import('arabna/js/store.js').catch(() => import('./js/store.js'));
-  return (await S.checkAdmin('Arabna.Admin', 'Arabna@2026!'))
-      && (await S.checkAdmin('  arabna.admin ', 'Arabna@2026!'));
-}));
-ok('password stays case-sensitive', await page.evaluate(async () => {
-  /* On the single-file build `import('./js/store.js')` fetches the file
-     again and hands back a SECOND instance with its own state — the app's
-     own lives behind the importmap. */
-  const S = await import('arabna/js/store.js').catch(() => import('./js/store.js'));
-  return !(await S.checkAdmin('arabna.admin', 'arabna@2026!'));
+  return S.checkAdmin === undefined && S.setAdminPass === undefined && S.adminIsSet === undefined;
 }));
 
 /* ============ admin: events CRUD ============ */

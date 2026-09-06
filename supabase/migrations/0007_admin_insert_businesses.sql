@@ -1,0 +1,21 @@
+-- ============================================================
+-- ARABNA — the admin may INSERT a business row
+-- ------------------------------------------------------------
+-- Recorded by 610 in docs/الحالة.md the day it landed, and due now
+-- (630): `0002`'s policies on businesses carry
+--   "own: insert" with check (owner_id = auth.uid())
+-- with no exception for staff. Approving a SEED business — a listing
+-- that lives in js/data.js and has no row yet — means creating its
+-- first live row, and that row is not the admin's, so the database
+-- refused the very first administrative edit on a seed.
+--
+-- ⚠️ INSERT ONLY, AND STAFF ONLY. It is not widened to classifieds:
+-- there the row already exists (addClassified wrote it) and what
+-- moderation needs is an UPDATE, which "own: update" already grants
+-- to `public.is_admin()`.
+--
+-- ⚠️ And no policy is ever worked around by weakening another — the
+-- sentence 610 wrote when it recorded the gap, and it stands.
+-- ============================================================
+create policy "admin: insert" on public.businesses for insert
+  with check (public.is_admin());

@@ -24,6 +24,7 @@
 import { chromium } from '/opt/node22/lib/node_modules/playwright/index.mjs';
 import { mockSupabase } from './_supabase.mjs';
 
+import { unlockAdmin } from './_admin.mjs';
 const BASE = process.env.BASE || 'http://localhost:8099/index.html';
 let pass = 0, fail = 0;
 const ok = (n, c, extra = '') => { if (c) { pass++; console.log('PASS ' + n + (extra ? ' -> ' + extra : '')); }
@@ -31,7 +32,6 @@ const ok = (n, c, extra = '') => { if (c) { pass++; console.log('PASS ' + n + (e
 
 const NOW = Date.now();
 const PAY = '<img src=x onerror="window.__pwn=1">';
-const ADMIN_PW = 'Zaytoun#4417q';
 const ACCOUNT = {
   name: 'أحمد سالم', email: 'a@b.c', emailVerified: true,
   phone: '7134669182', phoneVerified: true, joined: NOW - 9e8,
@@ -200,8 +200,7 @@ console.log('--- the panel ---');
   const { ctx, p } = await open({ lang: 'ar', user: ACCOUNT,
     greetings: [card({ id: 'gA', title: 'الأولى', from: TODAY, to: dayFrom(4) })],
     seenGreetings: ['gA'] }, '#/admin');
-  await p.fill('#aUser', 'rai'); await p.fill('#aNew', ADMIN_PW);
-  await p.waitForTimeout(250); await p.click('#aSet'); await p.waitForTimeout(1000);
+  await unlockAdmin(p);
   await p.evaluate(() => { const x = document.querySelector('[data-t="set"]'); if (x) x.click(); });
   await p.waitForTimeout(700);
 
@@ -236,8 +235,7 @@ console.log('--- the panel ---');
 /* the preview is the real card, drawn by the same function the launch uses */
 {
   const { ctx, p } = await open({ lang: 'ar', user: ACCOUNT }, '#/admin');
-  await p.fill('#aUser', 'rai'); await p.fill('#aNew', ADMIN_PW);
-  await p.waitForTimeout(250); await p.click('#aSet'); await p.waitForTimeout(1000);
+  await unlockAdmin(p);
   await p.evaluate(() => { const x = document.querySelector('[data-t="set"]'); if (x) x.click(); });
   await p.waitForTimeout(700);
   await p.click('#greetNew'); await p.waitForTimeout(600);

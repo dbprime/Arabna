@@ -188,8 +188,11 @@ console.log('--- the payload ---');
      single || !asked.includes('admin.js'), single ? '(single-file build: inlined)' : asked.join(' '));
   await go(p, '#/admin');
   await p.waitForTimeout(900);
+  /* 630: no device lock — a fresh context has no staff session, so the
+     panel's own «this is for an admin account» screen is what proves the
+     module was fetched and ran */
   ok('4.2 …and asking for #/admin still opens it',
-     (await p.locator('#aSet').count()) + (await p.locator('#aGo').count()) === 1);
+     (await p.locator('#adminDenied').count()) === 1);
   ok('4.3 …fetched once, not on every paint',
      single || asked.filter(x => x === 'admin.js').length === 1,
      String(asked.filter(x => x === 'admin.js').length));

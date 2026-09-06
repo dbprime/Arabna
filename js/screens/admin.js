@@ -1,101 +1,49 @@
 /* ======================= ADMIN BACK OFFICE (v1, internal) =======================
    Reachable only by typing #/admin — it is intentionally absent from the drawer
-   and the profile screen. Credentials live in store.js (V.02: a real staff
-   account behind Supabase row-level security). */
+   and the profile screen. ⚠️ Since `630` it opens on ONE condition: a live
+   session for an account the server marks `is_admin`. There is no device
+   password any more — the owner's decision of 6 September 2026, reversing
+   `620`: the old lock shut him out of his own panel with no way back, had to
+   be set again in every browser, and sat in the very storage the session
+   sits in. The account's password lives on the server, the server limits
+   the attempts, and «forgot my password» works (`620`). */
 import { t, arCount, L, icon, $, $$, go, renderHeader, toast, wireRoutes, emptyState, fmtMoney, priceLabel, priceDotHtml,
          confirmSheet, openSheet, closeSheet, esc,
          greetingCardHtml, openGreeting } from '../ui.js';
 import { MAG_CATS, ARTICLES, CATEGORIES, AD_PRODUCTS, MARKET_CATS } from '../data.js';
 import * as S from '../store.js';
-import { passwordField, passwordChecklist, wirePasswordField,
-         wirePasswordToggles } from './profile.js';
 import { fmtEventDate } from './events.js';
 import { fmtDate } from './directory.js';
 
-let unlocked = false;
-
 export function AdminScreen(root) {
   renderHeader({ simple: true, title: t('adminPanel') });
-  if (!unlocked) { lockView(root); return; }
-  panelView(root);
-}
-
-/**
- * First run on this device: there is no staff password because none is
- * shipped any more. The owner sets one here — and this screen, not a
- * constant in a downloadable file, is where it comes from.
- */
-function setupView(root) {
-  const canSet = S.adminCanSet();
-  root.innerHTML = `
-    <div class="pad mt-20 center-col">
-      <div class="empty-ico">${icon('lock', 33)}</div>
-      <b style="font-size:1.0625rem">${t('adminSetupTitle')}</b>
-      <span class="muted fs-13">${t('adminSetupSub')}</span>
-    </div>
-    <div class="pad mt-16">
-      ${canSet ? `
-      <div class="field"><label class="label">${t('adminUser')}</label>
-        <input class="input" id="aUser" autocomplete="username" autocapitalize="none"
-               autocorrect="off" spellcheck="false" inputmode="email" /></div>
-      ${passwordField('aNew', t('password'), 'new-password')}
-      ${passwordChecklist('aNew')}
-      <div class="field-err" id="e_aNew"></div>
-      <div id="aErr"></div>
-      <div class="hint mt-8">${t('adminSetupNote')}</div>
-      <button class="btn btn-gold btn-block mt-12" id="aSet">${t('adminSetupGo')}</button>`
-      : `<div class="err-msg">${icon('alert', 15)} ${t('adminNoCrypto')}</div>`}
-    </div>`;
-  if (!canSet) return;
-  wirePasswordToggles(root);
-  // the same rule as every other password in the app, stated before typing
-  const checkPw = wirePasswordField('aNew', 'e_aNew');
-  $('#aSet').addEventListener('click', async () => {
-    const user = $('#aUser').value.trim();
-    if (!user) { $('#aUser').classList.add('input-err'); return; }
-    if (checkPw()) return;                     // named under the field
-    if (!await S.setAdminPass($('#aNew').value, user)) {
-      $('#aErr').innerHTML = `<div class="err-msg">${icon('alert', 15)} ${t('adminNoCrypto')}</div>`;
-      return;
-    }
-    unlocked = true;
-    S.setAdminUnlocked(true);
-    toast(t('adminSetupDone'), 'ok');
-    go('#/admin');
+  /* Paint what the sign-in-time flag says, then ask the server at the door
+     and correct it either way. `is_admin` used to be read at sign-in alone,
+     so an account raised to staff while its session was open did not see
+     the panel until it signed in again (a gap `620` recorded) — and a flag
+     typed into this device's storage must open nothing: no live session on
+     the server, no panel. */
+  const wasAdmin = S.isAccountAdmin();
+  if (wasAdmin) panelView(root);
+  else root.innerHTML = `<div class="pad mt-20 center-col"><span class="spinner"></span></div>`;
+  S.verifyAccountAdmin().then(ok => {
+    if (!root.isConnected || (location.hash || '').split('?')[0] !== '#/admin') return;
+    if (ok && !wasAdmin) panelView(root);
+    else if (!ok) deniedView(root);
   });
 }
 
-function lockView(root) {
-  if (!S.adminIsSet()) return setupView(root);
+/** Not staff — and the screen says the TRUE reason, never «wrong username
+    or password», which is a sentence about a lock that no longer exists. */
+function deniedView(root) {
   root.innerHTML = `
-    <div class="pad mt-20 center-col">
+    <div class="pad mt-20 center-col" id="adminDenied">
       <div class="empty-ico">${icon('lock', 33)}</div>
-      <b style="font-size:1.0625rem">${t('adminPanel')}</b>
-      <span class="muted fs-13">${S.state.lang === 'en' ? 'Internal staff access only — separate from consumer accounts.' : 'دخول داخلي لفريق عربنا فقط — منفصل عن حسابات المستخدمين.'}</span>
-    </div>
-    <div class="pad mt-16">
-      <div class="field"><label class="label">${t('adminUser')}</label>
-        <input class="input" id="aUser" autocomplete="username" autocapitalize="none"
-               autocorrect="off" spellcheck="false" inputmode="email" /></div>
-      ${passwordField('aPass', t('password'), 'current-password')}
-      <div id="aErr"></div>
-      <button class="btn btn-gold btn-block mt-8" id="aGo">${t('signIn')}</button>
+      <b style="font-size:1.0625rem">${t('adminOnlyTitle')}</b>
+      <span class="muted fs-13" style="text-align:center">${t('adminOnlySub')}</span>
+      ${S.isLoggedIn() ? '' : `<button class="btn btn-gold mt-16" data-route="#/auth/signin">${t('signIn')}</button>`}
     </div>`;
-
-  // async, because comparing a hash is
-  const submit = async () => {
-    if (!await S.checkAdmin($('#aUser').value.trim(), $('#aPass').value)) {
-      $('#aErr').innerHTML = `<div class="err-msg">${icon('alert', 15)} ${t('adminLoginFail')}</div>`;
-      $('#aPass').classList.add('input-err');
-      return;
-    }
-    unlocked = true;
-    S.setAdminUnlocked(true);
-    go('#/admin');
-  };
-  wirePasswordToggles(root);
-  $('#aGo').addEventListener('click', submit);
-  $('#aPass').addEventListener('keydown', e => { if (e.key === 'Enter') submit(); });
+  wireRoutes(root);
 }
 
 function panelView(root) {
@@ -166,14 +114,23 @@ function panelView(root) {
     }
 
     // --- listings waiting for a decision ---
-    $$('#aBody [data-approve]').forEach(b => b.addEventListener('click', () => {
-      S.approveClassified(b.dataset.approve);
+    /* ⚠️ AWAITED, since 630 the decision goes to the server first: a
+       repaint before the answer draws the row still pending while the
+       write is in flight, and a refusal has to be SAID — a queue that
+       reads «approved» over a row the server still holds is the admin
+       believing he acted. */
+    $$('#aBody [data-approve]').forEach(b => b.addEventListener('click', async () => {
+      b.disabled = true;
+      const done = await S.approveClassified(b.dataset.approve);
+      if (!done) { b.disabled = false; toast(t('somethingWrong'), 'err'); return; }
       toast(t('itemApproved'), 'ok');
       paint();
     }));
-    $$('#aBody [data-reject]').forEach(b => b.addEventListener('click', () => {
+    $$('#aBody [data-reject]').forEach(b => b.addEventListener('click', async () => {
       const box = $('#why-' + b.dataset.reject);
-      S.rejectClassified(b.dataset.reject, box ? box.value : '');
+      b.disabled = true;
+      const done = await S.rejectClassified(b.dataset.reject, box ? box.value : '');
+      if (!done) { b.disabled = false; toast(t('somethingWrong'), 'err'); return; }
       toast(t('itemRejected'), 'ok');
       paint();
     }));
@@ -616,39 +573,6 @@ function panelView(root) {
         : '';
     });
 
-    const apw = $('#apSave');
-    const checkAdminPw = $('#apNew') ? wirePasswordField('apNew', 'e_apNew') : () => '';
-    if (apw) apw.addEventListener('click', async () => {
-      const cur = $('#apCur') ? $('#apCur').value : '';
-      const a = $('#apNew').value, b2 = $('#apConf').value;
-      const curErr = $('#e_apCur');
-      if (curErr) curErr.textContent = '';
-      /* the current one first: a wrong new password is the reader's typo,
-         a wrong current one is somebody who should not be here */
-      if (!await S.checkAdmin(S.adminUser(), cur)) {
-        if (curErr) curErr.textContent = t('adminPassWrong');
-        return;
-      }
-      if (checkAdminPw()) return;                 // named under the field
-      if (a !== b2) { toast(t('passwordsDontMatch'), 'err'); return; }
-      await S.setAdminPass(a);
-      toast(t('adminPassChanged'), 'ok');
-      paint();
-    });
-
-    const lockBtn = $('#admLock');
-    if (lockBtn) lockBtn.addEventListener('click', () => {
-      /* ⚠️ BOTH, and this is the whole of it: `unlocked` is a module
-         variable in this file and `adminSession` lives in `store.js`.
-         Clearing one leaves the other holding a door open — the screen
-         would ask again while `ownerOnly` still let an edit through, or
-         the reverse. */
-      S.setAdminUnlocked(false);
-      unlocked = false;
-      toast(t('adminLocked'), 'ok');
-      go('#/admin');
-    });
-    wirePasswordToggles(body);
     // --- flags raised by the app (reports, free-section edits, scanned DMs) ---
     $$('#aBody [data-flagok]').forEach(b => b.addEventListener('click', () => {
       S.resolveFlag(b.dataset.flagok);
@@ -666,8 +590,9 @@ function panelView(root) {
       if (!kill) { S.resolveFlag(fid); toast(t('itemRejected'), 'ok'); paint(); return; }
       askReason({
         title: t('rejectReason'), sub: t('rejectReasonPlaceholder'), confirmText: t('reject'), danger: true,
-        onGo: (why) => {
-          S.rejectClassified(f.refId, why);
+        onGo: async (why) => {
+          /* the flag is closed only once the server took the rejection */
+          if (!await S.rejectClassified(f.refId, why)) { toast(t('somethingWrong'), 'err'); return; }
           S.resolveFlag(fid);
           toast(t('itemRejected'), 'ok');
           paint();
@@ -1021,12 +946,11 @@ function wireGreetings(paint) {
    reached this panel has reached worse than an address, and telling a
    caller what their own address is IS the whole purpose of the screen.
 
-   ⚠️ TWO LOCKS, AND THAT IS THE ITEM RATHER THAN THE SCREEN. The panel's
-   own lock is `state.adminAuth` — a name and a password ON THIS DEVICE,
-   with no connection to any account. This section reads OTHER PEOPLE's
-   data, so it demands the device lock AND a signed-in account the SERVER
-   calls staff. The function refuses a non-admin by itself; the screen
-   refuses first so nobody meets a bare error.
+   ⚠️ ONE LOCK SINCE `630`, and it is the account: the device password is
+   gone and the whole panel opens only for a session the SERVER calls
+   staff. This guard stays because the section reads OTHER PEOPLE's data —
+   the function refuses a non-admin by itself, and the screen refuses first
+   so nobody meets a bare error.
    ============================================================ */
 function usersHtml() {
   if (!S.isAccountAdmin()) {
@@ -1149,33 +1073,6 @@ function setHtml() {
       <button class="btn btn-ghost btn-sm" id="clockReset">${t('subTestReset')}</button>
     </div>` : ''}
 
-    ${/* ⚠️ THE PANEL HAD NO LOCK. `setAdminUnlocked(false)` appeared
-         nowhere in `js/`, and the documented answer — «a reload asks for
-         the password again» — is true and beside the point: the app ships
-         a manifest and is INSTALLED, so it is not reloaded in practice and
-         the panel stayed open for the whole session. And `adminUnlocked()`
-         is what permits editing ANY listing, so this was never a question
-         about a screen. A button that is pressed, never a timer: a lock
-         that falls on its own halfway through a queue is a nuisance people
-         work around. */''}
-    <div class="section-title mt-20">${t('adminLockTitle')}</div>
-    <div class="hint" style="margin-bottom:10px">${t('adminLockSub')}</div>
-    <button class="btn btn-ghost btn-block" id="admLock">${icon('lock', 19)} ${t('adminLock')}</button>
-
-    <div class="section-title mt-20">${t('changePassword')}</div>
-    <div class="hint" style="margin-bottom:10px">${t('adminUser')}: <b class="gold ltr">${esc(S.adminUser())}</b></div>
-    ${/* ⚠️ The form read the new password and its confirmation and NOT the
-         current one, so anybody reaching an open panel could replace it in
-         silence and lock its owner out. */''}
-    ${passwordField('apCur', t('currentPassword'), 'current-password')}
-    <div class="field-err" id="e_apCur"></div>
-    ${passwordField('apNew', t('newPassword'), 'new-password')}
-    ${/* The panel is the FIRST place this rule belongs, not the last:
-         whoever gets in sees everything and can change everything. */''}
-    ${passwordChecklist('apNew')}
-    <div class="field-err" id="e_apNew"></div>
-    ${passwordField('apConf', t('confirmPassword'), 'new-password')}
-    <button class="btn btn-gold btn-block" id="apSave">${icon('lock', 19)} ${t('changePassword')}</button>
   </div>`;
 }
 
