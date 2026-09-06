@@ -317,8 +317,14 @@ ok('4.17 a good one goes through', (await page.evaluate(() => location.hash)) ==
 
 await adminIn();
 await page.click('[data-t="set"]'); await page.waitForTimeout(700);
-ok('4.18 the panel has the same list', await page.locator('#apNew_reqs li').count() === pwConditions,
-   await page.locator('#apNew_reqs li').count() + ' rows for ' + pwConditions + ' conditions');
+/* ⚠️ REVERSED BY 630: the panel has no password of its own any more — the
+   account's is the server's and is changed on `#/profile/password`, which
+   4.14–4.17 above measure against the one rule. So the panel carries NO
+   list and no field, and a list reappearing there would be a second
+   password coming back. */
+ok('4.18 the panel carries no password field and no list of its own',
+   (await page.locator('#apNew_reqs li').count()) === 0 && (await page.locator('#apNew, #apCur').count()) === 0
+   && (await page.locator('#aTabs').count()) === 1);
 
 /* ======================================================================
    5 — receipts

@@ -37,24 +37,28 @@ export async function unlockAdmin(page, opts = {}) {
      it still answers every request from here on */
   if (!db) db = await mockSupabase(ctx, { preConfirm: true });
 
-  const email = await page.evaluate(async ({ em, pw, code }) => {
+  /* ⚠️ Decided HERE, from the stand-in's own memory, and not by trying a
+     sign-up and reading its refusal: a 400 from the server is logged by the
+     browser as a console error, and every suite counts those. */
+  const known = db.users.has(STAFF_EMAIL);
+  const email = await page.evaluate(async ({ em, pw, code, known }) => {
     const S = (window.__m && window.__m.S)
       || await import('arabna/js/store.js').catch(() => import('./js/store.js'));
     const { data: { session } = {} } = await S.sb.auth.getSession();
     if (session) return session.user.email;
-    let err = await S.signUp({ name: 'Staff', email: em, password: pw });
-    if (err && /already|registered|exists/i.test(err)) {
-      err = await S.signInWithPassword(em, pw);
-      if (err) throw new Error('_admin: signIn ' + err);
+    if (known) {
+      const e1 = await S.signInWithPassword(em, pw);
+      if (e1) throw new Error('_admin: signIn ' + e1);
       return em;
     }
+    const err = await S.signUp({ name: 'Staff', email: em, password: pw });
     if (err) throw new Error('_admin: signUp ' + err);
     if (!S.state.user || !S.state.user.emailVerified) {
       const e2 = await S.confirmEmail(code);
       if (e2) throw new Error('_admin: confirm ' + e2);
     }
     return em;
-  }, { em: STAFF_EMAIL, pw: STAFF_PW, code: MOCK_CODE });
+  }, { em: STAFF_EMAIL, pw: STAFF_PW, code: MOCK_CODE, known });
 
   const u = db.users.get(String(email).toLowerCase());
   const pr = u && db.profiles.get(u.id);
