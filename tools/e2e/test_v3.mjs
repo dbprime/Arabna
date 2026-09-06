@@ -3,6 +3,7 @@ import { mockSupabase } from './_supabase.mjs';
 import { phoneAuthOn } from './_phoneauth.mjs';
 import { withDemoData } from './_demo.mjs';
 
+import { unlockAdmin } from './_admin.mjs';
 const BASE = process.env.BASE || 'http://localhost:8123/index.html';
 let pass = 0, fail = 0;
 const ok = (n, c, extra = '') => { if (c) { pass++; console.log('PASS ' + n + (extra ? ' -> ' + extra : '')); } else { fail++; console.log('FAIL ' + n + (extra ? ' -> ' + extra : '')); } };
@@ -75,19 +76,7 @@ const adminLogin = async () => {
      CLAIMED before it can be logged into. This is the fixture doing what
      the owner does once on the first run; the route is re-entered because
      the setup screen is already on screen by the time we get here. */
-  await page.evaluate(async () => {
-    const S = (window.__m && window.__m.S)
-      || await import('arabna/js/store.js').catch(() => import('./js/store.js'));
-    if (!S.adminIsSet()) { await S.setAdminPass('Arabna@2026!', 'arabna.admin'); location.hash = '#/home'; }
-  });
-  await page.waitForTimeout(200);
-  await page.evaluate(() => { location.hash = '#/admin'; });
-  await page.waitForTimeout(600);
-  if (await page.locator('#aUser').count()) {
-    await page.fill('#aUser', 'arabna.admin');
-    await page.fill('#aPass', 'Arabna@2026!');
-    await page.click('#aGo'); await page.waitForTimeout(420);
-  }
+  await unlockAdmin(page);
 };
 
 await page.goto(BASE);
@@ -489,33 +478,33 @@ await page.locator('[data-bgok]').first().click(); await page.waitForTimeout(500
 await go('#/profile');
 ok('verified badge shows next to the name', await page.evaluate(() => !!document.querySelector('.badge-check')));
 
-/* ============ 7. admin login is iPhone-safe ============ */
-const caps = await page.evaluate(async () => {
-  location.hash = '#/admin';
+/* ============ 7. staff is the account, not a device password ============ */
+/* ⚠️ REVERSED BY 630: the username / password screen is gone, and with it
+   the iPhone auto-capitalisation trap it guarded against — there is no
+   field left to capitalise. A signed-in MEMBER who is not staff meets a
+   closed door that says why; the panel opens only when the server calls
+   the account staff. */
+/* ⚠️ In THIS suite the member was already promoted to staff on the stand-in
+   server by `adminLogin()` above, so what is measured is that the door
+   answers to the server's word and to nothing else: tabs exactly when the
+   account is staff, the true-reason screen exactly when it is not, and the
+   old username / password door never. */
+const door = await page.evaluate(async () => {
+  const S = await import('arabna/js/store.js').catch(() => import('./js/store.js'));
+  location.hash = '#/home';
   await new Promise(r => setTimeout(r, 300));
-  const el = document.querySelector('#aUser');
-  return el ? { cap: el.getAttribute('autocapitalize'), cor: el.getAttribute('autocorrect'), sp: el.getAttribute('spellcheck') } : null;
+  location.hash = '#/admin';
+  await new Promise(r => setTimeout(r, 1100));
+  return { staff: S.isAccountAdmin(),
+           denied: !!document.querySelector('#adminDenied'),
+           tabs: !!document.querySelector('#aTabs'),
+           oldDoor: !!document.querySelector('#aUser, #aPass, #aSet, #aGo') };
 });
-ok('username field disables autocapitalise / autocorrect',
-   !caps || (caps.cap === 'none' && caps.cor === 'off' && caps.sp === 'false'),
-   caps ? JSON.stringify(caps) : 'already unlocked');
-/* V.03.6: `checkAdmin` is async now — it compares a salted hash instead of
-   a string, because the password is no longer a constant in a downloadable
-   file. The rule it enforces is unchanged and is what is asserted. */
-ok('username compare is case-insensitive', await page.evaluate(async () => {
-  /* On the single-file build `import('./js/store.js')` fetches the file
-     again and hands back a SECOND instance with its own state — the app's
-     own lives behind the importmap. */
+ok('the panel answers to the server\'s word alone — tabs for staff, the true reason for anyone else, never a device password',
+   door.tabs === door.staff && door.denied === !door.staff && !door.oldDoor, JSON.stringify(door));
+ok('the device-password machinery is gone from the store', await page.evaluate(async () => {
   const S = await import('arabna/js/store.js').catch(() => import('./js/store.js'));
-  return (await S.checkAdmin('Arabna.Admin', 'Arabna@2026!'))
-      && (await S.checkAdmin('  arabna.admin ', 'Arabna@2026!'));
-}));
-ok('password stays case-sensitive', await page.evaluate(async () => {
-  /* On the single-file build `import('./js/store.js')` fetches the file
-     again and hands back a SECOND instance with its own state — the app's
-     own lives behind the importmap. */
-  const S = await import('arabna/js/store.js').catch(() => import('./js/store.js'));
-  return !(await S.checkAdmin('arabna.admin', 'arabna@2026!'));
+  return S.checkAdmin === undefined && S.setAdminPass === undefined && S.adminIsSet === undefined;
 }));
 
 /* ============ admin: events CRUD ============ */
@@ -577,40 +566,17 @@ ok('admin can delete an event', await page.evaluate((id) => {
   return !(s.extraEvents || []).some(x => x.id === id);
 }, proposed.id));
 
-/* admin password change */
+/* the panel carries no password of its own any more */
+/* ⚠️ REVERSED BY 630: the change-password form (`#apCur` · `#apNew` ·
+   `#apConf`) left with the device lock — the account's password is the
+   server's and is changed on `#/profile`, where `620` put it. What is
+   asserted is the ABSENCE: no form in the settings tab, no `adminAuth` in
+   storage, and the panel still open for the staff session that opened it. */
 await page.locator('#aTabs .tab[data-t="set"]').click(); await page.waitForTimeout(350);
-/* V.03.4: `NewAdmin#2026` is refused, and correctly — PW_ALWAYS contains
-   «admin» and matches it as a substring, which is exactly the word not to
-   build the admin panel's own password out of. */
-/* CHANGED in V.06.4: the form reads the CURRENT password too. It used to
-   take the new one and its confirmation alone, so anybody reaching an open
-   panel could replace it in silence and lock its owner out. */
-await page.fill('#apCur', 'Arabna@2026!');
-await page.fill('#apNew', 'Sh@mi-Katy!9'); await page.fill('#apConf', 'Sh@mi-Katy!9');
-await page.click('#apSave'); await page.waitForTimeout(500);
-/* V.03.6 reversed what "stored" means, and that is the whole point of the
-   change: there is no `pass` field any more. What is kept is a salt and a
-   SHA-256 of the password, the same `pwSalt`/`pwHash` path a user's own
-   password already used — so the assertion is that the new password OPENS
-   the panel and that the plaintext is nowhere in storage. */
-ok('admin password can be changed and is stored hashed', await page.evaluate(async () => {
-  const raw = localStorage.getItem('arabna.v1');
-  const a = (JSON.parse(raw) || {}).adminAuth;
-  /* On the single-file build `import('./js/store.js')` fetches the file
-     again and hands back a SECOND instance with its own state — the app's
-     own lives behind the importmap. */
-  const S = await import('arabna/js/store.js').catch(() => import('./js/store.js'));
-  return !!a && a.user === 'arabna.admin' && !!a.hash && !!a.salt && a.pass === undefined
-      && !raw.includes('Sh@mi-Katy!9')
-      && (await S.checkAdmin('arabna.admin', 'Sh@mi-Katy!9'))
-      && !(await S.checkAdmin('arabna.admin', 'Arabna@2026!'));
-}));
-// restore the default so a later run starts clean
-await page.evaluate(() => {
-  const s = JSON.parse(localStorage.getItem('arabna.v1'));
-  s.adminAuth = null;
-  localStorage.setItem('arabna.v1', JSON.stringify(s));
-});
+ok('the settings tab carries no password form and no lock button of its own', await page.evaluate(() =>
+  !document.querySelector('#apCur, #apNew, #apConf, #apSave, #admLock') && !!document.querySelector('#aTabs')));
+ok('nothing of a device password is stored', await page.evaluate(() =>
+  (JSON.parse(localStorage.getItem('arabna.v1')) || {}).adminAuth === undefined));
 
 /* ============ 14. admin invisible in the consumer app ============ */
 await go('#/profile');

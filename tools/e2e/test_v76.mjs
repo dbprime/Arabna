@@ -339,21 +339,20 @@ const signUp = (p, email, password, confirm = true) => p.evaluate(async ([e, pw,
   await c2.close();
 }
 
-/* ====== 7. the panel's own lock is not the account's ====== */
+/* ====== 7. the account is the lock ====== */
 {
   const adm = code('js/screens/admin.js');
   ok('7.1 the section exists as its own tab', /data-t="users"/.test(adm));
-  /* ⚠️ TWO LOCKS, AND THAT IS THE ITEM. `adminAuth` is a password on THIS
-     DEVICE with no connection to any account; this section reads other
-     people's data, so it demands the device lock AND a signed-in account
-     the server calls staff. */
-  ok('7.2 …and it refuses a device-unlocked panel with no admin account',
+  /* ⚠️ REVERSED BY 630: the device lock is gone and the ACCOUNT is the one
+     lock on the whole panel. The section keeps its own guard because it
+     reads other people's data — the function refuses a non-admin by
+     itself, and the screen refuses first so nobody meets a bare error. */
+  ok('7.2 …and it refuses a session with no admin account',
      /function usersHtml\(\) \{\s*if \(!S\.isAccountAdmin\(\)\)/.test(adm));
   ok('7.3 …and it offers no edit and no delete',
      !/data-udel|data-uedit/.test(adm));
   const { ctx, p } = await fresh({ preConfirm: true });
   await open(p, '#/admin');
-  await p.evaluate(() => { window.__S.setAdminUnlocked && window.__S.setAdminUnlocked(true); });
   await p.evaluate(() => location.hash = '#/admin');
   await p.waitForTimeout(600);
   const shut = await p.evaluate(() => {
@@ -387,8 +386,8 @@ const signUp = (p, email, password, confirm = true) => p.evaluate(async ([e, pw,
     sPass: 'new-password', sPass2: 'new-password', iPass: 'current-password',
     npNew: 'new-password', npConf: 'new-password',
     cpCur: 'current-password', cpNew: 'new-password', cpConf: 'new-password',
-    aNew: 'new-password', aPass: 'current-password',
-    apCur: 'current-password', apNew: 'new-password', apConf: 'new-password',
+    /* 630: the panel's five password fields (aNew · aPass · apCur · apNew ·
+       apConf) left with the device lock — there is no field to describe */
   };
   const src = [auth, prof, adm].join('\n');
   const wrong = Object.entries(want).filter(([id, v]) =>
@@ -412,8 +411,11 @@ const signUp = (p, email, password, confirm = true) => p.evaluate(async ([e, pw,
      to save it against. */
   ok('9.5 the sign-in address is described as the username',
      /id="iEmail"[^>]*autocomplete="username"/.test(auth));
-  ok('9.6 …and so is the panel\'s, beside its own password',
-     (adm.match(/id="aUser" autocomplete="username"/g) || []).length === 2);
+  /* ⚠️ REVERSED BY 630: the panel's two username fields left with the device
+     lock — there is no password beside which to describe one, and a
+     username field reappearing in the panel would be the lock coming back. */
+  ok('9.6 …and the panel has no username field of its own any more',
+     (adm.match(/id="aUser"/g) || []).length === 0);
 
   /* ⚠️ ONE box carries `one-time-code`. The system fills the WHOLE code
      into a single field; six identical descriptions make it put one digit

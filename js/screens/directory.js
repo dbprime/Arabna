@@ -1930,7 +1930,7 @@ function pickBusinessToClaim(root) {
  *   different thing entirely.
  */
 function ownerOnly(bizId, allowAdmin = false) {
-  const ok = S.ownsBusiness(bizId) || (allowAdmin && S.adminUnlocked());
+  const ok = S.ownsBusiness(bizId) || (allowAdmin && S.isAccountAdmin());
   if (!ok) { go('#/directory/' + bizId); return false; }
   return true;
 }
@@ -1946,10 +1946,11 @@ export function BusinessEditScreen(root, params) {
 
   root.innerHTML = `
     <div class="pad mt-16">
-      ${/* adminUnlocked() is a login, not a mode that stays switched on and
-           gets forgotten — so the danger was never that it lingers, it is
-           not noticing you are in it. One line, and its presence is what
-           stops somebody editing a shop believing it is their own. */''}
+      ${/* Staff is a signed-in account the server marks so (`630`), not a
+           mode anyone switches on — so the danger was never that it
+           lingers, it is not noticing you are in it. One line, and its
+           presence is what stops somebody editing a shop believing it is
+           their own. */''}
       ${S.adminEditing(b.id)
         ? `<div class="admin-as">${icon('shield', 17)}<span>${t('adminAsAdmin')}</span></div>` : ''}
       <div class="field"><label class="label">${t('nameEn')}</label>

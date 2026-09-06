@@ -3,6 +3,7 @@
 import { chromium } from '/opt/node22/lib/node_modules/playwright/index.mjs';
 import { withDemoData } from './_demo.mjs';
 
+import { unlockAdmin } from './_admin.mjs';
 const BASE = process.env.BASE || 'http://localhost:8099/index.html';
 let pass = 0, fail = 0;
 const ok = (n, c, extra = '') => { if (c) { pass++; console.log('PASS ' + n + (extra ? ' -> ' + extra : '')); } else { fail++; console.log('FAIL ' + n + (extra ? ' -> ' + extra : '')); } };
@@ -238,19 +239,7 @@ await go('#/admin');
    CLAIMED before it can be logged into. This is the fixture doing what
    the owner does once on the first run; the route is re-entered because
    the setup screen is already on screen by the time we get here. */
-await page.evaluate(async () => {
-  const S = (window.__m && window.__m.S)
-    || await import('arabna/js/store.js').catch(() => import('./js/store.js'));
-  if (!S.adminIsSet()) { await S.setAdminPass('Arabna@2026!', 'arabna.admin'); location.hash = '#/home'; }
-});
-await page.waitForTimeout(200);
-await page.evaluate(() => { location.hash = '#/admin'; });
-await page.waitForTimeout(600);
-if (await page.locator('#aUser').count()) {
-  await page.fill('#aUser', 'arabna.admin');
-  await page.fill('#aPass', 'Arabna@2026!');
-  await page.click('#aGo'); await page.waitForTimeout(800);
-}
+await unlockAdmin(page);
 ok('4.1 the admin may edit a shop', await go('#/business/edit/b1') === '#/business/edit/b1');
 ok('4.2 …and is told, on the screen, that this is not their shop',
    await page.locator('.admin-as').count() === 1,

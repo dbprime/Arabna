@@ -25,6 +25,8 @@
 import { chromium } from '/opt/node22/lib/node_modules/playwright/index.mjs';
 import { withDemoData } from './_demo.mjs';
 
+import { unlockAdmin } from './_admin.mjs';
+import { mockSupabase } from './_supabase.mjs';
 const BASE = process.env.BASE || 'http://localhost:8099/index.html';
 let pass = 0, fail = 0;
 const ok = (n, c, extra = '') => { if (c) { pass++; console.log('PASS ' + n + (extra ? ' -> ' + extra : '')); }
@@ -36,7 +38,6 @@ const ACCOUNT = {
   name: 'أحمد سالم', email: 'a@b.c', emailVerified: true,
   phone: '7134669182', phoneVerified: true, joined: NOW - 9e8,
 };
-const ADMIN_PW = 'Zaytoun#4417q';
 
 const browser = await chromium.launch();
 /* ⚠️ THIS SUITE USES THE INVENTED RECORDS AS ITS FIXTURE, and `510`
@@ -96,8 +97,7 @@ const pwned = p => p.evaluate(() => ({
     flags: [{ id: 'fX', kind: 'listing', refId: 'c1', risk: 'high',
               reason: PAY, item: { ar: PAY, en: PAY }, when: NOW }],
   }, '#/admin');
-  await p.fill('#aUser', 'rai'); await p.fill('#aNew', ADMIN_PW);
-  await p.waitForTimeout(250); await p.click('#aSet'); await p.waitForTimeout(900);
+  await unlockAdmin(p);
   const q = await pwned(p);
   ok('2.1 the moderation queue does not execute what it shows', !q.ran);
   ok('2.2 …and no injected node reached it', !q.node);
@@ -130,8 +130,7 @@ const pwned = p => p.evaluate(() => ({
     myAds: [{ id: 'aX', product: 'slider', status: 'pending', price: 149,
               bizName: 'محل', tagline: 'x', days: 7, created: NOW }],
   }, '#/admin');
-  await p.fill('#aUser', 'rai'); await p.fill('#aNew', ADMIN_PW);
-  await p.waitForTimeout(250); await p.click('#aSet'); await p.waitForTimeout(900);
+  await unlockAdmin(p);
   await p.evaluate(() => { const x = document.querySelector('[data-t="ads"]'); if (x) x.click(); });
   await p.waitForTimeout(700);
 
@@ -166,8 +165,7 @@ const pwned = p => p.evaluate(() => ({
 /* ---- 5. deleting an event asks, and names it ---- */
 {
   const { ctx, p } = await open({ lang: 'ar', user: ACCOUNT }, '#/admin');
-  await p.fill('#aUser', 'rai'); await p.fill('#aNew', ADMIN_PW);
-  await p.waitForTimeout(250); await p.click('#aSet'); await p.waitForTimeout(900);
+  await unlockAdmin(p);
   await p.evaluate(() => { const x = document.querySelector('[data-t="events"]'); if (x) x.click(); });
   await p.waitForTimeout(700);
   const before = await p.evaluate(() => window.__S.allEvents().length);
@@ -196,8 +194,7 @@ const pwned = p => p.evaluate(() => ({
         phone: '7135550001', address: '1 Main St, Houston, TX 77001' },
     ],
   }, '#/admin');
-  await p.fill('#aUser', 'rai'); await p.fill('#aNew', ADMIN_PW);
-  await p.waitForTimeout(250); await p.click('#aSet'); await p.waitForTimeout(900);
+  await unlockAdmin(p);
   await p.evaluate(() => { const x = document.querySelector('[data-t="dir"]'); if (x) x.click(); });
   await p.waitForTimeout(800);
   const has = await p.evaluate(() => !!document.querySelector('[data-bizmerge]'));
@@ -221,44 +218,44 @@ const pwned = p => p.evaluate(() => ({
   await ctx.close();
 }
 
-/* ---- 7. the lock, and the password that guards itself ---- */
+/* ---- 7. the lock is the account ---- */
+/* ⚠️ REVERSED BY 630: the panel's device password — its lock button, its
+   change-password form, the `adminAuth` record — is gone. The owner's
+   decision of 6 September: it locked him out of his own panel with no
+   way back, and sat in the very storage the session sits in. What is
+   asserted now is the ONE lock that remains: a signed-in member who is
+   not staff is refused with the true reason, a staff session opens it,
+   and no second password is drawn anywhere in the panel. */
 {
-  const { ctx, p } = await open({ lang: 'ar', user: ACCOUNT }, '#/admin');
-  await p.fill('#aUser', 'rai'); await p.fill('#aNew', ADMIN_PW);
-  await p.waitForTimeout(250); await p.click('#aSet'); await p.waitForTimeout(900);
+  const { ctx, p } = await open({ lang: 'ar', user: ACCOUNT }, '#/home');
+  await mockSupabase(ctx, { preConfirm: true });
+  await p.evaluate(async () => {
+    const S = window.__S;
+    const err = await S.signUp({ name: 'Member', email: 'member@arabna.test', password: 'Member#7712xq' });
+    if (err) throw new Error(err);
+  });
+  await go(p, '#/admin');
+  ok('7.1 a signed-in member who is not staff is refused, and told why',
+     await p.evaluate(() => !!document.querySelector('#adminDenied') && !document.querySelector('#aTabs')));
+  ok('7.2 …and not asked for any device password',
+     await p.evaluate(() => !document.querySelector('#aUser, #aPass, #aSet, #aGo')));
+  await unlockAdmin(p);
+  ok('7.3 the same account, marked staff on the server, opens it',
+     await p.evaluate(() => !!document.querySelector('#aTabs')));
   await p.evaluate(() => { const x = document.querySelector('[data-t="set"]'); if (x) x.click(); });
   await p.waitForTimeout(700);
-  ok('7.1 the panel has a lock button at all',
-     await p.evaluate(() => !!document.querySelector('#admLock')));
-  ok('7.2 changing the password asks for the current one',
-     await p.evaluate(() => !!document.querySelector('#apCur')));
-
-  await p.fill('#apCur', 'not-the-password');
-  await p.fill('#apNew', 'Kanafa#7712x'); await p.fill('#apConf', 'Kanafa#7712x');
-  await p.evaluate(() => document.querySelector('#apSave').click());
-  await p.waitForTimeout(700);
-  ok('7.3 …a wrong current password is refused, and says so',
-     await p.evaluate(() => ((document.querySelector('#e_apCur') || {}).textContent || '').length > 0));
-  ok('7.4 …and the password is unchanged',
-     await p.evaluate(pw => window.__S.checkAdmin('rai', pw), ADMIN_PW));
-
-  /* ⚠️ BOTH FLAGS: `unlocked` is a module variable in `admin.js` and
-     `adminSession` lives in `store.js`. Clearing one leaves the other
-     holding a door open. */
-  await p.evaluate(() => document.querySelector('#admLock').click());
-  await p.waitForTimeout(800);
-  ok('7.5 the lock clears the store’s session',
-     await p.evaluate(() => window.__S.adminUnlocked() === false));
-  ok('7.6 …and the screen asks again',
-     await p.evaluate(() => !!document.querySelector('#aUser, #aPass')));
+  ok('7.4 the settings tab carries no lock button and no second password form',
+     await p.evaluate(() => !document.querySelector('#admLock, #apCur, #apNew, #apConf, #apSave')));
+  ok('7.5 nothing of the device lock is exported or stored',
+     await p.evaluate(() => window.__S.checkAdmin === undefined && window.__S.adminUnlocked === undefined
+                            && window.__S.state.adminAuth === undefined));
   await ctx.close();
 }
 
 /* ---- 8. the cash form: 514 in one select is not a list ---- */
 {
   const { ctx, p } = await open({ lang: 'ar', user: ACCOUNT }, '#/admin');
-  await p.fill('#aUser', 'rai'); await p.fill('#aNew', ADMIN_PW);
-  await p.waitForTimeout(250); await p.click('#aSet'); await p.waitForTimeout(900);
+  await unlockAdmin(p);
   await p.evaluate(() => { const x = document.querySelector('[data-t="ads"]'); if (x) x.click(); });
   await p.waitForTimeout(700);
   ok('8.1 the money form has a search box',
@@ -275,8 +272,7 @@ const pwned = p => p.evaluate(() => ({
 /* ---- 9. the log answers «who did that?» for more than field edits ---- */
 {
   const { ctx, p } = await open({ lang: 'ar', user: ACCOUNT }, '#/admin');
-  await p.fill('#aUser', 'rai'); await p.fill('#aNew', ADMIN_PW);
-  await p.waitForTimeout(250); await p.click('#aSet'); await p.waitForTimeout(900);
+  await unlockAdmin(p);
   const logged = await p.evaluate(() => {
     const before = window.__S.adminLog(50).length;
     window.__S.logAdminAction('b1', 'merge', 'b2', 'b1');
@@ -298,8 +294,7 @@ const pwned = p => p.evaluate(() => ({
     all: window.__S.everyBusiness().length,
   }));
   ok('10.1 not one listing has coordinates yet', n.need === n.all, n.need + ' of ' + n.all);
-  await p.fill('#aUser', 'rai'); await p.fill('#aNew', ADMIN_PW);
-  await p.waitForTimeout(250); await p.click('#aSet'); await p.waitForTimeout(900);
+  await unlockAdmin(p);
   await p.evaluate(() => { const x = document.querySelector('[data-t="dir"]'); if (x) x.click(); });
   await p.waitForTimeout(800);
   /* an option that narrows nothing is not an option — hidden, never

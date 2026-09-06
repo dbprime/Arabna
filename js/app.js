@@ -5,7 +5,7 @@
 import { setLang, bothPacks } from './i18n.js';
 import { state, registerStrings, runReminders, runSubscriptionCycle,
          liveGreeting, markGreetingSeen, noteVisit, requestPersistence,
-         loadLiveBusinesses } from './store.js';
+         loadLiveBusinesses, loadLiveClassifieds } from './store.js';
 import { $, renderHeader, renderNav, hideNav, closeSheet, hideDrawer, drawerOwnsEntry, closeDropdown,
          mountScrollMemory, restoreScroll, historyKey, markShown, startClock, mountAdShare,
          applyTheme, applyFontScale, mountThemeWatch, openGreeting, sheetOpen,
@@ -310,6 +310,12 @@ async function boot() {
      navigated away meanwhile: a re-render under somebody's finger is a
      worse fault than a listing appearing one screen late. */
   loadLiveBusinesses().then(rows => {
+    if (!rows || !rows.length) return;
+    if (location.hash !== route) return;
+    render();
+  });
+  /* the marketplace's rows, the same shape and the same rule (630) */
+  loadLiveClassifieds().then(rows => {
     if (!rows || !rows.length) return;
     if (location.hash !== route) return;
     render();

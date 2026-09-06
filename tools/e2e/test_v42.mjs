@@ -153,7 +153,10 @@ ok('3.1 theme and font size survive (the 195 rule)',
   `${d.theme} (was ${themeBeforeSignOut}) · ${d.fontScale}`);
 ok('3.2 the location survives — nobody is asked twice',
   d.location && d.location.city === 'Katy' && d.geoGranted === true && !!d.geo);
-ok('3.3 the admin password is not a reader\'s to clear', !!d.adminAuth);
+/* ⚠️ REVERSED BY 630: the device lock is gone, and a stale `adminAuth`
+   still sitting in a phone's storage is deleted at boot — seeded above on
+   purpose, so this measures the migration and not merely the default. */
+ok('3.3 the stale device lock is deleted at boot, signed out or not', d.adminAuth === undefined);
 ok('3.4 the admin\'s own edits are untouched',
   Object.keys(d.businessEdits || {}).length === 1 &&
   Object.keys(d.bizPhotos || {}).length === 1 && d.seasons.ramadan === true);

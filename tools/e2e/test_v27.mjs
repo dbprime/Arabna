@@ -4,6 +4,7 @@ import { chromium } from '/opt/node22/lib/node_modules/playwright/index.mjs';
 import { mockSupabase } from './_supabase.mjs';
 import { withDemoData } from './_demo.mjs';
 
+import { unlockAdmin } from './_admin.mjs';
 const BASE = process.env.BASE || 'http://localhost:8099/index.html';
 let pass = 0, fail = 0;
 const ok = (n, c, extra = '') => { if (c) { pass++; console.log('PASS ' + n + (extra ? ' -> ' + extra : '')); } else { fail++; console.log('FAIL ' + n + (extra ? ' -> ' + extra : '')); } };
@@ -50,18 +51,7 @@ const adminIn = async (p = page) => {
      CLAIMED before it can be logged into. This is the fixture doing what
      the owner does once on the first run; the route is re-entered because
      the setup screen is already on screen by the time we get here. */
-  await p.evaluate(async () => {
-    const S = (window.__m && window.__m.S)
-      || await import('arabna/js/store.js').catch(() => import('./js/store.js'));
-    if (!S.adminIsSet()) { await S.setAdminPass('Arabna@2026!', 'arabna.admin'); location.hash = '#/home'; }
-  });
-  await p.waitForTimeout(200);
-  await p.evaluate(() => { location.hash = '#/admin'; });
-  await p.waitForTimeout(600);
-  if (await p.locator('#aUser').count()) {
-    await p.fill('#aUser', 'arabna.admin'); await p.fill('#aPass', 'Arabna@2026!');
-    await p.click('#aGo'); await p.waitForTimeout(800);
-  }
+  await unlockAdmin(p);
 };
 
 await page.goto(BASE); await page.waitForTimeout(800);
@@ -327,8 +317,14 @@ ok('4.17 a good one goes through', (await page.evaluate(() => location.hash)) ==
 
 await adminIn();
 await page.click('[data-t="set"]'); await page.waitForTimeout(700);
-ok('4.18 the panel has the same list', await page.locator('#apNew_reqs li').count() === pwConditions,
-   await page.locator('#apNew_reqs li').count() + ' rows for ' + pwConditions + ' conditions');
+/* ⚠️ REVERSED BY 630: the panel has no password of its own any more — the
+   account's is the server's and is changed on `#/profile/password`, which
+   4.14–4.17 above measure against the one rule. So the panel carries NO
+   list and no field, and a list reappearing there would be a second
+   password coming back. */
+ok('4.18 the panel carries no password field and no list of its own',
+   (await page.locator('#apNew_reqs li').count()) === 0 && (await page.locator('#apNew, #apCur').count()) === 0
+   && (await page.locator('#aTabs').count()) === 1);
 
 /* ======================================================================
    5 — receipts

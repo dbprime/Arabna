@@ -11,6 +11,7 @@
 import { chromium } from '/opt/node22/lib/node_modules/playwright/index.mjs';
 import { withDemoData } from './_demo.mjs';
 
+import { unlockAdmin } from './_admin.mjs';
 const BASE = process.env.BASE || 'http://localhost:8099/index.html';
 let pass = 0, fail = 0;
 const ok = (n, c, extra = '') => { if (c) { pass++; console.log('PASS ' + n + (extra ? ' -> ' + extra : '')); } else { fail++; console.log('FAIL ' + n + (extra ? ' -> ' + extra : '')); } };
@@ -128,16 +129,13 @@ const BASE_STATE = {
 {
   const { ctx, page } = await asReader(BASE_STATE);
   const o = await at(page, '#/admin');
-  ok('4.1 an unclaimed panel asks, and shows no tab',
-     !/المراجعة|Moderation/.test(o.text) && (await page.$$('input[type=password]')).length > 0);
+  /* ⚠️ REVERSED BY 630: no device password — with no staff session the
+     panel shows no tab and says the true reason, and no password field. */
+  ok('4.1 with no staff session the panel is shut, shows no tab, and asks for no password',
+     !/المراجعة|Moderation/.test(o.text) && (await page.$$('input[type=password]')).length === 0
+     && (await page.$$('#adminDenied')).length === 1);
 
-  for (const el of await page.$$('input#aUser, input#aNew, input#aNew2')) {
-    const type = await el.getAttribute('type');
-    await el.fill(type === 'password' ? 'Aud#2026check' : 'auditor');
-  }
-  const set = await page.$('#aSet');
-  if (set) await set.click();
-  await page.waitForTimeout(900);
+  await unlockAdmin(page);
 
   const body = await page.evaluate(() => (document.querySelector('#app') || document.body).innerText);
   ok('4.2 …and opens once it is claimed', /المراجعة|Moderation/.test(body), body.slice(0, 60).replace(/\s+/g, ' '));
@@ -147,8 +145,10 @@ const BASE_STATE = {
      goes back to storing it the easy way, the check falls that morning
      and not a month later. */
   const stored = await page.evaluate(() => localStorage.getItem('arabna.v1') || '');
-  ok('4.3 the password is never stored as text',
-     !stored.includes('Aud#2026check') && /"hash"/.test(stored) && /"salt"/.test(stored));
+  /* 630: the lock left the device altogether — so what must never come
+     back is ANY device credential, hash or not */
+  ok('4.3 no staff credential of any kind is stored on the device',
+     !/"adminAuth"/.test(stored) && !/"hash"/.test(stored) && !/"salt"/.test(stored));
 
   for (const tab of ['queue', 'mag', 'ads', 'events', 'dir', 'mkt', 'stats', 'set']) {
     const el = await page.$(`[data-t="${tab}"]`);
@@ -221,13 +221,7 @@ const BASE_STATE = {
 {
   const { ctx, page } = await asReader(Object.assign({}, BASE_STATE, { lang: 'en' }));
   await at(page, '#/admin');
-  for (const el of await page.$$('input#aUser, input#aNew, input#aNew2')) {
-    const type = await el.getAttribute('type');
-    await el.fill(type === 'password' ? 'Aud#2026check' : 'auditor');
-  }
-  const set = await page.$('#aSet');
-  if (set) await set.click();
-  await page.waitForTimeout(900);
+  await unlockAdmin(page);
 
   await page.click('[data-t="mag"]');
   await page.waitForTimeout(400);

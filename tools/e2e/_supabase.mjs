@@ -50,6 +50,12 @@ const json = (body, status = 200) => ({
     whole point of `610`'s change to `confirmEmail`. */
 export const MOCK_CODE = '123456';
 
+/** Every stand-in installed in this process, by browser context — so a
+    helper handed only a page (`_admin.mjs`) can reach the same memory
+    the suite's own call created, instead of installing a second server
+    over the first and losing its accounts. */
+export const MOCK_DBS = new WeakMap();
+
 function sessionFor(u) {
   return {
     access_token: 'mock-access-' + u.id,
@@ -73,7 +79,7 @@ function sessionFor(u) {
 /**
  * Install the stand-in on a browser context.
  * @param {import('playwright').BrowserContext} ctx
- * @param {{ preConfirm?: boolean, users?: string[] }} [opts]
+ * @param {{ preConfirm?: boolean, users?: string[], admin?: boolean, db?: object }} [opts]
  *   `preConfirm` makes sign-up land already verified, for the suites whose
  *   subject is downstream of the code screen and which only ever needed an
  *   account to exist.
@@ -87,7 +93,12 @@ function sessionFor(u) {
  *   state, and keeps their subject (the tier ladder) intact.
  */
 export async function mockSupabase(ctx, opts = {}) {
-  const db = freshDb();
+  /* `db` shares one server between two browser contexts — the shape of
+     630's first item: a listing published in one browser has to reach
+     the admin's queue in ANOTHER. Two fresh memories could never show
+     that, and would have kept the original fault green. */
+  const db = opts.db || freshDb();
+  MOCK_DBS.set(ctx, db);
   const preConfirm = !!opts.preConfirm;
   for (const email of (opts.users || [])) {
     const id = 'mock-uuid-' + (++db.seq);
@@ -249,10 +260,43 @@ export async function mockSupabase(ctx, opts = {}) {
 
     if (path.startsWith('/rest/v1/')) {
       const table = path.slice('/rest/v1/'.length);
+      const me = db.session && db.profiles.get(db.session.user.id);
+      const isAdmin = !!(me && me.is_admin);
+      const uid = db.session ? db.session.user.id : null;
+      /* ⚠️ THE QUERY STRING IS APPLIED, NOT IGNORED. `?status=eq.live` is
+         how supabase-js sends `.eq('status', 'live')`, and the whole point
+         of 630's second item is that no reader writes that filter: a mock
+         that ignored the filter would keep the queue green with the filter
+         put back. */
+      const wants = [];
+      for (const [k, v] of url.searchParams) {
+        if (['select', 'order', 'limit', 'offset', 'on_conflict', 'columns'].includes(k)) continue;
+        const m = /^(eq|neq|is)\.(.*)$/.exec(v);
+        if (m) wants.push({ k, op: m[1], v: m[2] });
+      }
+      const matches = (row) => wants.every(({ k, op, v }) => {
+        const val = row[k];
+        const want = v === 'null' ? null : v === 'true' ? true : v === 'false' ? false : v;
+        if (op === 'neq') return String(val) !== String(want);
+        return val === want || String(val) === String(want);
+      });
+      /* ⚠️ ROW LEVEL SECURITY, MIRRORED FROM 0002_rls.sql. A stranger gets
+         the live rows, an owner their own, staff everything. Without this
+         the first item of 630 — «a pending row reaches the admin's queue» —
+         would be green for a reader who is NOT staff, measuring nothing. */
+      const visible = (row) => {
+        if (table === 'classifieds') {
+          return isAdmin || (uid && row.owner_id === uid) || (row.status === 'live' && !row.hidden);
+        }
+        if (table === 'businesses') {
+          return isAdmin || (uid && row.owner_id === uid) || row.status === 'live';
+        }
+        return true;
+      };
+      const wantsOne = /pgrst\.object/.test(req.headers()['accept'] || '');
       if (req.method() === 'GET') {
-        const wantsOne = /pgrst\.object/.test(req.headers()['accept'] || '');
         if (table === 'profiles') {
-          const rows = db.session ? [db.profiles.get(db.session.user.id)].filter(Boolean) : [];
+          const rows = db.session ? [db.profiles.get(db.session.user.id)].filter(Boolean).filter(matches) : [];
           if (wantsOne) {
             return rows.length
               ? route.fulfill(json(rows[0]))
@@ -260,11 +304,14 @@ export async function mockSupabase(ctx, opts = {}) {
           }
           return route.fulfill(json(rows));
         }
-        return route.fulfill(json(db[table] || []));
+        const rows = (db[table] || []).filter(visible).filter(matches);
+        db.reads = (db.reads || []).concat([{ table, filters: wants.slice(), n: rows.length }]);
+        return route.fulfill(json(wantsOne ? (rows[0] || null) : rows));
       }
-      /* ⚠️ PATCH is how PostgREST updates, and `updateProfile` now writes
-         `display_name` back through it. Without this the write fell to the
-         501 below and the check for it could never be green. */
+      /* ⚠️ PATCH is how PostgREST updates. RLS again: a row the session
+         may not update is simply not updated — PostgREST answers 200 with
+         an empty list, never an error — so a non-staff «approval» leaves
+         the row pending, which is what 630's third item measures. */
       if (req.method() === 'PATCH') {
         if (!db.session) return route.fulfill(json({ message: 'row-level security' }, 401));
         if (table.startsWith('profiles')) {
@@ -272,18 +319,32 @@ export async function mockSupabase(ctx, opts = {}) {
           if (pr) Object.assign(pr, body);
           return route.fulfill(json(pr ? [pr] : []));
         }
-        return route.fulfill(json([]));
+        const mayUpdate = (row) => isAdmin || row.owner_id === uid;
+        const hit = (db[table] || []).filter(matches).filter(mayUpdate);
+        hit.forEach(row => Object.assign(row, body, { updated_at: new Date().toISOString() }));
+        db.writes = (db.writes || []).concat([{ table, filters: wants.slice(), body, n: hit.length }]);
+        return route.fulfill(json(hit));
       }
       if (req.method() === 'POST') {
         if (!db.session) return route.fulfill(json({ message: 'new row violates row-level security policy' }, 401));
-        const row = Object.assign({ id: 'mock-row-' + (++db.seq) }, body);
+        /* ⚠️ THE COLUMN IS `numeric`, AND THE DATABASE REFUSES A STRING IN
+           IT. `addClassified` used to send the display price — «⁦$1,250⁩»,
+           a dollar sign and two bidi isolates — and a mock that swallowed
+           it kept that green while every priced listing failed live. */
+        if (table === 'classifieds' && body.price != null && typeof body.price !== 'number') {
+          return route.fulfill(json({ code: '22P02', message: 'invalid input syntax for type numeric: "' + String(body.price) + '"' }, 400));
+        }
+        const row = Object.assign({ id: 'mock-row-' + (++db.seq),
+                                    created_at: new Date().toISOString(),
+                                    updated_at: new Date().toISOString() },
+                                  table === 'classifieds' ? { status: 'live', hidden: false } : {},
+                                  body);
         (db[table] = db[table] || []).push(row);
         /* ⚠️ `.single()` asks PostgREST for ONE OBJECT through the Accept
            header, and the client rejects an array when it did. Answering
            with the array either way is the kind of near-enough mock that
            passes the request and fails the caller — the insert really did
            return 201 and `addClassified` really did hand back null. */
-        const wantsOne = /pgrst\.object/.test(req.headers()['accept'] || '');
         return route.fulfill(json(wantsOne ? row : [row], 201));
       }
       return route.fulfill(json([], 200));

@@ -4,6 +4,7 @@ import { mockSupabase } from './_supabase.mjs';
 import { withDemoData } from './_demo.mjs';
 import { readFileSync, existsSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
 
+import { unlockAdmin } from './_admin.mjs';
 /* V.02.7: one speciality from every group is required before a save. The
    chips live inside collapsed boxes; a programmatic click reaches them. */
 const fillAllGroups = () => page.evaluate(() => {
@@ -55,19 +56,7 @@ const adminLogin = async () => {
      CLAIMED before it can be logged into. This is the fixture doing what
      the owner does once on the first run; the route is re-entered because
      the setup screen is already on screen by the time we get here. */
-  await page.evaluate(async () => {
-    const S = (window.__m && window.__m.S)
-      || await import('arabna/js/store.js').catch(() => import('./js/store.js'));
-    if (!S.adminIsSet()) { await S.setAdminPass('Arabna@2026!', 'arabna.admin'); location.hash = '#/home'; }
-  });
-  await page.waitForTimeout(200);
-  await page.evaluate(() => { location.hash = '#/admin'; });
-  await page.waitForTimeout(600);
-  if (await page.locator('#aUser').count()) {
-    await page.fill('#aUser', 'arabna.admin');
-    await page.fill('#aPass', 'Arabna@2026!');
-    await page.click('#aGo'); await page.waitForTimeout(600);
-  }
+  await unlockAdmin(page);
 };
 const grab = async (fn) => {
   const [dl] = await Promise.all([page.waitForEvent('download'), fn()]);
