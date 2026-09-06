@@ -2,7 +2,7 @@
    Reachable only by typing #/admin — it is intentionally absent from the drawer
    and the profile screen. Credentials live in store.js (V.02: a real staff
    account behind Supabase row-level security). */
-import { t, arCount, L, icon, $, $$, go, renderHeader, toast, wireRoutes, emptyState, fmtMoney, priceLabel,
+import { t, arCount, L, icon, $, $$, go, renderHeader, toast, wireRoutes, emptyState, fmtMoney, priceLabel, priceDotHtml,
          confirmSheet, openSheet, closeSheet, esc,
          greetingCardHtml, openGreeting } from '../ui.js';
 import { MAG_CATS, ARTICLES, CATEGORIES, AD_PRODUCTS, MARKET_CATS } from '../data.js';
@@ -744,7 +744,7 @@ function queueHtml() {
         <div class="row-main">
           <div class="row-title">${esc(L(c.title))}
             <span class="badge badge-pending">${t('statusPending')}</span></div>
-          <div class="row-sub gold"><span class="ltr">${esc(priceLabel(c.price))}</span> · ${t(catKeyOf(c.cat))}</div>
+          <div class="row-sub gold">${priceDotHtml(c.price, c.cat)}${t(catKeyOf(c.cat))}</div>
           <div class="row-sub">${esc(L(c.desc || ''))}</div>
           <div class="row-sub">${icon('user', 13)} ${esc((S.state.user && S.state.user.name) || t('guest'))} · ${(c.photos || []).length} ${t('photosCount')}</div>
           ${rejectBox(c.id)}
@@ -1688,8 +1688,11 @@ function mktHtml() {
           ${c.reports ? `<span class="badge badge-pending">${icon('flag', 12)}${c.reports} ${t('adminReports')}</span>`
                       : `<span class="muted fs-12">${t(mktStateKey[c.status] || 'adminStLive')}</span>`}
         </div>
-        <div class="row-sub"><span>${t(mktCatKey(c.cat))} · <span class="ltr">${esc(priceLabel(c.price))}</span>${
-          c.created ? ' · ' + fmtDate(c.created) : ''}</span></div>
+        <div class="row-sub"><span>${[
+          t(mktCatKey(c.cat)),
+          priceLabel(c.price, c.cat) ? `<span class="ltr">${esc(priceLabel(c.price, c.cat))}</span>` : '',
+          c.created ? fmtDate(c.created) : '',
+        ].filter(Boolean).join(' · ')}</span></div>
         <div class="action-grid" style="margin:10px 0 0">
           <button class="btn btn-ghost btn-sm" data-mktopen="${c.id}">${icon('eye', 17)} ${t('adminOpen')}</button>
           <button class="btn btn-ghost btn-sm" data-mktnote="${c.id}">${icon('bell', 17)} ${t('adminNotice')}</button>

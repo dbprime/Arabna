@@ -516,6 +516,25 @@ ul { margin: 0; padding: 0; list-style: none; }
 .input:focus, .select:focus, .textarea:focus { border-color: var(--gold); box-shadow: 0 0 0 3px var(--gold-wash-2); }
 .input::placeholder, .textarea::placeholder { color: var(--muted); }
 .input-err { border-color: var(--danger-line) !important; }
+
+/* A unit glued to the box itself. `pointer-events: none` so the tap still
+   lands on the input under it, and `inset-inline-end` so it sits at the
+   end of the field in both directions with no rule per language.
+   --text-2 and NOT --muted: measured on the input's own ground, --muted is
+   3.96 in dark, under the 4.5 line — the same family as the V.02.5 rule
+   that --muted is never put on --surface-2. --text-2 measures 8.17. */
+.input-wrap { position: relative; }
+.input-unit {
+  position: absolute;
+  inset-inline-end: 16px;
+  inset-block-start: 50%;
+  transform: translateY(-50%);
+  color: var(--text-2);
+  font-size: .84375rem;
+  font-weight: 700;
+  pointer-events: none;
+}
+.input.has-unit { padding-inline-end: 68px; }
 .hint { font-size: .78125rem; color: var(--muted); margin-top: 6px; }
 .err-msg { font-size: .8125rem; color: var(--danger-ink); margin-top: 6px; display: flex; gap: 5px; align-items: flex-start; }
 .ok-msg { font-size: .8125rem; color: var(--green); margin-top: 6px; }

@@ -105,7 +105,7 @@ export function MarketplaceScreen(root) {
       img: (c.photos && c.photos.length) ? c.photos[c.mainPhoto || 0] || c.photos[0] : '',
       icon: c.icon || 'bag',
       title: L(c.title),
-      sub: priceLabel(c.price),
+      sub: priceLabel(c.price, c.cat),
     }));
     $('#sponRows').innerHTML = sponsoredRows(rows);
     wireRoutes($('#sponRows'));
@@ -225,7 +225,7 @@ function cardHtml(c, isNew) {
       ${c.boosted ? `<span class="badge badge-boost" style="position:absolute;inset-block-start:7px;inset-inline-start:7px">${icon('bolt', 12)}${t('boosted')}</span>` : ''}
     </div>
     <div class="cl-body">
-      <div class="cl-price">${priceLabel(c.price)}</div>
+      <div class="cl-price">${priceLabel(c.price, c.cat)}</div>
       <div class="cl-title">${esc(L(c.title))}</div>
       <div class="cl-meta"><span>${icon('mapPin', 12)} <span class="ltr">${esc(c.city)}</span></span><span>${esc(L(c.when))}</span></div>
       ${statusBadgeHtml(c)}
@@ -257,7 +257,7 @@ export function ListingDetailScreen(root, params) {
     <div class="detail-body">
       <div class="row-between">
         <div>
-          <div class="cl-price" style="font-size:1.5rem">${priceLabel(c.price)}</div>
+          <div class="cl-price" style="font-size:1.5rem">${priceLabel(c.price, c.cat)}</div>
           <div class="detail-title" style="font-size:1.0625rem">${esc(L(c.title))}</div>
           <div class="mt-8">${statusBadgeHtml(c, mine)}</div>
         </div>
@@ -497,9 +497,17 @@ export function PostScreen(root) {
         <input class="input" id="pTitle" maxlength="${S.LISTING_TITLE_MAX}"
                value="${esc(editing ? L(editing.title) : (draft && draft.title) || '')}" />
         <div class="field-err" id="e_pTitle"></div></div>
-      <div class="field" id="priceField"><label class="label">${t('priceLabel')}</label>
-        <input class="input" id="pPrice" inputmode="decimal" placeholder="$"
-               value="${esc(editing ? (editing.price !== FREE_PRICE ? editing.price : '') : (draft && draft.price) || '')}" />
+      <!-- The unit is glued to the BOX, not printed above it. A label is
+           read once and forgotten, and the poster is looking at the box
+           while typing, with the price of the whole job in mind — so the
+           unit has to stand in their line of sight or it is not there.
+           paintCatRules() shows and hides both, live with the section. -->
+      <div class="field" id="priceField"><label class="label" id="pPriceLabel">${t('priceLabel')}</label>
+        <div class="input-wrap">
+          <input class="input" id="pPrice" inputmode="decimal" placeholder="$"
+                 value="${esc(editing ? (editing.price !== FREE_PRICE ? editing.price : '') : (draft && draft.price) || '')}" />
+          <span class="input-unit" id="pPriceUnit" hidden>${t('perHourUnit')}</span>
+        </div>
         <div class="field-err" id="e_pPrice"></div></div>
       <div class="field"><label class="label">${t('cityLabel')}</label>
         <input class="input" id="pCity" value="${esc(editing ? editing.city : (draft && draft.city) || (S.userCity() ? S.userCity() + ', ' + S.state.location.state : ''))}" /></div>
@@ -558,20 +566,41 @@ export function PostScreen(root) {
     editing ? (editing.mainPhoto || 0) : (draft && draft.mainPhoto) || 0);
   const catSel = $('#pCat');
   const priceIn = $('#pPrice');
+  const priceField = $('#priceField');
+  const priceLbl = $('#pPriceLabel');
+  const priceUnit = $('#pPriceUnit');
 
   const paintCatRules = () => {
     const cat = catSel.value;
     const rule = S.catRule(cat);
     const used = S.myActiveInCat(cat) - (editing && editing.cat === cat ? 1 : 0);
 
-    if (rule.freeOnly) {
+    /* Three sections, three answers, and the rule for each is read from
+       catRule() — never restated here, or the next section with no price
+       is declared in two places that drift apart. */
+    if (rule.noPrice) {
+      /* Not disabled and not emptied of meaning — GONE. A field that has
+         no meaning is what got «00» typed into it, and 0 in this app is
+         the word «مجاني». */
+      priceField.hidden = true;
+      priceIn.value = '';
+      priceIn.disabled = false;
+      priceIn.classList.remove('input-err');
+    } else if (rule.freeOnly) {
+      priceField.hidden = false;
       priceIn.value = t('priceFree');
       priceIn.disabled = true;
       priceIn.classList.remove('input-err');
-    } else if (priceIn.disabled) {
-      priceIn.disabled = false;
-      priceIn.value = editing && editing.price !== FREE_PRICE ? editing.price : '';
+    } else {
+      priceField.hidden = false;
+      if (priceIn.disabled || !priceIn.value) {
+        priceIn.disabled = false;
+        priceIn.value = editing && editing.price !== FREE_PRICE ? editing.price : '';
+      }
     }
+    priceLbl.textContent = t(rule.hourly ? 'priceLabelHourly' : 'priceLabel');
+    priceUnit.hidden = !rule.hourly;
+    priceIn.classList.toggle('has-unit', !!rule.hourly);
 
     $('#limitNote').innerHTML = `${icon('info', 18)}<span>${
       rule.freeOnly ? t('freeRule')
@@ -599,7 +628,7 @@ export function PostScreen(root) {
       ['#pCity', rawCity],
       ['#pDesc', rawDesc],
     ];
-    if (!rule.freeOnly) need.push(['#pPrice', rawPrice]);
+    if (!rule.freeOnly && !rule.noPrice) need.push(['#pPrice', rawPrice]);
     let missing = null;
     need.forEach(([sel, val]) => {
       const el = $(sel);
@@ -625,7 +654,7 @@ export function PostScreen(root) {
     const dOk = S.checkListingDesc(rawDesc);
     if (!dOk.ok) { say('#pDesc', dOk.why); return; }
     let priceCheck = { ok: true, free: false };
-    if (!rule.freeOnly) {
+    if (!rule.freeOnly && !rule.noPrice) {
       priceCheck = S.checkListingPrice(rawPrice);
       if (!priceCheck.ok) { say('#pPrice', priceCheck.why); return; }
     }
@@ -666,7 +695,14 @@ export function PostScreen(root) {
 
     // «0» is the word «مجاني», never the figure $0 — which reads as a fault
     // in the listing rather than as a gift.
-    const price = (rule.freeOnly || priceCheck.free) ? FREE_PRICE
+    //
+    // A noPrice section stores the same sentinel, and priceLabel() answers
+    // it with NOTHING for that section — so the row carries a value the app
+    // knows rather than '' or 0, and the card shows no price at all. An old
+    // job advert carrying a real price is saved back as the sentinel on the
+    // first edit and is never refused: there is no data migration, the
+    // correction happens where somebody is already standing.
+    const price = (rule.freeOnly || rule.noPrice || priceCheck.free) ? FREE_PRICE
       : ltr('$' + priceCheck.value.toLocaleString('en-US',
             { minimumFractionDigits: 0, maximumFractionDigits: 2 }));
     const flagged = BIZ_KEYWORDS.some(k => (rawTitle + ' ' + rawDesc).toLowerCase().includes(k.toLowerCase()));
@@ -739,7 +775,7 @@ export function MessagesScreen(root, params) {
           ? `<span class="row-ico shot"><img src="${c.photos[0]}" alt="" /></span>`
           : `<span class="row-ico">${icon(c.icon || 'image', 22)}</span>`}
       <div class="row-main"><div class="row-title">${esc(L(c.title))}</div>
-        <div class="row-sub gold"><span class="ltr">${priceLabel(c.price)}</span></div></div>
+        <div class="row-sub gold"><span class="ltr">${priceLabel(c.price, c.cat)}</span></div></div>
     </div>
     <div class="list-note">${icon('shield', 18)}<span>${t('scanNotice')}</span></div>
     <div class="pad"><button class="btn btn-plain btn-sm" id="msgBlock">${icon('shield', 16)} ${t('blockSeller')}</button></div>

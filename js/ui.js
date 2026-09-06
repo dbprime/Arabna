@@ -1799,9 +1799,46 @@ export function activeFilterCount(v) {
   return n;
 }
 
-/** Price as shown to the user — Free-section listings never show a number. */
-export function priceLabel(price) {
-  return price === FREE_PRICE ? t('priceFree') : (price ? ltr(price) : '');
+/**
+ * Price as shown to the user.
+ *
+ * The section is optional and carries NO lying default: a call that passes
+ * none prints the figure bare exactly as before, so a call site nobody
+ * found is not broken and «/ساعة» is never glued to something that is not
+ * a service.
+ *
+ * Two sections answer differently, and both are DERIVED through catRule()
+ * rather than named here — the next one of either kind is declared in one
+ * place, the row in MARKET_CATS:
+ *   noPrice  → nothing at all. Not «$0», not a figure of any kind, and
+ *              above all not «مجاني»: a job WANTED carrying that word
+ *              reads as «I work for nothing», and that is the fault this
+ *              exists to remove.
+ *   hourly   → the unit follows the figure WHEREVER the figure is shown.
+ *              «$50» on a card with no unit is read as the price of the
+ *              whole job, so saying it in the form alone is decoration.
+ *              The unit is derived at display and never stored in the row:
+ *              baked into the data it freezes, and changing the word later
+ *              becomes a migration.
+ */
+export function priceLabel(price, cat) {
+  if (cat && S.catRule(cat).noPrice) return '';
+  if (price === FREE_PRICE) return t('priceFree');
+  if (!price) return '';
+  return ltr(price) + (cat && S.catRule(cat).hourly ? t('perHourUnit') : '');
+}
+
+/**
+ * The price followed by its « · », and NOTHING at all when the section has
+ * none. Three rows print the price beside something else, and a bare
+ * priceLabel() returning '' would leave the separator standing where the
+ * figure was expected — a blank slot, which is precisely what a job row
+ * must not show any more than it may show «$0» or «مجاني».
+ * It returns markup, so it is named Html and escapes what it wraps.
+ */
+export function priceDotHtml(price, cat) {
+  const p = priceLabel(price, cat);
+  return p ? `<span class="ltr">${esc(p)}</span> · ` : '';
 }
 
 /**
