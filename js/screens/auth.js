@@ -310,6 +310,8 @@ export function EmailVerifyScreen(root) {
      pending record. Reading `state.user` here would print an empty address
      over a code that really was sent. */
   const recovery = !!(pv && pv.kind === 'recovery');
+  /* the third road: an address change waiting on this very code */
+  const changing = !recovery && !!S.pendingEmail();
   const email = recovery ? (pv.target || '')
     : (S.pendingEmail() || (S.state.user ? S.state.user.email : ''));
 
@@ -317,7 +319,18 @@ export function EmailVerifyScreen(root) {
     <div class="pad mt-16 center-col">
       <div class="empty-ico">${icon('mail', 33)}</div>
       <b style="font-size:1.0625rem">${t('checkYourEmail')}</b>
-      <span class="muted fs-13">${recovery ? t('recoverySub') : t('verifyEmailSub')} <b class="gold ltr">${esc(email)}</b></span>
+      ${/* ⚠️ THREE ROADS, THREE SENTENCES, and only one of them may say «we
+           sent». At sign-up the address is new and the server really did
+           mail it. On the other two we CANNOT KNOW: Supabase deliberately
+           refuses to say whether an address is already registered — saying
+           so would turn either screen into a way of discovering who is
+           registered here — so it answers success and mails nothing. A
+           screen that then claims «we sent a code» is making a promise it
+           has no way to keep, and the reader waits for a message that
+           cannot come. */''}
+      <span class="muted fs-13">${
+        recovery ? t('recoverySub') : changing ? t('changeSub') : t('verifyEmailSub')
+      } <b class="gold ltr">${esc(email)}</b></span>
       ${/* ⚠️ While phone verification is switched off a parked number is
            confirmed by THIS code, so the screen says so — and says the
            whole truth: it confirms the CHANGE and does not verify the
@@ -336,6 +349,13 @@ export function EmailVerifyScreen(root) {
       <!-- nobody is thrown out for not having the code to hand: they can
            read the app now and finish this when the email arrives -->
       <button class="btn btn-plain btn-block mt-8" id="guestBtn">${t('browseAsGuest')}</button>
+      ${/* ⚠️ THE WAY OUT BELONGS WHERE THE PERSON IS STANDING. «Browse now and
+           finish later» leaves the address PARKED, and the only button that
+           undoes it lives on another screen the reader has no reason to know
+           they must go to. Somebody waiting for a code that cannot come was
+           stuck in the one place with no exit. `cancelEmailChange` has
+           existed since V.05.7 — no new function. */''}
+      ${changing ? `<button class="btn btn-ghost btn-block mt-8" id="vCancelEmail">${icon('x', 17)} ${t('emailCancelChange')}</button>` : ''}
     </div>`;
 
   wireOtp('e');
@@ -377,6 +397,13 @@ export function EmailVerifyScreen(root) {
     tick();
   });
   $('#guestBtn').addEventListener('click', () => go('#/home'));
+  const vcx = $('#vCancelEmail');
+  if (vcx) vcx.addEventListener('click', () => {
+    S.cancelEmailChange();
+    S.clearPendingVerify();
+    toast(t('emailChangeCancelled'), 'ok');
+    go('#/profile');
+  });
 
   $('#vBtn').addEventListener('click', async () => {
     if (S.pendingVerify() && S.pendingVerify().expired) { toast(t('codeExpired'), 'err'); return; }

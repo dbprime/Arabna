@@ -202,9 +202,18 @@ export function EditProfileScreen(root) {
            case to guard the rare one. It appears on `input`, by comparing
            the field with the address on file — so it also disappears again
            the moment the reader types the old address back. */''}
+      ${/* ⚠️ THROUGH `passwordField`, LIKE EVERY OTHER ONE. This field was
+           written raw by the batch that had just put thirteen others behind
+           that helper — so it was the only password field in the app outside
+           its own rule, and the eye was the smallest part of what it lost.
+           The helper carries five attributes whose written reason is that
+           AUTOCORRECT AND THE CAPITALISED FIRST LETTER BREAK A PASSWORD
+           SILENTLY: a phone capitalises the first character of a text field
+           by default, so somebody typing their password correctly here was
+           refused and told «wrong password» — which it was not.
+           ⚠️ A fault nobody reports, because they believe they mistyped. */''}
       <div class="field" id="pPwWrap" hidden>
-        <label class="label">${t('accountPassword')}</label>
-        <input class="input" id="pPw" type="password" autocomplete="current-password" />
+        ${passwordField('pPw', t('accountPassword'), 'current-password')}
         <div class="hint">${t('emailChangeNeedsPassword')}</div>
         <div class="field-err" id="e_pPw"></div></div>
       <div class="field"><label class="label">${t('phoneNumber')}</label>
@@ -277,6 +286,12 @@ export function EditProfileScreen(root) {
     EditProfileScreen(root);
   });
 
+  /* ⚠️ THE EYE IS WIRED ON THIS SCREEN TOO. `EditProfileScreen` never called
+     this — it had no password field until now — so the button the helper
+     draws would have been a control that does nothing, which this project
+     bans outright. */
+  wirePasswordToggles(root);
+
   /* the two are read once; the handler is one line and has no state */
   const pwWrap = $('#pPwWrap'), emailInput = $('#pEmail');
   const syncPw = () => { pwWrap.hidden = emailInput.value.trim() === (u.email || ''); };
@@ -329,6 +344,12 @@ export function EditProfileScreen(root) {
        its resend timer, its ten-minute code life and «تصفّح الآن وأكمل
        لاحقاً». A second screen for the same thing is the duplication this
        project bans. */
+    /* ⚠️ AND A REFUSAL THE SERVER DID GIVE IS SAID, NOT SWALLOWED. The
+       address stays parked — that decision is written above `updateUser`
+       and is not reversed — but walking on to the code screen after a send
+       that FAILED would be the same promise this batch is removing, made
+       twice. The reader is left where they can cancel it or try again. */
+    if (r && r.emailSendError) { setErr('pEmail', r.emailSendError); return; }
     if (r && r.emailPending) {
       /* ⚠️ NO `sendEmailCode` HERE, and its absence is the fix. `updateProfile`
          already called `sb.auth.updateUser({ email })`, and THAT is what makes

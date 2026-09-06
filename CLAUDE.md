@@ -11,7 +11,7 @@ ARABNA · عربنا — a mobile-first web app for the Arab community in the U.
 **business directory + marketplace + events + magazine**, Arabic-first with a full English toggle.
 ("Classifieds / الإعلانات الشخصية" is now "Marketplace / السوق" — the old `#/classifieds`
 routes still resolve so shared links keep working.)
-Current version: **V.10.1 (prototype)**. Owner: dbprime. Deploys to Vercel (team DB Prime).
+Current version: **V.10.2 (prototype)**. Owner: dbprime. Deploys to Vercel (team DB Prime).
 
 ## Hard rules (from the product brief)
 0. ⚠️ **THE OWNER'S NAME IS NEVER WRITTEN — anywhere.** Not in this file, not
@@ -9769,6 +9769,115 @@ prints `Test Person`**, the first name still standing on the server. ⚠️ **An
 `9.2` did NOT go red when `off` was restored**, because it measures the CALL
 SITES while `9.1` and `9.3` measure the element: two layers, each with its own
 check, exactly as V.07.9 recorded.
+
+## V.10.2 — a field outside the rule, and a promise we cannot keep (625)
+
+⚠️ **This file closes its own group, and its group is itself** — it touches
+`js/store.js` and authentication.
+
+⚠️ **BOTH FAULTS WERE FOUND ON THE LIVE HOST, NOT BY THE NET.** `620` was
+green from end to end — 148 runs, zero red — and shipped two faults that hit
+the first person to walk past. **That is where this batch sits, and it is
+said rather than softened.**
+
+### The one password field outside the rule was the one that batch wrote
+```html
+<input class="input" id="pPw" type="password" autocomplete="current-password" />
+```
+Every other password field in the project goes through `passwordField()` —
+**thirteen call sites, corrected by the very batch that then wrote the
+fourteenth outside them.**
+
+⚠️ **And the eye was the smallest thing it lost.** The helper carries five
+attributes whose written reason is that **autocorrect and the capitalised
+first letter break a password silently** — and a phone capitalises the first
+character of a text field by default. So somebody typing their password
+**correctly** on that one field was refused and told it was wrong.
+**A fault nobody reports, because they believe they mistyped.**
+
+- ⚠️ **`EditProfileScreen` never called `wirePasswordToggles`** — it had no
+  password field until `620` — so the helper's eye would have been drawn
+  **dead**, which this project bans outright. Wired in the same change.
+- **The structural rule, because this is a class and not an incident:**
+  **no raw `<input type="password">` anywhere in `js/`.** The helper's own
+  element is the one exception, and it *is* the helper. `test_v77 · 1.1`
+  sweeps for it, and the tooth writes one back.
+
+> **A rule is not applied to what already exists — it is applied to what is
+> written in the same moment.** A batch corrected thirteen places against a
+> single rule and created the fourteenth outside it.
+
+### «We sent a code» was a claim we had no way to keep
+Typing **an address already registered to somebody else** was accepted, the
+screen moved to the code, and said the code was on its way. **Nothing was
+sent, and nothing could be.** Two causes, and the second is the one that
+matters:
+
+- **`supabase-js` does not throw — it returns `{ data, error }`**, so the
+  `try/catch` around `updateUser` caught nothing at all and **every failure
+  passed as success**: a rate limit, a refused address, a dropped
+  connection. The error is read now. ⚠️ **And «it stays parked on a network
+  failure» is NOT reversed** — that is written with its reason (the old
+  address still works). What changed is that the failure is *known*, so it
+  can be said instead of swallowed.
+- ⚠️ **AND NO ERROR COMES AT ALL, BY DESIGN.** Supabase will not say whether
+  an address is taken — saying so would turn the email-change field into a
+  way of discovering who is registered here, tried against a list — **so it
+  answers success and mails nothing.** No amount of error-reading fixes
+  that; **only the sentence can.**
+
+**And the answer already existed in the same batch**: it is the neutral form
+`620` built for «forgot my password» and never applied here.
+
+```
+sign-up          «أرسلنا رمزاً…»                      — true: the address is new and it was mailed
+email change     «إن كان هذا العنوان متاحاً…»          — we cannot know
+password reset   «إن كان لهذا العنوان حساب عندنا…»     — we cannot know
+```
+
+⚠️ **The consistency is the item, not the wording:** two doors doing the same
+thing said two different sentences, **and one of them was lying.**
+
+- **And the way out belongs where the person is standing.** The code screen
+  offered «browse now and finish later», which leaves the address **parked**,
+  while the only undo lived on a screen the reader has no reason to know they
+  must go to. **«إلغاء تغيير البريد» is on the code screen now**, drawn only
+  when something is parked, calling `cancelEmailChange` — which has existed
+  since V.05.7. No new function.
+- **A send that really was refused stops on the profile screen** and says so
+  under the field, rather than walking on to a code screen for a message
+  that failed — **the same promise, made twice.**
+
+### `test_v77` — 27 assertions, and four teeth
+```
+the raw field written back   → 1.1 · 1.2 · 1.3 · 1.9 · 1.10 · 1.11
+the error thrown away again  → 2.5 · 2.6
+the claim put back           → 2.1 · 2.3 · 2.10
+the way out removed          → 2.11
+```
+⚠️ **`1.9` prints the loss in one line:** `cap:null · corr:null · spell:null
+· lang:null · mode:null` — the field that breaks a password silently.
+
+⚠️ **And the keys are named rather than swept.** Sign-up *does* know its
+message was sent, so its claim is true and must stay; a blanket search for
+«أرسلنا» would have demanded its removal too.
+
+```
+150 runs · 75 suites · 7,031 assertions · zero red · zero crash
+```
+Sixteen segments over `1382f27`, `HEAD` re-checked at each, 75 present and
+75 run, each twice.
+
+⚠️ **`625` was not in the queue when it arrived** — the next written there is
+`615`, and the file says so at its own head. It was carried out because both
+faults were **live on production**, V.10.1 having merged. **The owner then
+dictated its line and its exact place** — after `[x] 620`, before `[ ] 615` —
+**and that is the queue being written by whoever writes the files, which is
+the rule rather than an exception to it.** A session never places a line
+there on its own judgement.
+
+> **And the mark still walks behind the net, never ahead** — `[x]` went in
+> after the 150 runs were green, not with the work.
 
 ## Known open items
 - **The header image is still far larger than its box.** V.04.7 replaced
