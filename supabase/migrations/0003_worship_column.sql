@@ -1,0 +1,23 @@
+-- ============================================================
+-- ARABNA — the worship column: prayer, jumuah, mass and language
+-- ------------------------------------------------------------
+-- Places of worship have nowhere to keep prayer/jumuah/mass/language
+-- data until this column exists — `worship jsonb` is the same shape
+-- js/data.js already gives the two demo worship records
+-- ({kind, prayers, jumuah, mass, lang}), and `applyBusinessEdit`
+-- already writes it under `businessEdits` on the device (V.03.1 /
+-- V.04.9). This column is where that write lands once a later batch
+-- wires it to a real UPDATE.
+--
+-- ⚠️ NO NEW RLS POLICY. The column joins a table already covered in
+-- full by `0002` — read for everyone on a live row, write for the
+-- owner or the admin — and a new column inherits those; a policy is
+-- written per table and per command, never per column.
+--
+-- ⚠️ AND NOTHING IN THE APP WRITES IT YET. `applyBusinessEdit` still
+-- writes to `state.businessEdits` on the device. The column exists so
+-- that the day it is wired there is a place for the write to land —
+-- adding it in the same rush as the write is how a column arrives
+-- with the wrong type.
+-- ============================================================
+alter table public.businesses add column worship jsonb;

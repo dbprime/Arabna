@@ -1,0 +1,35 @@
+-- ============================================================
+-- ARABNA — tier2_by: HOW this account reached tier two
+-- ------------------------------------------------------------
+-- Introduced by 475 in js/store.js and deliberately left without a
+-- column until the connecting batch. Two values and no third:
+-- 'email' (earned while phone verification is switched off) and
+-- 'phone' (earned by a real SMS code, before the switch was flipped
+-- or after it is flipped back).
+--
+-- ⚠️ AND ITS WHOLE PURPOSE IS THE DAY THE SWITCH COMES BACK. Whoever
+-- earned tier two by phone is not demoted when phone verification
+-- returns; whoever earned it by email is not silently promoted into
+-- a claim nobody verified. A row that cannot say which is a row that
+-- forces one of those two mistakes.
+--
+-- ⚠️ AND NOTHING BUT A REAL SMS CODE EVER WRITES 'phone'. Confirming
+-- a phone-number CHANGE by an emailed code (the decision of 475's
+-- extension) writes nothing here and leaves `phone_verified` false:
+-- it confirms the change, it does not verify the number.
+--
+-- ⚠️ NO NEW RLS POLICY, and it is NOT added to the
+-- `refuse_admin_escalation` trigger. `profiles` is covered in full by
+-- `0002` (own row: read, own row: update) and the new column inherits
+-- both. That trigger guards `is_admin`, which is a PERMISSION;
+-- `tier2_by` is not one — forging it from a client grants its owner
+-- only what they already hold, since tier two by email is open to
+-- them anyway. Guarding a field that cannot escalate teaches the next
+-- reader that it can.
+--
+-- ⚠️ An older row has no value and stays null, with no data migration.
+-- That is carried over from 475 by its letter: the default branch in
+-- `tier()` puts an account with no field in the right place by itself,
+-- and a retroactive write would be inventing a fact about the past.
+-- ============================================================
+alter table public.profiles add column tier2_by text;

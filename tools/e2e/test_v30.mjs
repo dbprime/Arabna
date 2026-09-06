@@ -7,6 +7,7 @@
    filters nobody had set, 80 KB of admin panel in every first paint, and
    a list of events that dropped the year. */
 import { chromium } from '/opt/node22/lib/node_modules/playwright/index.mjs';
+import { mockSupabase } from './_supabase.mjs';
 import { withDemoData } from './_demo.mjs';
 
 const BASE = process.env.BASE || 'http://localhost:8099/index.html';
@@ -25,6 +26,9 @@ const watch = (p) => {
 };
 const fresh = async (init) => {
   const ctx = await browser.newContext({ colorScheme: 'dark', viewport: { width: 390, height: 844 } });
+  /* 610: the account lives on a server now — the endpoint is answered by
+     a stand-in rather than the app's own rule being softened. */
+  await mockSupabase(ctx);
   const p = await ctx.newPage();
   watch(p);
   if (init) await p.addInitScript(init);

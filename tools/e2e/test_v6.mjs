@@ -1,5 +1,6 @@
 /* V.01.6 — commercial prices hidden from visitors; ad packages explained in place */
 import { chromium } from '/opt/node22/lib/node_modules/playwright/index.mjs';
+import { mockSupabase } from './_supabase.mjs';
 import { withDemoData } from './_demo.mjs';
 
 const BASE = process.env.BASE || 'http://localhost:8123/index.html';
@@ -11,7 +12,10 @@ const browser = await chromium.launch();
    turned them off by default. It turns them on for itself — the
    default is not reverted and no assertion is softened. */
 await withDemoData(browser);
-const page = await (await browser.newContext({ colorScheme: 'dark', viewport: { width: 390, height: 844 } })).newPage();
+const __c = await browser.newContext({ colorScheme: 'dark', viewport: { width: 390, height: 844 } });
+/* 610: see _supabase.mjs */
+await mockSupabase(__c);
+const page = await __c.newPage();
 const errors = [];
 page.on('console', m => { if (m.type() === 'error') errors.push(m.text()); });
 page.on('pageerror', e => errors.push('PAGEERROR ' + e.message));
@@ -244,7 +248,7 @@ await page.fill('#sPass', 'Qamar2026$');
 await page.fill('#sPass2', 'Qamar2026$');
 await page.check('#agree1'); await page.check('#agree2');
 await page.click('#suBtn'); await page.waitForTimeout(900);
-await page.click('[data-fill="e"]'); await page.click('#vBtn'); await page.waitForTimeout(1000);
+await page.$$eval('#otp-e .otp-box', bs => bs.forEach((b, i) => { b.value = '123456'[i] || ''; }))  /* 610: the fill card left the email screen; the code is typed */; await page.click('#vBtn'); await page.waitForTimeout(1000);
 
 ok('after verifying, the user is returned to advertise',
    (await hash()).startsWith('#/advertise'), await hash());

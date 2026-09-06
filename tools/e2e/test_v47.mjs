@@ -18,6 +18,7 @@
    record carries no read state at all — measured, there is no such field
    — and a count the app does not have is a number invented on a screen. */
 import { chromium } from '/opt/node22/lib/node_modules/playwright/index.mjs';
+import { mockSupabase } from './_supabase.mjs';
 import { withDemoData } from './_demo.mjs';
 
 const BASE = process.env.BASE || 'http://localhost:8099/index.html';
@@ -40,6 +41,9 @@ const wire = p => {
 };
 const fresh = async () => {
   const ctx = await browser.newContext({ viewport: { width: 390, height: 844 } });
+  /* 610: the account lives on a server now — the endpoint is answered by
+     a stand-in rather than the app's own rule being softened. */
+  await mockSupabase(ctx);
   const p = await ctx.newPage(); wire(p);
   await p.goto(BASE + '#/home', { waitUntil: 'domcontentloaded' });
   await p.waitForTimeout(900);
@@ -47,9 +51,9 @@ const fresh = async () => {
     window.__S = await import('arabna/js/store.js').catch(() => import('./js/store.js'));
     localStorage.removeItem('arabna.v1');
   });
-  await p.evaluate(pw => {
-    window.__S.signUp({ name: 'أحمد سالم', email: 'a@b.c', phone: '7135550123', password: pw });
-    window.__S.confirmEmail('123456');
+  await p.evaluate(async (pw) => {
+    await window.__S.signUp({ name: 'أحمد سالم', email: 'a@b.c', phone: '7135550123', password: pw });
+    await window.__S.confirmEmail('123456');
   }, PW);
   return { ctx, p };
 };

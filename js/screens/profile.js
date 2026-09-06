@@ -273,7 +273,7 @@ export function EditProfileScreen(root) {
     EditProfileScreen(root);
   });
 
-  $('#pSave').addEventListener('click', () => {
+  $('#pSave').addEventListener('click', async () => {
     const name = $('#pName').value.trim();
     const email = $('#pEmail').value.trim();
     const phone = $('#pPhone').value.trim();
@@ -282,7 +282,7 @@ export function EditProfileScreen(root) {
     if (!fine) return;
 
     const phoneChanged = phone !== (u.phone || '');
-    const r = S.updateProfile({ name, email, phone });
+    const r = await S.updateProfile({ name, email, phone });
 
     // photo: only re-queue it when it actually changed
     /* ⚠️ Only the PHOTO half is touched here. Reading `u.avatar.url` on a
@@ -1165,8 +1165,8 @@ export function SettingsScreen(root) {
       <button class="btn btn-danger btn-block mt-8" id="delGo">${t('delete')}</button>
       <button class="btn btn-plain btn-block mt-8" id="delNo">${t('cancel')}</button>
     `, (panel) => {
-      panel.querySelector('#delGo').addEventListener('click', () => {
-        S.deleteAccount();
+      panel.querySelector('#delGo').addEventListener('click', async () => {
+        await S.deleteAccount();
         closeSheet();
         toast(t('deleteConfirm'), 'ok');
         go('#/home');

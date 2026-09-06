@@ -135,11 +135,22 @@ console.log('--- online, nothing moved ---');
   page.on('console', m => { if (m.type() === 'error' &&
     !/ERR_CONNECTION|ERR_CERT|ERR_TUNNEL|ERR_NAME|ERR_FAILED|fonts\.googleapis/.test(m.text()))
     errors.push(m.text().slice(0, 120)); });
-  let bytes = 0;
+  let bytes = 0, vendorBytes = 0;
   page.on('response', async r => {
     try { if (new URL(r.url()).hostname !== new URL(BASE).hostname) return;
       const h = r.headers()['content-length'];
-      bytes += h ? +h : (await r.body()).length; } catch (_) { /* */ }
+      const n = h ? +h : (await r.body()).length;
+      /* ⚠️ THE VENDORED CLIENT IS COUNTED APART, AND THE CEILING IS NOT
+         SIMPLY RAISED. What this check has always guarded is ACCIDENTAL
+         weight — `assets/` walking into the page. `610` added
+         `js/vendor/supabase.js` deliberately, named in `SBOM.md` and
+         `LICENSES.md` and precached on purpose, and folding it into the
+         same number would either turn the check red for a decision that
+         was taken openly, or force a raise that then hides the next 200 KB
+         somebody adds by accident. So it is subtracted and asserted on its
+         own: the page's own weight still has to be what it was. */
+      if (/\/js\/vendor\//.test(r.url())) vendorBytes += n; else bytes += n;
+    } catch (_) { /* */ }
   });
   await page.goto(BASE + '#/home'); await page.waitForTimeout(2000);
   ok('6.1 zero console errors with the worker in the tree', errors.length === 0, errors.slice(0, 2).join(' | '));
@@ -159,8 +170,13 @@ console.log('--- online, nothing moved ---');
      Math.round(preBytes / 1024) + ' KB in ' + PRE.length + ' files');
   /* and the page weight is the multi-file build's own question */
   if (!BASE.includes('single-file')) {
-    ok('6.4 …and the first visit of the real build is unchanged',
+    ok('6.4 …and the first visit of the real build is unchanged, the vendored client apart',
        bytes / 1024 < 2200, Math.round(bytes / 1024) + ' KB');
+    /* and the deliberate part is measured too, so it cannot grow unnoticed
+       either: one library, and the figure `LICENSES.md` records */
+    ok('6.5 …and the vendored client is the one file it is meant to be',
+       vendorBytes > 100 * 1024 && vendorBytes < 400 * 1024,
+       Math.round(vendorBytes / 1024) + ' KB');
   } else {
     ok('6.4 …and the single-file build registers nothing, so its weight is not this batch\u2019s',
        !/serviceWorker\.register/.test(await page.content()) || true,

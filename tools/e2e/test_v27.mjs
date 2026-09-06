@@ -1,6 +1,7 @@
 /* V.03.4 — batch eight (3 + 4): the interface language, the password rule,
    receipts, the directions sheet, and the cash order */
 import { chromium } from '/opt/node22/lib/node_modules/playwright/index.mjs';
+import { mockSupabase } from './_supabase.mjs';
 import { withDemoData } from './_demo.mjs';
 
 const BASE = process.env.BASE || 'http://localhost:8099/index.html';
@@ -13,6 +14,8 @@ const browser = await chromium.launch();
    default is not reverted and no assertion is softened. */
 await withDemoData(browser);
 let ctx = await browser.newContext({ colorScheme: 'dark', viewport: { width: 390, height: 844 } });
+/* 610: see tools/e2e/_supabase.mjs */
+await mockSupabase(ctx);
 let page = await ctx.newPage();
 const errors = [];
 const watch = (p) => {
@@ -381,9 +384,10 @@ ok('5.15 …and the original is never edited', refund.firstUnchanged);
    money record survives the person. It is simply no longer readable through
    the signed-in accessor, so it is read off the record itself — which is the
    truer test anyway, because that is where an accounting record lives. */
-const afterDelete = await page.evaluate(() => {
+const afterDelete = await page.evaluate(async () => {
   const S = window.__m.S;
-  S.deleteAccount();
+  /* 610: it ends the server session first, so it is awaited */
+  await S.deleteAccount();
   const kept = (S.state.receipts || []);
   const r = kept[0] || {};
   return { user: S.state.user, kept: kept.length, hidden: S.receipts().length,

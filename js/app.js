@@ -4,7 +4,8 @@
 
 import { setLang, bothPacks } from './i18n.js';
 import { state, registerStrings, runReminders, runSubscriptionCycle,
-         liveGreeting, markGreetingSeen, noteVisit, requestPersistence } from './store.js';
+         liveGreeting, markGreetingSeen, noteVisit, requestPersistence,
+         loadLiveBusinesses } from './store.js';
 import { $, renderHeader, renderNav, hideNav, closeSheet, hideDrawer, drawerOwnsEntry, closeDropdown,
          mountScrollMemory, restoreScroll, historyKey, markShown, startClock, mountAdShare,
          applyTheme, applyFontScale, mountThemeWatch, openGreeting, sheetOpen,
@@ -265,7 +266,7 @@ function firstRoute() {
 
 let bootRan = false;
 let booted = false;
-function boot() {
+async function boot() {
   /* ⚠️ TWO ENTRY POINTS, ONE BOOT — and it had been running TWICE since
      the router was written. A module script is deferred: it executes
      after parsing, so `readyState` is already past 'loading' and the
@@ -275,6 +276,10 @@ function boot() {
      `425` is what made it visible, reading 2 on a first visit and
      spending the invite before anybody had returned. */
   if (bootRan) return;
+  /* ⚠️ WRITTEN BEFORE THE FIRST `await`, NEVER AFTER IT. The two entry
+     points above are why: with the flag set after the await, the second
+     call would slip past the guard while the first is suspended and fetch
+     the live rows a second time. */
   bootRan = true;
   setLang(state.lang || 'ar');
   catchUp();
@@ -286,6 +291,27 @@ function boot() {
      the reader meets one thing on a launch and not two */
   inviteIfDue(route);
   booted = true;
+  /* ⚠️ THE LIVE ROWS ARRIVE AFTER THE PAINT, AND THE LAUNCH NEVER WAITS
+     FOR THEM. The first draft of this batch raced the fetch against a
+     2500ms cap before painting, which is what its spec asked for — and
+     measured, that is the wrong shape twice over. On a reader's phone with
+     no signal it buys a blank screen of up to two and a half seconds for
+     nothing, since the answer is `data.js` either way; and in the harness
+     it charged that cap to every page load in every suite, which took the
+     fast gate from 100 seconds past 300 before a single assertion had
+     changed. **A cap that has to be tuned is the sign the wait should not
+     be there.**
+     The rows are a COAT over `data.js`, never a replacement, so painting
+     first shows exactly what today's app shows and the repaint only ever
+     ADDS — no flash of wrong data, because there is no wrong data to flash.
+     ⚠️ And it repaints only when rows really arrived and the reader has not
+     navigated away meanwhile: a re-render under somebody's finger is a
+     worse fault than a listing appearing one screen late. */
+  loadLiveBusinesses().then(rows => {
+    if (!rows || !rows.length) return;
+    if (location.hash !== route) return;
+    render();
+  });
 }
 
 window.addEventListener('DOMContentLoaded', boot);

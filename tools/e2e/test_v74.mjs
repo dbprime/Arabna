@@ -36,6 +36,7 @@
    URI inside the importmap, so the document itself is rewritten — the two
    builds are different environments, not copies. */
 import { chromium } from '/opt/node22/lib/node_modules/playwright/index.mjs';
+import { mockSupabase } from './_supabase.mjs';
 import { readFileSync, readdirSync } from 'node:fs';
 import { Buffer } from 'node:buffer';
 
@@ -78,6 +79,12 @@ async function flipOn(ctx) {
 
 async function open(route, { user = null, phoneAuth = false } = {}) {
   const ctx = await browser.newContext({ viewport: { width: 390, height: 844 } });
+  /* ⚠️ 610: this file SEEDS `state.user` rather than signing up, and
+     `confirmEmail` promotes nothing by itself any more — the address has to
+     exist on the server, which is exactly what seeding always assumed and
+     never had to say. Pre-registering it says so, and leaves this file's
+     subject — the tier ladder — untouched. */
+  await mockSupabase(ctx, { users: ['reader@example.com'] });
   await ctx.addInitScript((u) => {
     const K = 'arabna.v1'; let s = {};
     try { s = JSON.parse(localStorage.getItem(K) || '{}'); } catch (e) { /* */ }
@@ -127,7 +134,7 @@ const EMAIL_OK = { ...NO_EMAIL, emailVerified: true };
   const { page, ctx } = await open('#/home', { user: NO_EMAIL });
   const after = await page.evaluate(async () => {
     let S; try { S = await import('arabna/js/store.js'); } catch (e) { S = await import('./js/store.js'); }
-    S.confirmEmail();
+    await S.confirmEmail('123456');   // 610: the server judges the code
     return { tier: S.tier(), by: S.state.user.tier2By };
   });
   ok('2.1 confirming the email reaches tier 2', after.tier === 2, String(after.tier));
@@ -288,7 +295,7 @@ const EMAIL_OK = { ...NO_EMAIL, emailVerified: true };
   ok('10.6 the old number is still the account\'s until the code lands',
      before.phone === '7134669182' && before.pending === '(713) 555-0134', JSON.stringify(before));
 
-  await page.click('[data-fill="e"]'); await page.click('#vBtn'); await page.waitForTimeout(900);
+  await page.$$eval('#otp-e .otp-box', bs => bs.forEach((b, i) => { b.value = '123456'[i] || ''; }))  /* 610: the fill card left the email screen; the code is typed */; await page.click('#vBtn'); await page.waitForTimeout(900);
   const after = await page.evaluate(() => {
     const u = JSON.parse(localStorage.getItem('arabna.v1')).user;
     return { phone: u.phone, pending: u.pendingPhone || null, v: !!u.phoneVerified, by: u.tier2By || null };

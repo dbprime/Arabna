@@ -9,6 +9,7 @@
 
    Every check below fails LOUDLY if any of that comes back. */
 import { chromium } from '/opt/node22/lib/node_modules/playwright/index.mjs';
+import { mockSupabase } from './_supabase.mjs';
 import { withDemoData } from './_demo.mjs';
 
 const BASE = process.env.BASE || 'http://localhost:8099/index.html';
@@ -21,6 +22,8 @@ const browser = await chromium.launch();
    default is not reverted and no assertion is softened. */
 await withDemoData(browser);
 const ctx = await browser.newContext({ colorScheme: 'dark', viewport: { width: 390, height: 844 } });
+/* 610: see tools/e2e/_supabase.mjs */
+await mockSupabase(ctx);
 const page = await ctx.newPage();
 const errors = [], csp = [];
 page.on('console', m => {
@@ -269,6 +272,8 @@ ok('4.4 the panel refuses when nothing has been set', await S(async () => {
 }));
 ok('4.5 an unclaimed device is asked to SET one, not to guess', await (async () => {
   const c2 = await browser.newContext({ viewport: { width: 390, height: 844 } });
+  /* 610: see tools/e2e/_supabase.mjs */
+  await mockSupabase(c2);
   const p2 = await c2.newPage();
   await p2.goto(BASE + '#/admin'); await p2.waitForTimeout(1100);
   const r = (await p2.locator('#aSet').count()) === 1 && (await p2.locator('#aGo').count()) === 0;
@@ -280,9 +285,18 @@ ok('4.5 an unclaimed device is asked to SET one, not to guess', await (async () 
    5 — the forms refuse what cannot be true
    ====================================================================== */
 console.log('--- the forms ---');
-await S(() => {const S = window.__m.S;
-  S.state.user = { name: 'ر', email: 'r@x.com', phone: '7134669182', phoneVerified: true,
-                   emailVerified: true, joined: Date.now(), tier: 2 };
+/* ⚠️ 610: SEEDING `state.user` NO LONGER MEANS THERE IS A SESSION. A
+   listing is written on the server first — it is the one thing here that
+   another person has to be able to see — so `addClassified` asks for the
+   session and gets none from a hand-written object, and nothing publishes.
+   This block's subject is what the FORM refuses, not how a session is
+   made, so the account is created through the app's own path once and the
+   rest of the block is unchanged. */
+await S(async () => {
+  const S = window.__m.S;
+  await S.signUp({ name: 'ر', email: 'poster@example.com', password: 'Zaytoun#4417q' });
+  await S.confirmEmail('123456');
+  S.state.user.phone = '7134669182'; S.state.user.phoneVerified = true;
   S.state.extraClassifieds = []; S.state.myListings = []; S.state.extraEvents = []; S.save();
 });
 const post = async (price, title = 'سيارة للبيع نظيفة') => {

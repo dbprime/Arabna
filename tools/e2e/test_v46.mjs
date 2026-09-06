@@ -27,6 +27,7 @@
    survived and what is reassigned was cleared, so signing out looked like
    it half-worked rather than like a bug. */
 import { chromium } from '/opt/node22/lib/node_modules/playwright/index.mjs';
+import { mockSupabase } from './_supabase.mjs';
 
 const BASE = process.env.BASE || 'http://localhost:8099/index.html';
 let pass = 0, fail = 0;
@@ -46,6 +47,10 @@ const wire = p => {
    what hides block 1. The account is made through `signUp` itself. */
 const fresh = async (hash = '#/home') => {
   const ctx = await browser.newContext({ viewport: { width: 390, height: 844 } });
+  /* ⚠️ 610: the account really lives on a server now, and this container
+     has no route to it. The endpoint is answered by a stand-in rather than
+     the app's own rule being softened — see `_supabase.mjs`. */
+  await mockSupabase(ctx);
   const p = await ctx.newPage(); wire(p);
   await p.goto(BASE + hash, { waitUntil: 'domcontentloaded' });
   await p.waitForTimeout(900);
@@ -55,9 +60,12 @@ const fresh = async (hash = '#/home') => {
   });
   return { ctx, p };
 };
-const signUp = p => p.evaluate(pw => {
-  window.__S.signUp({ name: 'أحمد سالم', email: 'a@b.c', phone: '7135550123', password: pw });
-  window.__S.confirmEmail('123456');
+/* ⚠️ BOTH ARE AWAITED NOW. They were fire-and-forget while the account was
+   made in the page; from 610 each is a round trip, and not waiting for
+   them measured a state that had not happened yet. */
+const signUp = p => p.evaluate(async (pw) => {
+  await window.__S.signUp({ name: 'أحمد سالم', email: 'a@b.c', phone: '7135550123', password: pw });
+  await window.__S.confirmEmail('123456');
 }, PW);
 const go = async (p, h) => { await p.evaluate(x => { location.hash = x; }, h); await p.waitForTimeout(750); };
 
@@ -65,7 +73,7 @@ const go = async (p, h) => { await p.evaluate(x => { location.hash = x; }, h); a
 {
   const { ctx, p } = await fresh();
   await signUp(p);
-  const r = await p.evaluate(() => {
+  const r = await p.evaluate(async () => {
     const S = window.__S;
     S.toggleSaved('b1'); S.toggleSaved('b2');
     S.state.reviews.push({ id: 'r1', bizId: 'b1', rating: 5, text: 'x', user: 'أحمد' });
@@ -73,7 +81,7 @@ const go = async (p, h) => { await p.evaluate(x => { location.hash = x; }, h); a
     S.state.readNotifs.push('n1');
     const before = { saved: S.state.saved.length, reviews: S.state.reviews.length,
                      messages: S.state.messages.length, readNotifs: S.state.readNotifs.length };
-    S.signOut();
+    await S.signOut();   // 610: it ends the server session first, so it is awaited
     const after = { saved: S.state.saved.length, reviews: S.state.reviews.length,
                     messages: S.state.messages.length, readNotifs: S.state.readNotifs.length };
     const disk = JSON.parse(localStorage.getItem('arabna.v1') || '{}');
@@ -89,9 +97,9 @@ const go = async (p, h) => { await p.evaluate(x => { location.hash = x; }, h); a
   ok('1.5 …and nobody is signed in', r.logged === false);
 
   /* the poisoning itself, not its effect: DEFAULTS must survive a write */
-  const poison = await p.evaluate(() => {
+  const poison = await p.evaluate(async () => {
     window.__S.state.saved.push('POISON');
-    window.__S.signOut();
+    await window.__S.signOut();
     return JSON.stringify(window.__S.state.saved);
   });
   ok('1.6 writing to state never reaches DEFAULTS', poison === '[]', poison);
@@ -116,14 +124,14 @@ const go = async (p, h) => { await p.evaluate(x => { location.hash = x; }, h); a
 {
   const { ctx, p } = await fresh();
   await signUp(p);
-  const r = await p.evaluate(() => {
+  const r = await p.evaluate(async () => {
     const S = window.__S;
     S.state.cardOnFile = 'VISA •••• 4242';
     S.state.hiddenListings = ['c1'];
     S.state.readNotifs = ['n1'];
     S.state.pendingVerify = { email: 'x' };
     S.state.receipts = [{ id: 'ARB-1', amount: 29, buyer: { name: 'أحمد', email: 'a@b.c' } }];
-    S.deleteAccount();
+    await S.deleteAccount();
     return { card: S.state.cardOnFile, hidden: (S.state.hiddenListings || []).length,
              read: (S.state.readNotifs || []).length, pending: S.state.pendingVerify,
              user: S.state.user, receipts: (S.state.receipts || []).length,

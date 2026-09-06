@@ -24,6 +24,7 @@
    localStorage, and changing DEFAULTS does not touch it — so without
    block 1 every existing owner loses their listing the moment this lands. */
 import { chromium } from '/opt/node22/lib/node_modules/playwright/index.mjs';
+import { mockSupabase } from './_supabase.mjs';
 import { withDemoData } from './_demo.mjs';
 
 const BASE = process.env.BASE || 'http://localhost:8099/index.html';
@@ -55,6 +56,8 @@ const mount = p => p.evaluate(async () => {
 });
 const openWith = async (state) => {
   const ctx = await browser.newContext({ viewport: { width: 390, height: 844 } });
+  /* 610: see tools/e2e/_supabase.mjs */
+  await mockSupabase(ctx);
   await ctx.addInitScript(s => localStorage.setItem('arabna.v1', JSON.stringify(s)), state);
   const p = await ctx.newPage(); wire(p);
   await p.goto(BASE + '#/home', { waitUntil: 'networkidle' });
@@ -132,10 +135,11 @@ const disk = p => p.evaluate(() => JSON.parse(localStorage.getItem('arabna.v1'))
   ok('3.6 a repeated approval does not duplicate', again === 1, String(again));
 
   /* ---- 4. and signing out still ends every one of them ------------- */
-  const after = await p.evaluate(() => {
+  const after = await p.evaluate(async () => {
     const S = window.__S;
     const first = S.state.myBusinessIds[0];
-    S.signOut();
+    /* 610: it ends the server session first, so it is awaited */
+    await S.signOut();
     return { ids: S.state.myBusinessIds, owns: S.ownsBusiness(first),
              mine: S.myBusinesses().length, theme: S.state.theme, lang: S.state.lang };
   });

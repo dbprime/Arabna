@@ -31,6 +31,7 @@
    tool, and the fallback keeps an old browser working rather than
    throwing. */
 import { chromium } from '/opt/node22/lib/node_modules/playwright/index.mjs';
+import { mockSupabase } from './_supabase.mjs';
 
 const BASE = process.env.BASE || 'http://localhost:8099/index.html';
 let pass = 0, fail = 0;
@@ -59,6 +60,8 @@ const mount = p => p.evaluate(async () => {
 });
 const open = async (state = { lang: 'ar', user: ACCOUNT }) => {
   const ctx = await browser.newContext({ viewport: { width: 390, height: 844 } });
+  /* 610: see tools/e2e/_supabase.mjs */
+  await mockSupabase(ctx);
   await ctx.addInitScript(s => localStorage.setItem('arabna.v1', JSON.stringify(s)), state);
   const p = await ctx.newPage(); wire(p);
   await p.goto(BASE + '#/home', { waitUntil: 'networkidle' });

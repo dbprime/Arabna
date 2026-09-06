@@ -28,13 +28,28 @@ const ok = (n, c, extra = '') => { if (c) { pass++; console.log('PASS ' + n + (e
   else { fail++; console.log('FAIL ' + n + (extra ? ' -> ' + extra : '')); } };
 const read = f => readFileSync(ROOT + f, 'utf8');
 
+/* ⚠️ `js/vendor/` IS NOT OUR CODE, and the rules in this file are about
+   ours. Every one of them reads «the app does X» — one storage gate, no
+   `window.open`, one door out — and a vendored library is measured against
+   its own licence and its own upstream, not against our conventions.
+   Sweeping it in would make the checks fail on a correct tree and, worse,
+   invite somebody to "fix" a third party's minified source.
+
+   ⚠️ AND THE ONE THING THAT REALLY CHANGED IS SAID RATHER THAN HIDDEN
+   BEHIND THIS LINE: `@supabase/supabase-js` keeps its auth session in
+   `localStorage` under its own key, so from 610 there ARE two writers to
+   the browser store on a reader's device. What `1.1` guards is unchanged
+   and still true — everything the reader OWNS lives under one key, written
+   in one place — but «one writer on the device» is no longer the same
+   sentence as «one gate in our code», and only the second is asserted. */
+const OURS = f => !f.startsWith('js/vendor/');
 const jsFiles = (function walk(dir, out = []) {
   for (const e of readdirSync(ROOT + dir, { withFileTypes: true })) {
     if (e.isDirectory()) walk(dir + '/' + e.name, out);
     else if (e.name.endsWith('.js')) out.push(dir + '/' + e.name);
   }
   return out;
-})('js');
+})('js').filter(OURS);
 /* ⚠️ COMMENTS STRIPPED BEFORE ANY «does the code do X» CHECK — the lesson
    `420` paid for, when an assertion matched the prose warning against the
    very thing it was checking for. */
