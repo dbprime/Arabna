@@ -411,8 +411,11 @@ const signUp = (p, email, password, confirm = true) => p.evaluate(async ([e, pw,
      to save it against. */
   ok('9.5 the sign-in address is described as the username',
      /id="iEmail"[^>]*autocomplete="username"/.test(auth));
-  ok('9.6 …and so is the panel\'s, beside its own password',
-     (adm.match(/id="aUser" autocomplete="username"/g) || []).length === 2);
+  /* ⚠️ REVERSED BY 630: the panel's two username fields left with the device
+     lock — there is no password beside which to describe one, and a
+     username field reappearing in the panel would be the lock coming back. */
+  ok('9.6 …and the panel has no username field of its own any more',
+     (adm.match(/id="aUser"/g) || []).length === 0);
 
   /* ⚠️ ONE box carries `one-time-code`. The system fills the WHOLE code
      into a single field; six identical descriptions make it put one digit
