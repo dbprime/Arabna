@@ -11,7 +11,7 @@ ARABNA · عربنا — a mobile-first web app for the Arab community in the U.
 **business directory + marketplace + events + magazine**, Arabic-first with a full English toggle.
 ("Classifieds / الإعلانات الشخصية" is now "Marketplace / السوق" — the old `#/classifieds`
 routes still resolve so shared links keep working.)
-Current version: **V.10.2 (prototype)**. Owner: dbprime. Deploys to Vercel (team DB Prime).
+Current version: **V.10.3 (prototype)**. Owner: dbprime. Deploys to Vercel (team DB Prime).
 
 ## Hard rules (from the product brief)
 0. ⚠️ **THE OWNER'S NAME IS NEVER WRITTEN — anywhere.** Not in this file, not
@@ -10005,10 +10005,19 @@ invented records are off by default since `510`: `!cars.some(…)` over
 nothing is green while measuring nothing, so the section is published into
 first and `cars.length > 0` is part of the assertion.
 
-⚠️ **No version raise.** An appendix rides its batch, and `625` raised to
-V.10.2 — the same rule the two appendices to `620` followed. And that
-version has never been published: `main` still stands at V.10.1, so the
-service worker's cache bump still happens exactly once, on the merge.
+⚠️ **No version raise inside the appendix — and the sentence written here
+first, «that version has never been published», turned out false.** An
+appendix rides its batch, and `625` raised to V.10.2; but PR #4 had been
+merged at `0.10.2` before the appendix landed, and PR #5 carried the
+appendix at the **same** `0.10.2`. The service worker's cache is named
+`arabna-<version>` and `activate` deletes every other name (`420`), so a
+device that installed the first `0.10.2` never sees the second: **two
+deploys at one version reach installed devices once.** The raise to
+**V.10.3** is therefore its own commit and its own PR (#6), carrying
+nothing but the number, the regenerated carriers, and the two queue lines
+the owner dictated with it (`630` · `635`, before `615`). **The rule this
+leaves behind: an appendix that reaches `main` after its batch has already
+deployed is a new deploy, and a new deploy needs a new number.**
 
 ```
 152 runs · 76 suites · 7,113 assertions · zero red · zero crash
