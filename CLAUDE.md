@@ -9674,6 +9674,102 @@ Sixteen segments over `7cc47a3`, `HEAD` re-checked at the head of each,
 full re-run of everything measured before the suite reversals landed, because
 «all of them on the same tree» is measured and not inferred.
 
+### The two appendices, built into the same batch
+
+⚠️ **Appended rather than deferred for a measured reason**: both touch
+`js/screens/auth.js` and `js/screens/profile.js` — **the two files this batch
+already had open** — so a separate batch would pay a second full net for a
+handful of lines.
+
+#### The fields say what they are
+
+**`autocomplete="off"` was on every password field in the app** — one helper
+serves them all, so a single word meant **no password manager anywhere could
+offer to save, to fill, or to generate a strong one.**
+
+⚠️ **That is a loss of security, not of convenience, and it is this batch's own
+argument turned on us:** somebody who cannot save a password picks one they can
+hold in their head — short, or the one they already reuse — and `passwordChecks`
+then pushes them harder toward that single reused one. `passwordField` takes the
+description as a third argument now, and each site carries the one for its role.
+
+- ⚠️ **The spec named six fields; measured, there are THIRTEEN** — five in the
+  admin panel and **two this very batch added** (`npNew`, `npConf`). A mapping
+  covering only the six would have left the newest screen with the original
+  fault.
+- ⚠️ **Nothing else on the element moved.** `lang`, `inputmode`,
+  `autocapitalize`, `autocorrect`, `spellcheck` are there for a written reason —
+  autocorrect breaks a password silently — and that reason has not changed.
+- **`one-time-code` on the FIRST code box alone.** The system fills the whole
+  code into one field; six boxes with the same description make it put one digit
+  in each, or give up. ⚠️ **And the spreading already existed in the paste
+  handler and simply lacked a second caller**: an autofilled code arrives as six
+  characters in the first box, where the existing `slice(0, 1)` cut it to one —
+  **so the suggestion looked broken while working perfectly.** `spread()` is one
+  function with two doors.
+- ⚠️ **It is not promised to work every time, and that is said:** a code
+  suggested out of an *email* is less reliable than out of an SMS. **But the
+  missing description made it impossible always, rather than uneven** — and that
+  is the item.
+- **Two more, measured rather than listed:** the sign-in address field carried
+  **no description at all**, so a manager had nothing to bind the saved password
+  to (`username` now, and the same for the panel's two username fields); and the
+  sign-in screen still tagged forgot-password **«قريباً»** — the same fault item
+  4 removed, surviving one step up the road, over a screen that now works.
+
+#### The profile row is actually created
+
+`0001` promised in a comment that a trigger on `auth.users` makes the row at
+sign-up. **It was never written** — `grep 'create trigger'` returned one, a
+guard. The debt is `470`'s, not `610`'s.
+
+```
+live, after the first real sign-up   users 1 · profiles 0 · triggers 0
+after 0006 was applied by hand       users 1 · profiles 1 · triggers 2
+```
+
+⚠️ **And nothing looked broken, which is what made it dangerous.**
+`hydrateUserFromSession` falls back to local values, so **the fault shows only
+on a second device**, where there are none: the name comes back blank and
+`is_admin` cannot be read at all.
+
+⚠️ **This is the one thing in the batch that ran on the live database before it
+existed in the repository**, so `0006_profiles_on_signup.sql` is the repository
+catching up — written letter for letter, every statement idempotent. ⚠️ **A file
+that differs from the database in one character is worse than no file, because
+it is believed.**
+
+⚠️ **The number is a deliberate deviation from the appendix**, which asked for
+`0005` so this would precede `admin_find_users`. `0005` was taken by the batch
+this appends to and is pushed, and the appendix's own rule reserves the number
+from the directory at execution time. **Measured, the order has no effect on a
+rebuild** — `admin_find_users` is a function definition and reads no row when it
+is created — while renaming a migration that may already have been applied is
+the larger risk. **A migration number is a key, the way a listing's id is.**
+
+**And the third gap was built rather than only recorded:** `display_name` was
+written once at sign-up and never again, so **the first open on a second device
+handed back the old name.** `updateProfile` writes it to the server now — the
+«own row: update» policy already permits it — and **its failure is swallowed on
+purpose**: the name is already right on this device, and the address and the
+password are the two that may not be half-done. ⚠️ **`state.user` had to start
+carrying its `id`**, or the write addresses nothing and the line never runs.
+
+**Two gaps recorded and not built:** `tier2_by` is a column read by `610` and
+**written by nobody** — the inverse of the fault its own comment warns about —
+and `phone` never reaches the server while `PHONE_AUTH` is off, which is
+intended and is said so it is not taken for a fault.
+
+```
+148 runs · 74 suites · 6,977 assertions · zero red · zero crash
+```
+Sixteen segments over `7c6ed6b`. `test_v76` is 75 assertions, and the five new
+teeth bite: **`9.9` prints `1`** — the code cut to one digit — and **`10.9`
+prints `Test Person`**, the first name still standing on the server. ⚠️ **And
+`9.2` did NOT go red when `off` was restored**, because it measures the CALL
+SITES while `9.1` and `9.3` measure the element: two layers, each with its own
+check, exactly as V.07.9 recorded.
+
 ## Known open items
 - **The header image is still far larger than its box.** V.04.7 replaced
   the 831/837 KB lockups with the cropped marks at **333/338 KB** — 60% off
