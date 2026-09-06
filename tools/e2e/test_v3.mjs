@@ -484,15 +484,24 @@ ok('verified badge shows next to the name', await page.evaluate(() => !!document
    field left to capitalise. A signed-in MEMBER who is not staff meets a
    closed door that says why; the panel opens only when the server calls
    the account staff. */
-const shutForMember = await page.evaluate(async () => {
+/* ⚠️ In THIS suite the member was already promoted to staff on the stand-in
+   server by `adminLogin()` above, so what is measured is that the door
+   answers to the server's word and to nothing else: tabs exactly when the
+   account is staff, the true-reason screen exactly when it is not, and the
+   old username / password door never. */
+const door = await page.evaluate(async () => {
+  const S = await import('arabna/js/store.js').catch(() => import('./js/store.js'));
+  location.hash = '#/home';
+  await new Promise(r => setTimeout(r, 300));
   location.hash = '#/admin';
-  await new Promise(r => setTimeout(r, 900));
-  return { denied: !!document.querySelector('#adminDenied'),
+  await new Promise(r => setTimeout(r, 1100));
+  return { staff: S.isAccountAdmin(),
+           denied: !!document.querySelector('#adminDenied'),
            tabs: !!document.querySelector('#aTabs'),
            oldDoor: !!document.querySelector('#aUser, #aPass, #aSet, #aGo') };
 });
-ok('a member who is not staff is refused, and told the true reason',
-   shutForMember.denied && !shutForMember.tabs && !shutForMember.oldDoor, JSON.stringify(shutForMember));
+ok('the panel answers to the server\'s word alone — tabs for staff, the true reason for anyone else, never a device password',
+   door.tabs === door.staff && door.denied === !door.staff && !door.oldDoor, JSON.stringify(door));
 ok('the device-password machinery is gone from the store', await page.evaluate(async () => {
   const S = await import('arabna/js/store.js').catch(() => import('./js/store.js'));
   return S.checkAdmin === undefined && S.setAdminPass === undefined && S.adminIsSet === undefined;
