@@ -122,33 +122,48 @@ if (!SINGLE) {
   ok('3.1 the sweep finds guards of this shape at all', guards.length >= 10, String(guards.length));
 
   /* Everything still silent must be accounted for by CLASS, and there are
-     exactly two classes that are allowed to be:
+     exactly three classes that are allowed to be:
        - a PERMISSION guard: it redirects to a page that DOES exist, so
          «this is no longer available» would be false there;
        - an OPERATION that failed: nothing is missing, an action did not
-         take. That wants its own sentence, not this one.
+         take. That wants its own sentence, not this one;
+       - ⚠️ a PRECONDITION, added by 620 with the recovery flow: the last
+         step of a password reset needs the session the code opened, and
+         with none it sends the reader to the step that opens one. Nothing
+         is missing there either — the road simply has a first half, and
+         «this is no longer available» would be as false as it is for a
+         permission guard. It is NAMED below, exactly as ownerOnly is, so
+         that the class stays a decision and not a hole.
      ⚠️ Anything that is neither is a missing-record guard that lost its
      word, and that is the regression this line exists to catch. */
   const silent = guards.filter(g => !g.hasToast);
   const permission = silent.filter(g => /owns|adminUnlocked|\bok\b/.test(g.whole));
   const opFailed   = silent.filter(g => /boostClassified|primaryBusinessId/.test(g.whole));
-  const unexplained = silent.filter(g => !permission.includes(g) && !opFailed.includes(g));
-  ok('3.2 every silent redirect left is a permission guard or a failed operation',
+  const precond    = silent.filter(g => /!S\.state\.user\) \{ go\('#\/auth\/forgot'/.test(g.whole));
+  const unexplained = silent.filter(g =>
+    !permission.includes(g) && !opFailed.includes(g) && !precond.includes(g));
+  ok('3.2 every silent redirect left is a permission guard, a failed operation or a precondition',
      unexplained.length === 0,
      unexplained.map(g => g.f + ': ' + g.whole.slice(0, 46)).join(' | ')
-       || `permission ${permission.length} · operation ${opFailed.length}`);
+       || `permission ${permission.length} · operation ${opFailed.length} · precondition ${precond.length}`);
 
   /* and the eleven that ARE missing-record guards all speak */
   ok('3.3 …and every missing-record guard carries the word',
      guards.filter(g => g.hasToast).length >= 11,
      String(guards.filter(g => g.hasToast).length));
 
+  /* ⚠️ AND THE PRECONDITION IS NAMED TOO, for the same reason as ownerOnly:
+     a class that matched by accident would let the next silent guard of a
+     different shape in behind it. Exactly one is expected. */
+  ok('3.2b …and the precondition class holds exactly the reset guard',
+     precond.length === 1, String(precond.length));
+
   /* ⚠️ ownerOnly is named, so nobody "fixes" it into a lie later */
   const dirSrc = srcs.find(([f]) => f === 'js/screens/directory.js')[1];
   ok('3.4 ownerOnly is deliberately silent — it redirects to a page that exists',
      /if \(!ok\) \{ go\('#\/directory\/' \+ bizId\); return false; \}/.test(dirSrc));
 } else {
-  for (const n of ['3.1', '3.2', '3.3', '3.4']) ok(n + ' (source check, module build only)', true);
+  for (const n of ['3.1', '3.2', '3.2b', '3.3', '3.4']) ok(n + ' (source check, module build only)', true);
 }
 
 console.log(`\n${pass} passed, ${fail} failed`);
