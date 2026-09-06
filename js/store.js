@@ -3909,6 +3909,7 @@ export async function updateProfile({ name, email, phone, password }) {
   /* ⚠️ `email !== u.email`: without it a «change» is parked every time
      «حفظ» is pressed even when the field was never touched, and a code is
      demanded for an address that did not move. */
+  let emailSendError = '';
   if (email && email !== u.email) {
     u.pendingEmail = email;
     emailPending = true;
@@ -3919,7 +3920,16 @@ export async function updateProfile({ name, email, phone, password }) {
        what the reader typed — the old address keeps working meanwhile, so
        nothing is broken by waiting, and `confirmEmail` is still the only
        thing that can promote it. */
-    try { await sb.auth.updateUser({ email }); } catch (e) { /* stays parked */ }
+    /* ⚠️ `supabase-js` DOES NOT THROW — it returns `{ data, error }`. So the
+       `try/catch` that stood here caught nothing at all and the error fell
+       into the void: a rate limit, an address the server refuses, a dropped
+       connection — every one of them passed as though it had worked.
+       ⚠️ AND THE «STAYS PARKED» DECISION IS NOT REVERSED: the old address
+       still works, so nothing breaks by waiting, and that is written above.
+       What changes is that the failure is now KNOWN, so it can be said
+       instead of swallowed. */
+    const { error: mailErr } = await sb.auth.updateUser({ email });
+    if (mailErr) emailSendError = mailErr.message || 'sendFailed';
   /* ⚠️ AND UNDOING IT CANCELS IT. The pending address was written and never
      cleared, so a typo waited for ever: retyping the real address left the
      wrong one parked, and any later visit to the code screen with the right
@@ -3952,7 +3962,7 @@ export async function updateProfile({ name, email, phone, password }) {
     delete u.pendingPhone;              // undoing it cancels it
   }
   save();
-  return Object.assign({}, u, { emailPending, phonePending });
+  return Object.assign({}, u, { emailPending, phonePending, emailSendError });
 }
 /** Sign in with a real password against the server.
     ⚠️ THIS IS THE FUNCTION THE SIGN-IN SCREEN NEVER HAD. It called
