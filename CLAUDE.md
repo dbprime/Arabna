@@ -9483,6 +9483,34 @@ is not theirs. It is not urgent: this batch does not wire
 later migration or a server function holding the secret key. ⚠️ **And it is
 not to be worked around by weakening RLS somewhere else.**
 
+### And the group closes — the net, run on segments over one frozen tree
+```
+146 runs · 73 suites · 6,821 assertions · zero red · zero crash
+```
+⚠️ **It was run as NINETEEN SEGMENTS, not one two-hour invocation, and that
+is a measurement rather than a shortcut.** The container is suspended
+whenever the session goes idle, so its processes freeze with it: one run
+measured **two and a half hours of wall clock against ninety seconds of
+work**. **What counts is the awake time, and the clock lies about it.** The
+alternative was a person holding a session awake for two hours to pay for a
+fault in the infrastructure — which is exactly what `615` exists for.
+
+**Three conditions make segments one proof rather than three partial ones,
+and each was measured, not assumed:**
+- **Every suite runs, with no exception.** The full count is read from
+  `tools/e2e/` at the start (**73**) and matched against the count actually
+  run (**73**) before the word «complete» is used — and each ran twice.
+- **All of them on the same tree.** `git rev-parse HEAD` was recorded at the
+  first segment and **re-checked at the head of every one of the nineteen**;
+  a moved character drops what came before it.
+- ⚠️ **And no suite's result is borrowed from an earlier run.** A suite not
+  run on THIS tree is a suite not run — *a test that does not run is said not
+  to run.*
+
+**The evidence asked for is «every suite green on this tree», and it holds to
+the letter whether it was measured in one stretch or in nineteen. What
+changed is how it is measured, not what.**
+
 ## Known open items
 - **The header image is still far larger than its box.** V.04.7 replaced
   the 831/837 KB lockups with the cropped marks at **333/338 KB** — 60% off
