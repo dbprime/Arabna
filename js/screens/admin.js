@@ -118,6 +118,7 @@ function panelView(root) {
           S.adminListings().filter(c => c.reports).length ? ` (${S.adminListings().filter(c => c.reports).length})` : ''}</button>
         <button class="tab ${tab === 'stats' ? 'active' : ''}" data-t="stats">${t('adminStats')}</button>
         <button class="tab ${tab === 'set' ? 'active' : ''}" data-t="set">${t('settings')}</button>
+        <button class="tab ${tab === 'users' ? 'active' : ''}" data-t="users">${t('adminUsers')}</button>
       </div>`;
   };
 
@@ -132,9 +133,37 @@ function panelView(root) {
     else if (tab === 'mkt') body.innerHTML = mktHtml();
     else if (tab === 'stats') body.innerHTML = statsHtml();
     else if (tab === 'set') body.innerHTML = setHtml();
+    else if (tab === 'users') body.innerHTML = usersHtml();
     else body.innerHTML = dirHtml();
 
     wireRoutes(body);
+
+    /* --- the users search: three characters, then the server decides --- */
+    const uq = $('#uQ');
+    if (uq) {
+      let seq = 0;
+      const out = $('#uOut');
+      const run = async () => {
+        const q = uq.value.trim();
+        const mine = ++seq;
+        if (q.length < 3) { out.innerHTML = ''; return; }
+        out.innerHTML = `<div class="pad center-col"><span class="spinner"></span></div>`;
+        let rows = null, failed = '';
+        try {
+          const r = await S.sb.rpc('admin_find_users', { q });
+          if (r.error) failed = r.error.message || 'error'; else rows = r.data || [];
+        } catch (e) { failed = (e && e.message) || 'error'; }
+        /* ⚠️ A slow answer to an older query must not paint over a newer
+           one — somebody typing four letters fires four calls. */
+        if (mine !== seq) return;
+        if (failed) { out.innerHTML = `<div class="err-msg">${icon('alert', 15)} ${esc(failed)}</div>`; return; }
+        out.innerHTML = rows.length
+          ? rows.map(userRowHtml).join('')
+          : `<div class="pad center-col"><span class="muted fs-13">${t('usersNone')}</span></div>`;
+      };
+      let deb = null;
+      uq.addEventListener('input', () => { clearTimeout(deb); deb = setTimeout(run, 350); });
+    }
 
     // --- listings waiting for a decision ---
     $$('#aBody [data-approve]').forEach(b => b.addEventListener('click', () => {
@@ -978,6 +1007,59 @@ function wireGreetings(paint) {
 }
 
 /* ----------------------------- SETTINGS ----------------------------- */
+/* ============================================================
+   The users section — READ ONLY, and behind two locks.
+   ------------------------------------------------------------
+   ⚠️ Eight tabs and not one of them showed a person, so when somebody rang
+   to say they had forgotten which address they signed up with there was
+   nowhere to look. This is the answer, and it is a search rather than a
+   list: `admin_find_users` refuses fewer than three characters precisely
+   so that nobody can browse the membership.
+
+   ⚠️ AND THE ADDRESS IS PRINTED IN FULL — the owner's decision of 5 September
+   2026. Masking it was proposed and refused with its reason: whoever has
+   reached this panel has reached worse than an address, and telling a
+   caller what their own address is IS the whole purpose of the screen.
+
+   ⚠️ TWO LOCKS, AND THAT IS THE ITEM RATHER THAN THE SCREEN. The panel's
+   own lock is `state.adminAuth` — a name and a password ON THIS DEVICE,
+   with no connection to any account. This section reads OTHER PEOPLE's
+   data, so it demands the device lock AND a signed-in account the SERVER
+   calls staff. The function refuses a non-admin by itself; the screen
+   refuses first so nobody meets a bare error.
+   ============================================================ */
+function usersHtml() {
+  if (!S.isAccountAdmin()) {
+    return `<div class="pad mt-16 center-col">
+      <div class="empty-ico">${icon('lock', 33)}</div>
+      <b style="font-size:1.0625rem">${t('usersNeedAccount')}</b>
+      <span class="muted fs-13" style="text-align:center">${t('usersNeedAccountSub')}</span>
+    </div>`;
+  }
+  return `<div class="pad mt-12">
+      <div class="field"><label class="label">${t('usersSearch')}</label>
+        <input class="input" id="uQ" placeholder="${t('usersSearchPh')}" /></div>
+      <div class="hint">${t('usersMin3')}</div>
+      <div id="uOut" class="mt-12"></div>
+    </div>`;
+}
+
+function userRowHtml(r) {
+  /* ⚠️ The classes are the panel's OWN two, not a new pair: this batch does
+     not open `styles/app.css`, and a class with no rule behind it renders as
+     nothing at all — a mark that is invisible is worse than no mark. */
+  const gone = r.deleted_at
+    ? `<span class="badge badge-pending">${t('usersDeleted')}</span>` : '';
+  const ver = r.email_verified
+    ? `<span class="badge badge-verified">${t('verified')}</span>` : '';
+  return `<div class="list-row" style="display:block">
+    <div class="row-title">${esc(r.display_name || '—')} ${ver} ${gone}</div>
+    <div class="row-sub ltr">${esc(r.email || '')}</div>
+    ${r.phone ? `<div class="row-sub ltr">${esc(r.phone)}</div>` : ''}
+    <div class="row-sub">${t('joinedOn')} <span class="ltr">${esc(String(r.created_at || '').slice(0, 10))}</span></div>
+  </div>`;
+}
+
 function setHtml() {
   const dc = S.demoCounts();
   return `<div class="pad mt-16">

@@ -299,11 +299,18 @@ ok('4.14 …only a salted hash', await page.evaluate(() => {
   return !('password' in u) && (u.pwHash || '').length === 64 && (u.pwSalt || '').length === 32;
 }));
 
-await patch(() => {
-  const s = JSON.parse(localStorage.getItem('arabna.v1') || '{}');
-  s.user.emailVerified = true; s.user.tier = 1;
-  localStorage.setItem('arabna.v1', JSON.stringify(s));
+/* ⚠️ REVERSED BY 620, and the reversal is the point rather than a repair.
+   This used to write `emailVerified` straight into storage, which was
+   harmless while `changePassword` never left the device. It does now: the
+   server is asked, and a session is what makes that possible — so the
+   address is verified THROUGH THE CODE, which is what a person does and
+   what creates the session. Patching the flag would leave the block green
+   over a change that never reached a server. */
+await page.evaluate(async () => {
+  const S = await import('arabna/js/store.js').catch(() => import('./js/store.js'));
+  await S.confirmEmail('123456');
 });
+await page.waitForTimeout(400);
 await go('#/profile/password');
 await page.fill('#cpCur', 'Qamar2026$'); await page.fill('#cpNew', '123456'); await page.fill('#cpConf', '123456');
 await page.click('#cpSave'); await page.waitForTimeout(600);

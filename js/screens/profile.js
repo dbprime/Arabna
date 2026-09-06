@@ -196,6 +196,17 @@ export function EditProfileScreen(root) {
         ${/* ⚠️ Drawn on the SAME condition that draws the line above, so the
              two can never say different things. */''}
         ${S.pendingEmail() ? `<button class="mini-btn" id="pCancelEmail">${icon('x', 15)} ${t('emailCancelChange')}</button>` : ''}</div>
+      ${/* ⚠️ IT IS HIDDEN UNTIL THE ADDRESS ACTUALLY CHANGES, and that is the
+           item rather than decoration: asking everybody who corrected a
+           letter in their name for a password is a toll on the ordinary
+           case to guard the rare one. It appears on `input`, by comparing
+           the field with the address on file — so it also disappears again
+           the moment the reader types the old address back. */''}
+      <div class="field" id="pPwWrap" hidden>
+        <label class="label">${t('accountPassword')}</label>
+        <input class="input" id="pPw" type="password" autocomplete="current-password" />
+        <div class="hint">${t('emailChangeNeedsPassword')}</div>
+        <div class="field-err" id="e_pPw"></div></div>
       <div class="field"><label class="label">${t('phoneNumber')}</label>
         <input class="input" id="pPhone" inputmode="tel" value="${esc(u.phone || '')}" />
         ${/* ⚠️ This line was drawn ALWAYS, before the field was touched:
@@ -266,6 +277,12 @@ export function EditProfileScreen(root) {
     EditProfileScreen(root);
   });
 
+  /* the two are read once; the handler is one line and has no state */
+  const pwWrap = $('#pPwWrap'), emailInput = $('#pEmail');
+  const syncPw = () => { pwWrap.hidden = emailInput.value.trim() === (u.email || ''); };
+  emailInput.addEventListener('input', syncPw);
+  syncPw();
+
   const cx = $('#pCancelEmail');
   if (cx) cx.addEventListener('click', () => {
     S.cancelEmailChange();
@@ -281,8 +298,16 @@ export function EditProfileScreen(root) {
     fine = setErr('pEmail', !email ? t('required') : !S.validEmail(email) ? t('badEmail') : '') && fine;
     if (!fine) return;
 
+    const emailChanged = email !== (u.email || '');
+    if (emailChanged && !$('#pPw').value) { setErr('pPw', t('required')); return; }
+    setErr('pPw', '');
+
     const phoneChanged = phone !== (u.phone || '');
-    const r = await S.updateProfile({ name, email, phone });
+    const r = await S.updateProfile({ name, email, phone, password: $('#pPw').value });
+    /* ⚠️ A refusal stops EVERYTHING and writes nothing — not the name, not
+       the number. The message goes under the field it belongs to, which is
+       this screen's own rule for every other refusal on it. */
+    if (r && r.error === 'password') { setErr('pPw', t('wrongAccountPassword')); return; }
 
     // photo: only re-queue it when it actually changed
     /* ⚠️ Only the PHOTO half is touched here. Reading `u.avatar.url` on a
@@ -305,7 +330,15 @@ export function EditProfileScreen(root) {
        لاحقاً». A second screen for the same thing is the duplication this
        project bans. */
     if (r && r.emailPending) {
-      S.sendEmailCode(email);
+      /* ⚠️ NO `sendEmailCode` HERE, and its absence is the fix. `updateProfile`
+         already called `sb.auth.updateUser({ email })`, and THAT is what makes
+         Supabase mail the change code. A second call is `resend({type:
+         'email_change'})` on the same address moments later: either a duplicate
+         message, or — inside the 30-second floor the owner set — a refusal
+         nothing on this screen reads. Neither is wanted, and while it was a
+         `setTimeout` that mailed nothing the line cost nothing and hid itself.
+         ⚠️ Not measured on the live host from here; it follows from the API and
+         from that floor, and acceptance test 3 is where it is seen. */
       S.setPendingVerify('email', email);
       toast(t('emailChangeSent'), 'ok');
       go('#/auth/email');
@@ -394,7 +427,13 @@ export function ChangePasswordScreen(root) {
     if (next !== conf) { err.innerHTML = errMsg(t('passwordsDontMatch')); return; }
 
     const res = await S.changePassword(cur, next);
-    if (!res.ok) { err.innerHTML = errMsg(t('wrongPassword')); return; }
+    /* ⚠️ TWO REFUSALS, TWO SENTENCES. `wrongPassword` for both told whoever
+       typed theirs correctly — and was refused because the server wanted a
+       fresher session — to go on doubting a password that was right. */
+    if (!res.ok) {
+      err.innerHTML = errMsg(res.reason === 'server' ? t('pwServerRefused') : t('wrongPassword'));
+      return;
+    }
     toast(t('passwordChanged'), 'ok');
     go('#/profile');
   });

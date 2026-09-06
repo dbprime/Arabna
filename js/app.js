@@ -23,7 +23,8 @@ import { ReceiptsScreen, ReceiptScreen } from './screens/receipts.js';
 import { ProfileScreen, EditProfileScreen, ChangePasswordScreen, SavedScreen, MyAdsScreen, MyRequestsScreen,
          MyBusinessScreen, MyReviewsScreen, SettingsScreen, NotificationsScreen, InstallScreen,
          HelpScreen, AboutScreen, PrivacyScreen, TermsScreen, BlockedScreen } from './screens/profile.js';
-import { SignUpScreen, SignInScreen, EmailVerifyScreen, PhoneVerifyScreen, ForgotScreen } from './screens/auth.js';
+import { SignUpScreen, SignInScreen, EmailVerifyScreen, PhoneVerifyScreen, ForgotScreen,
+         NewPasswordScreen } from './screens/auth.js';
 import { AdvertiseScreen } from './screens/advertise.js';
 import { PHONE_AUTH } from './data.js';
 import { PrayerScreen } from './screens/prayer.js';
@@ -107,6 +108,7 @@ const ALL_ROUTES = [
   { re: /^#\/auth\/email$/,       screen: EmailVerifyScreen, nav: null },
   { re: /^#\/auth\/phone$/,       screen: PhoneVerifyScreen, nav: null },
   { re: /^#\/auth\/forgot$/,      screen: ForgotScreen,      nav: null },
+  { re: /^#\/auth\/new-password$/, screen: NewPasswordScreen, nav: null },
   { re: /^#\/advertise(?:\/(.+))?$/, screen: AdvertiseScreen, nav: 'home' },
   /* Loaded only when somebody asks for it. A static import put 80 KB of
      back office into the first paint of every reader in the community,

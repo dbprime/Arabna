@@ -31,7 +31,7 @@ const HOST = 'ijubbqvbkfzillkhwdzp.supabase.co';
 function freshDb() {
   return {
     users: new Map(),      // email -> { id, password, confirmed }
-    profiles: new Map(),   // id    -> { id, display_name, email_verified, tier2_by }
+    profiles: new Map(),   // id    -> { id, display_name, email_verified, tier2_by, is_admin }
     businesses: [],
     classifieds: [],
     session: null,
@@ -77,6 +77,8 @@ function sessionFor(u) {
  *   `preConfirm` makes sign-up land already verified, for the suites whose
  *   subject is downstream of the code screen and which only ever needed an
  *   account to exist.
+ *   `admin` marks the account this context creates as staff, which is what
+ *   the users section demands on top of the panel's own device lock.
  *   `users` pre-registers addresses. ⚠️ It is for the suites that SEED
  *   `state.user` instead of signing up: from 610 `confirmEmail` promotes
  *   nothing by itself, so an address the server has never heard of is
@@ -91,7 +93,8 @@ export async function mockSupabase(ctx, opts = {}) {
     const id = 'mock-uuid-' + (++db.seq);
     db.users.set(String(email).toLowerCase(),
       { id, email: String(email).toLowerCase(), password: null, confirmed: false, meta: {} });
-    db.profiles.set(id, { id, display_name: '', email_verified: false, tier2_by: null });
+    db.profiles.set(id, { id, display_name: '', email_verified: false, tier2_by: null,
+                          is_admin: false, phone: null, created_at: new Date().toISOString() });
   }
 
   await ctx.route(`https://${HOST}/**`, async (route) => {
@@ -119,6 +122,9 @@ export async function mockSupabase(ctx, opts = {}) {
         display_name: u.meta.display_name || '',
         email_verified: preConfirm,
         tier2_by: null,
+        is_admin: !!opts.admin,
+        phone: null,
+        created_at: new Date().toISOString(),
       });
       if (preConfirm) db.session = sessionFor(u);
       return route.fulfill(json(preConfirm ? sessionFor(u) : { user: sessionFor(u).user, session: null }));
@@ -147,8 +153,49 @@ export async function mockSupabase(ctx, opts = {}) {
       u.confirmed = true;
       const prof = db.profiles.get(u.id);
       if (prof) prof.email_verified = true;
+      /* ⚠️ `recovery` and `email` land here too. Supabase answers all of
+         them with a session, and the recovery session is the ONLY thing
+         that lets the next screen set a new password at all — a mock that
+         returned nothing there would make the whole road untestable. */
       db.session = sessionFor(u);
       return route.fulfill(json(db.session));
+    }
+
+    /* ⚠️ `resend` is what `620` made real, and the mock refuses exactly
+       where the server does: a `signup` resend to an already-confirmed
+       address. That refusal is why `sendEmailCode` had to learn a third
+       case at all, and a mock that waved it through would have hidden it. */
+    if (path === '/auth/v1/resend') {
+      const email = String(body.email || '').toLowerCase();
+      const u = db.users.get(email);
+      if (!u) return route.fulfill(json({ error: 'user_not_found', msg: 'User not found' }, 400));
+      if (body.type === 'signup' && u.confirmed) {
+        return route.fulfill(json({ error: 'validation_failed', msg: 'Email link is invalid or has expired' }, 422));
+      }
+      db.sent = (db.sent || 0) + 1;
+      db.lastSend = { kind: 'resend', type: body.type, email };
+      return route.fulfill(json({}));
+    }
+
+    /* a code to an address that already exists — the road a confirmed
+       account takes when it needs a fresh code and nothing is parked */
+    if (path === '/auth/v1/otp') {
+      const email = String(body.email || '').toLowerCase();
+      if (!db.users.has(email) && body.create_user === false) {
+        return route.fulfill(json({ error: 'user_not_found', msg: 'Signups not allowed for otp' }, 422));
+      }
+      db.sent = (db.sent || 0) + 1;
+      db.lastSend = { kind: 'otp', email };
+      return route.fulfill(json({}));
+    }
+
+    /* ⚠️ THE SAME ANSWER FOR AN ADDRESS IT KNOWS AND ONE IT DOES NOT. The
+       real endpoint does not distinguish either, and a mock that did would
+       let a screen be written that leaks who is registered. */
+    if (path === '/auth/v1/recover') {
+      db.sent = (db.sent || 0) + 1;
+      db.lastSend = { kind: 'recover', email: String(body.email || '').toLowerCase() };
+      return route.fulfill(json({}));
     }
 
     if (path === '/auth/v1/logout') {
@@ -159,6 +206,15 @@ export async function mockSupabase(ctx, opts = {}) {
     if (path === '/auth/v1/user') {
       if (!db.session) return route.fulfill(json({ error: 'not_authenticated' }, 401));
       if (req.method() === 'PUT') {
+        /* ⚠️ A PASSWORD CHANGE REALLY MOVES IT HERE. Without this the suite
+           for `620`'s first item could not tell a server that accepted the
+           change from one that ignored it — and «the old password still
+           works» is the whole fault being closed. */
+        if (body.password) {
+          const cur = db.users.get(String(db.session.user.email).toLowerCase());
+          if (cur) cur.password = body.password;
+          return route.fulfill(json(db.session.user));
+        }
         /* an email change: parked here exactly as Supabase parks it —
            the address does not move until a code confirms it */
         return route.fulfill(json({ ...db.session.user, new_email: body.email || null }));
@@ -167,6 +223,30 @@ export async function mockSupabase(ctx, opts = {}) {
     }
 
     /* ---------------- PostgREST ---------------- */
+    /* ⚠️ The function's own guards are mirrored, not skipped: not staff is
+       an exception, and fewer than three characters returns nothing. A mock
+       that answered anyway would make both assertions green on a database
+       that had lost them. */
+    if (path === '/rest/v1/rpc/admin_find_users') {
+      const me = db.session && db.profiles.get(db.session.user.id);
+      if (!me || !me.is_admin) {
+        return route.fulfill(json({ code: 'P0001', message: 'not authorized' }, 400));
+      }
+      const q = String(body.q || '').trim();
+      if (q.length < 3) return route.fulfill(json([]));
+      const hay = (v) => String(v || '').toLowerCase().includes(q.toLowerCase());
+      const rows = [];
+      for (const u of db.users.values()) {
+        const pr = db.profiles.get(u.id) || {};
+        if (hay(pr.display_name) || hay(pr.phone) || hay(u.email)) {
+          rows.push({ id: u.id, display_name: pr.display_name || '', email: u.email,
+                      phone: pr.phone || null, created_at: pr.created_at || null,
+                      email_verified: !!pr.email_verified, deleted_at: null });
+        }
+      }
+      return route.fulfill(json(rows.slice(0, 50)));
+    }
+
     if (path.startsWith('/rest/v1/')) {
       const table = path.slice('/rest/v1/'.length);
       if (req.method() === 'GET') {
