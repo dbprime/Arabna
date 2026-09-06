@@ -349,11 +349,18 @@ ok('7.10 «أهلية» is gone and nothing promises the badge',
    !/أهلية|احصل على شارة/.test(await page.evaluate(() => document.body.innerText)));
 
 await go(page, '#/auth/forgot');
-ok('7.11 forgot-password says «قريباً» instead of pretending',
-   /قريباً/.test(await page.evaluate(() => document.body.innerText))
-   && await page.evaluate(() => !document.querySelector('#fEmail')));
-ok('7.12 …and offers two doors that open', await page.evaluate(() =>
-  [...document.querySelectorAll('#app [data-route]')].map(e => e.dataset.route).includes('#/auth/signup')));
+/* ⚠️ REVERSED BY 620, and the pair is kept rather than deleted because what
+   they guard has not changed: the screen must never promise what it cannot
+   do. It used to say «قريباً» BECAUSE there was no server; 610 put one
+   there, so the same sentence became the lie the item was written against.
+   The subject is the same and the answer is the opposite. */
+ok('7.11 forgot-password no longer says «قريباً» — there IS a server now',
+   !/قريباً/.test(await page.evaluate(() => document.body.innerText)));
+ok('7.12 …and it is a form that reaches it, not a notice',
+   await page.evaluate(() => !!document.querySelector('#fgEmail') && !!document.querySelector('#fgGo')));
+/* and there is still a way back out of it */
+ok('7.12b …with a door back to signing in', await page.evaluate(() =>
+  [...document.querySelectorAll('#app [data-route]')].map(e => e.dataset.route).includes('#/auth/signin')));
 
 /* ============ 8 — the marketplace listing ============ */
 console.log('--- the listing ---');
