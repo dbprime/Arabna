@@ -671,7 +671,11 @@ function queueHtml() {
             <span class="badge badge-pending">${t('statusPending')}</span></div>
           <div class="row-sub gold">${priceDotHtml(c.price, c.cat)}${t(catKeyOf(c.cat))}</div>
           <div class="row-sub">${esc(L(c.desc || ''))}</div>
-          <div class="row-sub">${icon('user', 13)} ${esc((S.state.user && S.state.user.name) || t('guest'))} · ${(c.photos || []).length} ${t('photosCount')}</div>
+          ${/* 630: a row from the server is somebody ELSE's listing, and this
+               device's own name printed under it was a lie on the queue —
+               the name is printed only for this account's own row */''}
+          <div class="row-sub">${c.owner === 'me' && S.state.user && S.state.user.name
+            ? `${icon('user', 13)} ${esc(S.state.user.name)} · ` : ''}${(c.photos || []).length} ${t('photosCount')}</div>
           ${rejectBox(c.id)}
           <div class="row-actions">
             <button class="mini-btn gold" data-approve="${c.id}">${icon('check', 15)} ${t('approve')}</button>
