@@ -25,7 +25,7 @@ const ROUTES = [
   '#/messages', '#/profile', '#/profile/edit', '#/profile/password', '#/saved', '#/my-ads',
   '#/my-reviews', '#/my-requests', '#/my-business', '#/settings', '#/install', '#/blocked', '#/notifications', '#/help',
   '#/about', '#/privacy', '#/terms', '#/auth/signup', '#/auth/signin', '#/auth/email',
-  '#/auth/phone', '#/auth/forgot', '#/advertise', '#/admin',
+  '#/auth/phone', '#/auth/forgot', '#/auth/new-password', '#/advertise', '#/admin',
 ];
 
 /* The route table of `app.js`, and the ONE thing here kept in step by
@@ -45,7 +45,8 @@ const KNOWN = [
   /^#\/my-requests$/,
   /^#\/my-business$/, /^#\/settings$/, /^#\/install$/, /^#\/blocked$/, /^#\/notifications$/, /^#\/help$/,
   /^#\/about$/, /^#\/privacy$/, /^#\/terms$/, /^#\/auth\/signup$/, /^#\/auth\/signin$/,
-  /^#\/auth\/email$/, /^#\/auth\/phone$/, /^#\/auth\/forgot$/, /^#\/advertise(?:\/.+)?$/,
+  /^#\/auth\/email$/, /^#\/auth\/phone$/, /^#\/auth\/forgot$/, /^#\/auth\/new-password$/,
+  /^#\/advertise(?:\/.+)?$/,
   /^#\/admin$/,
 ];
 const known = h => KNOWN.some(re => re.test(h.split('?')[0]));

@@ -3327,8 +3327,55 @@ export function runIdentityCheck() {
     res({ ok: true, ref: mintId('demo_') }), 900));
 }
 
-export function sendEmailCode(email) {
-  return new Promise(res => setTimeout(() => res({ ok: true, code: DEMO_CODE }), 700));
+/** Send — really send — a six-digit code to an address.
+    ⚠️ THIS WAS A `setTimeout` THAT RESOLVED `{ ok: true }` AND MAILED
+    NOTHING, and it is the only fault of the five that hits the happy path:
+    somebody signs up, the message does not arrive (spam folder, a slow
+    provider, a mistyped letter), they press «أعد الإرسال», a green success
+    line appears — and nothing is sent. Then they wait. Then they leave.
+
+    ⚠️ AND THE TYPE IS CHOSEN FROM THE ACCOUNT'S STATE, not written once.
+    Supabase's `resend` knows `signup` and `email_change` and neither is
+    right for the third case this app really has: a CONFIRMED address being
+    sent a fresh code (the road `475` built, where a parked phone number is
+    confirmed by an email code). `resend({type:'signup'})` on a confirmed
+    user is refused by the server, so that road would have stayed broken
+    while looking fixed. `signInWithOtp` is what mails a code to an address
+    that already exists — and `shouldCreateUser: false` keeps it from
+    quietly making an account out of a typo.
+
+    Returns `{ ok }` and, on refusal, the server's own words. ⚠️ It no
+    longer returns a `code`: it used to hand back `DEMO_CODE`, and any
+    reader of that field was reading a password out of a published file. */
+export async function sendEmailCode(email) {
+  const u = state.user || {};
+  const addr = email || u.pendingEmail || u.email;
+  try {
+    if (u.pendingEmail) {
+      const { error } = await sb.auth.resend({ type: 'email_change', email: addr });
+      return error ? { ok: false, message: error.message } : { ok: true };
+    }
+    if (!u.emailVerified) {
+      const { error } = await sb.auth.resend({ type: 'signup', email: addr });
+      return error ? { ok: false, message: error.message } : { ok: true };
+    }
+    const { error } = await sb.auth.signInWithOtp({ email: addr, options: { shouldCreateUser: false } });
+    return error ? { ok: false, message: error.message } : { ok: true };
+  } catch (e) {
+    return { ok: false, message: (e && e.message) || '' };
+  }
+}
+
+/** The recovery code, which is a different message and a different type.
+    ⚠️ `resend` has no `recovery`, so asking for another one means asking
+    for the reset again — which is what Supabase itself does. */
+export async function sendRecoveryCode(email) {
+  try {
+    const { error } = await sb.auth.resetPasswordForEmail(String(email || ''));
+    return error ? { ok: false, message: error.message } : { ok: true };
+  } catch (e) {
+    return { ok: false, message: (e && e.message) || '' };
+  }
 }
 
 /** Twilio Lookup stand-in: rejects VOIP + landline patterns. */
@@ -3705,10 +3752,18 @@ export async function signUp({ name, email, password, phone }) {
 export async function confirmEmail(code) {
   if (!state.user) return 'noUser';
   const target = state.user.pendingEmail || state.user.email;
+  /* ⚠️ THE THREE CASES ARE THE THREE `sendEmailCode` SENDS, and they have
+     to agree or the code that really arrived is checked against the wrong
+     kind. A confirmed address with nothing parked was being verified as
+     `signup` — which the server refuses — so the road `475` built for
+     confirming a phone change by email could never have succeeded. */
+  const type = state.user.pendingEmail ? 'email_change'
+             : !state.user.emailVerified ? 'signup'
+             : 'email';
   const { error } = await sb.auth.verifyOtp({
     email: target,
     token: String(code || ''),
-    type: state.user.pendingEmail ? 'email_change' : 'signup',
+    type,
   });
   if (error) return error.message || 'wrongCode';
   /* a change waiting on this very code is promoted here, and ONLY here —
@@ -3812,10 +3867,44 @@ export async function signOut() {
    an address nobody can receive a code at, and there is no way back.
    So the NEW address is held aside until a code confirms it, the OLD one
    keeps working meanwhile, and an abandoned change costs nothing. */
-export async function updateProfile({ name, email, phone }) {
+export async function updateProfile({ name, email, phone, password }) {
   const u = state.user;
   if (!u) return null;
+  /* ⚠️ THE PASSWORD IS ASKED FOR BEFORE ANYTHING IS WRITTEN, and only when
+     the ADDRESS moves. Changing an email needed nothing at all until now —
+     a field edited and saved — so a phone left unlocked for one minute was
+     enough to move somebody's account onto an address they do not own, and
+     from then on every notice and every password reset travels there.
+     ⚠️ And it is `signInWithPassword` and NOT the local `checkUserPassword`:
+     the local hash sits in the browser's own storage and whoever opens the
+     developer tools replaces it in a second. A check that is defeated by
+     editing a field on the device is not a check — only the server knows.
+     ⚠️ The session that comes back is the SAME PERSON's, so nothing about
+     the identity moves; that is what «re-authentication» means in practice,
+     and `state.user.id` is asserted unchanged across it.
+     ⚠️ The name and the number are NOT held behind it: somebody who edited
+     their name alone is saved with no question. The door is on the address. */
+  if (email && email !== u.email) {
+    const { error } = await sb.auth.signInWithPassword({ email: u.email, password: password || '' });
+    if (error) return { error: 'password', message: error.message || '' };
+  }
   if (name) u.name = name;
+  /* ⚠️ THE NAME REACHES THE SERVER TOO, and until now it did not: it was
+     written once at sign-up (`options.data.display_name`) and never again,
+     so whoever renamed themselves was saved locally while the server kept
+     the first name — and THE FIRST OPEN ON A SECOND DEVICE handed the old
+     one back. `profiles` carries an «own row: update» policy keyed on
+     `auth.uid()`, so this is the account writing its own row and needs no
+     new permission.
+     ⚠️ It is guarded and its failure is swallowed on purpose: the name is
+     already correct on this device, and losing a rename to a dropped
+     connection is not worth refusing the whole save over. The address and
+     the password are the two that may not be half-done, and both of those
+     stop on a refusal above. */
+  if (name && u.id) {
+    try { await sb.from('profiles').update({ display_name: name }).eq('id', u.id); }
+    catch (e) { /* local is right; the server catches up on the next save */ }
+  }
   let emailPending = false;
   /* ⚠️ `email !== u.email`: without it a «change» is parked every time
      «حفظ» is pressed even when the field was never touched, and a code is
@@ -3911,10 +4000,71 @@ export async function hydrateUserFromSession() {
        claim with nobody behind it. */
     phone: prev.phone || null,
     phoneVerified: prev.phoneVerified || false,
+    /* ⚠️ THE ID IS KEPT, and without it nothing can address its own row.
+       `updateProfile` writes `display_name` back with `.eq('id', u.id)`,
+       and a `state.user` that never carried an id would have made that a
+       line that silently never runs. */
+    id: session.user.id,
     tier2By: (profile && profile.tier2_by) || prev.tier2By || null,
+    /* ⚠️ THE FIRST READER OF `is_admin` IN THE WHOLE APP. The column has
+       been written since `470` and measured, nothing read it — the same
+       shape of fault `610` caught in `tier2_by`, a field written to the
+       server and never read back, which is a local field with an extra
+       step. It is read HERE and kept on `state.user`, exactly as `tier2By`
+       is, rather than by a fresh call every time the panel is opened. */
+    isAdmin: !!(profile && profile.is_admin),
   });
   save();
   return state.user;
+}
+
+/** Is the SIGNED-IN ACCOUNT staff, as the server says — never as a URL or
+    a device says. ⚠️ It is a second lock and not a replacement for the
+    first: `adminUnlocked()` is a password on THIS DEVICE and has never had
+    anything to do with an account, so a screen that prints other people's
+    data asks for both. */
+export function isAccountAdmin() {
+  return !!(state.user && state.user.isAdmin);
+}
+
+/** Ask the server to mail a recovery code. ⚠️ It answers the same way for
+    an address it knows and one it does not, and no caller may make it
+    differ: a screen that says «no account with this email» is a tool for
+    learning who is registered, tried against a list of addresses. */
+export async function requestPasswordReset(email) {
+  try {
+    const { error } = await sb.auth.resetPasswordForEmail(String(email || ''));
+    /* a refusal that is really about the address is swallowed on purpose —
+       see above. A transport failure is not, so the reader is not told a
+       code is coming when nothing left the building. */
+    if (error && /rate|network|fetch|timeout/i.test(error.message || '')) {
+      return { ok: false, message: error.message };
+    }
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, message: (e && e.message) || '' };
+  }
+}
+
+/** Confirm a recovery code. On success Supabase hands back a real session,
+    which is what lets the next screen set a new password at all. */
+export async function confirmRecovery(email, code) {
+  const { error } = await sb.auth.verifyOtp({
+    email: String(email || ''),
+    token: String(code || ''),
+    type: 'recovery',
+  });
+  if (error) return error.message || 'wrongCode';
+  await hydrateUserFromSession();
+  return null;
+}
+
+/** Set a new password on a session opened by a recovery code. */
+export async function completePasswordReset(next) {
+  const { error } = await sb.auth.updateUser({ password: next });
+  if (error) return { ok: false, message: error.message || '' };
+  await setUserPassword(next);
+  return { ok: true };
 }
 
 /** the address waiting on a code, or null — never shown as the account's */
@@ -3935,6 +4085,26 @@ export async function changePassword(current, next) {
     if (current !== u.password) return { ok: false, reason: 'wrong' };
   } else if (!(await checkUserPassword(current))) {
     return { ok: false, reason: 'wrong' };
+  }
+  /* ⚠️ THE SERVER FIRST, AND THE LOCAL HASH IS ONLY THE TRACE OF ITS YES.
+     Until this line `changePassword` never left the device: it compared a
+     local hash and wrote a local hash, so the OLD password went on opening
+     the account from any other phone, FOR EVER. Before `610` there was no
+     server to disagree with; from the moment the account lives on one, a
+     new hash here beside an old password there is precisely the split this
+     batch exists to close.
+     ⚠️ And this is the OPPOSITE direction to `updateProfile`, deliberately.
+     There a parked address survives a network failure BECAUSE THE OLD ONE
+     STILL WORKS, so nothing breaks by waiting. Here nothing still works:
+     the two halves would disagree about who may sign in. */
+  const { error } = await sb.auth.updateUser({ password: next });
+  if (error) {
+    /* ⚠️ NOT `wrongPassword` — that is a lie told to somebody who typed
+       theirs correctly. `Secure password change` on the Supabase dashboard
+       makes the server demand a recent session, so a long-open session is
+       refused here with the password perfectly right, and the screen has
+       to say what to DO rather than what it guesses went wrong. */
+    return { ok: false, reason: 'server', message: error.message || '' };
   }
   await setUserPassword(next);
   return { ok: true };

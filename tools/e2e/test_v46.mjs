@@ -152,13 +152,19 @@ const go = async (p, h) => { await p.evaluate(x => { location.hash = x; }, h); a
 {
   const { ctx, p } = await fresh();
   await signUp(p);
-  const r = await p.evaluate(() => {
+  /* ⚠️ REVERSED BY 620 on two counts, neither of them a softening.
+     Changing an address now asks for the account password — an unlocked
+     phone was enough before — so the call carries it. And `updateProfile`
+     awaits the server before it parks anything, so the two calls are
+     awaited: reading `pendingEmail()` synchronously measured the moment
+     before the answer. What the item guards is untouched. */
+  const r = await p.evaluate(async (pw) => {
     const S = window.__S;
-    S.updateProfile({ name: 'أحمد سالم', email: 'typo@b.c', phone: '7135550123' });
+    await S.updateProfile({ name: 'أحمد سالم', email: 'typo@b.c', phone: '7135550123', password: pw });
     const parked = S.pendingEmail();
-    S.updateProfile({ name: 'أحمد سالم', email: 'a@b.c', phone: '7135550123' });
+    await S.updateProfile({ name: 'أحمد سالم', email: 'a@b.c', phone: '7135550123', password: pw });
     return { parked, after: S.pendingEmail(), email: S.state.user.email };
-  });
+  }, PW);
   ok('4.1 a new address is parked, not written', r.parked === 'typo@b.c' && r.email === 'a@b.c',
      r.parked + ' / ' + r.email);
   /* ⚠️ Retyping the real address left the wrong one pending, and a later

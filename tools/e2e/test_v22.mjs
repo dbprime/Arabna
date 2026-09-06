@@ -106,7 +106,11 @@ ok('1.4 iOS auto-capitalisation cannot lock the owner out', await page.evaluate(
 /* ---- 2. the tabs ---- */
 console.log('--- the tabs ---');
 const tabs = await page.evaluate(() => [...document.querySelectorAll('#aTabs .tab')].map(b => b.dataset.t));
-ok('2.1 eight tabs', tabs.length === 8, tabs.join(','));
+/* ⚠️ REVERSED BY 620: a ninth tab, «المستخدمون». The count stays a NUMBER
+   rather than becoming «at least eight» — a tab added with no decision
+   behind it has to turn this red, which is the whole reason it counts. */
+ok('2.1 nine tabs', tabs.length === 9, tabs.join(','));
+ok('2.1b …and the ninth is the users section', tabs.includes('users'), tabs.join(','));
 ok('2.2 …and the row wraps instead of running off the edge', await page.evaluate(() => {
   const r = document.querySelector('#aTabs');
   return getComputedStyle(r).flexWrap === 'wrap' && r.scrollWidth <= r.clientWidth + 2;

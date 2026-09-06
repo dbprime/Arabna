@@ -6,6 +6,18 @@ import { PHONE_AUTH } from '../data.js';
 import { passwordField, passwordChecklist, wirePasswordField,
          wirePasswordToggles, TermsScreen, PrivacyScreen } from './profile.js';
 
+/* Errors sit under the field they belong to. An alert names no field and is
+   gone before the reader has looked away from the keyboard.
+   ⚠️ Module-level rather than inside one screen: the forgot-password screen
+   is the second caller in this file, and a helper copied for a second
+   caller is a helper with two versions two batches later. */
+const setErr = (id, msg) => {
+  const box = $('#e_' + id), input = $('#' + id);
+  if (box) box.textContent = msg || '';
+  if (input) input.classList.toggle('input-err', !!msg);
+  return !msg;
+};
+
 function afterAuth() {
   const p = S.takePendingIntent();
   if (p && p.route) { toast(t('resumedAction'), 'ok'); go(p.route); }
@@ -46,7 +58,7 @@ export function SignUpScreen(root) {
         <input class="input ltr" id="sPhone" dir="ltr" inputmode="tel" placeholder="(713) 555-0000" autocomplete="tel" />
         <div class="hint">${t('phoneLater')}</div></div>
 
-      ${passwordField('sPass', t('password') + ' *')}
+      ${passwordField('sPass', t('password') + ' *', 'new-password')}
       ${/* The list replaces the strength meter. «ضعيفة / متوسّطة / قوية»
            measures nothing once the rule is absolute — a password is
            accepted or it is not — while the list says WHICH condition is
@@ -54,7 +66,7 @@ export function SignUpScreen(root) {
       ${passwordChecklist('sPass')}
       <div class="field-err" id="e_sPass"></div>
 
-      ${passwordField('sPass2', t('confirmPassword') + ' *')}
+      ${passwordField('sPass2', t('confirmPassword') + ' *', 'new-password')}
       <div class="field-err" id="e_sPass2"></div>
 
       <label class="setting-row" style="padding:8px 0;border:none;cursor:pointer">
@@ -76,15 +88,6 @@ export function SignUpScreen(root) {
     </div>`;
 
   wirePasswordToggles(root);
-
-  /* Errors sit under the field they belong to. An alert names no field and
-     is gone before the reader has looked away from the keyboard. */
-  const setErr = (id, msg) => {
-    const box = $('#e_' + id), input = $('#' + id);
-    if (box) box.textContent = msg || '';
-    if (input) input.classList.toggle('input-err', !!msg);
-    return !msg;
-  };
 
   // live list, and red only once they have left the field or pressed go
   const checkPass = wirePasswordField('sPass', 'e_sPass');
@@ -162,11 +165,19 @@ export function SignInScreen(root) {
   root.innerHTML = `
     <div class="pad mt-16 center-col"><img data-logo="wide" src="${logoSrc('wide')}" style="height:56px" alt="ARABNA" /></div>
     <div class="pad mt-16">
-      <div class="field"><label class="label">${t('email')}</label><input class="input" id="iEmail" type="email" /></div>
-      ${passwordField('iPass', t('password'))}
+      ${/* ⚠️ `username` on the field BEFORE the password, or a manager has
+           nothing to bind the saved password to — the pair is what makes it
+           offer the right one back. Measured: it carried no description at
+           all, which §6.2's last paragraph asks to be checked and filled. */''}
+      <div class="field"><label class="label">${t('email')}</label>
+        <input class="input" id="iEmail" type="email" autocomplete="username" inputmode="email" /></div>
+      ${passwordField('iPass', t('password'), 'current-password')}
       <button class="btn btn-gold btn-block" id="siBtn">${t('signIn')}</button>
-      <button class="btn btn-ghost btn-block mt-8" data-route="#/auth/forgot">${t('forgotPassword')}
-        <span class="soon-tag">${t('soon')}</span></button>
+      ${/* ⚠️ THE «قريباً» TAG IS GONE. It sat on the button leading to the very
+           screen item 4 rebuilt — the same fault, surviving one step up the
+           road: a promise that the thing does not work, over a thing that
+           now does. */''}
+      <button class="btn btn-ghost btn-block mt-8" data-route="#/auth/forgot">${t('forgotPassword')}</button>
       <button class="btn btn-ghost btn-block mt-8" data-route="#/auth/signup">${t('noAccount')}</button>
     </div>`;
 
@@ -202,14 +213,71 @@ export function ForgotScreen(root) {
   root.innerHTML = `
     <div class="pad mt-16 center-col">
       <div class="empty-ico">${icon('lock', 33)}</div>
-      <b style="font-size:1.0625rem">${t('forgotSoonTitle')}</b>
-      <span class="muted fs-13" style="text-align:center">${t('forgotSoonBody')}</span>
+      <b style="font-size:1.0625rem">${t('forgotTitle')}</b>
+      <span class="muted fs-13" style="text-align:center">${t('forgotBody')}</span>
     </div>
     <div class="pad mt-16">
-      <div class="list-note" style="margin-inline:0">${icon('info', 18)}<span>${t('forgotSoonHelp')}</span></div>
-      <button class="btn btn-gold btn-block mt-12" data-route="#/auth/signup">${t('signUp')}</button>
-      <button class="btn btn-ghost btn-block mt-8" data-route="#/auth/signin">${t('signIn')}</button>
+      <div class="field"><label class="label">${t('email')}</label>
+        <input class="input" id="fgEmail" type="email" inputmode="email" autocomplete="email" />
+        <div class="field-err" id="e_fgEmail"></div></div>
+      <button class="btn btn-gold btn-block mt-8" id="fgGo">${t('sendCode')}</button>
+      <button class="btn btn-plain btn-block mt-8" data-route="#/auth/signin">${t('signIn')}</button>
     </div>`;
+
+  $('#fgGo').addEventListener('click', async (e) => {
+    const email = $('#fgEmail').value.trim();
+    if (!setErr('fgEmail', !email ? t('required') : !S.validEmail(email) ? t('badEmail') : '')) return;
+    e.target.innerHTML = `<span class="spinner"></span>`;
+    const r = await S.requestPasswordReset(email);
+    e.target.textContent = t('sendCode');
+    /* ⚠️ ONLY A TRANSPORT FAILURE IS REPORTED. Whether the address is
+       registered is never answered — see `requestPasswordReset`. */
+    if (!r.ok) { toast(r.message || t('sendFailed'), 'err'); return; }
+    /* ⚠️ THE SAME SENTENCE WHETHER THE ACCOUNT EXISTS OR NOT. A screen that
+       says «no account with this email» is an instrument for discovering
+       who is registered here, run against a list of addresses. */
+    toast(t('forgotNeutral'), 'ok');
+    S.setPendingVerify('recovery', email);
+    go('#/auth/email');
+  });
+  wireRoutes(root);
+}
+
+/** The last step of a reset: a session already exists, opened by the code.
+    ⚠️ It guards itself on that session rather than on a route flag — an
+    address-bar value is a request, never a permission. */
+export function NewPasswordScreen(root) {
+  if (!S.state.user) { go('#/auth/forgot'); return; }
+  renderHeader({ simple: true, title: t('setNewPassword') });
+  root.innerHTML = `
+    <div class="pad mt-16">
+      <div class="list-note" style="margin-inline:0">${icon('info', 18)}<span>${t('setNewPasswordSub')}</span></div>
+      ${passwordField('npNew', t('newPassword'), 'new-password')}
+      ${passwordChecklist('npNew')}
+      <div class="field-err" id="e_npNew"></div>
+      ${passwordField('npConf', t('confirmPassword'), 'new-password')}
+      <div id="npErr"></div>
+      <button class="btn btn-gold btn-block mt-8" id="npSave">${icon('lock', 19)} ${t('setNewPassword')}</button>
+    </div>`;
+  wirePasswordToggles(root);
+  const checkNew = wirePasswordField('npNew', 'e_npNew');
+  $('#npSave').addEventListener('click', async (e) => {
+    const next = $('#npNew').value, conf = $('#npConf').value;
+    const err = $('#npErr');
+    err.innerHTML = '';
+    if (checkNew()) return;
+    if (next !== conf) { err.innerHTML = `<div class="err-msg">${icon('alert', 15)} ${t('passwordsDontMatch')}</div>`; return; }
+    e.target.innerHTML = `<span class="spinner"></span>`;
+    const r = await S.completePasswordReset(next);
+    if (!r.ok) {
+      e.target.innerHTML = `${icon('lock', 19)} ${t('setNewPassword')}`;
+      err.innerHTML = `<div class="err-msg">${icon('alert', 15)} ${r.message || t('pwServerRefused')}</div>`;
+      return;
+    }
+    S.clearPendingVerify();
+    toast(t('passwordChanged'), 'ok');
+    go('#/home');
+  });
   wireRoutes(root);
 }
 
@@ -236,14 +304,20 @@ export function EmailVerifyScreen(root) {
      because printing the old address over a code sent to the new one is
      the app telling the reader something untrue at the exact moment they
      are checking their inbox. */
-  const email = S.pendingEmail() || (S.state.user ? S.state.user.email : '');
   const pv = S.pendingVerify();
+  /* ⚠️ RECOVERY IS THE ONE ROAD WITH NOBODY SIGNED IN, so the address cannot
+     be read off the account — it is the one the reader typed, carried on the
+     pending record. Reading `state.user` here would print an empty address
+     over a code that really was sent. */
+  const recovery = !!(pv && pv.kind === 'recovery');
+  const email = recovery ? (pv.target || '')
+    : (S.pendingEmail() || (S.state.user ? S.state.user.email : ''));
 
   root.innerHTML = `
     <div class="pad mt-16 center-col">
       <div class="empty-ico">${icon('mail', 33)}</div>
       <b style="font-size:1.0625rem">${t('checkYourEmail')}</b>
-      <span class="muted fs-13">${t('verifyEmailSub')} <b class="gold ltr">${email}</b></span>
+      <span class="muted fs-13">${recovery ? t('recoverySub') : t('verifyEmailSub')} <b class="gold ltr">${esc(email)}</b></span>
       ${/* ⚠️ While phone verification is switched off a parked number is
            confirmed by THIS code, so the screen says so — and says the
            whole truth: it confirms the CHANGE and does not verify the
@@ -291,7 +365,12 @@ export function EmailVerifyScreen(root) {
   timer = setInterval(tick, 1000);
 
   rs.addEventListener('click', async () => {
-    await S.sendEmailCode(email);
+    /* ⚠️ THE ORDER IS THE ITEM. The counter used to be reset and the green
+       line shown BEFORE anything was known, so a reader whom nothing had
+       reached was locked out of the button for 45 seconds and told it had
+       worked. Nothing is claimed until the server has answered. */
+    const r = recovery ? await S.sendRecoveryCode(email) : await S.sendEmailCode(email);
+    if (!r || !r.ok) { toast((r && r.message) || t('sendFailed'), 'err'); return; }
     S.touchPendingVerify();
     toast(t('sendCode'), 'ok');
     if (!timer) timer = setInterval(tick, 1000);
@@ -305,6 +384,16 @@ export function EmailVerifyScreen(root) {
        fixed `DEMO_CODE` in the page — a prototype affordance, and the one
        thing that must not survive a live server: whoever can read the file
        knows the code. The six digits go to Supabase and it decides. */
+    /* ⚠️ RECOVERY IS CONFIRMED BY ITS OWN FUNCTION AND ITS OWN TYPE. Sharing
+       `confirmEmail` would mean one function promoting an address AND opening
+       a reset session, and the promotion living in exactly one place is what
+       keeps a code from ever doing more than it was sent for. */
+    if (recovery) {
+      const rerr = await S.confirmRecovery(email, otpValue('e'));
+      if (rerr) { toast(t('wrongCode'), 'err'); return; }
+      go('#/auth/new-password');
+      return;
+    }
     const err = await S.confirmEmail(otpValue('e'));
     if (err) { toast(t('wrongCode'), 'err'); return; }
     /* ⚠️ A SECOND CALL, not a branch inside `confirmEmail`. Each promotion
@@ -436,13 +525,36 @@ function wireDemoFill(ns) {
 
 function otpRow(ns) {
   return `<div class="otp-row" id="otp-${ns}">
-    ${Array.from({ length: 6 }).map((_, i) => `<input class="otp-box" inputmode="numeric" maxlength="1" data-i="${i}" />`).join('')}
+    ${/* ⚠️ `one-time-code` ON THE FIRST BOX ALONE, and the reason is what the
+         system does with it: it fills the WHOLE code into one field and
+         leaves the spreading to the page. Six boxes all carrying the same
+         description make it put one digit in each — or give up. So the
+         description goes on the first and the spreading is ours.
+         ⚠️ And its absence was the one gap in a row of careful neighbours:
+         given-name · family-name · email · tel — and then nothing on the
+         only field where a suggestion has real work to do. */''}
+    ${Array.from({ length: 6 }).map((_, i) => `<input class="otp-box" inputmode="numeric" maxlength="1" data-i="${i}"${
+      i === 0 ? ' autocomplete="one-time-code" name="one-time-code"' : ''} />`).join('')}
   </div>`;
 }
 function wireOtp(ns) {
   const boxes = $$(`#otp-${ns} .otp-box`);
+  /* ⚠️ ONE SPREADER, CALLED FROM TWO DOORS. It already existed inside the
+     paste handler; what it lacked was a second caller. When the system
+     fills the suggested code it arrives as SIX CHARACTERS IN THE FIRST
+     BOX — and the `slice(0, 1)` below would cut it to one digit, so the
+     suggestion would look broken while working perfectly. */
+  const spread = (raw) => {
+    const txt = String(raw || '').replace(/\D/g, '').slice(0, 6);
+    if (!txt.length) return false;
+    boxes.forEach((x, k) => { x.value = txt[k] || ''; });
+    boxes[Math.min(txt.length, 5)].focus();
+    return true;
+  };
   boxes.forEach((b, i) => {
     b.addEventListener('input', () => {
+      /* the autofilled code lands whole in the first box */
+      if (i === 0 && b.value.replace(/\D/g, '').length > 1 && spread(b.value)) return;
       b.value = b.value.replace(/\D/g, '').slice(0, 1);
       if (b.value && i < boxes.length - 1) boxes[i + 1].focus();
     });
@@ -450,8 +562,8 @@ function wireOtp(ns) {
       if (e.key === 'Backspace' && !b.value && i > 0) boxes[i - 1].focus();
     });
     b.addEventListener('paste', (e) => {
-      const txt = (e.clipboardData.getData('text') || '').replace(/\D/g, '').slice(0, 6);
-      if (txt.length) { e.preventDefault(); boxes.forEach((x, k) => x.value = txt[k] || ''); boxes[Math.min(txt.length, 5)].focus(); }
+      const txt = (e.clipboardData.getData('text') || '');
+      if (/\d/.test(txt)) { e.preventDefault(); spread(txt); }
     });
   });
   if (boxes[0]) boxes[0].focus();

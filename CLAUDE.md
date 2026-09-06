@@ -11,7 +11,7 @@ ARABNA · عربنا — a mobile-first web app for the Arab community in the U.
 **business directory + marketplace + events + magazine**, Arabic-first with a full English toggle.
 ("Classifieds / الإعلانات الشخصية" is now "Marketplace / السوق" — the old `#/classifieds`
 routes still resolve so shared links keep working.)
-Current version: **V.10.0 (prototype)**. Owner: dbprime. Deploys to Vercel (team DB Prime).
+Current version: **V.10.1 (prototype)**. Owner: dbprime. Deploys to Vercel (team DB Prime).
 
 ## Hard rules (from the product brief)
 0. ⚠️ **THE OWNER'S NAME IS NEVER WRITTEN — anywhere.** Not in this file, not
@@ -9510,6 +9510,265 @@ and each was measured, not assumed:**
 **The evidence asked for is «every suite green on this tree», and it holds to
 the letter whether it was measured in one stretch or in nineteen. What
 changed is how it is measured, not what.**
+
+## V.10.1 — who owns the account (620)
+
+⚠️ **This file closes its own group, and its group is itself** — it touches
+`js/store.js` and authentication, two of the three the 5 September decision
+names as reasons a batch is treated as its group's closer.
+
+`610` connected **who you are**. This closes the finer question: **proving
+it is still you when the identity itself changes.** Before the server the
+account was on the device, so protecting it was protecting the device. From
+the moment it lives on a server and opens from any phone, **every door with
+no lock became a real door** — five of them, all measured by reading the
+code, and one of them hits the happy path on somebody's first minute.
+
+### 1 — the password change never left the device
+```js
+changePassword  compared a local hash · wrote a local hash · told nobody
+```
+**So the OLD password went on opening the account from any other phone, for
+ever.** The server is asked first now, and the local hash is only the trace
+of its yes; a refusal writes nothing at all.
+
+- ⚠️ **This is the OPPOSITE direction to `updateProfile`, and the difference
+  is measured rather than a taste.** There a parked address survives a
+  network failure **because the old one still works**, so nothing breaks by
+  waiting. Here nothing still works: a new hash on the device beside an old
+  password on the server is precisely the split this batch closes.
+- ⚠️ **A refused server is not «wrong password».** `Secure password change`
+  makes Supabase demand a recent session, so a long-open session is refused
+  with the password perfectly right — and telling that reader to doubt it is
+  a lie. `pwServerRefused` says what to DO.
+
+### 2 — changing the email asked for nothing at all
+A field edited and saved. **A phone left unlocked for one minute was enough
+to move an account onto an address somebody else owns** — and from then on
+every notice and every password reset travels there.
+
+- ⚠️ **`signInWithPassword`, never the local `checkUserPassword`.** The local
+  hash sits in the browser's own storage and whoever opens the developer
+  tools replaces it in a second. **A check defeated by editing a field on the
+  device is not a check.**
+- ⚠️ **The field is hidden until the address really moves** — asking everyone
+  who corrected a letter in their name is a toll on the ordinary case to
+  guard the rare one — and it disappears again when the old address is typed
+  back. **The name and the number are not held behind it.**
+- **A refusal writes NOTHING, the name included.** Measured.
+- ⚠️ **The session that comes back is the same person's**, which is what
+  re-authentication means; `state.user.id` is asserted unchanged across it.
+
+### 3 — «resend» resent nothing, then said it had
+`sendEmailCode` was a `setTimeout` resolving `{ ok: true }`. **The only one
+of the five on the happy path**: the message does not arrive, the reader
+presses resend, a green line appears, nothing is sent. Then they wait. Then
+they leave. And the counter was zeroed **before** anything was known, so the
+button locked for 45 seconds over a message that never left.
+
+⚠️ **AND THE SPEC SAID ONE ROAD ALREADY WORKED; MEASURED, IT COULD NOT.**
+`resend` knows `signup` and `email_change`, and neither fits the third case
+this app really has — **a CONFIRMED address being sent a fresh code**, which
+is the road `475` built for confirming a phone change by email.
+`resend({type:'signup'})` on a confirmed user is **refused by the server**,
+so that road would have stayed broken while looking fixed. The type is
+chosen from the account's state (`signInWithOtp` for the third), and
+`confirmEmail`'s verify type follows the same three cases — **they have to
+agree or the code that really arrived is checked against the wrong kind.**
+
+- **And `code` is gone from the return.** It handed back `DEMO_CODE`, so any
+  reader of that field was reading a password out of a published file.
+- ⚠️ **The duplicate send after `updateProfile` is deleted.** `updateUser` is
+  what mails the change code; a second call is either a duplicate message or,
+  inside the 30-second floor, a refusal nothing on that screen reads. **Not
+  measured on the live host from here** — it follows from the API and from
+  that floor, and acceptance test 3 is where it is seen.
+
+### 4 — «forgot my password» said reset needs a server
+It did, and `610` had just put one there — **so the sentence became a lie the
+day it was merged.** A real three-step road now: email → code → new password,
+on the screens that already exist. The three «coming soon» keys are deleted
+in both packs and nothing reads them.
+
+⚠️ **The same sentence for an address we know and one we do not.** A screen
+that says «no account with this email» is an instrument for discovering who
+is registered here, run against a list — and `resetPasswordForEmail` does not
+distinguish either, so no caller may invent a distinction.
+
+### 5 — no users section, and the reason given for it was wrong
+Eight tabs and not one showed a person, so a caller who had forgotten which
+address they signed up with had nowhere to be looked up.
+
+⚠️ **A CORRECTION TO THE SPEC'S OWN MEASUREMENT.** It said `profiles` carries
+no admin read policy. Measured in `0002_rls.sql`, the policy is
+`using (id = auth.uid() or public.is_admin())` — **an admin can already read
+every profile row.** The real gap is the one its §7.1 states correctly:
+**`profiles` holds no email at all.** The address lives in `auth.users`,
+which is not a table we open our own policies on. The gap is real; the reason
+was not.
+
+- **`admin_find_users`, a `security definer` function** — `is_admin()` is its
+  **first statement and it raises**, never a condition in `where` that can be
+  edited away; `search_path` is pinned (without it a caller can put a schema
+  of their own ahead of `public`); `anon` cannot execute it; and **three
+  characters minimum, because there is deliberately no way to browse.**
+- **No write policy of any kind, and no email column on `profiles`** — a
+  second copy of an address that changes down two roads parts from the
+  original one day and nothing warns anybody.
+- **The address is printed in full** — the owner's decision of 5 September.
+  Masking was refused with its reason: whoever reached this panel reached
+  worse, and telling a caller their own address IS the screen's purpose.
+- ⚠️ **TWO LOCKS, and that is the item rather than the screen.** `adminAuth`
+  is a password on **this device** with no connection to any account; this
+  section reads other people's data, so it demands that **and** an account
+  the server calls staff.
+- ⚠️ **And this is the first reader of `is_admin` in the whole app.** The
+  column has been written since `470` and nothing ever read it — the same
+  shape `610` caught in `tier2_by`: *a field written to the server and never
+  read back is a local field with an extra step.*
+
+### `test_v76` — 56 assertions, and five teeth
+```
+changePassword local again   → 1.2 prints null: the old password still works
+email change with no password → 3.5 · 3.6 · 3.7 · 3.11
+resend claims success first   → 4.4
+authorisation in a where-clause → 6.1
+search_path removed           → 6.2
+```
+⚠️ **And one tooth did not bite what was claimed, first time round.** The
+mutation deleted the FIRST occurrence of `sb.auth.updateUser({ password })`
+— which is inside `completePasswordReset`, not `changePassword` — so the
+reds it produced were the recovery road collapsing. Re-aimed with an anchor
+unique to the function, `1.2` reads **`null`**: the old password still opens
+the account, which is the original fault in one line. **Prove the break
+landed where it was aimed, not merely that a red appeared.**
+
+⚠️ **And `6.2` was a red on a correct file**: the migration's own comments
+name `security definer` and `search_path` while explaining why both are
+compulsory. **A check must read the code, never the prose about the code** —
+the rule this project has now paid for three times, and SQL got its own
+stripper in the same batch.
+
+### Four suites reversed, none softened
+| suite | asserted | now |
+|---|---|---|
+| v20 · 7.11/7.12 | forgot-password says «قريباً» | it no longer can — there IS a server; the subject («never promise what you cannot do») is unchanged and the answer is the opposite |
+| v22 · 2.1 | eight admin tabs | nine, and the count stays a NUMBER so a tab added with no decision turns it red |
+| v27 | wrote `emailVerified` straight into storage | confirms it **through the code** — no session was created that way, so nothing could reach the server |
+| v46 · 4.1 | `updateProfile` with no password and no `await` | both, since changing an address now asks and the call now awaits a server |
+
+⚠️ **And `v70` did exactly what `572` built it for**: a new guard of the shape
+`if (!X) { go(…) }` that neither speaks nor classifies turned it red **and
+named the file and the line**. It is not a fault — the last step of a reset
+needs the session the code opened — so a **third class, «precondition», is
+named** the way `ownerOnly` is, with `3.2b` holding it to exactly one member.
+Proven: removing `ReceiptScreen`'s word turns `3.2` red again and names its
+file.
+
+### And the group closes — the net, run on segments over one frozen tree
+```
+148 runs · 74 suites · 6,939 assertions · zero red · zero crash
+```
+Sixteen segments over `7cc47a3`, `HEAD` re-checked at the head of each,
+**74 present and 74 run, each twice, and no result borrowed** — including a
+full re-run of everything measured before the suite reversals landed, because
+«all of them on the same tree» is measured and not inferred.
+
+### The two appendices, built into the same batch
+
+⚠️ **Appended rather than deferred for a measured reason**: both touch
+`js/screens/auth.js` and `js/screens/profile.js` — **the two files this batch
+already had open** — so a separate batch would pay a second full net for a
+handful of lines.
+
+#### The fields say what they are
+
+**`autocomplete="off"` was on every password field in the app** — one helper
+serves them all, so a single word meant **no password manager anywhere could
+offer to save, to fill, or to generate a strong one.**
+
+⚠️ **That is a loss of security, not of convenience, and it is this batch's own
+argument turned on us:** somebody who cannot save a password picks one they can
+hold in their head — short, or the one they already reuse — and `passwordChecks`
+then pushes them harder toward that single reused one. `passwordField` takes the
+description as a third argument now, and each site carries the one for its role.
+
+- ⚠️ **The spec named six fields; measured, there are THIRTEEN** — five in the
+  admin panel and **two this very batch added** (`npNew`, `npConf`). A mapping
+  covering only the six would have left the newest screen with the original
+  fault.
+- ⚠️ **Nothing else on the element moved.** `lang`, `inputmode`,
+  `autocapitalize`, `autocorrect`, `spellcheck` are there for a written reason —
+  autocorrect breaks a password silently — and that reason has not changed.
+- **`one-time-code` on the FIRST code box alone.** The system fills the whole
+  code into one field; six boxes with the same description make it put one digit
+  in each, or give up. ⚠️ **And the spreading already existed in the paste
+  handler and simply lacked a second caller**: an autofilled code arrives as six
+  characters in the first box, where the existing `slice(0, 1)` cut it to one —
+  **so the suggestion looked broken while working perfectly.** `spread()` is one
+  function with two doors.
+- ⚠️ **It is not promised to work every time, and that is said:** a code
+  suggested out of an *email* is less reliable than out of an SMS. **But the
+  missing description made it impossible always, rather than uneven** — and that
+  is the item.
+- **Two more, measured rather than listed:** the sign-in address field carried
+  **no description at all**, so a manager had nothing to bind the saved password
+  to (`username` now, and the same for the panel's two username fields); and the
+  sign-in screen still tagged forgot-password **«قريباً»** — the same fault item
+  4 removed, surviving one step up the road, over a screen that now works.
+
+#### The profile row is actually created
+
+`0001` promised in a comment that a trigger on `auth.users` makes the row at
+sign-up. **It was never written** — `grep 'create trigger'` returned one, a
+guard. The debt is `470`'s, not `610`'s.
+
+```
+live, after the first real sign-up   users 1 · profiles 0 · triggers 0
+after 0006 was applied by hand       users 1 · profiles 1 · triggers 2
+```
+
+⚠️ **And nothing looked broken, which is what made it dangerous.**
+`hydrateUserFromSession` falls back to local values, so **the fault shows only
+on a second device**, where there are none: the name comes back blank and
+`is_admin` cannot be read at all.
+
+⚠️ **This is the one thing in the batch that ran on the live database before it
+existed in the repository**, so `0006_profiles_on_signup.sql` is the repository
+catching up — written letter for letter, every statement idempotent. ⚠️ **A file
+that differs from the database in one character is worse than no file, because
+it is believed.**
+
+⚠️ **The number is a deliberate deviation from the appendix**, which asked for
+`0005` so this would precede `admin_find_users`. `0005` was taken by the batch
+this appends to and is pushed, and the appendix's own rule reserves the number
+from the directory at execution time. **Measured, the order has no effect on a
+rebuild** — `admin_find_users` is a function definition and reads no row when it
+is created — while renaming a migration that may already have been applied is
+the larger risk. **A migration number is a key, the way a listing's id is.**
+
+**And the third gap was built rather than only recorded:** `display_name` was
+written once at sign-up and never again, so **the first open on a second device
+handed back the old name.** `updateProfile` writes it to the server now — the
+«own row: update» policy already permits it — and **its failure is swallowed on
+purpose**: the name is already right on this device, and the address and the
+password are the two that may not be half-done. ⚠️ **`state.user` had to start
+carrying its `id`**, or the write addresses nothing and the line never runs.
+
+**Two gaps recorded and not built:** `tier2_by` is a column read by `610` and
+**written by nobody** — the inverse of the fault its own comment warns about —
+and `phone` never reaches the server while `PHONE_AUTH` is off, which is
+intended and is said so it is not taken for a fault.
+
+```
+148 runs · 74 suites · 6,977 assertions · zero red · zero crash
+```
+Sixteen segments over `7c6ed6b`. `test_v76` is 75 assertions, and the five new
+teeth bite: **`9.9` prints `1`** — the code cut to one digit — and **`10.9`
+prints `Test Person`**, the first name still standing on the server. ⚠️ **And
+`9.2` did NOT go red when `off` was restored**, because it measures the CALL
+SITES while `9.1` and `9.3` measure the element: two layers, each with its own
+check, exactly as V.07.9 recorded.
 
 ## Known open items
 - **The header image is still far larger than its box.** V.04.7 replaced
