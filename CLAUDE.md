@@ -9868,9 +9868,16 @@ message was sent, so its claim is true and must stay; a blanket search for
 Sixteen segments over `1382f27`, `HEAD` re-checked at each, 75 present and
 75 run, each twice.
 
-⚠️ **And `625` is not in the queue** — the next written there is `615`. The
-file says so at its own head; it was carried out because both faults were
-**live on production**, V.10.1 having merged.
+⚠️ **`625` was not in the queue when it arrived** — the next written there is
+`615`, and the file says so at its own head. It was carried out because both
+faults were **live on production**, V.10.1 having merged. **The owner then
+dictated its line and its exact place** — after `[x] 620`, before `[ ] 615` —
+**and that is the queue being written by whoever writes the files, which is
+the rule rather than an exception to it.** A session never places a line
+there on its own judgement.
+
+> **And the mark still walks behind the net, never ahead** — `[x]` went in
+> after the 150 runs were green, not with the work.
 
 ## Known open items
 - **The header image is still far larger than its box.** V.04.7 replaced
