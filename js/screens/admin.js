@@ -978,8 +978,12 @@ function userRowHtml(r) {
      nothing at all — a mark that is invisible is worse than no mark. */
   const gone = r.deleted_at
     ? `<span class="badge badge-pending">${t('usersDeleted')}</span>` : '';
+  /* «بريده مؤكَّد», never «موثّق» (635): the second word is the business
+     badge a shop owner applies for and is granted, and an account that
+     confirmed its address was granted nothing. The class stays — the
+     colour is right, the word alone was borrowed. */
   const ver = r.email_verified
-    ? `<span class="badge badge-verified">${t('verified')}</span>` : '';
+    ? `<span class="badge badge-verified">${t('usersEmailOk')}</span>` : '';
   return `<div class="list-row" style="display:block">
     <div class="row-title">${esc(r.display_name || '—')} ${ver} ${gone}</div>
     <div class="row-sub ltr">${esc(r.email || '')}</div>

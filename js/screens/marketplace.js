@@ -299,10 +299,17 @@ export function ListingDetailScreen(root, params) {
         </div>
         ${/* «حذف» became «أخفِ الإعلان»: what people mean by it is «stop
               showing this», and an erased listing takes its messages and
-              its remaining days with it. Hidden is reversible. */
+              its remaining days with it. Hidden is reversible.
+              ⚠️ Neither reason holds for a listing that was NEVER approved
+              and has NO messages — nobody saw it, its days never began —
+              so that one, and only that one, gets a real «احذف» (635).
+              One button or the other, never both: `canOwnerDelete` in
+              the store measures both conditions. */
           c.status === 'hidden'
             ? `<button class="btn btn-gold btn-block mt-8" id="unhideBtn">${icon('eye', 19)} ${t('republish')}</button>`
-            : `<button class="btn btn-ghost btn-block mt-8" id="hideBtn">${icon('eye', 19)} ${t('hideListing')}</button>`}
+            : S.canOwnerDelete(c.id)
+              ? `<button class="btn btn-ghost btn-block mt-8" id="delBtn">${icon('trash', 19)} ${t('deleteListing')}</button>`
+              : `<button class="btn btn-ghost btn-block mt-8" id="hideBtn">${icon('eye', 19)} ${t('hideListing')}</button>`}
       ` : `
         <button class="btn btn-gold btn-block mt-16" data-route="#/messages/${c.id}">${icon('message', 20)} ${t('contactSeller')}</button>
         <div class="hint" style="text-align:center">${t('inAppOnly')}</div>
@@ -346,9 +353,25 @@ export function ListingDetailScreen(root, params) {
     go('#/marketplace/' + c.id);
   });
   const hd = $('#hideBtn');
+  /* the sheet says what hiding DOES (635): disappears for everyone, comes
+     back while its days last, does not count against the four — three
+     measured facts, where a title repeated in its own button said nothing */
   if (hd) hd.addEventListener('click', () => confirmSheet({
-    title: t('hideListing'), sub: L(c.title), confirmText: t('hideListing'),
+    title: t('hideListing'), sub: L(c.title), body: t('hideListingWhat'), confirmText: t('hideListing'),
     onConfirm: () => { S.hideClassified(c.id); toast(t('listingHidden'), 'ok'); go('#/my-ads'); }
+  }));
+  /* a real delete for a never-published listing — `danger`, because unlike
+     hiding there is no way back; the server first, and a refusal erases
+     nothing on the device (635) */
+  const dl = $('#delBtn');
+  if (dl) dl.addEventListener('click', () => confirmSheet({
+    title: t('deleteListing'), sub: L(c.title), confirmText: t('deleteListing'), danger: true,
+    onConfirm: async () => {
+      dl.disabled = true;
+      const ok = await S.ownerDeleteClassified(c.id);
+      if (!ok) { dl.disabled = false; toast(t('somethingWrong'), 'err'); return; }
+      toast(t('listingDeleted'), 'ok'); go('#/my-ads');
+    }
   }));
   const uh = $('#unhideBtn');
   if (uh) uh.addEventListener('click', () => {

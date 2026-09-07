@@ -2436,6 +2436,38 @@ export async function loadLiveClassifieds() {
   return _liveCls;
 }
 
+/* ---- the live readers run whenever the SESSION changes (635) ----
+   Both readers ran in `boot` once and nobody called them again, so the
+   page read the server AS A VISITOR before anyone signed in, RLS answered
+   the visitor with what a visitor may see — no pending row — and the
+   session that arrived a moment later never asked again: `_liveCls` held
+   the visitor's answer for as long as the page stayed open. Measured on
+   the live host: a staff account signed in, opened `#/admin`, and the
+   queue was empty until `F5`. It is the hole `620` closed in `is_admin`
+   («read at sign-in alone») living on in the rows.
+   ⚠️ `store.js` cannot import `render`, so the screen registers a repaint
+   once and the store calls it under boot's own condition: rows really
+   came, and the reader has not navigated away meanwhile. */
+let _liveRepaint = null;
+export function onLiveRows(fn) { _liveRepaint = fn; }
+function refreshLiveRows() {
+  const route = location.hash;
+  const after = rows => {
+    if (!rows || !rows.length) return;
+    if (location.hash !== route) return;
+    if (_liveRepaint) _liveRepaint();
+  };
+  loadLiveBusinesses().then(after);
+  loadLiveClassifieds().then(after);
+}
+/** on sign-out the answer of a session that ENDED must not stand: «the last
+    good answer stays» in the loaders was written for a network failure,
+    not to keep a previous account's pending rows on a phone it has left */
+function forgetLiveRows() {
+  _liveBiz = null; _liveBizAt = 0;
+  _liveCls = null; _liveClsAt = 0;
+}
+
 /** «قبل n يوم» in the four Arabic forms, without importing i18n */
 function agoLabel(created) {
   const days = Math.max(0, Math.floor((now() - created) / 86400000));
@@ -2486,7 +2518,10 @@ export function allClassifieds() {
   const list = withoutDemo(mergedClassifieds().concat(CLASSIFIEDS));
   return list
     .filter(c => !isBlocked(c))
-    .filter(c => c.status !== 'rejected')
+    /* `deleted` is the owner's own erasure of a listing nobody ever saw
+       (635) — a mark on the server, a removal on the device — and it is
+       dropped here exactly as a refusal is */
+    .filter(c => c.status !== 'rejected' && c.status !== 'deleted')
     /* Hidden is not deleted. The owner still sees it under «إعلاناتي» and
        can put it back while its 14 days last; everyone else stops seeing
        it the moment they press the button. */
@@ -3885,6 +3920,11 @@ export async function signOut() {
     if (!KEEPS_ON_SIGN_OUT.has(k)) state[k] = fresh[k];
   }
   save();
+  /* the rows of the session that ended go FIRST, then the visitor's answer
+     is asked for — the order is the item: a sign-out followed by a network
+     failure must not leave the previous account's rows behind (635) */
+  forgetLiveRows();
+  refreshLiveRows();
 }
 
 /** Editing the profile. Changing the phone number is the only thing that
@@ -4059,6 +4099,9 @@ export async function hydrateUserFromSession() {
     isAdmin: !!(profile && profile.is_admin),
   });
   save();
+  /* a session now exists where there was none: the rows are re-read as this
+     account, and sign-in does NOT wait on the network for them (635) */
+  refreshLiveRows();
   return state.user;
 }
 
@@ -4411,6 +4454,30 @@ export function deleteClassified(id) {
   state.flags = state.flags.filter(f => f.refId !== id);
   save();
 }
+/** Can the OWNER really delete this listing rather than hide it? (635)
+    «حذف» became «أخفِ» because an erased listing takes its messages and its
+    remaining days with it — and neither reason applies to a listing that was
+    never approved and never written to: nobody saw it, so it has no
+    messages, and its days never began. ⚠️ Both conditions are measured,
+    never assumed: a pending listing its owner shared by link can still
+    receive a message. */
+export function canOwnerDelete(id) {
+  const c = classifiedById(id);
+  return !!c && ownsListing(id) && c.status === 'pending' && messagesFor(id).length === 0;
+}
+/** The owner deletes a never-published listing. THE SERVER FIRST, and the
+    local erasure is only the trace of its yes (620 · 630): the row is
+    MARKED `deleted`, never removed — «deletion is a mark, not a wipe» is
+    this project's rule at `profiles.deleted_at`, and `own: update` already
+    permits the mark, so no delete policy is opened. A refusal changes
+    nothing on the device. Returns true only when the server took it. */
+export async function ownerDeleteClassified(id) {
+  if (!canOwnerDelete(id)) return false;
+  if (!await setListingStatus(id, 'deleted')) return false;
+  markLiveCls(id, 'deleted');
+  deleteClassified(id);
+  return true;
+}
 export function renewClassified(id) {
   const c = state.extraClassifieds.find(x => x.id === id);
   if (c) c.daysLeft = catRule(c.cat).days;
@@ -4709,6 +4776,7 @@ export function pendingListings() {
 export function adminListings() {
   const seen = new Set();
   const all = mergedClassifieds().concat(CLASSIFIEDS)
+    .filter(c => c.status !== 'deleted')   /* the owner erased it before anyone saw it (635) */
     .filter(c => { if (seen.has(c.id)) return false; seen.add(c.id); return true; })
     .map(c => Object.assign({ status: 'live' }, c));
   return all.map(c => Object.assign({}, c, {

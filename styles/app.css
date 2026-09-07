@@ -60,6 +60,7 @@
   --text-2:      #D6D4CE;
   --muted:       #8B93AC;
   --gold:        #C6A15B;
+  --shine:       #FFFFFF;        /* the headline's passing light (635) */
   --gold-bright: #E4C77E;
   --on-gold:     #1a1206;
   --green:       #8FD0AE;
@@ -116,6 +117,7 @@
   --text-2:      #1E2942;
   --muted:       #454B5C;        /* was #5C6376 — the dim text was the pale one */
   --gold:        #7A5D28;
+  --shine:       #FBF3E2;        /* cream, not white — white swallows the word on the light ground */
   --gold-bright: #5A4418;        /* measured: 4.17 on a gold wash over ivory */
   --on-gold:     #FFFDF8;
   --green:       #1F5C3D;        /* measured: 4.42 on its own pill */
@@ -170,6 +172,7 @@
     --text-2:      #1E2942;
     --muted:       #454B5C;
     --gold:        #7A5D28;
+    --shine:       #FBF3E2;
     --gold-bright: #5A4418;
     --on-gold:     #FFFDF8;
     --green:       #1F5C3D;
@@ -1041,6 +1044,8 @@ html[dir="rtl"] .drawer-panel { --drawer-off: 100%; }
 .sheet-grip { width: 42px; height: 4px; border-radius: 999px; background: var(--wash-4); margin: 6px auto 14px; }
 .sheet-title { font-size: 1.1875rem; font-weight: 700; margin-bottom: 4px; }
 .sheet-sub { font-size: .84375rem; color: var(--muted); margin-bottom: 16px; }
+/* what the confirmed action DOES, under the thing it is done to (635) */
+.sheet-note { font-size: .84375rem; color: var(--text-2); margin: -6px 0 16px; line-height: 1.6; }
 
 /* ---------- a long review does not eat the screen ----------
    Two lines, then «اقرأ المزيد». `-webkit-line-clamp` is the clamp the
@@ -1458,8 +1463,40 @@ input[inputmode="tel"], input[type="email"], input[inputmode="decimal"], #zipIn 
 /* one line each, and the city name is Latin inside an Arabic sentence, so
    it is isolated the way every other place name in the app is */
 .home-intro { padding: 2px 14px 10px; }
+/* The visitor's headline shines (635): gold, and once every three seconds a
+   band of `--shine` crosses the word, then it rests. Three conditions, in
+   this order and none negotiable: the fallback colour comes FIRST, so a
+   browser that cannot clip a background to text sees steady gold and never
+   transparent text over nothing; the gradient lives inside `@supports`;
+   and the motion lives inside `prefers-reduced-motion: no-preference`,
+   the file's own idiom — outside it the word is gold and still. The
+   subline does not shine: it is an index, the headline is the greeting. */
 .home-headline { font-family: var(--font-display); font-size: 1.2375rem; font-weight: 700;
-  color: var(--text); margin: 0; line-height: 1.35; unicode-bidi: plaintext; }
+  color: var(--gold); margin: 0; line-height: 1.35; unicode-bidi: plaintext; }
+@supports (-webkit-background-clip: text) {
+  .home-headline {
+    background-color: var(--gold);
+    background-image: linear-gradient(90deg, var(--gold) 0%, var(--gold) 38%, var(--shine) 50%, var(--gold) 62%, var(--gold) 100%);
+    background-size: 260% 100%;
+    background-repeat: no-repeat;
+    background-position: 150% 0;
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+}
+@media (prefers-reduced-motion: no-preference) {
+  @supports (-webkit-background-clip: text) {
+    .home-headline { animation: headline-shine 3s linear infinite; }
+  }
+}
+/* the three numbers of the rhythm are written here once: 1.8s across the
+   word, 1.2s of steady gold */
+@keyframes headline-shine {
+  0%   { background-position: 150% 0; }
+  60%  { background-position: -60% 0; }
+  100% { background-position: -60% 0; }
+}
 .home-subline { font-size: .84375rem; color: var(--muted); margin: 4px 0 0; line-height: 1.5; }
 
 /* six across, ten between, and it fits 390 exactly: 6×52 + 5×10 = 362 */
