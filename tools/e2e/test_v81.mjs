@@ -16,6 +16,10 @@
  *   6  the account list carries «إعلاناتي», and a door onto nothing is
  *      not drawn
  *   7  the cash screen says where the receipt's number comes from
+ *   9  the city the poster typed had no column to go to
+ *  10  «أخفِ الإعلان» hid it from nobody — and `635` put a sentence on
+ *      top of it saying it hid it from everybody
+ *  11  «تجديد» reset a counter that only this device reads
  *
  * ⚠️ Item 4 is the one to read twice: the rule is DERIVED from the data
  * («does this group hold a speciality that names this category?»), so it
@@ -68,6 +72,15 @@ const open = async (p, hash = '#/home', wait = 1100) => {
   await prime(p);
 };
 const go = async (p, h, wait = 900) => { await p.evaluate(x => { location.hash = x; }, h); await p.waitForTimeout(wait); };
+/* the server fails on ONE verb for a moment, and the mock underneath keeps
+   answering everything else */
+const failing = async (ctx, method, table) => {
+  const h = r => (r.request().method() === method && r.request().url().includes('/rest/v1/' + table))
+    ? r.fulfill({ status: 500, contentType: 'application/json', body: '{"message":"boom"}' })
+    : r.fallback();
+  await ctx.route('**/rest/v1/**', h);
+  return () => ctx.unroute('**/rest/v1/**', h);
+};
 const member = async (p, email) => p.evaluate(async ([em, c]) => {
   const S = window.__S;
   const err = await S.signUp({ name: 'Member ' + em, email: em, password: 'Qx7#mVzt2026', phone: '' });
@@ -482,7 +495,7 @@ const member = async (p, email) => p.evaluate(async ([em, c]) => {
      column is nullable and has no default, so a check reading the raw file
      matches the sentence that describes the rule and reports the fault it
      exists to prevent. The project has now paid for this four times. */
-  const migRaw = read('supabase/migrations/0008_classifieds_city.sql');
+  const migRaw = read('supabase/migrations/0008_classifieds_city_renewed.sql');
   const mig = migRaw.replace(/--[^\n]*/g, '');
   ok('9.1 the column is a migration, named and in the repository',
     /alter table[\s\S]*public\.classifieds[\s\S]*add column[\s\S]*city/i.test(mig));
@@ -522,6 +535,105 @@ const member = async (p, email) => p.evaluate(async ([em, c]) => {
       status: 'live', hidden: false, created_at: new Date().toISOString() }).city;
   }, [made]);
   ok('9.5 …and comes back to whoever is not its poster', back === 'Sugar Land, TX', String(back));
+  await ctx.close();
+}
+
+/* ============================================================
+   10 — «أخفِ الإعلان» reaches the server
+   ============================================================ */
+{
+  const st = code('js/store.js');
+  ok('10.1 hiding writes the column, and the server goes first',
+    /export async function hideClassified[\s\S]{0,400}?patchListing\(id,\s*\{\s*hidden:\s*true/.test(st));
+  ok('10.1b …and so does bringing it back',
+    /export async function unhideClassified[\s\S]{0,300}?patchListing\(id,\s*\{\s*hidden:\s*false/.test(st));
+  /* ⚠️ structural, and it is the item: reading the device's list ALONE is
+     what made the app promise a hide it never performed */
+  ok('10.2 isHidden reads the FIELD, not the device list alone',
+    /export function isHidden[\s\S]{0,320}?rec\.hidden/.test(st));
+  ok('10.2b …and still reads the list beside it, or a seed loses its hide',
+    /export function isHidden[\s\S]{0,320}?hiddenListings/.test(st));
+  ok('10.3 no screen hides without awaiting the answer',
+    !/(?<!await )S\.(hideClassified|unhideClassified|adminHideListing)\(/.test(
+      code('js/screens/marketplace.js') + code('js/screens/profile.js') + code('js/screens/admin.js')));
+
+  /* end to end, and on a SECOND account — which is the whole fault */
+  const { ctx, p, db } = await fresh({ preConfirm: true });
+  await open(p, '#/home');
+  await member(p, 'hide645@a.app');
+  const id = await p.evaluate(async () => {
+    const S = window.__S;
+    const rec = await S.addClassified({ cat: 'furniture', title: { ar: 'طاولة', en: 'Table' },
+      price: '80', city: 'Katy', desc: { ar: 'وصف', en: 'desc' }, photos: [], icon: 'sofa' });
+    return rec ? rec.id : null;
+  });
+  const hid = await p.evaluate(([x]) => window.__S.hideClassified(x), [id]);
+  const row = (db.classifieds || []).find(r => r.id === id);
+  ok('10.4 hiding really writes `hidden` on the row', hid === true && !!row && row.hidden === true,
+    row ? String(row.hidden) : '(no row)');
+  const back = await p.evaluate(([x]) => window.__S.unhideClassified(x), [id]);
+  const row2 = (db.classifieds || []).find(r => r.id === id);
+  ok('10.4b …and bringing it back writes false', back === true && row2 && row2.hidden === false,
+    row2 ? String(row2.hidden) : '(no row)');
+
+  /* ⚠️ and a refusal hides NOTHING locally — the screen must not say it
+     did what the server refused */
+  await p.evaluate(([x]) => window.__S.hideClassified(x), [id]);
+  const stop = await failing(ctx, 'PATCH', 'classifieds');
+  const okUnhide = await p.evaluate(([x]) => window.__S.unhideClassified(x), [id]);
+  const stillHidden = await p.evaluate(([x]) => window.__S.isHidden(x), [id]);
+  await stop();
+  ok('10.5 a refused server changes nothing on the device', okUnhide === false && stillHidden === true,
+    `${okUnhide} · ${stillHidden}`);
+  await ctx.close();
+}
+
+/* ============================================================
+   11 — «تجديد» reaches the server
+   ============================================================ */
+{
+  const st = code('js/store.js');
+  ok('11.1 renewing writes a column of its own, server first',
+    /export async function renewClassified[\s\S]{0,400}?patchListing\(id,\s*\{\s*renewed_at/.test(st));
+  /* ⚠️ two facts in one field is what rewriting `created_at` would be */
+  ok('11.1b …and `created_at` is never rewritten',
+    !/patchListing\([^)]*created_at/.test(st) && !/update\(\{[^}]*created_at/.test(st));
+  ok('11.2 the days start from the renewal when there is one',
+    /renewed_at \? Date\.parse\(r\.renewed_at\) : created/.test(st) &&
+    /rule\.days - Math\.floor\(\(now\(\) - started\)/.test(st));
+
+  const mig = read('supabase/migrations/0008_classifieds_city_renewed.sql').replace(/--[^\n]*/g, '');
+  ok('11.3 the column is in the same migration as the city',
+    /add column[\s\S]*renewed_at/i.test(mig) && /add column[\s\S]*city/i.test(mig));
+
+  const { ctx, p, db } = await fresh({ preConfirm: true });
+  await open(p, '#/home');
+  await member(p, 'renew645@a.app');
+  const id = await p.evaluate(async () => {
+    const S = window.__S;
+    const rec = await S.addClassified({ cat: 'furniture', title: { ar: 'كرسي', en: 'Chair' },
+      price: '40', city: 'Katy', desc: { ar: 'وصف', en: 'desc' }, photos: [], icon: 'sofa' });
+    return rec ? rec.id : null;
+  });
+  /* age the row by ten days, exactly as the server would hold it */
+  const born = new Date(Date.now() - 10 * 86400000).toISOString();
+  const rw = (db.classifieds || []).find(r => r.id === id);
+  if (rw) rw.created_at = born;
+  const before = await p.evaluate(([x, b]) => window.__S.mapLiveClsRowToJs({
+    id: x, owner_id: 'someone-else', cat: 'furniture', title: 'Chair', body: 'd',
+    price: 40, city: 'Katy', status: 'live', hidden: false, created_at: b }).daysLeft, [id, born]);
+  const okRenew = await p.evaluate(([x]) => window.__S.renewClassified(x), [id]);
+  const row = (db.classifieds || []).find(r => r.id === id);
+  ok('11.4 renewing writes `renewed_at`', okRenew === true && !!row && !!row.renewed_at,
+    row ? String(row.renewed_at) : '(no row)');
+  ok('11.4b …and leaves `created_at` where it was', !!row && row.created_at === born);
+  const after = await p.evaluate(([x, b, r]) => window.__S.mapLiveClsRowToJs({
+    id: x, owner_id: 'someone-else', cat: 'furniture', title: 'Chair', body: 'd',
+    price: 40, city: 'Katy', status: 'live', hidden: false, created_at: b, renewed_at: r }).daysLeft,
+    [id, born, row && row.renewed_at]);
+  /* ⚠️ read as ANOTHER account would read it — which is where the old
+     renewal changed nothing at all */
+  ok('11.5 a second device reads the days as renewed', after > before, `${before} → ${after}`);
   await ctx.close();
 }
 

@@ -1,5 +1,5 @@
 -- ============================================================
--- ARABNA — a listing keeps the city its poster typed
+-- ARABNA — a listing keeps the city its poster typed, and its renewal
 -- ------------------------------------------------------------
 -- Measured on main = f9aaaf4, and it is a fault the reader already
 -- meets:
@@ -28,3 +28,18 @@
 -- ============================================================
 alter table public.classifieds
   add column if not exists city text;
+
+-- ------------------------------------------------------------
+-- And the renewal. `daysLeft` is not a column: it is computed from the
+-- row's own age, so `renewClassified` reset a number nobody else reads —
+-- the listing kept its original age on every other screen and expired on
+-- its first schedule while its owner watched the counter go back. It
+-- touches money the day renewing is paid for.
+--
+-- The days are then computed from coalesce(renewed_at, created_at).
+--
+-- ⚠️ `created_at` is NOT rewritten. It records when the listing was born,
+-- and overwriting it would put two different facts in one field.
+-- ------------------------------------------------------------
+alter table public.classifieds
+  add column if not exists renewed_at timestamptz;

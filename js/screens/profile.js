@@ -834,8 +834,10 @@ export function MyAdsScreen(root) {
   $$('[data-adrenew]').forEach(b => b.addEventListener('click', () => {
     S.renewAd(b.dataset.adrenew); toast(t('adRenewed'), 'ok'); go('#/my-ads');
   }));
-  $$('[data-renew]', root).forEach(b => b.addEventListener('click', () => {
-    S.renewClassified(b.dataset.renew); toast(t('renewed'), 'ok'); go('#/my-ads');
+  $$('[data-renew]', root).forEach(b => b.addEventListener('click', async () => {
+    b.disabled = true;
+    if (!await S.renewClassified(b.dataset.renew)) { b.disabled = false; toast(t('somethingWrong'), 'err'); return; }
+    toast(t('renewed'), 'ok'); go('#/my-ads');
   }));
   $$('[data-share]', root).forEach(b => b.addEventListener('click', () => {
     const c = S.classifiedById(b.dataset.share);
@@ -844,14 +846,19 @@ export function MyAdsScreen(root) {
     const url = location.origin + location.pathname + '#/marketplace/' + c.id;
     shareItem(L(c.title), url);
   }));
-  $$('[data-unhide]').forEach(b => b.addEventListener('click', () => {
-    S.unhideClassified(b.dataset.unhide); toast(t('listingRepublished'), 'ok'); go('#/my-ads');
+  $$('[data-unhide]').forEach(b => b.addEventListener('click', async () => {
+    b.disabled = true;
+    if (!await S.unhideClassified(b.dataset.unhide)) { b.disabled = false; toast(t('somethingWrong'), 'err'); return; }
+    toast(t('listingRepublished'), 'ok'); go('#/my-ads');
   }));
   $$('[data-hide]').forEach(b => b.addEventListener('click', () => {
     const c = S.classifiedById(b.dataset.hide);
     confirmSheet({
       title: t('hideListing'), sub: c ? L(c.title) : '', confirmText: t('hideListing'),
-      onConfirm: () => { S.hideClassified(b.dataset.hide); toast(t('listingHidden'), 'ok'); go('#/my-ads'); }
+      onConfirm: async () => {
+        if (!await S.hideClassified(b.dataset.hide)) { toast(t('somethingWrong'), 'err'); return; }
+        toast(t('listingHidden'), 'ok'); go('#/my-ads');
+      }
     });
   }));
   wireRoutes(root);

@@ -347,8 +347,9 @@ export function ListingDetailScreen(root, params) {
   const sh = $('#shareTop');
   if (sh) sh.addEventListener('click', () => shareItem(L(c.title), location.href));
   const rn = $('#renewBtn');
-  if (rn) rn.addEventListener('click', () => {
-    S.renewClassified(c.id);
+  if (rn) rn.addEventListener('click', async () => {
+    rn.disabled = true;
+    if (!await S.renewClassified(c.id)) { rn.disabled = false; toast(t('somethingWrong'), 'err'); return; }
     toast(t('renewed'), 'ok');
     go('#/marketplace/' + c.id);
   });
@@ -358,7 +359,10 @@ export function ListingDetailScreen(root, params) {
      measured facts, where a title repeated in its own button said nothing */
   if (hd) hd.addEventListener('click', () => confirmSheet({
     title: t('hideListing'), sub: L(c.title), body: t('hideListingWhat'), confirmText: t('hideListing'),
-    onConfirm: () => { S.hideClassified(c.id); toast(t('listingHidden'), 'ok'); go('#/my-ads'); }
+    onConfirm: async () => {
+      if (!await S.hideClassified(c.id)) { toast(t('somethingWrong'), 'err'); return; }
+      toast(t('listingHidden'), 'ok'); go('#/my-ads');
+    }
   }));
   /* a real delete for a never-published listing — `danger`, because unlike
      hiding there is no way back; the server first, and a refusal erases
@@ -374,8 +378,10 @@ export function ListingDetailScreen(root, params) {
     }
   }));
   const uh = $('#unhideBtn');
-  if (uh) uh.addEventListener('click', () => {
-    S.unhideClassified(c.id); toast(t('listingRepublished'), 'ok'); go('#/marketplace/' + c.id);
+  if (uh) uh.addEventListener('click', async () => {
+    uh.disabled = true;
+    if (!await S.unhideClassified(c.id)) { uh.disabled = false; toast(t('somethingWrong'), 'err'); return; }
+    toast(t('listingRepublished'), 'ok'); go('#/marketplace/' + c.id);
   });
   wireRoutes(root);
 }

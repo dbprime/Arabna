@@ -483,14 +483,19 @@ function panelView(root) {
 
     $$('#aBody [data-mktopen]').forEach(b =>
       b.addEventListener('click', () => go('#/marketplace/' + b.dataset.mktopen)));
-    $$('#aBody [data-mktshow]').forEach(b => b.addEventListener('click', () => {
-      S.unhideClassified(b.dataset.mktshow); toast(t('listingRepublished'), 'ok'); paint();
+    $$('#aBody [data-mktshow]').forEach(b => b.addEventListener('click', async () => {
+      b.disabled = true;
+      if (!await S.unhideClassified(b.dataset.mktshow)) { b.disabled = false; toast(t('somethingWrong'), 'err'); return; }
+      toast(t('listingRepublished'), 'ok'); paint();
     }));
     $$('#aBody [data-mkthide]').forEach(b => b.addEventListener('click', () => {
       const id = b.dataset.mkthide;
       askReason({
         title: t('adminHide'), sub: t('adminHideAsk'), confirmText: t('adminHide'),
-        onGo: (why) => { S.adminHideListing(id, why); toast(t('listingHidden'), 'ok'); paint(); },
+        onGo: async (why) => {
+          if (!await S.adminHideListing(id, why)) { toast(t('somethingWrong'), 'err'); return; }
+          toast(t('listingHidden'), 'ok'); paint();
+        },
       });
     }));
     $$('#aBody [data-mktdel]').forEach(b => b.addEventListener('click', () => {

@@ -846,6 +846,30 @@ anything else     is not reported
 which of forty files it names. **The number is the other half, and the two
 together are the whole thing.**
 
+### Every box a human fills has a column, and every field read has one source
+Measured in `645`: the marketplace form **collects a city and refuses to
+publish without one**, and there was no column to send it to — so the value
+worked once, on the device that typed it, and was gone for everybody else.
+The same walk found «أخفِ الإعلان» writing to a list on the device while the
+column, the policy and the map had all been ready since `0001`, and
+«تجديد» resetting a counter nobody else reads.
+
+> **Every box in a form a human fills in has a column on the server.** A box
+> that is filled and does not arrive **works once, on one device, and is
+> then lost.**
+>
+> **And every field the app reads has one source on the server** — a column,
+> or something derived from one. **A field that exists only in
+> `js/data.js` means whatever is added tomorrow cannot carry it**, which is
+> not a shortfall but a fault with a later date on it.
+
+⚠️ **And what makes these invisible is that they look right to the person
+who caused them**: their own device still holds what they typed, so nobody
+reports it and it is found only by opening the same account on a second
+device. **The guard is a suite that matches each table's columns against
+the fields the maps read**, and it belongs with the batch that fills the
+tables, not with the one that repairs a field.
+
 ### A batch that closes a gap strikes it from the list, in the same commit
 Two entries under «Known open items» described a state that had ended —
 one of them for three versions — and the daily check spent a paragraph on
@@ -10410,7 +10434,7 @@ run for run against the `630` net rather than assumed — **not one older suite
 moved by a single assertion**, which is what a batch that adds a screen rule
 and touches no older subject should look like.
 
-## V.10.6 — nine from the live walk (645)
+## V.10.6 — eleven, and three of them were live (645)
 
 ⚠️ **This file closes its own group, and its group is itself** — it touches
 `js/i18n.js`, `js/data.js`, `js/store.js` and three screens.
@@ -10420,12 +10444,13 @@ server.** And the item that opened the file — the price knows its section —
 **had already shipped as `625`'s third appendix**, measured on `main`, so it
 is not rebuilt and is named here in this one line.
 
-⚠️ **AND THE FILE THIS BATCH WAS BUILT FROM WAS ONE REVISION BEHIND.** The
-copy in hand is «ثمانيةٌ من نقاش الجرد» and its §8 is «خارج النطاق»; the
-queue line the owner dictated says **nine**, names the city column first, and
-points at «`645` §8» for it. So that item was **measured from the code
-instead of read from the file**, and it is item 9 below — written out here
-so it can be corrected against the text it was meant to come from.
+⚠️ **THE FILE ARRIVED IN THREE REVISIONS, AND THE LAST ONE IS THE ONE THIS
+FOLLOWS.** The first copy was «ثمانيةٌ من نقاش الجرد»; the queue line then
+said nine and pointed at a §8 that copy did not carry, so **item 9 was
+measured from the code and built before the text arrived** — and it came
+back matching. The final copy carries **eleven**, and the last two are
+published faults found in the sweep of 7 September, **one of them put there
+by `635` the same day**.
 
 ### 1 — «البائع» is not everybody who posts
 The marketplace is not a selling floor alone: `jobs` is a **job wanted** and
@@ -10593,7 +10618,56 @@ never sees it**, because their own device still holds what they typed.
   suite that sends it goes red, and a column added in a migration needs
   nothing written in the harness.
 
-### `test_v81` — 82 assertions, and seven teeth
+### 10 — «أخفِ الإعلان» hid it from nobody
+⚠️ **The heaviest thing in the batch, and it was live.**
+
+```
+hideClassified      pushed an id onto a list ON THE DEVICE, and nothing else
+hidden              a column since 0001
+0002's policy       reads it: (status = 'live' and hidden = false) or owner or staff
+mapLiveClsRowToJs   maps it
+isHidden(c)         read the device list — never the field
+```
+
+**The column, the policy and the map were all ready from the first day, and
+nobody wrote the column and nobody read it.** So the listing left its
+owner's own screen and stood on every other screen in the world; its owner
+went away satisfied, and could only find out by opening their account on a
+second device.
+
+⚠️ **And `635` — merged hours earlier — put a sentence on top of it:**
+«يختفي عن الجميع، ويمكنك إرجاعه ما دامت أيّامه باقية، ولا يُحسَب من عدد
+إعلاناتك». **The second and third are true. The first was not.** Its own
+file called all three «measured, not promised»; two were measured and the
+first was not. **A screen that promises what does not happen is worse than a
+silent one — the silent one leaves the reader to check.**
+
+- **The server first**, and nothing local moves until it answers; a refusal
+  hides nothing and says so.
+- ⚠️ **`isHidden` reads the FIELD and the device's list BESIDE it, never the
+  list alone.** The field is what makes a hide true for everybody; the list
+  still holds a **seed** listing, which has no row to carry a field, and
+  every hide made before this batch. **Deleting it silently would lose all
+  of those.**
+- ⚠️ **A row that matches nothing is not a failure.** A seed has no row, so
+  PostgREST answers 204 with no error and nothing is written — which is the
+  right answer for a seed, and is exactly why the list is still read.
+
+### 11 — «تجديد» renewed it on one device
+`daysLeft` **is not a column**: it is computed from the row's own age. So
+resetting it locally reset a number nobody else reads — the listing kept its
+original age on every other screen and expired on its first schedule while
+its owner watched the counter go back. ⚠️ **And it touches money the day
+renewing is paid for: somebody pays, sees the counter reset, and nothing is
+renewed.**
+
+- `renewed_at` is the column, and the days are computed from
+  **`coalesce(renewed_at, created_at)`**.
+- ⚠️ **`created_at` is never rewritten.** It records when the listing was
+  born; overwriting it to say when it was renewed puts two different facts
+  in one field.
+
+### `test_v81` — 97 assertions, and seven teeth
 ```
 the seller word restored          → 1.1 · 1.2 · 1.3 · 1.7 · 1.7b
 the transport specialities gone   → 2.2 · 2.3
