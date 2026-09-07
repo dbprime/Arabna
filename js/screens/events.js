@@ -3,7 +3,7 @@ import { t, L, icon, $, $$, go, back, renderHeader, toast, wireRoutes, replaceHa
          emptyState, query, sectionNote, pickerBtn, setPickerValue, openDropdown, ltr,
          sectionSlider, sponsoredRows, historyKey, esc } from '../ui.js';
 import { getLang } from '../i18n.js';
-import { EVENT_TYPES, nextOccurrence, AD_SLOTS } from '../data.js';
+import { EVENT_TYPES, nextOccurrence, AD_SLOTS, eventIsAllDay, eventStamp } from '../data.js';
 import { startSlider } from './home.js';
 import * as S from '../store.js';
 import { mountPhotoPicker } from './marketplace.js';
@@ -12,26 +12,31 @@ import { mountPhotoPicker } from './marketplace.js';
 
 /** "Fri 24 Oct 2026 · 5:00 PM" / "الجمعة 24 أكتوبر 2026 · 5:00 م" */
 export function fmtEventDate(iso, withTime = true) {
-  const d = new Date(iso);
+  const d = new Date(eventStamp(iso));
   if (isNaN(d)) return iso || '';
   const locale = getLang() === 'ar' ? 'ar-EG-u-nu-latn' : 'en-US';
   const date = d.toLocaleDateString(locale, { weekday: 'short', day: 'numeric', month: 'long', year: 'numeric' });
-  if (!withTime) return date;
+  /* An event whose organiser announced no doors carries a date and no
+     time, and gets none printed: `12:00 ص` is an hour nobody said. */
+  if (!withTime || eventIsAllDay(iso)) return date;
   const time = d.toLocaleTimeString(locale, { hour: 'numeric', minute: '2-digit' });
   return `${date} · ${time}`;
 }
 
 /** Today / Tomorrow shortcut for the card, otherwise the short date. */
 function whenLabel(iso) {
-  const d = new Date(iso);
+  const d = new Date(eventStamp(iso));
   if (isNaN(d)) return '';
   const today = new Date();
   const sameDay = (a, b) => a.toDateString() === b.toDateString();
   const tomorrow = new Date(today.getTime() + 86400000);
   const locale = getLang() === 'ar' ? 'ar-EG-u-nu-latn' : 'en-US';
-  const time = d.toLocaleTimeString(locale, { hour: 'numeric', minute: '2-digit' });
-  if (sameDay(d, today)) return `${t('eventToday')} · ${time}`;
-  if (sameDay(d, tomorrow)) return `${t('eventTomorrow')} · ${time}`;
+  /* the same rule as `fmtEventDate`: no hour was announced, so none is
+     printed — and the ` · ` that would join it goes with it. */
+  const time = eventIsAllDay(iso) ? ''
+    : ` · ${d.toLocaleTimeString(locale, { hour: 'numeric', minute: '2-digit' })}`;
+  if (sameDay(d, today)) return `${t('eventToday')}${time}`;
+  if (sameDay(d, tomorrow)) return `${t('eventTomorrow')}${time}`;
   /* The year is printed whenever it is not this one. «السبت، 20 فبراير»
      for an event in 2027, read in August 2026, says «that has been and
      gone» — and the detail page had the year all along, so the list was
@@ -39,7 +44,7 @@ function whenLabel(iso) {
      where it is noise. */
   const opts = { weekday: 'short', day: 'numeric', month: 'short' };
   if (d.getFullYear() !== today.getFullYear()) opts.year = 'numeric';
-  return d.toLocaleDateString(locale, opts) + ` · ${time}`;
+  return d.toLocaleDateString(locale, opts) + time;
 }
 
 /* ----------------------------- LIST ----------------------------- */
