@@ -125,9 +125,15 @@ await page.reload(); await page.waitForTimeout(800);
    ====================================================================== */
 console.log('--- categories ---');
 // V.02.1 added `outings` — a deliberate widening, not a regression
+/* ⚠️ REVERSED BY 645, and the number is kept a literal on purpose. The set
+   is a written decision — «twenty-one categories, frozen» — and the whole
+   point of the check is that a category cannot appear or vanish without one.
+   Deriving the count from `CATEGORIES` would compare the file with itself
+   and assert nothing. `transport` was added by decision (645 §2), so the
+   literal moves with the decision: 21 → 22. */
 const WANT = ['restaurants','grocery','worship','cafe','beauty','shopping','community',
   'education','sweets','finance','occasions','doctors','auto','homegoods','lawyers',
-  'travel','electronics','realestate','homeservices','gyms','outings'];
+  'travel','electronics','realestate','homeservices','gyms','outings','transport'];
 
 
 /* V.02.4: the sideways chip rows became drop-downs — an option nobody can
@@ -152,8 +158,8 @@ const ddPick = async (anchor, value) => {
 
 await go('#/directory');
 const dirChips = (await ddValues('#ctlCat')).filter(x => x && x !== 'all');
-ok('the directory offers exactly the twenty-one categories',
-   dirChips.length === 21 && WANT.every(id => dirChips.includes(id)),
+ok('the directory offers exactly the twenty-two categories',   // 645: was 21
+   dirChips.length === 22 && WANT.every(id => dirChips.includes(id)),
    dirChips.length + ': ' + dirChips.join(' '));
 ok('"events" is not among them — it is a shortcut, not a category',
    !dirChips.includes('events'));
@@ -161,7 +167,7 @@ ok('"events" is not among them — it is a shortcut, not a category',
 await go('#/categories');
 const cells = await page.evaluate(() => Array.from(document.querySelectorAll('.cat-grid')).pop()
   .querySelectorAll('.cat-cell').length);
-ok('"all categories" lists every one of them', cells === 22, cells + ' cells (21 + events)');
+ok('"all categories" lists every one of them', cells === 23, cells + ' cells (22 + events)');   // 645: was 22
 let body = await txt();
 for (const [id, label] of [['cafe','مقاهي وأرجيلة'], ['shopping','تسوّق وأزياء'],
                            ['community','مجتمع وخدمات'], ['sweets','حلويات ومخابز'],
@@ -503,7 +509,7 @@ ok('an unknown category is still blocked', c2[2] === '1');
 ok('…and the accepted ids are printed so the file can be fixed',
    (await page.textContent('#csvOut')).includes('المعرّفات المقبولة'));
 const validList = await page.textContent('#csvOut');
-ok('…listing all twenty', WANT.every(id => validList.includes(id)));
+ok('…listing every one of them', WANT.every(id => validList.includes(id)));
 
 const exported = await grab(() => page.click('#impExport'));
 ok('the export carries the new categories',

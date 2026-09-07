@@ -362,7 +362,7 @@ hand. Treat it as immovable unless there is no choice.
   directory tab moves reviews, favourites, ownership, tags and attributes across.
 - **Seasonal groups** (`season: 'ramadan'`) are hidden until the owner flips one
   switch in admin → settings; `state.seasons` holds it.
-- **Twenty-one categories (V.02.1), frozen** — see the list below. Arabic schooling
+- **Twenty-two categories (V.02.1, frozen; `transport` joined in `645`)** — see the list below. Arabic schooling
   and newcomer services stay attribute groups rather than categories, for the
   anti-duplication reason above.
 
@@ -431,12 +431,19 @@ hand. Treat it as immovable unless there is no choice.
   the same screen writes to the database and step three disappears.
   `exportBackup()` dumps the whole state as JSON.
 
-## The twenty-one categories and the speciality tree (V.02.1)
+## The twenty-two categories and the speciality tree (V.02.1)
 ```
 restaurants · grocery · worship · cafe · beauty · shopping · community ·
 education · sweets · finance · occasions · doctors · auto · homegoods ·
-lawyers · travel · electronics · realestate · homeservices · gyms · outings
+lawyers · travel · transport · electronics · realestate · homeservices ·
+gyms · outings
 ```
+⚠️ **Frozen means «not without a decision», not «never».** It was twenty-one
+until `645`, where `transport` was added — and a category is never one line:
+it needs a key in both packs, a hue, and **a speciality group of its own**,
+or whoever opens it finds nothing to describe their trade with. The count is
+a literal in `v10` and `v11` for exactly this reason: a count derived from
+`CATEGORIES` would compare the file with itself and guard nothing.
 Plus `events`, which is **not** a business category: it carries `route: '#/events'`
 and every directory chip row filters it out with `!c.route`. `HOME_CATS` names the
 five circles on Home.
@@ -3723,6 +3730,7 @@ the first reader who enlarges their type. `.h-title` **1.2375rem** ·
 `.row-title` **1.1rem** · `.pr-next-at` **2.0625rem**.
 
 ### Twenty-one categories, twenty-one hues
+*(twenty-two since `645` — the hue rule below is what a new one has to satisfy)*
 `CAT_HUE` in `data.js` gives each category one hue and **everything else is
 derived from it** in `catTileHtml(catId, size, cls)` — the tile, the wash,
 the border and the khatam pattern, all `hsl()` off that one number. Twenty-
