@@ -44,6 +44,7 @@ export const CATEGORIES = [
   { id: "homegoods",    key: "catHomegoods",        icon: "sofa" },
   { id: "lawyers",      key: "catLawyers",          icon: "scale" },
   { id: "travel",       key: "catTravel",           icon: "navigation" },
+  { id: "transport",    key: "catTransport",        icon: "truck" },
   { id: "electronics",  key: "catElectronics",      icon: "smartphone" },
   { id: "realestate",   key: "catRealestate",       icon: "building" },
   { id: "homeservices", key: "catHomeservices",     icon: "wrench",      shortKey: "catShortHome" },
@@ -99,7 +100,7 @@ export const CLASSIFIED_CATS = MARKET_CATS;
    hand-typed «0.1» while the project had reached V.03.6 — two literals,
    both stale, and a reader reporting a fault could not tell us which build
    they were on. Raise it here when CLAUDE.md's version line moves. */
-export const APP_VERSION = '0.10.5';
+export const APP_VERSION = '0.10.6';
 
 /* ⚠️ توثيق الجوال مؤجَّلٌ إلى ما بعد الإطلاق على App Store — قرار مالك
    البرنامج، وسببه الكلفة: مزوّد الرسائل حسابٌ مدفوعٌ بكلفةٍ لكلّ رسالة،
@@ -362,6 +363,7 @@ export const ATTR_GROUPS = [
   { id: "homeGoods",    key: "attrGrpHomeGoods" },
   { id: "schooling",    key: "attrGrpSchooling" },
   { id: "travelSvc",    key: "attrGrpTravelSvc" },
+  { id: "transportSvc", key: "attrGrpTransportSvc" },
   { id: "worshipKind",  key: "attrGrpWorshipKind" },
   { id: "worship",      key: "attrGrpWorship" },
   { id: "grocerySvc",   key: "attrGrpGrocerySvc" },
@@ -599,6 +601,26 @@ export const ATTRIBUTES = withKey([
   { id: "trvGroupTours", group: "travelSvc", cats: ["travel"], icon: "navigation" },
   { id: "trvHotels", group: "travelSvc", cats: ["travel"], icon: "navigation" },
   { id: "trvInsurance", group: "travelSvc", cats: ["travel"], icon: "navigation" },
+  /* --- transportSvc ---
+     A category with no specialities is half a category: whoever opens it
+     finds nothing to describe their trade with, which is item 4's fault
+     from the other side.
+     ⚠️ `hsMoving` («نقل عفش») and `autoTow` («سطحة») are deliberately NOT
+     extended to this category and NOT moved into this group. Adding
+     `transport` to their `cats` would make `homeSvc` and `autoSvc`
+     required for a bus company, and moving them here would make
+     `transportSvc` required for a plumber — which is item 4's fault
+     committed by the hand that removes it. Two ids for one trade in two
+     categories is the price, and the search finds both because it reads
+     the labels. */
+  { id: "transMoving", group: "transportSvc", cats: ["transport"], icon: "truck" },
+  { id: "transFreight", group: "transportSvc", cats: ["transport"], icon: "truck" },
+  { id: "transParcel", group: "transportSvc", cats: ["transport"], icon: "inbox" },
+  { id: "transDriver", group: "transportSvc", cats: ["transport"], icon: "car" },
+  { id: "transBus", group: "transportSvc", cats: ["transport"], icon: "users" },
+  { id: "transAirport", group: "transportSvc", cats: ["transport"], icon: "navigation" },
+  { id: "transTow", group: "transportSvc", cats: ["transport"], icon: "truck" },
+
   /* --- worshipKind --- */
   { id: "wkMosque", group: "worshipKind", cats: ["worship"], icon: "landmark" },
   { id: "wkMusalla", group: "worshipKind", cats: ["worship"], icon: "landmark" },
@@ -920,6 +942,12 @@ export const CAT_HUE = {
   shopping: 320,    homegoods: 334, homeservices: 304, electronics: 292,
   // getting about, and days out
   auto: 128,        travel: 112,    outings: 140, occasions: 100,
+  /* 223 is measured, never picked by eye: 9° from finance 214 and
+     lawyers 232 — the palette's own tightest pair is 6° — outside the
+     gold band 35–55, outside 56–92 where MARKET_HUE's four twinless
+     sections sit, and its glyph-on-fill contrast (4.58 dark · 8.73
+     light) falls inside the twenty-two's range, 4.05→6.60 · 5.29→9.56. */
+  transport: 223,
   // a shortcut, not a business category — but it is drawn in the same
   // grid as the twenty-one, and a colourless tile among coloured ones
   // reads as broken, not as different.

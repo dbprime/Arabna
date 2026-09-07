@@ -123,10 +123,11 @@ export function ProfileScreen(root) {
     ${/* THE HUB. The drawer's «حسابي» group is deleted and its six rows stand
          here — the owner's decision: «بتشيل حسابي من تحت كامل ... وبعد الضغط على
          حسابي اللي فوق تفتحله شاشة فيها كل الخيارات اللي كانت تحت». They are
-         read from ACCOUNT_LINKS so there is one list and not two menus. */''}
+         read from ACCOUNT_LINKS through accountLinks(), the one reader of
+         each row's when — so there is one list and not two menus. */''}
     <div class="pad mt-20">
       <div class="dr-group-label">${t('grpMyAccount')}</div>
-      ${S.ACCOUNT_LINKS.map(l => {
+      ${S.accountLinks().map(l => {
         const sub = hubSub(l.key);
         return `<button class="list-row" data-route="${typeof l.route === 'function' ? l.route() : l.route}">
           <span class="row-ico">${icon(l.icon, 20)}</span>
@@ -566,6 +567,7 @@ function hubSub(key) {
     return sb.currentPeriodEnd ? `${t('renewsOn')} ${fmtDate(sb.currentPeriodEnd)}` : '';
   }
   if (key === 'notifications') { const n = S.unreadCount(); return n ? String(n) : ''; }
+  if (key === 'myAds')         { const n = S.myActiveListings().length; return n ? String(n) : ''; }
   if (key === 'receipts')      { const n = S.receipts().length; return n ? String(n) : ''; }
   if (key === 'blockedTitle')  { const n = (S.state.blocked || []).length; return n ? String(n) : ''; }
   return '';

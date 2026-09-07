@@ -1180,11 +1180,19 @@ function cashFormHtml() {
       <div class="field"><label class="label">${t('cashReceivedBy')}</label>
         <input class="input" id="cshWho" /></div>
     </div>
-    <div class="field"><label class="label">${t('cashReference')}</label>
+    <!-- WARNING: this is NOT the receipt's number. newReceiptNumber() in
+         store.js has minted that since V.03.4 — ARB-26-XXXXX, unique before
+         it is issued, and the shape a column in the server's schema is
+         waiting for. This box is an EXTERNAL reference: a cheque number, or
+         the number on a paper receipt. The fault was the name, not a missing
+         generator, and a second generator would have produced two numbers
+         for one receipt. -->
+    <div class="field"><label class="label">${t('cashRefExternal')}</label>
       <input class="input ltr" id="cshRef" /></div>
     <div class="field"><label class="label">${t('cashNote')}</label>
       <input class="input" id="cshNote" /></div>
     <div class="hint">${t('cashNoRenew')}</div>
+    <div class="hint">${t('cashRefAuto')}</div>
     <div class="field-err" id="cshErr"></div>
     <button class="btn btn-gold btn-block mt-8" id="cshGo">${icon('banknote', 19)} ${t('cashIssue')}</button>`;
 }

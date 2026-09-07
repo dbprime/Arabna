@@ -3131,15 +3131,34 @@ export function myRequests() {
  * because a counter carries a number and a row carries nothing, and the
  * number is what makes tapping a decision.
  */
+/* ⚠️ `when` is a field on the ROW, never a condition written into the
+   screen: the list stays one source and cannot become two menus saying
+   different things. A row with no `when` is drawn for every account, which
+   is what every row was before this.
+   And the split is not «has an account / has not»: a receipt and a request
+   either happened or did not, so a door onto neither is a door onto «لا
+   شيء». A message, a notification and a block are begun by somebody ELSE
+   at any moment, so their doors stay open on an account that has none. */
 export const ACCOUNT_LINKS = [
+  // «إعلاناتي» was reachable only as one of three number squares at the top
+  // of this same screen — a square does not read as a door, and it is the
+  // one thing somebody who has just published comes back for.
+  { icon: 'megaphone', key: 'myAds',         route: '#/my-ads' },
   { icon: 'briefcase', key: 'myBusiness',    route: '#/my-business' },
   { icon: 'message',   key: 'myMessages',    route: '#/messages' },
-  { icon: 'clock',     key: 'myRequests',    route: '#/my-requests' },
+  { icon: 'clock',     key: 'myRequests',    route: '#/my-requests',
+    when: () => pendingRequests() > 0 || myRequests().length > 0 },
   { icon: 'crown',     key: 'subscription',  route: subscriptionRoute },
   { icon: 'bell',      key: 'notifications', route: '#/notifications' },
-  { icon: 'file',      key: 'receipts',      route: '#/receipts' },
+  { icon: 'file',      key: 'receipts',      route: '#/receipts',
+    when: () => receipts().length > 0 },
   { icon: 'shield',    key: 'blockedTitle',  route: '#/blocked' },
 ];
+
+/** the rows this account should actually be shown — the one reader of `when` */
+export function accountLinks() {
+  return ACCOUNT_LINKS.filter(l => typeof l.when !== 'function' || l.when());
+}
 
 export function ownsBusiness(bizId) {
   return isLoggedIn() && !!bizId && (state.myBusinessIds || []).includes(bizId);
