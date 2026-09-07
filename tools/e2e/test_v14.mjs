@@ -596,7 +596,11 @@ ok('a category brings no chips with it', outChips === 0, String(outChips));
 /* V.02.4 replaced the grid sheet with the picker: every category is in
    one vertical list, so there is nothing left for a second surface to do. */
 await page.click('#ctlCat'); await page.waitForTimeout(500);
-ok('the picker holds every category at once', await page.locator('.dd-row').count() === 22,
+/* ⚠️ 645 §2: `transport` joined the frozen set by decision, so the literal
+   moves with it — 22 → 23 («الكل» plus the twenty-two). It stays a literal
+   for v10's reason: the set IS the decision, and a count read off
+   `CATEGORIES` would compare the file with itself. */
+ok('the picker holds every category at once', await page.locator('.dd-row').count() === 23,
    String(await page.locator('.dd-row').count()));
 ok('…each with its real count', (await page.textContent('.dd-panel')).includes('138'));
 ok('…and no sideways scroll', await page.evaluate(() => {
