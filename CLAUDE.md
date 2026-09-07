@@ -10675,7 +10675,7 @@ renewed.**
   born; overwriting it to say when it was renewed puts two different facts
   in one field.
 
-### `test_v81` — 97 assertions, and seven teeth
+### `test_v81` — 97 assertions, and twelve teeth
 ```
 the seller word restored          → 1.1 · 1.2 · 1.3 · 1.7 · 1.7b
 the transport specialities gone   → 2.2 · 2.3
@@ -10684,7 +10684,17 @@ the group rule reverted           → 4.7 · 4.7b
 the toast back on the refusal     → 3.4 · 5.2 · 5.3 · 5.4 · 5.5b · 5.6c · 5.8
 the screen reads the raw list     → 6.2 · 6.2b · 6.6b
 the cash label reverted           → 7.1b
+the city dropped on the way out   → 9.2 · 9.2b · 9.4 (prints `undefined`) · 9.5
+hiding back on the device list    → 10.1 · 10.2 · 10.4
+the device hides before the answer → 10.5
+renewing back on the local counter → 11.1 · 11.2 · 11.4 · 11.5
+created_at rewritten instead      → 11.1 · 11.1b · 11.4 · 11.4b · 11.5
 ```
+⚠️ **Item 9 nearly shipped with structural assertions alone**, which is the
+half a green build hides: `9.1`–`9.5` read the migration, the code and the
+row, and all five would have stayed green over a column the app never sent
+to a live table. The mutation was written and run before the close, and
+`9.4` prints the original fault in one word — **`undefined`**.
 
 ⚠️ **AND ONE TOOTH DID NOT BITE FIRST TIME, WHICH IS THE FINDING WORTH
 KEEPING.** With item 4's rule reverted the suite came back **70/70**: the
@@ -10704,7 +10714,40 @@ read **its own comment** explaining that the column is nullable with no
 default, and reported the fault it exists to prevent: *a check must read the
 code, never the prose about the code*, now paid for four times.
 
-__NET_LINE_645__
+### And the group closes — the net, run on segments over one frozen tree
+```
+158 runs · 79 suites · 7,491 assertions · zero red · zero crash
+```
+Twenty-seven segments over `49d0547`, `HEAD` re-checked at the head of each,
+**79 present and 79 run, each exactly twice, and no result borrowed.** The
+arithmetic closes itself: 7,295 + 194 (`v81` × 2) + 2 (`v47 · 1.7b`, the one
+assertion this batch adds to an older suite) = **7,491**.
+
+⚠️ **AND THE NET WAS RUN FROM THE TOP THREE TIMES, WHICH IS THE LESSON THIS
+BATCH LEAVES.** It stopped at `v16` in the first run and at `v20` in the
+second, and each restart cost the segments already measured — because a
+suite not run on THIS tree is a suite not run, and a fix to a suite makes a
+new tree. **After the second stop I stopped meeting the instances and swept
+for the CLASS** — the seller word, the calls that became `async`, the frozen
+category counts, the hub's row count, the newly required phone, the city
+column — and `v30` and `v47` were found and reversed **before the net
+reached them**, along with the measurement that `updateClassified` is still
+synchronous (so `v29` was sound) and that `v46` counts widths and not rows.
+**That is `570` and `572`'s rule paying inside the harness rather than
+inside the app: sweep the class, do not wait for its next example.**
+
+**Eight older suites carry a reversal, none softened and each naming it:**
+`v10` · `v11` · `v12` · `v14` · `v16` (the frozen category count, which moves
+with the decision and is **not** derived from `CATEGORIES` — a count read off
+the file would compare it with itself), `v20` and `v30` (the seller word),
+and `v47` (the hub). ⚠️ **`v20`'s was the heaviest and was not a wording
+change at all:** hiding writes the server first now, and that suite's
+`asMember` seeds a `state.user` with **no session**, so the stand-in refused
+the PATCH with 401 exactly as the live policy would — which also produced
+the console errors its own last item counts. It signs in for real, awaits
+both calls, and **both blocks use one import expression**, because on the
+single-file build a relative path hands back a second module instance and
+the session would have been made in one while the hide ran in the other.
 
 ## Known open items
 - **The header image is still far larger than its box.** V.04.7 replaced
