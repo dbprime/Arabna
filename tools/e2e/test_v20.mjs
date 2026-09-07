@@ -1,6 +1,6 @@
 /* V.02.7 — batch six (a): numerals, MSA, the header flip, and twelve screens */
 import { chromium } from '/opt/node22/lib/node_modules/playwright/index.mjs';
-import { mockSupabase } from './_supabase.mjs';
+import { mockSupabase, MOCK_CODE } from './_supabase.mjs';
 import { phoneAuthOn } from './_phoneauth.mjs';
 import { withDemoData } from './_demo.mjs';
 
@@ -379,8 +379,12 @@ page = await openPage();          // a visitor, not the member from section 3
    never signed up owned it — so the owner view below is set up explicitly
    a few lines down, the way publishing would.) */
 await go(page, '#/marketplace/c2');
-ok('8.3 the visitor is offered the seller', await page.evaluate(() =>
-  [...document.querySelectorAll('#app button')].some(b => /البائع/.test(b.textContent))));
+/* REVERSED BY 645 §1: the marketplace is not a selling floor alone —
+   `jobs` is a job wanted and `handyman` an hourly trade — so the button
+   reads «تواصل مع المعلن». The subject is unchanged: a visitor is offered
+   a way to reach whoever posted it. */
+ok('8.3 the visitor is offered the poster', await page.evaluate(() =>
+  [...document.querySelectorAll('#app button')].some(b => /المعلن/.test(b.textContent))));
 
 await asMember(page);
 await setState(page, () => window.__patch((s) => { s.myListings = ['c1']; s.messages = []; }));
@@ -409,14 +413,33 @@ const rules = await page.evaluate(async () => {
 ok('9.1 four active listings and fourteen days, from the store',
    rules.max === 4 && rules.days === 14 && rules.other === 14, JSON.stringify(rules));
 ok('9.2 handyman keeps its own stricter rule', rules.hm === 1);
+/* REVERSED BY 645 sec.10: hiding writes the server FIRST and only then the
+   device, so this page needs a REAL session — a seeded `state.user` is not
+   one, which is 610's lesson in v74 written out again. The sign-up comes
+   BEFORE `myListings` is restored, because `signUp` clears it. */
+await page.evaluate(async (code) => {
+  const S = (window.__m && window.__m.S)
+    || await import('arabna/js/store.js').catch(() => import('./js/store.js'));
+  const { data: { session } = {} } = await S.sb.auth.getSession();
+  if (session) return;
+  await S.signUp({ name: 'Hider', email: 'hide@arabna.test', password: 'Hide#Slot2026x' });
+  if (!S.state.user || !S.state.user.emailVerified) await S.confirmEmail(code);
+}, MOCK_CODE);
+await setState(page, () => window.__patch((s) => { s.myListings = ['c1']; }));
+await page.reload(); await page.waitForTimeout(800);
 const hide = await page.evaluate(async () => {
-  const S = await import('/js/store.js');
+  /* the SAME import expression as the sign-up above: on the single-file
+     build a relative path fetches the file again and hands back a second
+     instance with its own state, so a session made in one would be
+     invisible to the hide in the other. */
+  const S = (window.__m && window.__m.S)
+    || await import('arabna/js/store.js').catch(() => import('./js/store.js'));
   const before = S.activeListingCount();
-  S.hideClassified('c1');
+  await S.hideClassified('c1');
   const out = { ownerSees: S.myActiveListings().some(c => c.id === 'c1'),
                 freed: S.activeListingCount() === before - 1 || before === 0,
                 marked: (S.classifiedById('c1') || {}).status };
-  S.unhideClassified('c1');
+  await S.unhideClassified('c1');
   out.back = (S.classifiedById('c1') || {}).status;
   return out;
 });
