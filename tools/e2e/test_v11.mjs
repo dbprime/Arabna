@@ -153,14 +153,17 @@ const chips = await (async () => {
   await page.keyboard.press('Escape'); await page.waitForTimeout(220);
   return v.filter(x => x && x !== 'all');
 })();
-ok('the directory now offers twenty-one categories', chips.length === 21, chips.length + '');
+/* ⚠️ REVERSED BY 645 §2: `transport` joined by decision, so the literal
+   moves with it. It stays a literal — the frozen set IS the decision, and a
+   count derived from `CATEGORIES` would assert nothing at all. */
+ok('the directory now offers twenty-two categories', chips.length === 22, chips.length + '');
 ok('"outings" is one of them', chips.includes('outings'));
 ok('"events" is still not a category', !chips.includes('events'));
 
 await go('#/categories');
 const cells = await page.evaluate(() => Array.from(document.querySelectorAll('.cat-grid')).pop()
   .querySelectorAll('.cat-cell').length);
-ok('"all categories" shows twenty-one plus the events shortcut', cells === 22, cells + ' cells');
+ok('"all categories" shows twenty-two plus the events shortcut', cells === 23, cells + ' cells');   // 645: was 22
 ok('the outings cell is named in Arabic', await has('ترفيه ونزهات'));
 const outCell = await page.evaluate(() => {
   const c = Array.from(document.querySelectorAll('.cat-cell'))

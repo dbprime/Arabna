@@ -11,7 +11,7 @@ ARABNA · عربنا — a mobile-first web app for the Arab community in the U.
 **business directory + marketplace + events + magazine**, Arabic-first with a full English toggle.
 ("Classifieds / الإعلانات الشخصية" is now "Marketplace / السوق" — the old `#/classifieds`
 routes still resolve so shared links keep working.)
-Current version: **V.10.5 (prototype)**. Owner: dbprime. Deploys to Vercel (team DB Prime).
+Current version: **V.10.6 (prototype)**. Owner: dbprime. Deploys to Vercel (team DB Prime).
 
 ## Hard rules (from the product brief)
 0. ⚠️ **THE OWNER'S NAME IS NEVER WRITTEN — anywhere.** Not in this file, not
@@ -362,7 +362,7 @@ hand. Treat it as immovable unless there is no choice.
   directory tab moves reviews, favourites, ownership, tags and attributes across.
 - **Seasonal groups** (`season: 'ramadan'`) are hidden until the owner flips one
   switch in admin → settings; `state.seasons` holds it.
-- **Twenty-one categories (V.02.1), frozen** — see the list below. Arabic schooling
+- **Twenty-two categories (V.02.1, frozen; `transport` joined in `645`)** — see the list below. Arabic schooling
   and newcomer services stay attribute groups rather than categories, for the
   anti-duplication reason above.
 
@@ -431,12 +431,19 @@ hand. Treat it as immovable unless there is no choice.
   the same screen writes to the database and step three disappears.
   `exportBackup()` dumps the whole state as JSON.
 
-## The twenty-one categories and the speciality tree (V.02.1)
+## The twenty-two categories and the speciality tree (V.02.1)
 ```
 restaurants · grocery · worship · cafe · beauty · shopping · community ·
 education · sweets · finance · occasions · doctors · auto · homegoods ·
-lawyers · travel · electronics · realestate · homeservices · gyms · outings
+lawyers · travel · transport · electronics · realestate · homeservices ·
+gyms · outings
 ```
+⚠️ **Frozen means «not without a decision», not «never».** It was twenty-one
+until `645`, where `transport` was added — and a category is never one line:
+it needs a key in both packs, a hue, and **a speciality group of its own**,
+or whoever opens it finds nothing to describe their trade with. The count is
+a literal in `v10` and `v11` for exactly this reason: a count derived from
+`CATEGORIES` would compare the file with itself and guard nothing.
 Plus `events`, which is **not** a business category: it carries `route: '#/events'`
 and every directory chip row filters it out with `!c.route`. `HOME_CATS` names the
 five circles on Home.
@@ -845,6 +852,48 @@ anything else     is not reported
 **«خلصت» alone is not enough either** — it leaves a reader who cannot tell
 which of forty files it names. **The number is the other half, and the two
 together are the whole thing.**
+
+### Every box a human fills has a column, and every field read has one source
+Measured in `645`: the marketplace form **collects a city and refuses to
+publish without one**, and there was no column to send it to — so the value
+worked once, on the device that typed it, and was gone for everybody else.
+The same walk found «أخفِ الإعلان» writing to a list on the device while the
+column, the policy and the map had all been ready since `0001`, and
+«تجديد» resetting a counter nobody else reads.
+
+> **Every box in a form a human fills in has a column on the server.** A box
+> that is filled and does not arrive **works once, on one device, and is
+> then lost.**
+>
+> **And every field the app reads has one source on the server** — a column,
+> or something derived from one. **A field that exists only in
+> `js/data.js` means whatever is added tomorrow cannot carry it**, which is
+> not a shortfall but a fault with a later date on it.
+
+⚠️ **And what makes these invisible is that they look right to the person
+who caused them**: their own device still holds what they typed, so nobody
+reports it and it is found only by opening the same account on a second
+device. **The guard is a suite that matches each table's columns against
+the fields the maps read**, and it belongs with the batch that fills the
+tables, not with the one that repairs a field.
+
+### A batch that closes a gap strikes it from the list, in the same commit
+Two entries under «Known open items» described a state that had ended —
+one of them for three versions — and the daily check spent a paragraph on
+each **hunting for something that is not there**. Neither was a fault in
+the app: it was a list that had aged.
+
+> **The batch that closes a gap strikes it from its list in the same
+> commit.** A gap closed and not struck costs every later reader the time
+> it takes to look for what does not exist.
+>
+> **And the strike says WHERE it was closed, never what the value became.**
+
+⚠️ **The second half is not tidiness.** One of the two entries printed a
+**real staff password, letter for letter, in a public repository** — a
+value written as an example instead of being described, which is the
+family `375` swept out. **A correction that copies the value in commits
+the very fault it is correcting.**
 
 ### A migration is named in the closing line, or it did not happen
 Measured while checking `630` on the live host: the users section answered
@@ -2374,9 +2423,10 @@ which makes a rule on the sign-up screen worth nothing. All three call
   its owner's device — it is that most people reuse one password, so what
   we kept in the clear was probably the key to their email. A salted
   SHA-256 is kept instead, which answers the one question this build asks.
-  `ADMIN_PASS` in `store.js` is still the server batch's job, and it is
-  the same lesson: it satisfies every condition and everyone who opens the
-  file knows it.
+  The staff password then in `store.js` was the server batch's job, and it
+  was the same lesson: it satisfied every condition and everyone who opened
+  the file knew it. (Both constants were deleted in V.03.6, and `630`
+  removed the device lock altogether — the account is the lock.)
 
 ### Arabic counts to four
 The countdown under the header read **«باقي 2 ساعات»** — on the first
@@ -2750,8 +2800,9 @@ That last one had a real fault underneath the wrong reason.
 `(713) 555-0199`, the published support number, passes the app's own check.
 555 is the reserved fictional exchange, so **every legal page carried a
 `tel:` link that rings nowhere**, offered to somebody reporting harassment
-or asking for their listing to come down. `SUPPORT_PHONE` is **empty** until
-there is a working number; no line is drawn when it is empty (the same rule
+or asking for their listing to come down. `SUPPORT_PHONE` was **emptied**
+until there was a working number — `495` filled it — and no line is drawn
+while it is empty (the same rule
 the directory already follows for a shop with no phone), and the email is
 published on all the same pages. **One line in `store.js` brings it back
 everywhere.** And «امسح التصفية» now reads «امسح البحث والتصفية», which is
@@ -3679,6 +3730,7 @@ the first reader who enlarges their type. `.h-title` **1.2375rem** ·
 `.row-title` **1.1rem** · `.pr-next-at` **2.0625rem**.
 
 ### Twenty-one categories, twenty-one hues
+*(twenty-two since `645` — the hue rule below is what a new one has to satisfy)*
 `CAT_HUE` in `data.js` gives each category one hue and **everything else is
 derived from it** in `catTileHtml(catId, size, cls)` — the tile, the wash,
 the border and the khatam pattern, all `hsl()` off that one number. Twenty-
@@ -7649,7 +7701,7 @@ yesterday's card restored      → 3.3 red, reporting 2 blocks
 ## V.08.3 — the support number fills its place
 
 **Two values and no new screen.** The machinery was built long ago and was
-waiting: `SUPPORT_PHONE` has held `''` since V.03.6 — when `(713) 555-0199`,
+waiting: `SUPPORT_PHONE` had held `''` since V.03.6 — when `(713) 555-0199`,
 a reserved fictional exchange, was printing a `tel:` that rang nowhere —
 and the WhatsApp row in `SOCIAL` has stood dimmed behind «قريباً» since
 V.05.6. **the owner's number, and it is one number for both.**
@@ -10390,6 +10442,313 @@ run for run against the `630` net rather than assumed — **not one older suite
 moved by a single assertion**, which is what a batch that adds a screen rule
 and touches no older subject should look like.
 
+## V.10.6 — eleven, and three of them were live (645)
+
+⚠️ **This file closes its own group, and its group is itself** — it touches
+`js/i18n.js`, `js/data.js`, `js/store.js` and three screens.
+
+⚠️ **Every one was found by hand on the live host, and none needs a
+server.** And the item that opened the file — the price knows its section —
+**had already shipped as `625`'s third appendix**, measured on `main`, so it
+is not rebuilt and is named here in this one line.
+
+⚠️ **THE FILE ARRIVED IN THREE REVISIONS, AND THE LAST ONE IS THE ONE THIS
+FOLLOWS.** The first copy was «ثمانيةٌ من نقاش الجرد»; the queue line then
+said nine and pointed at a §8 that copy did not carry, so **item 9 was
+measured from the code and built before the text arrived** — and it came
+back matching. The final copy carries **eleven**, and the last two are
+published faults found in the sweep of 7 September, **one of them put there
+by `635` the same day**.
+
+### 1 — «البائع» is not everybody who posts
+The marketplace is not a selling floor alone: `jobs` is a **job wanted** and
+`handyman` is an **hourly trade**, so «تواصل مع البائع» lied to two of its own
+sections. It reads «تواصل مع المعلن» / «Contact the poster».
+
+- ⚠️ **The file named three sites; measured, there are six**, and the two it
+  missed are the two that would have left the app contradicting itself:
+  **`faqA6` quotes the button's own label** («زرّ «راسل البائع»»), so leaving
+  it means the screen says one thing and the FAQ another — the very fault
+  §1 is about — and **`messagePlaceholder`** («اكتب رسالتك للبائع») is the
+  box you type into when you answer a job advert.
+- ⚠️ **`blockSeller` is deliberately left.** It is a key NAME, and what it
+  prints is «حظر هذا المستخدم» — the test the file itself sets is whether the
+  word holds for «أبحث عن عمل», and that one does. `v81 · 1.1` is therefore
+  scoped to what is **printed**, never to the file: a sweep over the source
+  would demand renaming keys that say nothing wrong on screen.
+- One collision is recorded rather than swept: `faqA5` says «ولا للمعلنين»
+  meaning **advertisers**. Measured, it is the only such use, and the
+  sentence is true under either reading — so it stands.
+
+### 2 — a category the directory did not have
+Moving house, shipping abroad and a car with a driver are a trade of their
+own in every community, and the nearest thing to them was `auto`, which is
+for cars and not for moving them. **`transport` · «نقل ومواصلات»**, drawn
+with the `truck` icon the file already had.
+
+- ⚠️ **A CATEGORY IS NOT ONE LINE, and that is the item.** It needs a key in
+  both packs and **a speciality group of its own**, or whoever opens it finds
+  nothing to describe their trade with — which is item 4's fault from the
+  other side. `transportSvc` carries seven.
+- ⚠️ **The hue is measured, never picked by eye.** `223` sits 9° from finance
+  214 and lawyers 232 — the palette's own tightest existing pair is 6° —
+  outside the gold band 35–55 **and** outside 56–92, where `MARKET_HUE`'s
+  four twinless sections live; its glyph-on-fill contrast is **4.58 dark ·
+  8.73 light**, inside the twenty-two's measured range of 4.05→6.60 and
+  5.29→9.56.
+- ⚠️ **`hsMoving` («نقل عفش») and `autoTow` («سطحة») are NOT extended here
+  and NOT moved into the new group**, and the reason is item 4: adding
+  `transport` to their `cats` would make «خدمات المنزل» and «خدمات السيارات»
+  **required of a bus company**, and moving them into `transportSvc` would
+  make «خدمات النقل» **required of a plumber**. Two ids for one trade in two
+  categories is the price, and the search finds both because it reads the
+  labels.
+- **Not in `HOME_CATS`** — the five there are measured by screen width — and
+  Home's own «+N» tile follows by itself: **+16 → +17**, because it is
+  computed and was never typed.
+- ⚠️ **The file said the directory holds 23 categories; measured, it held
+  22** (21 business plus `events`, which is a shortcut and not a category).
+  It holds 23 now.
+
+### 3 — a directory entry nobody can ring is not a directory entry
+The written reason the phone was optional — «not every place has a published
+number» — holds for a masjid, a church and a city park, **and for nothing
+else**. The owner's decision: **required, except for a non-commercial listing.**
+
+- **The exception was already built and is not invented**: the
+  `nonCommercial` box sits in the same form and is saved with the record.
+- ⚠️ **The mark is PAINTED, not written**, and moves with that box live —
+  the idiom `#bMobile` already uses for the ZIP. **A field that reads
+  «(اختياري)» and then refuses the save is worse than either answer**, and
+  the standing hint, which explains an absence, goes with it: it is shown
+  only where an absence is allowed.
+- ⚠️ **No shape is demanded.** The item is that a number exists; a pattern
+  imposed here refuses a correct international number, and `v81 · 3.5`
+  publishes `+962 79 000 0000` to hold that.
+
+### 4 — a group that belongs to everybody is demanded of nobody
+The owner chose «سيّارات» and was refused until he claimed one of **«خدمات
+الوافدين الجدد»** — certified translation, money transfer, shipping abroad.
+A car showroom offers none of them.
+
+**The cause is one line two levels down:** `attrInCat` counts `cats: "*"` as
+a match for every category, so a wholly general group is shown to every
+category — and `finishChecks` then demanded one answer **from every group
+shown**.
+
+```
+language   general 1 · own 0     wholly general
+newcomer   general 3 · own 0     wholly general
+practical  general 10 · own 0    wholly general
+ramadan    general 1 · own 2     mixed
+the other twenty-nine            wholly their own
+```
+
+> **A group is required of a category when it holds one speciality that
+> names that category outright. Otherwise it is offered and not demanded.**
+
+- ⚠️ **Derived, in one line, from the data** — and it settles `ramadan` with
+  the other three without a word written about it: the season's own general
+  attribute stops forcing a car showroom, while a restaurant, which has two
+  of its own, is still asked. **A rule, not four exceptions.**
+- ⚠️ **`attrGroupsForCat` and `attrInCat` are NOT touched.** The general
+  groups stay **shown** — parking and «يتحدّثون العربيّة» are true of any
+  listing — and changing either would move the filters and the chips across
+  the whole directory. **The item is in the demand, not the display.**
+
+### 5 — an error that stops the save is not said in a line that runs away
+The form raised a `toast`, moved the screen to the group, and **marked
+nothing**: the message was gone before it could be read and the screen never
+said what was missing.
+
+> **An error that prevents a save is written in a fixed place and the field
+> that caused it is coloured. The transient line is for success alone.**
+
+- **No new class and no new colour**: `.input-err` and `.field-err` have been
+  in the stylesheet for a long time, with 25 and 22 uses; those four boxes
+  were simply outside them.
+- The colour goes **on `input`, not `blur`** — whoever corrects a field wants
+  to see that they did — and the sentence stands until the button is pressed
+  again. A missing speciality marks its own **box**, which is the control.
+- ⚠️ **The toast is removed from this path rather than left beside the
+  two**: two messages for one error send the reader looking for two errors.
+
+### 6 — the account list shows what belongs to its holder
+Seven rows were drawn for everybody, so a brand-new account met «إيصالات»
+having paid nothing and «طلباتي» having asked nothing — **and had no row at
+all for its own listings.** That door existed and was one of three number
+squares at the top of the same screen, which does not read as a door.
+
+- ⚠️ **The condition is a field on the ROW (`when`), never a condition
+  written into the screen**, and `accountLinks()` is its one reader — so the
+  list stays one source and cannot become two menus.
+- ⚠️ **And the split is not «has an account».** A receipt and a request
+  either happened or did not; **a message, a notification and a block are
+  begun by somebody else at any moment**, so those three stay open on an
+  account that has none.
+
+### 7 — the cash screen says where the number comes from
+The owner asked for an automatic receipt number «so it does not become a
+mess». ⚠️ **Measured after the request: it has been automatic since V.03.4**
+— `newReceiptNumber()` mints `ARB-26-XXXXX`, unique before it is issued, in
+the shape a column in the server's schema is waiting for. **The fault was
+the NAME of a different field:** `#cshRef` is an **external** reference, a
+cheque number or the number on a paper receipt, and it was labelled «رقم
+الشيك / المرجع». Building a second generator would have made two numbers for
+one receipt. So: the label says what the box is for, one line says the
+receipt's own number is generated, **and `newReceiptNumber` is not
+touched**. `cashReference` had no reader left and is deleted.
+
+### 9 — the city the poster typed never reached the table
+⚠️ **Measured, and it is losing data on every listing published since
+`610`:**
+
+```
+the post form       collects #pCity, and REQUIRES it
+addClassified       never sent it
+public.classifieds  had no column to send it to
+mapLiveClsRowToJs   returned city: '' — hard-coded
+the card and page   print a map pin beside it
+```
+
+**So a listing read back from the server — on a second device, or by anybody
+who is not its poster — shows a pin with nothing after it, and the poster
+never sees it**, because their own device still holds what they typed.
+
+- **`0008_classifieds_city.sql`** adds it, nullable and with no default: a
+  row written before the migration keeps its blank honestly rather than
+  being given a city nobody typed. **No policy is touched** — a new column
+  inside a governed row needs none.
+- ⚠️ **AND THE STAND-IN SERVER COULD NEVER HAVE SHOWN THIS.** It swallowed
+  any column, which is the permissive mock its own head warns about. It now
+  **reads the columns out of the migrations** and answers `PGRST204` for one
+  they do not declare — so the day a batch sends a field it never added, the
+  suite that sends it goes red, and a column added in a migration needs
+  nothing written in the harness.
+
+### 10 — «أخفِ الإعلان» hid it from nobody
+⚠️ **The heaviest thing in the batch, and it was live.**
+
+```
+hideClassified      pushed an id onto a list ON THE DEVICE, and nothing else
+hidden              a column since 0001
+0002's policy       reads it: (status = 'live' and hidden = false) or owner or staff
+mapLiveClsRowToJs   maps it
+isHidden(c)         read the device list — never the field
+```
+
+**The column, the policy and the map were all ready from the first day, and
+nobody wrote the column and nobody read it.** So the listing left its
+owner's own screen and stood on every other screen in the world; its owner
+went away satisfied, and could only find out by opening their account on a
+second device.
+
+⚠️ **And `635` — merged hours earlier — put a sentence on top of it:**
+«يختفي عن الجميع، ويمكنك إرجاعه ما دامت أيّامه باقية، ولا يُحسَب من عدد
+إعلاناتك». **The second and third are true. The first was not.** Its own
+file called all three «measured, not promised»; two were measured and the
+first was not. **A screen that promises what does not happen is worse than a
+silent one — the silent one leaves the reader to check.**
+
+- **The server first**, and nothing local moves until it answers; a refusal
+  hides nothing and says so.
+- ⚠️ **`isHidden` reads the FIELD and the device's list BESIDE it, never the
+  list alone.** The field is what makes a hide true for everybody; the list
+  still holds a **seed** listing, which has no row to carry a field, and
+  every hide made before this batch. **Deleting it silently would lose all
+  of those.**
+- ⚠️ **A row that matches nothing is not a failure.** A seed has no row, so
+  PostgREST answers 204 with no error and nothing is written — which is the
+  right answer for a seed, and is exactly why the list is still read.
+
+### 11 — «تجديد» renewed it on one device
+`daysLeft` **is not a column**: it is computed from the row's own age. So
+resetting it locally reset a number nobody else reads — the listing kept its
+original age on every other screen and expired on its first schedule while
+its owner watched the counter go back. ⚠️ **And it touches money the day
+renewing is paid for: somebody pays, sees the counter reset, and nothing is
+renewed.**
+
+- `renewed_at` is the column, and the days are computed from
+  **`coalesce(renewed_at, created_at)`**.
+- ⚠️ **`created_at` is never rewritten.** It records when the listing was
+  born; overwriting it to say when it was renewed puts two different facts
+  in one field.
+
+### `test_v81` — 97 assertions, and twelve teeth
+```
+the seller word restored          → 1.1 · 1.2 · 1.3 · 1.7 · 1.7b
+the transport specialities gone   → 2.2 · 2.3
+the phone mark frozen             → 3.2 · 3.2b
+the group rule reverted           → 4.7 · 4.7b
+the toast back on the refusal     → 3.4 · 5.2 · 5.3 · 5.4 · 5.5b · 5.6c · 5.8
+the screen reads the raw list     → 6.2 · 6.2b · 6.6b
+the cash label reverted           → 7.1b
+the city dropped on the way out   → 9.2 · 9.2b · 9.4 (prints `undefined`) · 9.5
+hiding back on the device list    → 10.1 · 10.2 · 10.4
+the device hides before the answer → 10.5
+renewing back on the local counter → 11.1 · 11.2 · 11.4 · 11.5
+created_at rewritten instead      → 11.1 · 11.1b · 11.4 · 11.4b · 11.5
+```
+⚠️ **Item 9 nearly shipped with structural assertions alone**, which is the
+half a green build hides: `9.1`–`9.5` read the migration, the code and the
+row, and all five would have stayed green over a column the app never sent
+to a live table. The mutation was written and run before the close, and
+`9.4` prints the original fault in one word — **`undefined`**.
+
+⚠️ **AND ONE TOOTH DID NOT BITE FIRST TIME, WHICH IS THE FINDING WORTH
+KEEPING.** With item 4's rule reverted the suite came back **70/70**: the
+showroom is *still* stopped by `autoSvc` first, because that group precedes
+the general three in registry order and nothing had been picked yet — **so
+the check passed on a build carrying the fault it was written for.** The
+fault appears one step later, after the showroom answers its own group. The
+decisive check now takes that step, and with the rule reverted it prints the
+original fault in one line: **«اختر واحدة على الأقل من «خدمات الوافدين
+الجدد»»**.
+
+⚠️ **And two faults of my own are recorded rather than smoothed.** A
+**backtick inside a comment that sits inside a template literal** ended the
+literal and blanked three screens — the V.09.9 and V.10.0 lesson, committed
+a third time in the session that had just read it. And a migration check
+read **its own comment** explaining that the column is nullable with no
+default, and reported the fault it exists to prevent: *a check must read the
+code, never the prose about the code*, now paid for four times.
+
+### And the group closes — the net, run on segments over one frozen tree
+```
+158 runs · 79 suites · 7,491 assertions · zero red · zero crash
+```
+Twenty-seven segments over `49d0547`, `HEAD` re-checked at the head of each,
+**79 present and 79 run, each exactly twice, and no result borrowed.** The
+arithmetic closes itself: 7,295 + 194 (`v81` × 2) + 2 (`v47 · 1.7b`, the one
+assertion this batch adds to an older suite) = **7,491**.
+
+⚠️ **AND THE NET WAS RUN FROM THE TOP THREE TIMES, WHICH IS THE LESSON THIS
+BATCH LEAVES.** It stopped at `v16` in the first run and at `v20` in the
+second, and each restart cost the segments already measured — because a
+suite not run on THIS tree is a suite not run, and a fix to a suite makes a
+new tree. **After the second stop I stopped meeting the instances and swept
+for the CLASS** — the seller word, the calls that became `async`, the frozen
+category counts, the hub's row count, the newly required phone, the city
+column — and `v30` and `v47` were found and reversed **before the net
+reached them**, along with the measurement that `updateClassified` is still
+synchronous (so `v29` was sound) and that `v46` counts widths and not rows.
+**That is `570` and `572`'s rule paying inside the harness rather than
+inside the app: sweep the class, do not wait for its next example.**
+
+**Eight older suites carry a reversal, none softened and each naming it:**
+`v10` · `v11` · `v12` · `v14` · `v16` (the frozen category count, which moves
+with the decision and is **not** derived from `CATEGORIES` — a count read off
+the file would compare it with itself), `v20` and `v30` (the seller word),
+and `v47` (the hub). ⚠️ **`v20`'s was the heaviest and was not a wording
+change at all:** hiding writes the server first now, and that suite's
+`asMember` seeds a `state.user` with **no session**, so the stand-in refused
+the PATCH with 401 exactly as the live policy would — which also produced
+the console errors its own last item counts. It signs in for real, awaits
+both calls, and **both blocks use one import expression**, because on the
+single-file build a relative path hands back a second module instance and
+the session would have been made in one while the hide ran in the other.
+
 ## Known open items
 - **The header image is still far larger than its box.** V.04.7 replaced
   the 831/837 KB lockups with the cropped marks at **333/338 KB** — 60% off
@@ -10409,11 +10768,12 @@ and touches no older subject should look like.
 - **`APP_VERSION` in `data.js` is raised by hand** with the version line at
   the top of this file. It is one constant; two hand-typed literals is what
   it replaced.
-- **`SUPPORT_PHONE` is empty and needs a real number from the owner.** It held
+- ~~**`SUPPORT_PHONE` is empty and needs a real number.**~~ **Closed in
+  `495` (V.08.3):** the constant carries the owner's own number, and the
+  line is printed on «من نحن», «الشروط» and «الخصوصية». It had held
   `(713) 555-0199` — a reserved fictional exchange — so every legal page
-  published a `tel:` link that rang nowhere. One line in `js/store.js`
-  brings the line back on all three pages at once; the email is published
-  there meanwhile.
+  published a `tel:` link that rang nowhere. ⚠️ **The value is not copied
+  here**, which would be the entry above's own fault in a second costume.
 - Legal pages are first drafts — a lawyer must review before public launch.
 - Push notifications: triggers are defined in Settings but not wired to a real service.
   The prayer settings name a pre-adhan alert as coming later, for the same reason.
@@ -10450,10 +10810,17 @@ and touches no older subject should look like.
   salt is enough to stop the word sitting in the clear on a reader's own
   disk; it is not password storage. bcrypt or argon2 on the server, or —
   better — Supabase Auth, which never hands us the password at all.
-- **`ADMIN_PASS = 'Arabna@2026!'` is still in `store.js`**, in a file every
-  visitor downloads. It satisfies every condition the new rule imposes and
-  is known to anybody who opens the file, which is the whole argument that
-  a password's strength lives in **where it is kept**.
+- ~~**A staff password sat in `store.js`**, in a file every visitor
+  downloads.~~ **Closed in V.03.6**, which deleted `ADMIN_USER` and
+  `ADMIN_PASS` and replaced them with nothing, and **closed again in
+  `630`**, which removed the device lock entirely: the panel opens on one
+  condition, a live session for an account the server marks
+  `profiles.is_admin`, and `verifyAccountAdmin()` asks the server again at
+  its own door. ⚠️ **The entry itself carried the fault it described** —
+  it printed the string, letter for letter, in a public repository, which
+  is the family `375` swept out: a real value written as an example
+  instead of being described. Measured on `main`: `ADMIN_PASS` and
+  `ADMIN_USER` appear in `js/store.js` **zero** times.
 - **The descriptions repeat the city the address already gives.** «مطعم
   لبناني في Houston» sits two lines above `…, Houston, TX 77081`, and the
   directory card says it as well. The owner asked for the city kept and written

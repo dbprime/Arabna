@@ -1522,9 +1522,12 @@ export function AddBusinessScreen(root) {
           <option value="">${t('chooseCategory')}</option>
           ${CATEGORIES.filter(c => !c.route).map(c => `<option value="${c.id}">${t(c.key)}</option>`).join('')}
         </select></div>
-      <div class="field"><label class="label">${t('phoneLabel')} <span class="muted">(${t('optional')})</span></label>
+      <!-- ⚠️ The mark is not written here: it is painted, and it moves with
+           the non-commercial box below. A field that reads «(optional)» and
+           then refuses the save is worse than either answer on its own. -->
+      <div class="field"><label class="label">${t('phoneLabel')} <span id="bPhoneMark"></span></label>
         <input class="input" id="bPhone" inputmode="tel" placeholder="(713) 555-0000" />
-        <div class="hint">${t('phoneOptionalHint')}</div></div>
+        <div class="hint" id="bPhoneHint">${t('phoneOptionalHint')}</div></div>
       <!-- A plumber has no shopfront. Without a ZIP they never appear in
            «الأقرب» at all, so the address field is replaced by one rather
            than sitting there empty. -->
@@ -1561,6 +1564,11 @@ export function AddBusinessScreen(root) {
 
       <div class="field mt-12"><label class="label">${t('descLabel')} <span class="muted">(${t('optional')})</span></label><textarea class="textarea" id="bDesc"></textarea></div>
       <div id="bDup"></div>
+      <!-- item 5: an error that stops the save is not said in a line that
+           goes away. It stands here until the button is pressed again, and
+           the field that caused it is marked. The stylesheet's empty-state
+           rule is what keeps this node from being drawn with nothing to say. -->
+      <div class="field-err" id="bErr"></div>
       <button class="btn btn-gold btn-block" id="bSave">${t('addBusiness')}</button>
       <div class="hint" style="text-align:center;margin-top:10px">${S.planText(t('lockedSub'))}</div>
     </div>`;
@@ -1646,6 +1654,55 @@ export function AddBusinessScreen(root) {
   $('#bName').addEventListener('input', refreshSave);
   refreshSave();
 
+  /* item 3 — a directory entry nobody can ring is not a directory entry.
+     The written reason the phone was optional holds for a masjid, a church
+     and a charity and holds for nothing else, and the exception was already
+     built: `nonCommercial`. So the requirement is DERIVED from that box and
+     repainted the moment it moves — the same idiom `#bMobile` uses for the
+     ZIP below. ⚠️ Nothing here checks the SHAPE of the number: the item is
+     that one exists, and a pattern imposed here refuses a correct
+     international number. */
+  const nonCommBox = $('#bNonComm');
+  const phoneOptional = () => nonCommBox.checked;
+  function paintPhoneMark() {
+    const opt = phoneOptional();
+    $('#bPhoneMark').innerHTML = opt
+      ? `<span class="muted">(${t('optional')})</span>`
+      : '<span class="req">*</span>';
+    // the standing hint explains an absence, so it belongs to the case
+    // where an absence is allowed
+    $('#bPhoneHint').hidden = !opt;
+  }
+  nonCommBox.addEventListener('change', paintPhoneMark);
+  paintPhoneMark();
+
+  /* item 5 — one place says what is wrong, and it stays there.
+     `toast` is for what leaves no mark; an error that stops the save leaves
+     work to do, so it is written where the work is and the field that
+     caused it is marked. The colour goes the moment the field is typed in
+     (`input`, not `blur`: whoever corrects it wants to see that they did),
+     and the sentence stands until the button is pressed again. */
+  const errBox = () => $('#bErr');
+  function clearProblems() {
+    $$('.input-err', root).forEach(el => el.classList.remove('input-err'));
+  }
+  /** mark every offending element, say it once, and go to the first */
+  function fail(msg, els) {
+    clearProblems();
+    (els || []).forEach(el => el && el.classList.add('input-err'));
+    errBox().textContent = msg;
+    const first = (els || [])[0];
+    if (first) {
+      first.scrollIntoView({ block: 'center', behavior: 'smooth' });
+      if (typeof first.focus === 'function' && first.matches('input, select, textarea')) first.focus();
+    }
+    return false;
+  }
+  root.addEventListener('input', (e) => {
+    const el = e.target.closest('.input-err');
+    if (el) el.classList.remove('input-err');
+  });
+
   /* A mobile trade has no address to give, so the field is swapped rather
      than left blank; the ZIP is what puts them on the map later. */
   const mobileBox = $('#bMobile');
@@ -1700,8 +1757,16 @@ export function AddBusinessScreen(root) {
 
   $('#bSave').addEventListener('click', () => {
     const { name, phone, address } = collect();
+    errBox().textContent = '';
     // the two the importer also demands, and nothing else invented here
-    if (!name || !cat) { toast(t('required'), 'err'); refreshSave(); return; }
+    if (!name || !cat) {
+      const bad = [];
+      if (!name) bad.push($('#bName'));
+      if (!cat) bad.push($('#bCat'));
+      fail(t('fillRequired'), bad);
+      refreshSave();
+      return;
+    }
 
     /* The look-alike check runs FIRST, on the name and the phone alone.
        Their own shop is very often already here — they just could not find
@@ -1720,25 +1785,40 @@ export function AddBusinessScreen(root) {
   /** the rest of the form, checked only once this is really a new listing */
   function finishChecks() {
     if ($('#bMobile').checked && !/^\d{5}$/.test($('#bZip').value.trim())) {
-      toast(t('zipRequired'), 'err');
-      $('#bZip').classList.add('input-err');
-      $('#bZip').focus();
-      return false;
+      return fail(t('zipRequired'), [$('#bZip')]);
     }
-    $('#bZip').classList.remove('input-err');
 
-    /* One speciality from every group. An empty group is a listing nobody
-       can filter to, and the button names the group rather than saying
-       "something is missing" and leaving them to hunt. */
+    // item 3: it exists, or the listing is non-commercial. Nothing else.
+    if (!phoneOptional() && !$('#bPhone').value.trim()) {
+      return fail(t('phoneRequiredBiz'), [$('#bPhone')]);
+    }
+
+    /* One speciality from every group — but ⚠️ only from a group that has
+       something to do with this category.
+       `attrInCat` counts `cats: "*"` as a match for every category, so the
+       three wholly general groups (language · newcomer · practical) were
+       shown to every category AND THEN DEMANDED of it: a car showroom was
+       refused until it claimed a newcomer service — certified translation,
+       money transfer or shipping abroad — and it offers none of them.
+       So the requirement is DERIVED from the data, not listed by hand: a
+       group is required when it holds one speciality that names this
+       category outright. It settles `ramadan` in the same line, which is
+       the proof it is a rule and not four exceptions — the season's own
+       general attribute stops forcing a car showroom, while a restaurant,
+       which has two of its own, is still asked.
+       ⚠️ `attrGroupsForCat` and `attrInCat` are NOT touched: the general
+       groups stay SHOWN — parking and «they speak Arabic» are true of any
+       listing — and changing either would move the filters and the chips
+       across the whole directory. The item is in the demand, not the
+       display. */
     const groups = S.attrGroupsForCat(cat, { all: true });
-    const empty = groups.find(g => !g.attrs.some(a => picked.includes(a.id)));
+    const required = (g) => g.attrs.some(a => Array.isArray(a.cats) && a.cats.includes(cat));
+    const empty = groups.filter(required).find(g => !g.attrs.some(a => picked.includes(a.id)));
     if (empty) {
-      toast(t('pickOneFrom').replace('{g}', t(empty.group.key)), 'err');
       openGrp = empty.group.id;
       paintAttrs();
-      const box = $(`.attr-box[data-grp="${empty.group.id}"]`);
-      if (box) box.scrollIntoView({ block: 'center', behavior: 'smooth' });
-      return false;
+      return fail(t('pickOneFrom').replace('{g}', t(empty.group.key)),
+                  [$(`.attr-box[data-grp="${empty.group.id}"]`)]);
     }
     return S.requireTier(2, '#/add-business', go);
   }

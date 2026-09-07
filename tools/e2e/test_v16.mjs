@@ -199,14 +199,18 @@ const dd = await page.evaluate(() => {
     goldName: getComputedStyle(document.querySelector('.dd-row.selected .dd-name')).color,
   };
 });
-ok('4.1 every category is in the list at once', dd.n === 22, String(dd.n));
-ok('4.2 the head names it and counts it', /اختر تصنيفاً/.test(dd.head) && /22 تصنيف/.test(dd.head), dd.head);
+/* ⚠️ 645 §2: `transport` joined the frozen set by decision, so the literal
+   moves with it — 22 → 23 («الكل» plus the twenty-two). It stays a literal
+   for v10's reason: the set IS the decision, and a count read off
+   `CATEGORIES` would compare the file with itself and guard nothing. */
+ok('4.1 every category is in the list at once', dd.n === 23, String(dd.n));   // 645: was 22
+ok('4.2 the head names it and counts it', /اختر تصنيفاً/.test(dd.head) && /23 تصنيف/.test(dd.head), dd.head);   // 645: was 22
 ok('4.3 "all" is always the first row', dd.first === 'all');
 ok('4.4 the rest are ordered by how much is behind them', dd.descending);
 ok('4.5 the panel pushes the results down rather than covering them', dd.pushes);
 ok('4.6 it is capped at 45dvh and scrolls inside itself', dd.maxH <= Math.round(844 * 0.45) + 1 && dd.scrolls === 'auto',
    dd.maxH + 'px / ' + dd.scrolls);
-ok('4.7 it is a listbox with options', dd.role === 'listbox' && dd.options === 22);
+ok('4.7 it is a listbox with options', dd.role === 'listbox' && dd.options === 23);   // 645: was 22
 ok('4.8 the chosen row is marked for a screen reader and for the eye',
    dd.selected === 1 && dd.tick && dd.goldName === 'rgb(228, 199, 126)', dd.goldName);
 ok('4.9 the button says it is expanded', dd.expanded === 'true');
@@ -337,7 +341,7 @@ const enCtl = await page.evaluate(() =>
   document.querySelector('#ctlCat').textContent.replace(/\s+/g, '').trim());
 ok('7.1 the pickers are translated', enCtl === 'CategoryAll', enCtl);
 await page.click('#ctlCat'); await page.waitForTimeout(350);
-ok('7.2 the head counts in English', /22 categories/.test(await page.textContent('.dd-head')),
+ok('7.2 the head counts in English', /23 categories/.test(await page.textContent('.dd-head')),   // 645: was 22
    (await page.textContent('.dd-head')).trim());
 await page.keyboard.press('Escape'); await page.waitForTimeout(250);
 const cutEn = await cutOff();

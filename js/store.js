@@ -2481,6 +2481,7 @@ function agoLabel(created) {
     once, read by everything that reads a live row. */
 export function mapLiveClsRowToJs(r) {
   const created = r.created_at ? Date.parse(r.created_at) : now();
+  const started = r.renewed_at ? Date.parse(r.renewed_at) : created;
   const rule = catRule(r.cat);
   /* the server holds a NUMBER or null; the app shows the display string it
      always did, built the same way the publish screen builds it */
@@ -2491,10 +2492,13 @@ export function mapLiveClsRowToJs(r) {
     id: r.id, ownerId: r.owner_id || null, cat: r.cat,
     title: { ar: r.title || '', en: r.title || '' },
     desc: { ar: r.body || '', en: r.body || '' },
-    price, city: '', photos: [],
+    price, city: r.city || '', photos: [],
     status: r.status || 'live', hidden: !!r.hidden,
     created, when: agoLabel(created),
-    daysLeft: Math.max(0, rule.days - Math.floor((now() - created) / 86400000)),
+    /* ⚠️ from the renewal when there is one, and from birth otherwise —
+       `coalesce(renewed_at, created_at)`, written here because the days are
+       computed and are not a column of their own */
+    daysLeft: Math.max(0, rule.days - Math.floor((now() - started) / 86400000)),
     owner: (state.user && state.user.id && r.owner_id === state.user.id) ? 'me' : undefined,
   };
 }
@@ -3131,15 +3135,34 @@ export function myRequests() {
  * because a counter carries a number and a row carries nothing, and the
  * number is what makes tapping a decision.
  */
+/* ⚠️ `when` is a field on the ROW, never a condition written into the
+   screen: the list stays one source and cannot become two menus saying
+   different things. A row with no `when` is drawn for every account, which
+   is what every row was before this.
+   And the split is not «has an account / has not»: a receipt and a request
+   either happened or did not, so a door onto neither is a door onto «لا
+   شيء». A message, a notification and a block are begun by somebody ELSE
+   at any moment, so their doors stay open on an account that has none. */
 export const ACCOUNT_LINKS = [
+  // «إعلاناتي» was reachable only as one of three number squares at the top
+  // of this same screen — a square does not read as a door, and it is the
+  // one thing somebody who has just published comes back for.
+  { icon: 'megaphone', key: 'myAds',         route: '#/my-ads' },
   { icon: 'briefcase', key: 'myBusiness',    route: '#/my-business' },
   { icon: 'message',   key: 'myMessages',    route: '#/messages' },
-  { icon: 'clock',     key: 'myRequests',    route: '#/my-requests' },
+  { icon: 'clock',     key: 'myRequests',    route: '#/my-requests',
+    when: () => pendingRequests() > 0 || myRequests().length > 0 },
   { icon: 'crown',     key: 'subscription',  route: subscriptionRoute },
   { icon: 'bell',      key: 'notifications', route: '#/notifications' },
-  { icon: 'file',      key: 'receipts',      route: '#/receipts' },
+  { icon: 'file',      key: 'receipts',      route: '#/receipts',
+    when: () => receipts().length > 0 },
   { icon: 'shield',    key: 'blockedTitle',  route: '#/blocked' },
 ];
+
+/** the rows this account should actually be shown — the one reader of `when` */
+export function accountLinks() {
+  return ACCOUNT_LINKS.filter(l => typeof l.when !== 'function' || l.when());
+}
 
 export function ownsBusiness(bizId) {
   return isLoggedIn() && !!bizId && (state.myBusinessIds || []).includes(bizId);
@@ -4363,6 +4386,11 @@ export async function addClassified(item) {
          listing never reached the table at all. (The one that did was a
          job-wanted at «00», which is the sentinel and maps to null.) */
       price: item.price === FREE_PRICE ? null : priceNumber(item.price),
+      /* The form asks for it and refuses to publish without it, and it was
+         going nowhere: no column, and the map below handed back an empty
+         string — so every listing anybody but its poster read carried a map
+         pin with nothing after it. `0008` is the column. */
+      city: (item.city || '').trim() || null,
       status: 'pending',
     }).select().single();
     if (error) throw error;
@@ -4416,6 +4444,19 @@ export function updateClassified(id, patch) {
     }
   }
   save();
+  /* ⚠️ The edit is still a local write, and that is `650`'s to change — but
+     the columns that DO exist are patched here, or a poster who corrects the
+     city on a published listing corrects it on their own screen alone, which
+     is the fault above wearing a second costume. Its failure is swallowed:
+     the record on this device is already right, and there is no half-done
+     state to leave behind. */
+  patchListing(id, {
+    title: (c.title && (c.title.ar || c.title.en)) || '',
+    body: (c.desc && (c.desc.ar || c.desc.en)) || '',
+    city: (c.city || '').trim() || null,
+    price: c.price === FREE_PRICE ? null : priceNumber(c.price),
+    cat: c.cat,
+  });
   return { rec: c, flagged };
 }
 
@@ -4424,22 +4465,41 @@ export function updateClassified(id, patch) {
  * It is kept as its own list rather than a field on the record, so it works
  * for a seed listing somebody owns as well as for one they typed.
  */
-export function hideClassified(id) {
+export async function hideClassified(id) {
   if (!id) return false;
+  /* ⚠️ THE SERVER FIRST, and nothing local moves until it says yes.
+     This wrote to the device alone: the column `hidden` has existed since
+     `0001`, the RLS policy reads it, and `mapLiveClsRowToJs` maps it — and
+     nobody wrote it and nobody read it. So the listing left its owner's own
+     screen and stayed on every other screen in the world, and its owner
+     could not find out except by opening their account on a second device.
+     ⚠️ And `635` put a sentence on top of it — «يختفي عن الجميع» — so the
+     app was promising what did not happen: a screen that promises stops the
+     reader checking, which is worse than a screen that says nothing. */
+  if (!await patchListing(id, { hidden: true })) return false;
+  markLiveClsField(id, 'hidden', true);
   state.hiddenListings = state.hiddenListings || [];
   if (!state.hiddenListings.includes(id)) state.hiddenListings.push(id);
   save();
   return true;
 }
 /** …and back again, as long as the listing still has days on it */
-export function unhideClassified(id) {
+export async function unhideClassified(id) {
+  if (!await patchListing(id, { hidden: false })) return false;
+  markLiveClsField(id, 'hidden', false);
   state.hiddenListings = (state.hiddenListings || []).filter(x => x !== id);
   save();
   return true;
 }
+/* ⚠️ THE FIELD, AND THE DEVICE'S LIST BESIDE IT — never the list alone.
+   The field is what makes a hide true for everybody; the list is what still
+   holds a SEED listing, which has no row to carry a field, and what holds a
+   hide made before this batch. Deleting the list silently would lose every
+   one of those. */
 export function isHidden(c) {
   const id = typeof c === 'string' ? c : (c && c.id);
-  return (state.hiddenListings || []).includes(id);
+  const rec = typeof c === 'string' ? classifiedById(c) : c;
+  return !!(rec && rec.hidden) || (state.hiddenListings || []).includes(id);
 }
 
 /** what counts against the four: a hidden listing frees its slot */
@@ -4478,10 +4538,22 @@ export async function ownerDeleteClassified(id) {
   deleteClassified(id);
   return true;
 }
-export function renewClassified(id) {
+/* The days are not a column: `mapLiveClsRowToJs` computes them from the
+   row's own age. So resetting `daysLeft` on this device reset a number
+   nobody else reads — the listing kept its original age on every other
+   screen and expired on its first schedule, while its owner watched the
+   counter go back. ⚠️ And it touches money the day renewing is paid for:
+   somebody pays, sees the counter reset, and nothing is renewed.
+   `renewed_at` is the column, and `created_at` is NOT rewritten: that one
+   records when the listing was born, and overwriting it would put two
+   different facts in one field. */
+export async function renewClassified(id) {
+  if (!await patchListing(id, { renewed_at: new Date(now()).toISOString() })) return false;
+  markLiveClsField(id, 'renewed_at', new Date(now()).toISOString());
   const c = state.extraClassifieds.find(x => x.id === id);
   if (c) c.daysLeft = catRule(c.cat).days;
   save();
+  return true;
 }
 
 /* ---- moderation decisions (admin panel) ----
@@ -4493,11 +4565,23 @@ export function renewClassified(id) {
    admin believed he had acted. On a refusal nothing local changes, no
    notification goes out and no line reaches `adminLog` — a record of an
    approval that did not happen is worse than an empty record. */
-async function setListingStatus(id, status) {
+async function patchListing(id, patch) {
   try {
-    const { error } = await sb.from('classifieds').update({ status }).eq('id', id);
+    const { error } = await sb.from('classifieds').update(patch).eq('id', id);
     return !error;
   } catch (e) { return false; }
+}
+/* ⚠️ A row that matches nothing is NOT a failure. A seed listing lives in
+   `js/data.js` and has no row at all, so PostgREST answers 204 with no
+   error and nothing is written — which is the right answer for a seed, and
+   is why the device's own list is still read beside the column below. */
+async function setListingStatus(id, status) { return patchListing(id, { status }); }
+/** flip one field on the row we hold, so the screen agrees with the server
+    without a refetch — the sister of `markLiveCls` below, for the fields
+    that are not the status */
+function markLiveClsField(id, field, value) {
+  const row = (_liveCls || []).find(r => r.id === id);
+  if (row) row[field] = value;
 }
 /** flip the row we hold in memory so the queue drops it without a refetch */
 function markLiveCls(id, status) {
@@ -4795,10 +4879,12 @@ export function reportCount(refId) {
  * that can be fixed, and an erased listing takes its messages and its
  * remaining days with it. The owner is told, and told why.
  */
-export function adminHideListing(id, reason) {
+export async function adminHideListing(id, reason) {
+  /* ⚠️ the server first, and the line in the log only after it took —
+     `630`'s order: a record of a decision that did not happen is worse
+     than an empty record */
+  if (!await hideClassified(id)) return false;
   logAdminAction(id, 'hideListing', '', reason || '');
-  // the same list «أخفِ الإعلان» uses, so it works on a seed listing too
-  hideClassified(id);
   (state.flags || []).filter(f => f.refId === id).forEach(f => resolveFlag(f.id));
   pushNotif({
     icon: 'shield',

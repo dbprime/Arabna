@@ -167,8 +167,17 @@ await page.evaluate(() => {
   if (c) c.click();
 });
 await fillAllGroups();
+/* ⚠️ REVERSED BY 645 §3, and the reversal is the decision itself: the phone
+   is required EXCEPT for a non-commercial listing — «a directory entry
+   nobody can ring is not a directory entry», and the written reason it was
+   optional («not every place has a published number») holds for a masjid, a
+   church and a CITY PARK and for nothing else. Silent Creek Park is exactly
+   that case, so it is entered as what it is. The suite's subject — that a
+   listing may live in the directory with no number at all — is unchanged
+   and is still measured below, line for line. */
+await page.check('#bNonComm'); await page.waitForTimeout(150);
 await page.click('#bSave'); await page.waitForTimeout(900);
-ok('a business saves with no phone at all',
+ok('a non-commercial listing saves with no phone at all',
    (await page.evaluate(() => location.hash)).startsWith('#/directory/'), await page.evaluate(() => location.hash));
 
 let body = await txt();

@@ -54,7 +54,11 @@ console.log('--- the phantom listing ---');
   const txt = await p.evaluate(() => document.querySelector('#app').textContent);
   ok('1.1 a clean visitor sees no owner buttons on c1',
      !/أخفِ الإعلان|ميّز إعلانك/.test(txt));
-  ok('1.2 …and is offered the seller instead', /تواصل مع البائع|راسل البائع/.test(txt));
+  /* REVERSED BY 645 sec.1: «البائع» was wrong for two of the marketplace's
+     own sections — a job wanted and an hourly trade — so the button reads
+     «تواصل مع المعلن». What this item guards is unchanged: a visitor who
+     owns nothing is offered a way to reach whoever posted it. */
+  ok('1.2 …and is offered the poster instead', /تواصل مع المعلن|راسل المعلن/.test(txt));
   ok('1.3 myListings starts empty',
      JSON.stringify(await p.evaluate(() => JSON.parse(localStorage.getItem('arabna.v1') || '{}').myListings)) === '[]');
   await go(p, '#/post');

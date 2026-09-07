@@ -27,6 +27,34 @@
 
 const HOST = 'ijubbqvbkfzillkhwdzp.supabase.co';
 
+/* ⚠️ THE COLUMNS ARE READ FROM THE MIGRATIONS, NEVER LISTED HERE.
+   PostgREST refuses a field the table does not have (PGRST204), and a mock
+   that swallowed one would keep a suite green while every write of that
+   field failed live — which is the permissive-mock fault this file's own
+   head warns about, and is exactly how the missing `city` column survived:
+   the form collected it, `addClassified` did not send it, and nothing
+   anywhere could have said so.
+   Reading the schema means the day a batch sends a field it never added,
+   the suite that sends it goes red — and a column added in a migration
+   needs nothing written here. */
+import { readFileSync, readdirSync } from 'node:fs';
+const MIG = new URL('../../supabase/migrations/', import.meta.url).pathname;
+function columnsOf(table) {
+  const cols = new Set();
+  for (const f of readdirSync(MIG).filter(n => n.endsWith('.sql')).sort()) {
+    const sql = readFileSync(MIG + f, 'utf8').replace(/--[^\n]*/g, '');
+    const create = sql.match(new RegExp('create\\s+table[^;]*?public\\.' + table + '\\s*\\(([\\s\\S]*?)\\n\\s*\\)', 'i'));
+    if (create) for (const line of create[1].split('\n')) {
+      const m = line.trim().match(/^([a-z_][a-z0-9_]*)\s+/i);
+      if (m && !/^(primary|unique|constraint|foreign|check)$/i.test(m[1])) cols.add(m[1]);
+    }
+    const alters = sql.matchAll(new RegExp('alter\\s+table[^;]*?public\\.' + table + '[\\s\\S]*?add\\s+column\\s+(?:if\\s+not\\s+exists\\s+)?([a-z_][a-z0-9_]*)', 'gi'));
+    for (const m of alters) cols.add(m[1]);
+  }
+  return cols;
+}
+const SCHEMA = { classifieds: columnsOf('classifieds'), businesses: columnsOf('businesses') };
+
 /** The whole stand-in server's memory, per browser context. */
 function freshDb() {
   return {
@@ -333,6 +361,12 @@ export async function mockSupabase(ctx, opts = {}) {
            it kept that green while every priced listing failed live. */
         if (table === 'classifieds' && body.price != null && typeof body.price !== 'number') {
           return route.fulfill(json({ code: '22P02', message: 'invalid input syntax for type numeric: "' + String(body.price) + '"' }, 400));
+        }
+        const known = SCHEMA[table];
+        if (known && known.size) {
+          const stray = Object.keys(body).find(k => !known.has(k));
+          if (stray) return route.fulfill(json({ code: 'PGRST204',
+            message: "Could not find the '" + stray + "' column of '" + table + "' in the schema cache" }, 400));
         }
         const row = Object.assign({ id: 'mock-row-' + (++db.seq),
                                     created_at: new Date().toISOString(),
