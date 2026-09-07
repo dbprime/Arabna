@@ -422,5 +422,5 @@ console.log('--- 5. one word, one meaning ---');
 }
 
 await browser.close();
-console.log(`\nv80: ${pass} passed, ${fail} failed`);
+console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);
