@@ -10379,7 +10379,16 @@ the body dropped from confirmSheet        → 2.1 · 2.1b · 2.4b red
 **No migration** — `status` is `text` with no check constraint, so
 `deleted` needs no schema change, and no policy is added.
 
-__NET_LINE_635__
+### And the group closes — the net, run on segments over one frozen tree
+```
+156 runs · 78 suites · 7,295 assertions · zero red · zero crash
+```
+Twenty-six segments over `06b18b1`, `HEAD` re-checked at the head of each,
+**78 present and 78 run, each twice, and no result borrowed.** The
+arithmetic closes itself: 7,193 + 102 (`v80` × 2) = **7,295**, and — measured
+run for run against the `630` net rather than assumed — **not one older suite
+moved by a single assertion**, which is what a batch that adds a screen rule
+and touches no older subject should look like.
 
 ## Known open items
 - **The header image is still far larger than its box.** V.04.7 replaced
