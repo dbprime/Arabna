@@ -70,25 +70,49 @@ const rows = p => p.evaluate(() =>
   const { ctx, p } = await fresh();
   await go(p, '#/profile');
   const r = await rows(p);
-  ok('1.1 the hub is the seven rows of ACCOUNT_LINKS', r.length === 7, String(r.length));
+  /* ⚠️ REVERSED BY 645 sec.6: three rows became CONDITIONAL (`when` on the
+     row itself, read by `accountLinks()`), so «seven» is no longer a fact
+     about the hub — it is a fact about one account's state. The screen is
+     compared with the STORE instead, which is two different things and not
+     a count agreeing with itself: the hub draws exactly what `accountLinks()`
+     returns for this account, in that order, inventing and dropping none. */
+  /* a row's route may be a FUNCTION (V.06.6: the subscription row branches
+     on whether there is one), so it is resolved the way the screen resolves
+     it — comparing the raw field would compare a blank with «#/subscribe». */
+  const want = await p.evaluate(() => window.__S.accountLinks()
+    .map(l => (typeof l.route === 'function' ? l.route() : l.route)));
+  ok('1.1 the hub draws exactly the rows accountLinks() returns',
+     JSON.stringify(r.map(x => x.route)) === JSON.stringify(want),
+     r.map(x => x.route).join(' ') + '  want: ' + want.join(' '));
   ok('1.2 …and every one of them is one width', await p.evaluate(() =>
     new Set([...document.querySelectorAll('#app button.list-row')]
       .map(e => Math.round(e.getBoundingClientRect().width))).size === 1));
-  /* ⚠️ THE THREE THAT LEFT are the three counters at the top of the very
-     same screen — the reader met them twice, ten lines apart. */
+  /* ⚠️ TWO of the three that left in V.06.7 are still gone — they were the
+     counters at the top of the very same screen, met twice ten lines apart.
+     «إعلاناتي» came BACK by decision (645 sec.6): a new account had no row at
+     all for its own listings, and a number square does not read as a door.
+     The counters stay beside it, which 1.6 holds. */
   const routes = r.map(x => x.route);
-  ok('1.3 «إعلاناتي» is not repeated as a row', !routes.includes('#/my-ads'), routes.join(' '));
+  ok('1.3 «إعلاناتي» is a row again, and the counters stay',
+     routes.includes('#/my-ads'), routes.join(' '));   // 645: was «not repeated»
   ok('1.4 …nor «المفضّلة»', !routes.includes('#/saved'));
   ok('1.5 …nor «تقييماتي»', !routes.includes('#/my-reviews'));
   ok('1.6 …and the counters that carry the numbers stay',
      await p.evaluate(() => document.querySelectorAll('#app .stat').length) === 3);
-  /* the three doors that were only reachable from elsewhere */
-  ok('1.7 notifications, receipts and blocked are reachable from here',
-     ['#/notifications', '#/receipts', '#/blocked'].every(x => routes.includes(x)), routes.join(' '));
-  /* ⚠️ zero prints nothing */
-  const receipts = r.find(x => x.route === '#/receipts');
-  ok('1.8 a row with nothing behind it says nothing', receipts && receipts.sub === '',
-     JSON.stringify(receipts));
+  /* the doors that were only reachable from elsewhere. ⚠️ 645 sec.6 splits
+     them: a message, a notification and a block are begun by somebody else
+     at any moment, so those stay open on an account that has none — while a
+     receipt and a request either happened or did not. */
+  ok('1.7 notifications and blocked are reachable from here, whatever the account holds',
+     ['#/notifications', '#/blocked'].every(x => routes.includes(x)), routes.join(' '));
+  ok('1.7b …and the two that either happened or did not are absent on a new account',
+     !routes.includes('#/receipts') && !routes.includes('#/my-requests'), routes.join(' '));
+  /* ⚠️ zero prints nothing — and 645 sec.6 goes one further for the two
+     above: the row is not drawn at all rather than drawn empty. What this
+     item still guards is the subtitle, on a row that IS always drawn. */
+  const mine = r.find(x => x.route === '#/my-ads');
+  ok('1.8 a row with nothing behind it says nothing', mine && mine.sub === '',
+     JSON.stringify(mine));
   await ctx.close();
 }
 
