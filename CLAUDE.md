@@ -11,7 +11,7 @@ ARABNA · عربنا — a mobile-first web app for the Arab community in the U.
 **business directory + marketplace + events + magazine**, Arabic-first with a full English toggle.
 ("Classifieds / الإعلانات الشخصية" is now "Marketplace / السوق" — the old `#/classifieds`
 routes still resolve so shared links keep working.)
-Current version: **V.10.4 (prototype)**. Owner: dbprime. Deploys to Vercel (team DB Prime).
+Current version: **V.10.5 (prototype)**. Owner: dbprime. Deploys to Vercel (team DB Prime).
 
 ## Hard rules (from the product brief)
 0. ⚠️ **THE OWNER'S NAME IS NEVER WRITTEN — anywhere.** Not in this file, not
@@ -845,6 +845,33 @@ anything else     is not reported
 **«خلصت» alone is not enough either** — it leaves a reader who cannot tell
 which of forty files it names. **The number is the other half, and the two
 together are the whole thing.**
+
+### A migration is named in the closing line, or it did not happen
+Measured while checking `630` on the live host: the users section answered
+`Could not find the function public.admin_find_users` — `0005` had never
+reached the server — and then `tier2_by` measured **0 rows** in
+`information_schema.columns`: `0004` had not either. **Two of seven.** The
+owner ran both by hand on 6 September, so the server matches the repository
+from `0001` to `0007` today. The cause is measured: a migration file is
+written into the repository and merged with its batch, **and nobody runs
+it** — there is no deploy path that applies it, and the owner runs what he
+is handed, letter for letter, in the SQL editor. **So a migration the
+closing line does not name by its file is a migration that did not
+happen.**
+
+> **The closing report of a batch that carries a migration says, by the
+> file's name and as a line of its own, never inside a paragraph:
+> «تُنفَّذ بيد مالك البرنامج بعد الدمج: `000N_….sql`».** A batch that
+> carries none says «لا هجرة». **And `docs/الحالة.md` holds the migration
+> log: the number, its batch, and whether and on which day it ran on the
+> server.**
+
+⚠️ **And a migration handed over for the SQL editor is written with no
+`||` and no `*`:** the field it is pasted into drops both characters —
+measured twice. `concat()` for `||`, `count(1)` for `count(*)`. So `0005`
+as it stands in the repository was not run to the letter but as a
+`concat` copy; the difference changes no meaning, and it is written in the
+log so nobody reads the server as disagreeing with the repository.
 
 ### Never wait on a file with a loop
 No `until grep … do sleep`, and no waiting for a marker to appear in a
@@ -10200,6 +10227,159 @@ never patched from its crashed file**, and the segment script now checks
 the server before every run. ⚠️ **`v53` reads 22 on the module build and 21
 on the single-file one by design** — two weight checks against one — as
 written in `610`.
+
+## V.10.5 — five from the live walk (635)
+
+⚠️ **This file closes its own group, and its group is itself** — it touches
+`js/store.js` and the sign-in and sign-out paths.
+
+⚠️ **All five were found by the owner on the live host, not by the net** —
+three while checking `625`, two while checking `630` after its merge — and
+not one hits a reader today; every one hits the first who comes. **And the
+item that opened the file — the price knows its section — had already
+shipped as `625`'s third appendix**, measured on `main` (`noPrice` and
+`hourly` in `data.js`, `priceLabel(price, cat)` in `ui.js`), so it is not
+rebuilt and is named here in this one line.
+
+### 1 — the owner deletes what was never published
+«حذف» became «أخفِ» in V.02.7 for two written reasons: an erased listing
+takes its messages and its remaining days with it. **Both reasons fail for
+a listing that was never approved and never written to** — nobody saw it,
+so it has no messages, and its days never began. So the rule is written
+with its condition, not its generality: **a listing not yet approved and
+with no message is really deleted, not hidden.**
+
+- ⚠️ **Two conditions, both measured, never one.** `canOwnerDelete(id)` in
+  `store.js` reads `status === 'pending'` AND `messagesFor(id).length === 0`
+  — a pending listing its owner shared by link can still receive a
+  message. `v80 · 1.2` is the tooth: one message and «أخفِ» returns.
+- **No new erasure.** `deleteClassified` has existed for the admin since
+  V.02.9 and cleans four things at once; `ownerDeleteClassified` is a new
+  door onto it, and `v80 · 1.11` counts the erasing line once in the file.
+- **The server first, the device the trace of its yes** (`620` · `630`):
+  the row is marked `status = 'deleted'` and **never removed** — «deletion
+  is a mark, not a wipe» is this project's rule at `profiles.deleted_at`,
+  `own: update` already permits the mark, and **no delete policy is
+  opened** (`v80 · 1.10` reads every migration). A refused server erases
+  nothing on the device.
+- `allClassifieds()` drops `deleted` exactly as it drops `rejected`; and
+  `adminListings()` drops it too — an owner's erasure of a listing nobody
+  saw has nothing to moderate, and a status no filter in the panel names
+  would otherwise surface under «الكلّ».
+- One button or the other on the detail page, never both; the sheet is
+  `danger`, because unlike hiding there is no way back.
+
+### 2 — the hide sheet says what it does
+The title repeated itself in its own button and the listing's title stood
+under it, **and not a word said what would happen** — which is exactly what
+made the owner take a sound decision for a fault. It reads now: «يختفي عن
+الجميع، ويمكنك إرجاعه ما دامت أيّامه باقية، ولا يُحسَب من عدد إعلاناتك» —
+three facts, all measured (`isHidden`, `unhideClassified`,
+`activeListingCount`), none promised. ⚠️ **«يمكنك», not the spec's «تقدر»**
+— the V.02.7 rule: plain MSA, never a dialect, in every string the
+interface prints.
+
+- **`confirmSheet` gains an optional `body`**, drawn under `sub` only when
+  passed. Sixteen call sites carry none and print letter for letter what
+  they printed (`v80 · 2.3` asserts the old markup shape). ⚠️ **It is not
+  pushed into `sub`** — that slot names the THING, this one says what
+  happens to it, and two meanings in one field part the first time one is
+  edited.
+
+### 3 — the visitor's headline shines, and the member never sees it
+The owner asked why «كلّ ما تحتاجه في Houston» had gone from Home. Measured:
+it had not — it is gated on `!isMember()` since V.04.7, with its reason
+written above it, and **his decision is that it stays so.** What is added
+is a shine for the visitor: gold, with one band of light crossing the word
+every three seconds, then rest.
+
+- **`--shine` is a token beside `--gold`**, in all three colour blocks —
+  the dark one, the light one and its `prefers-color-scheme` copy, the
+  V.04.7 rule that all three must agree. White in dark; **cream
+  (`#FBF3E2`) in light, because white swallows the word on the light
+  ground** — measured in the live parade the owner chose from. The rule
+  reads `var(--gold)` and `var(--shine)` and carries no colour value.
+- **Three conditions, none negotiable, and `v80` holds each structurally:**
+  `color: var(--gold)` stands on `.home-headline` BEFORE any `@supports`,
+  so a browser that cannot clip a background to text sees steady gold and
+  never transparent text over nothing (3.6); the gradient lives inside
+  `@supports (-webkit-background-clip: text)`; and **the animation lives
+  inside `prefers-reduced-motion: no-preference`**, the file's own idiom —
+  outside it the word is gold and still (3.3 measures it with the
+  preference emulated, 3.8 reads the stylesheet).
+- **The rhythm is written once, in `@keyframes`**: 0 → 60% the band
+  crosses (1.8s), 60 → 100% steady gold (1.2s). No standing pulse — a pulse
+  eats the battery and the eye; a light that passes and rests draws the
+  eye without wearing it.
+- ⚠️ **`background-repeat: no-repeat` over `background-color: var(--gold)`**
+  is what makes the rest phase gold rather than a wrapped copy of the
+  band: a 260%-wide gradient repeats by default, and the word would have
+  carried a second light during its «rest».
+- **The subline does not shine.** It is an index; the headline is the
+  greeting. Two lights on one screen are noise.
+
+### 4 — the page reads the server once, before it knows who is reading
+Measured on the live host: a staff account opened `arabna.app` in a browser
+that had never signed in, signed in, opened `#/admin` — the panel opened on
+the account alone as `630` intended, **and the queue was empty until F5.**
+Both live readers ran in `boot` once and nothing called them again, so the
+page read the server AS A VISITOR, RLS answered a visitor with what a
+visitor may see — no pending row — and the session that arrived a moment
+later never asked again. ⚠️ **It is the hole `620` closed in `is_admin`
+(«read at sign-in alone») living on in the rows.** And the reverse held
+too: whoever signed out kept the ended session's pending and hidden rows in
+memory, filtered away by `allClassifieds()` — and leaning on a filter to
+hide what should never have been read is the fault `630` named.
+
+> **The two live readers run whenever the session changes — in or out —
+> not at boot alone.**
+
+- **One entry site**: `hydrateUserFromSession`, which is what follows
+  `signInWithPassword` and the recovery code — the moment a session exists
+  where there was none. It calls both readers **without awaiting them**
+  (sign-in does not wait on the network; `v80 · 4.4` times it with the
+  rows held back 1.5s) and repaints under `boot`'s own condition — rows
+  really came and `location.hash` has not moved. ⚠️ **`store.js` cannot
+  import `render`**, so `app.js` registers the repaint once (`onLiveRows`)
+  and the store calls it.
+- **One exit site**: `signOut`, which **forgets the rows first and re-reads
+  as a visitor second** — the order is the item. «The last good answer
+  stands» in the loaders was written for a network failure, never to keep a
+  previous account's rows on a phone it has left; `v80 · 4.2` signs out
+  with the network failing and demands an empty queue at once.
+- ⚠️ **The call is not moved out of `boot`** — the visitor who never signs
+  in reads the live businesses as before (`v80 · 4.3` reads `app.js`). **And
+  `verifyAccountAdmin` does not call the readers**: the panel's door asks
+  about the flag; rows are read when the session changes, not when a screen
+  opens — otherwise every screen grows a read of its own, which is what
+  `610`'s «once» forbade.
+- `confirmEmail` opens a session too, for a brand-new account, and is
+  deliberately left: a new account owns no rows on the server, and a third
+  entry site is the multiplication this item exists to refuse.
+
+### 5 — «موثّق» is a word with a meaning, borrowed for another
+The users section printed «موثّق» beside every account that confirmed its
+email — **and «موثّق» in this app is the business badge**, applied for by a
+shop owner and granted after review. An account that confirmed an address
+was granted nothing. The owner asked «why does it say موثّق next to him»,
+and that is the test: a word the owner asks about, the next admin asks
+about. `usersEmailOk` — «بريده مؤكَّد» / «Email confirmed» — and the class
+stays: the colour was right, the word alone was borrowed. **`verified`
+itself is untouched**: five readers of the badge, and the sixth was this.
+
+### `test_v80` — 51 assertions, and five teeth, each aimed at its own item
+```
+the refresh dropped from hydrate          → 4.1b · 4.1 · 4.4 · 4.4b red
+one condition instead of two              → 1.2 red
+the animation outside reduced-motion      → 3.3 · 3.8 red
+the badge word back in the users row      → 5.1 · 5.1b · 5.2 · 5.5 red
+the body dropped from confirmSheet        → 2.1 · 2.1b · 2.4b red
+```
+`chk_i18n` reads 1886 → **1890**: four keys, intended and measured.
+**No migration** — `status` is `text` with no check constraint, so
+`deleted` needs no schema change, and no policy is added.
+
+__NET_LINE_635__
 
 ## Known open items
 - **The header image is still far larger than its box.** V.04.7 replaced

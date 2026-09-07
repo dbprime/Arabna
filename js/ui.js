@@ -886,10 +886,16 @@ export function openGreeting(g, onClose) {
   return true;
 }
 
-export function confirmSheet({ title, sub, confirmText, danger, onConfirm }) {
+/* `body` is optional and drawn under `sub` only when passed (635): sixteen
+   call sites carry no body and print letter for letter what they printed.
+   ⚠️ It is not folded into `sub` — that slot names the THING (a listing's
+   title); this one says what will HAPPEN to it, and two meanings in one
+   field part the first time one of them is edited. */
+export function confirmSheet({ title, sub, body, confirmText, danger, onConfirm }) {
   openSheet(`
     <div class="sheet-title">${title}</div>
     <div class="sheet-sub">${sub || ''}</div>
+    ${body ? `<p class="sheet-note">${body}</p>` : ''}
     <button class="btn ${danger ? 'btn-danger' : 'btn-gold'} btn-block" id="cfmYes">${confirmText || t('confirm')}</button>
     <button class="btn btn-ghost btn-block mt-8" data-close>${t('cancel')}</button>
   `, (panel) => {

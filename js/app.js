@@ -5,7 +5,7 @@
 import { setLang, bothPacks } from './i18n.js';
 import { state, registerStrings, runReminders, runSubscriptionCycle,
          liveGreeting, markGreetingSeen, noteVisit, requestPersistence,
-         loadLiveBusinesses, loadLiveClassifieds } from './store.js';
+         loadLiveBusinesses, loadLiveClassifieds, onLiveRows } from './store.js';
 import { $, renderHeader, renderNav, hideNav, closeSheet, hideDrawer, drawerOwnsEntry, closeDropdown,
          mountScrollMemory, restoreScroll, historyKey, markShown, startClock, mountAdShare,
          applyTheme, applyFontScale, mountThemeWatch, openGreeting, sheetOpen,
@@ -309,6 +309,9 @@ async function boot() {
      ⚠️ And it repaints only when rows really arrived and the reader has not
      navigated away meanwhile: a re-render under somebody's finger is a
      worse fault than a listing appearing one screen late. */
+  /* and the same repaint when the SESSION changes (635): the store re-reads
+     both on sign-in and sign-out and calls this under the same condition */
+  onLiveRows(() => render());
   loadLiveBusinesses().then(rows => {
     if (!rows || !rows.length) return;
     if (location.hash !== route) return;
