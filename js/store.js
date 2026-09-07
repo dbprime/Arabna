@@ -2491,7 +2491,7 @@ export function mapLiveClsRowToJs(r) {
     id: r.id, ownerId: r.owner_id || null, cat: r.cat,
     title: { ar: r.title || '', en: r.title || '' },
     desc: { ar: r.body || '', en: r.body || '' },
-    price, city: '', photos: [],
+    price, city: r.city || '', photos: [],
     status: r.status || 'live', hidden: !!r.hidden,
     created, when: agoLabel(created),
     daysLeft: Math.max(0, rule.days - Math.floor((now() - created) / 86400000)),
@@ -4382,6 +4382,11 @@ export async function addClassified(item) {
          listing never reached the table at all. (The one that did was a
          job-wanted at «00», which is the sentinel and maps to null.) */
       price: item.price === FREE_PRICE ? null : priceNumber(item.price),
+      /* The form asks for it and refuses to publish without it, and it was
+         going nowhere: no column, and the map below handed back an empty
+         string — so every listing anybody but its poster read carried a map
+         pin with nothing after it. `0008` is the column. */
+      city: (item.city || '').trim() || null,
       status: 'pending',
     }).select().single();
     if (error) throw error;

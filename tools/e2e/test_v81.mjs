@@ -281,6 +281,39 @@ const member = async (p, email) => p.evaluate(async ([em, c]) => {
   const msg = await p.evaluate(() => ((document.querySelector('#bErr') || {}).textContent || '').trim());
   ok('4.6 a car showroom is stopped by its OWN group, named', /السيارات|Auto/i.test(msg), msg);
   ok('4.6b …and never by «خدمات الوافدين الجدد»', !/الوافدين|newcomer/i.test(msg), msg);
+
+  /* ⚠️ 4.6 ALONE CANNOT SEE THIS ITEM, and the teeth proved it: with the
+     rule reverted the showroom is STILL stopped by `autoSvc` first, because
+     that group precedes the general three in registry order and nothing had
+     been picked yet — so the check passed on a build carrying the fault.
+     The fault appears ONE STEP LATER: after the showroom answers its own
+     group and is then asked for a newcomer service it does not offer. So
+     the decisive check takes that step, and with the rule reverted it
+     prints the original fault in one line:
+        «اختر واحدة على الأقل من «خدمات الوافدين الجدد»» */
+  const grpLabels = await p.evaluate(() => {
+    const I = window.__I;
+    return ['newcomer', 'language', 'practical'].map(g =>
+      I.t('attrGrp' + g[0].toUpperCase() + g.slice(1)));
+  });
+  /* the refusal above already opened that box, so a blind toggle would shut
+     it again and the chip inside would never be reachable */
+  const opened = await p.evaluate(() => {
+    const box = document.querySelector('.attr-box[data-grp="autoSvc"]');
+    if (box && !box.classList.contains('open')) box.querySelector('[data-grptoggle]').click();
+    return !!box;
+  });
+  ok('4.6c the group its message named is the one that opens', opened);
+  await p.waitForTimeout(300);
+  await p.click('[data-a="autoMechanic"]'); await p.waitForTimeout(250);
+  await p.click('#bSave'); await p.waitForTimeout(900);
+  const after = await p.evaluate(() => ({
+    msg: ((document.querySelector('#bErr') || {}).textContent || '').trim(),
+    hash: location.hash,
+  }));
+  ok('4.7 having answered its own group, the showroom is not asked for a general one',
+    !grpLabels.some(l => l && after.msg.includes(l)), after.msg || '(nothing)');
+  ok('4.7b …and the save really goes through', !/add-business/.test(after.hash), after.hash);
   await ctx.close();
 }
 
@@ -438,6 +471,57 @@ const member = async (p, email) => p.evaluate(async ([em, c]) => {
   ok('7.3 newReceiptNumber still mints ARB-26-XXXXX, letter for letter', shape.ok, shape.a);
   ok('7.4 …and no key with no reader is left behind',
     !/cashReference:/.test(read('js/i18n.js')));
+  await ctx.close();
+}
+
+/* ============================================================
+   9 — the city the poster typed reaches the table
+   ============================================================ */
+{
+  /* ⚠️ comments stripped FIRST — the migration's own note explains that the
+     column is nullable and has no default, so a check reading the raw file
+     matches the sentence that describes the rule and reports the fault it
+     exists to prevent. The project has now paid for this four times. */
+  const migRaw = read('supabase/migrations/0008_classifieds_city.sql');
+  const mig = migRaw.replace(/--[^\n]*/g, '');
+  ok('9.1 the column is a migration, named and in the repository',
+    /alter table[\s\S]*public\.classifieds[\s\S]*add column[\s\S]*city/i.test(mig));
+  ok('9.1b …nullable, so a row written before it keeps its blank honestly',
+    !/not null/i.test(mig) && !/default/i.test(mig));
+  ok('9.1c …and it opens no policy', !/create policy/i.test(mig));
+  /* the SQL editor drops both characters — measured twice, and written
+     into the closing rules after 630 */
+  ok('9.1d …written for the SQL editor: no concat operator, no star',
+    !mig.includes('||') && !mig.includes('*'));
+
+  const st = code('js/store.js');
+  ok('9.2 addClassified sends it', /city:\s*\(item\.city/.test(st));
+  ok('9.2b …and the row is read back into the record, never a hard-coded blank',
+    /city:\s*r\.city/.test(st) && !/price, city: '',/.test(st));
+
+  /* and end to end, through the stand-in server, which now refuses a
+     column the migrations do not declare */
+  const { ctx, p, db } = await fresh({ preConfirm: true });
+  await open(p, '#/home');
+  await member(p, 'city645@a.app');
+  const made = await p.evaluate(async () => {
+    const S = window.__S;
+    const rec = await S.addClassified({ cat: 'furniture', title: { ar: 'كنبة', en: 'Sofa' },
+      price: '650', city: 'Sugar Land, TX', desc: { ar: 'وصف', en: 'desc' }, photos: [], icon: 'sofa' });
+    return rec ? rec.id : null;
+  });
+  ok('9.3 a listing really publishes', !!made, String(made));
+  const row = (db.classifieds || []).find(r => r.id === made);
+  ok('9.4 the city reached the table', !!row && row.city === 'Sugar Land, TX', row ? String(row.city) : '(no row)');
+
+  /* ⚠️ the half nobody could see: what ANOTHER reader gets back */
+  const back = await p.evaluate(([id]) => {
+    const S = window.__S;
+    return S.mapLiveClsRowToJs({ id, owner_id: 'someone-else', cat: 'furniture',
+      title: 'Sofa', body: 'desc', price: 650, city: 'Sugar Land, TX',
+      status: 'live', hidden: false, created_at: new Date().toISOString() }).city;
+  }, [made]);
+  ok('9.5 …and comes back to whoever is not its poster', back === 'Sugar Land, TX', String(back));
   await ctx.close();
 }
 
