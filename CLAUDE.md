@@ -10885,7 +10885,18 @@ green over a section with no events in it — a check asleep on the very
 fault the suite is about. It reads `#app .empty` now, and under that same
 tooth it goes red with the rest.
 
-__NET_LINE_642__
+### And the group closes — the net, run on segments over one frozen tree
+```
+160 runs · 80 suites · 7,583 assertions · zero red · zero crash
+```
+Twenty-seven segments over `1e79c0a`, `HEAD` re-checked at the head of each
+(the runner exits 2 on a moved character or a dirty tree, and none did),
+**80 present and 80 run, each exactly twice, and no result borrowed.**
+
+⚠️ **The arithmetic closes itself: 7,491 + 92 (`v82` × 2) = 7,583 — and not
+one older suite moved by a single assertion.** That is what a batch of four
+records plus a display fix contained to one subsystem should look like: the
+day it moves an older number, the number is the thing to read.
 
 ## Known open items
 - **The header image is still far larger than its box.** V.04.7 replaced
