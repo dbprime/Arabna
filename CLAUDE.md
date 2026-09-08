@@ -694,8 +694,11 @@ unfinished. And more parallelism does not help: the machine has two cores and
 **fewer suites, not faster ones** — and `615` is what makes that decision
 possible at all, because until it landed nobody could say which suites the
 time was in. ⚠️ **Measured the day it landed, and it is why no suite is cut
-by eye: `v59` takes ONE second and `v8` takes 291.** A suite dropped for
-looking small could as easily have been the cheapest thing in the net.
+by eye, and the figures are the net's own of 8 September: `v59` measures
+ZERO seconds at the counter's resolution and `v8` 280.** A suite dropped
+for looking small could as easily have been the cheapest thing in the net —
+and the ten heaviest are printed at the tail of every run, so the table to
+decide from is never hand-written either.
 
 | when | what | measured |
 |---|---|---|
@@ -816,7 +819,16 @@ already exist, so nineteen segments cost what one invocation costs.
   failed · seconds · state — and the tail reads it: distinct suites × builds,
   assertions, red, crashed, the ten slowest, the total per build, and the
   verdict. **`NET COMPLETE` is printed only when every derived suite has run
-  on BOTH builds**; otherwise the shortfall is printed with its count.
+  on BOTH builds**; otherwise the shortfall is printed with its count AND
+  the runs it is missing, by name.
+- ⚠️ **And the verdict is proven in BOTH directions, never only the one it
+  is wanted in.** On the finished net a line was deleted from the index on
+  purpose and the run repeated: `NET INCOMPLETE — 1 run(s) missing:
+  m/v50`, and `NET COMPLETE` again once it was put back. ⚠️ **The distinct
+  count alone would have said COMPLETE** — `s v50` was still there, so «80
+  distinct suites» never moved. That is why the condition is `nmiss == 0`
+  **and** `distinct == derived` **and** both builds named: any one of the
+  three on its own passes over a suite that ran on one build only.
 - ⚠️ **The PARTIAL guard is not softened and not switched off.** Every
   segment still announces itself partial at both ends — that is what stops a
   segment being read as the whole net — **and completeness is announced from
@@ -11100,7 +11112,62 @@ any line in js/ or styles/     not one character
 raise the version              no — nothing reaches a reader
 ```
 
-__NET_LINE_615__
+### And the group closes — the net, run on segments over one frozen tree
+```
+160 runs · 80 suites · 7,584 assertions · zero red · zero crash
+```
+Twenty-seven segments over `51c118e`, `HEAD` re-checked at the head of each,
+**80 present and 80 run, each exactly twice, and no result borrowed.** The
+arithmetic closes itself: 7,583 + **1** — `v53 · 6.5a`, and one and not two
+because `6.5` and `6.5a` both sit inside `if (!BASE.includes('single-file'))`,
+so only the module build gains the assertion. **And `v36` is 39 on both
+builds, before and after**: narrowing an exclusion changes what a check
+measures, never how many.
+
+### The index is proven in both directions, and the count is the guard
+⚠️ **The whole batch is a mechanism for saying «complete» without adding
+up by hand, so it is not enough that it says COMPLETE — it has to say
+INCOMPLETE when it is.** Measured on the finished index, then broken on
+purpose:
+
+```
+the completed net       runs 160 · 80 distinct × 2 builds · 80 derived · NET COMPLETE
+                        HEAD 51c118e — said once
+one line deleted (m v50) runs 159 · NET INCOMPLETE — 1 run(s) missing: m/v50
+the line put back        runs 160 · NET COMPLETE
+```
+
+⚠️ **AND THE DISTINCT COUNT ALONE WOULD HAVE SAID COMPLETE.** With `m v50`
+gone the index still holds `s v50`, so «80 distinct suites» was unchanged —
+**a verdict built on that number would have passed over a suite that ran on
+one build only.** That is why the condition is `nmiss == 0` **and**
+`distinct == derived` **and** both builds named, rather than any one of the
+three.
+
+### The three heaviest were not the three named — and that is the finding
+⚠️ **`615` named `v14 · v8 · v3` as the heaviest, and the net's first real
+measurement disagrees.** Both builds summed, on this tree:
+
+```
+v8   558s      v20  549s      v14  466s      v54  436s      v50  433s
+v18  426s      v28  424s      v45  416s      v27  415s      v40  392s
+…
+v3   300s (336 before this batch — thirteenth)
+v59    0s      v73  1s        v57  9s        v70  10s
+```
+
+**`v20` is the second-heaviest suite in the net at 549 seconds, was never
+named, and was not touched. `v3` is thirteenth.** ⚠️ **So the spec's own
+list was itself a hand-estimate** — which is precisely the thing this batch
+exists to replace, and the first measurement corrected it. **Nothing was
+re-scoped for it**: the three named were done as written, because the ceiling
+in a spec is a ceiling and not a target to re-aim, **and the table above is
+what any later cut is decided from.**
+
+⚠️ **And the spread is wider than «three hundred times»:** `v59` measures
+**0 seconds** at the counter's own resolution against `v8`'s 280 — so a
+suite dropped for looking small can cost the net nothing at all, and the
+axis to cut on is this table, never the number of `ok()` lines in a file.
 
 ## Known open items
 - **The header image is still far larger than its box.** V.04.7 replaced
