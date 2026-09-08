@@ -11,13 +11,14 @@ import { CLASSIFIEDS, BUSINESSES, NOTIFICATIONS, SLIDER_ADS, HOUSE_SLIDE, MINI_A
          CITY_POINTS, REGIONS, REGION_RADIUS_MI, STATE_SUGGEST,
          AD_PRODUCTS, AD_SLOTS, APP_VERSION,
          attrById, attrInCat, isAllDay, week, nextOccurrence, PHONE_AUTH,
-         eventIsAllDay, eventStamp } from './data.js';
+         eventIsAllDay, eventStamp, eventToInstant, eventFromInstant,
+         eventTypeIcon } from './data.js';
 import { expandQuery, hayMatches, catMatches, squash } from './synonyms.js';
 import { holidaysOn } from './holidays.js';
 
 export { ATTRIBUTES, ATTR_GROUPS, DAY_KEYS, CHIP_MIN, CHIP_MAX_SHARE, EVENT_TYPES,
          attrById, attrInCat, isAllDay, week, nextOccurrence,
-         eventIsAllDay, eventStamp };
+         eventIsAllDay, eventStamp, eventToInstant, eventFromInstant, eventTypeIcon };
 
 export { blankEvent };
 
@@ -2542,6 +2543,7 @@ function refreshLiveRows() {
   };
   loadLiveBusinesses().then(after);
   loadLiveClassifieds().then(after);
+  loadLiveEvents().then(after);
 }
 /** on sign-out the answer of a session that ENDED must not stand: «the last
     good answer stays» in the loaders was written for a network failure,
@@ -2549,6 +2551,7 @@ function refreshLiveRows() {
 function forgetLiveRows() {
   bizReader.forget();
   clsReader.forget();
+  evReader.forget();
 }
 
 /** «قبل n يوم» in the four Arabic forms, without importing i18n */
@@ -4878,6 +4881,153 @@ function mergeEvent(e) {
   return patch ? Object.assign({}, e, patch) : e;
 }
 
+/* ---------------- THE LIVE EVENTS (649) ----------------
+ * ⚠️ WHY IT EXISTS. Measured on `main` before this batch: the form, the
+ * panel, the table and its policies were all built and complete, and
+ * `from('events')` appeared in the whole of `js/` ZERO times. So an event
+ * the admin added from his phone was seen by nobody — not even by himself
+ * from his laptop — and an organiser's proposal landed in `extraEvents`
+ * ON THEIR OWN DEVICE while the screen said «your proposal arrived». A
+ * promise published and not kept, and the $99 «featured» pin reached
+ * nobody at all.
+ *
+ * ⚠️ AND IT IS THE THIRD TIME THIS EXACT FAULT HAS BEEN FOUND: `hidden`
+ * (645 §10) and `city` (645 §8) were both a column, a policy and a map
+ * standing ready with the wire missing. The rule it leaves is in
+ * `CLAUDE.md` and its guard is `test_v84 · 7`.
+ *
+ * The pattern is the directory's and the marketplace's, to the letter:
+ * `null` is not `[]`, the loader never throws and never empties what it
+ * holds, and every reader of an event stays SYNCHRONOUS.
+ */
+const evReader = makeLiveReader('events', {
+  /* ⚠️ AND NOT `created_at`, WHICH IS THE FACTORY'S FALLBACK. The server's
+     order has to match the screen's or the page lies twice: an event next
+     week entered a month ago falls onto a second page and is shown under
+     one in December entered yesterday, and — worse — a FEATURED event with
+     a distant date falls onto a later page and never floats. That is the
+     $99 pin: a customer who paid and does not appear. `id` is appended by
+     the factory, and it is what stops two events on the same day trading
+     places between one page and the next. */
+  order: [['featured', { ascending: false }], ['starts_at', { ascending: true }]],
+});
+
+/** when the live events last arrived, or 0 — read by the suite */
+export function liveEvLoadedAt() { return evReader.loadedAt(); }
+/** Fetch the live events once. */
+export async function loadLiveEvents() { return evReader.load(); }
+
+/** One map from a live event row to the shape `data.js` uses, written once
+    and read by everything that reads one. */
+export function mapLiveEventRowToJs(r) {
+  const allDay = !!r.all_day;
+  return {
+    id: r.seed_id || r.id,
+    rowId: r.id,
+    status: r.status || 'live',
+    title: { ar: r.title_ar || r.title_en || '', en: r.title_en || r.title_ar || '' },
+    /* ⚠️ THROUGH THE DIRECTORY'S OWN ZONE, both ways — see `eventToInstant`
+       in `data.js`. Read back naively, a festival on the 17th is shown on
+       the 16th and a 16:00 event reads 10:00. */
+    startsAt: eventFromInstant(r.starts_at, allDay),
+    endsAt: eventFromInstant(r.ends_at, allDay),
+    venue: { ar: r.venue_ar || '', en: r.venue_en || r.venue_ar || '' },
+    organizer: { ar: r.organizer_ar || '', en: r.organizer_en || r.organizer_ar || '' },
+    desc: { ar: r.body_ar || '', en: r.body_en || r.body_ar || '' },
+    type: r.type || 'community',
+    city: r.city || '',
+    ticketUrl: r.ticket_url || '',
+    /* ⚠️ EMPTY ON PURPOSE, AND THE COLUMN WITH IT (§4.4): a `data:` image
+       in a row makes every read of the table carry it. The picker keeps
+       working and the photo stays on the device that chose it, until the
+       file store lands. */
+    photo: r.photo || '',
+    featured: !!r.featured,
+    concert: r.concert || null,
+    repeat: r.repeat || null,
+    source: r.source || '', externalId: r.external_id || '', sourceUrl: r.source_url || '',
+    icon: eventTypeIcon(r.type),
+    created: r.created_at ? Date.parse(r.created_at) : now(),
+  };
+}
+
+/** …and the way out: one record → one row, the mirror of the map above.
+    ⚠️ `place` is NOT written. It is one column for two languages and
+    `venue_ar`/`venue_en` replace it; it holds no row today (the table was
+    dead) and dropping a column is not this batch's, so it is recorded as
+    having lost its reader rather than quietly kept in step. */
+function eventRowFrom(ev, extra) {
+  const L2 = (v) => (v && typeof v === 'object') ? v : { ar: v || '', en: v || '' };
+  const title = L2(ev.title), venue = L2(ev.venue), org = L2(ev.organizer), body = L2(ev.desc);
+  return Object.assign({
+    title_ar: title.ar || title.en || '',
+    title_en: title.en || '',
+    starts_at: eventToInstant(ev.startsAt),
+    ends_at: eventToInstant(ev.endsAt),
+    /* the row remembers there was no clock, so the date comes back bare */
+    all_day: eventIsAllDay(ev.startsAt),
+    venue_ar: venue.ar || '', venue_en: venue.en || '',
+    organizer_ar: org.ar || '', organizer_en: org.en || '',
+    body_ar: body.ar || '', body_en: body.en || '',
+    type: ev.type || 'community',
+    city: ev.city || '',
+    ticket_url: ev.ticketUrl || '',
+    featured: !!ev.featured,
+    concert: ev.concert || null,
+    repeat: ev.repeat || null,
+    source: ev.source || 'manual',
+    external_id: ev.externalId || '',
+    source_url: ev.sourceUrl || '',
+  }, extra || {});
+}
+
+/** the live row that stands for this id, whether it is a seed's coat or a
+    record of its own */
+function liveEventRow(id) {
+  return (evReader.get() || []).find(r => (r.seed_id || r.id) === id) || null;
+}
+
+/**
+ * The seeds, this device's own records, and the server's rows, in one list.
+ * ⚠️ A row carrying `seed_id` is a COAT over a seed — the directory's shape
+ * — and a row without one is an event of its own, the marketplace's. This
+ * table is the only one that is both, so both are handled here and nowhere
+ * else.
+ * ⚠️ And the remote rows are appended NEWEST FIRST, not in the reader's
+ * order: the panel shows what arrived, soonest-first is the public list's
+ * business and `upcomingEvents()` sorts it there.
+ */
+function mergedEvents() {
+  const rows = evReader.get() || [];
+  const coats = new Map();
+  const own = new Map();
+  for (const r of rows) (r.seed_id ? coats : own).set(r.seed_id || r.id, r);
+
+  const seeds = withoutDemo(EVENTS)
+    .filter(e => !state.hiddenEvents.includes(e.id))
+    .map(e => {
+      const row = coats.get(e.id);
+      return row ? Object.assign({}, mergeEvent(e), mapLiveEventRowToJs(row)) : mergeEvent(e);
+    });
+
+  const local = state.extraEvents.map(e => {
+    const row = own.get(e.id);
+    if (!row) return mergeEvent(e);
+    own.delete(e.id);
+    /* the device's copy first, the server's fields over it: the photo the
+       picker kept is the device's and the status is the server's */
+    return Object.assign({}, mergeEvent(e), mapLiveEventRowToJs(row), { photo: e.photo || '' });
+  });
+
+  const remote = Array.from(own.values())
+    .map(mapLiveEventRowToJs)
+    .sort((a, b) => (b.created || 0) - (a.created || 0));
+
+  /* ⚠️ «deletion is a mark, not a wipe»: the row stays and the list drops
+     it, exactly as `allClassifieds` drops a deleted listing. */
+  return local.concat(remote, seeds).filter(e => e.status !== 'deleted');
+}
+
 /** Has this event already finished? (endsAt, or the start when there is no end) */
 export function eventIsPast(e, now = Date.now()) {
   const end = e.endsAt || e.startsAt;
@@ -4890,11 +5040,7 @@ export function eventIsPast(e, now = Date.now()) {
 }
 
 /** Every event the admin can see, newest edits applied, deleted ones removed. */
-export function allEvents() {
-  return state.extraEvents
-    .concat(withoutDemo(EVENTS).filter(e => !state.hiddenEvents.includes(e.id)))
-    .map(mergeEvent);
-}
+export function allEvents() { return mergedEvents(); }
 
 /**
  * What the public sees: approved events that have not finished yet,
@@ -4930,20 +5076,90 @@ export function ownsEvent(id) {
  * right by reading a flag off the URL — which is exactly what
  * `?admin=1` was doing.
  */
-export function addEvent(ev, status = 'pending') {
+export async function addEvent(ev, status = 'pending') {
   if (status !== 'pending' && !isAccountAdmin()) status = 'pending';
   if (ev && ev.featured && !isAccountAdmin()) ev = Object.assign({}, ev, { featured: false });
+  /* ⚠️ THE ROW IS WRITTEN ON THE SERVER FIRST AND ITS ID IS THE SERVER'S —
+     `648`'s rule: a record that has a table takes its id from the table.
+     An event is the one thing here whose whole purpose is that OTHER
+     PEOPLE see it, so a local-only one is a notice nobody receives, and
+     the id has to be the row's or a link somebody sends points at nothing.
+     ⚠️ And the two guards above are not the protection — the POLICY is:
+     «organiser: propose» demands `status = 'pending'` and
+     `proposer_id = auth.uid()`, so a signed-in account that asks for
+     `live` or `featured` is refused by the database, not by a screen. */
+  const { data: { session } = {} } = await sb.auth.getSession();
+  if (!session) return null;
+  let row = null;
+  try {
+    const { data, error } = await sb.from('events')
+      .insert(eventRowFrom(ev, { status, proposer_id: session.user.id }))
+      .select().single();
+    if (error) throw error;
+    row = data;
+  } catch (e) { return null; }
+  if (!row || !row.id) return null;
+  /* the local copy is kept as well, deliberately: whoever added it sees it
+     the instant they press, without waiting for the next boot to fetch it
+     back — the shape `addClassified` already uses */
   const rec = Object.assign({}, ev, {
-    id: mintId('ev'),
+    id: row.id,
     status,
     source: ev.source || 'manual',
     externalId: ev.externalId || '',
     sourceUrl: ev.sourceUrl || '',
     created: Date.now(),
   });
+  const rows = evReader.get();
+  if (rows) rows.unshift(row);
   state.extraEvents.unshift(rec);
   if (!save()) { state.extraEvents.shift(); save(); return null; }
   return rec;
+}
+
+/* ---- the three writes below all go through here ----
+   ⚠️ A record this device holds that never reached the server is answered
+   `true` and nothing is sent: `spawnRepeat` makes a draft locally by
+   decision (`649` §6), and a device upgrading from before this batch
+   carries records that were never anywhere else. Nobody else has ever seen
+   one, so the device IS the whole record and a local write is the whole
+   truth about it. Everything that DOES have a row goes to the server, and
+   a refusal changes nothing here. */
+function eventIsLocalOnly(id) {
+  return state.extraEvents.some(e => e.id === id) && !liveEventRow(id);
+}
+async function pushEvent(id, patch) {
+  if (eventIsLocalOnly(id)) return true;
+  const row = liveEventRow(id);
+  if (row) {
+    try {
+      const { data, error } = await sb.from('events').update(patch).eq('id', row.id).select();
+      if (error) throw error;
+      /* ⚠️ `.select()` and then the COUNT, because PostgREST answers a row
+         the policy hides with 200 and an empty list — never an error. So a
+         write that changed nothing would otherwise read as a success, which
+         is the silent family this whole batch is about. */
+      if (!data || !data.length) return false;
+      Object.assign(row, data[0]);
+      return true;
+    } catch (e) { return false; }
+  }
+  /* a SEED edited for the first time: its coat row is created here, keyed
+     by `seed_id` — the directory's own shape, and the reason `deleteEvent`
+     writes one too. Without it an admin deleting a seed deleted it on his
+     own phone and it stayed on the screen of the world. */
+  const seed = withoutDemo(EVENTS).find(e => e.id === id);
+  if (!seed) return false;
+  const full = Object.assign({}, mergeEvent(seed), patch);
+  try {
+    const { data, error } = await sb.from('events')
+      .insert(eventRowFrom(full, { seed_id: id, status: full.status || 'live' }))
+      .select().single();
+    if (error) throw error;
+    const rows = evReader.get();
+    if (rows) rows.push(data); else evReader.set([data]);
+    return true;
+  } catch (e) { return false; }
 }
 /**
  * The admin edits through the organiser's own form — one form, one shape of
@@ -4951,34 +5167,52 @@ export function addEvent(ev, status = 'pending') {
  * not only on the screen: a guard on a screen is bypassed by anything that
  * is not that screen.
  */
-export function updateEvent(id, patch, admin = false) {
+export async function updateEvent(id, patch, admin = false) {
   if (!admin && !ownsEvent(id)) return null;
   if (!admin && patch && 'featured' in patch) { patch = Object.assign({}, patch); delete patch.featured; }
+  const merged = Object.assign({}, eventById(id) || {}, patch);
+  /* THE SERVER FIRST, and the local state is only the trace of its yes —
+     the order `620` set for the password and `630` for the moderation
+     queue. A refusal writes nothing at all: a screen that says «saved»
+     over a row that did not move is the fault this batch closes. */
+  if (!await pushEvent(id, eventRowFrom(merged, { status: merged.status || 'live' }))) return null;
   const own = state.extraEvents.find(e => e.id === id);
   if (own) Object.assign(own, patch);
   else state.eventEdits[id] = Object.assign({}, state.eventEdits[id], patch);
   save();
   return eventById(id);
 }
-export function deleteEvent(id) {
+export async function deleteEvent(id) {
   const ev = eventById(id);
+  /* ⚠️ «deletion is a mark, not a wipe» — the row is set `deleted` and
+     stays, so no `for delete` policy is opened, exactly as
+     `ownerDeleteClassified` does. And a SEED gets its coat row written
+     here: before this, deleting one pushed its id onto a list on the
+     device and the seed stayed live for everybody else. */
+  if (!await pushEvent(id, { status: 'deleted' })) return false;
   logAdminAction(id, 'deleteEvent', ev ? (ev.title && (ev.title.ar || ev.title.en)) || '' : '', '');
   const before = state.extraEvents.length;
   state.extraEvents = state.extraEvents.filter(e => e.id !== id);
   if (state.extraEvents.length === before && !state.hiddenEvents.includes(id)) {
-    state.hiddenEvents.push(id);          // seed event → hide instead of mutating data.js
+    /* the device's own list stays beside the column, the same reason
+       `hiddenListings` did: it is what still holds a hide made before
+       this batch, and a record that never reached the server */
+    state.hiddenEvents.push(id);
   }
   delete state.eventEdits[id];
   save();
+  return true;
 }
-export function approveEvent(id) {
+export async function approveEvent(id) {
+  if (!await updateEvent(id, { status: 'live' }, true)) return false;
   logAdminAction(id, 'approveEvent', '', '');
-  updateEvent(id, { status: 'live' }, true);
   pushNotif({ icon: 'calendar', route: '#/events/' + id,
     title: { ar: 'تم اعتماد فعاليتك', en: 'Your event was approved' },
     body: { ar: 'فعاليتك صارت ظاهرة في قسم الفعاليات.', en: 'Your event is now listed in Events.' } });
+  return true;
 }
-export function rejectEvent(id, reason) {
+export async function rejectEvent(id, reason) {
+  if (!await deleteEvent(id)) return false;
   logAdminAction(id, 'rejectEvent', '', reason || '');
   const why = String(reason || '').trim();
   pushNotif({ icon: 'alert', route: '#/events',
@@ -4986,10 +5220,10 @@ export function rejectEvent(id, reason) {
     body: why ? { ar: `سبب الرفض: ${why}`, en: `Reason: ${why}` }
               : { ar: 'ما قدرنا نعتمد الفعالية. راجع التفاصيل وأعد الإرسال.',
                   en: 'We could not approve the event. Check the details and submit again.' } });
-  deleteEvent(id);
+  return true;
 }
 /** Featured = the paid "pin to the top" placement. */
-export function featureEvent(id, on = true) { updateEvent(id, { featured: !!on }, true); }
+export async function featureEvent(id, on = true) { return !!await updateEvent(id, { featured: !!on }, true); }
 
 /* ========================= MODERATION QUEUE ========================= */
 

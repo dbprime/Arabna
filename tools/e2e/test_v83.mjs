@@ -382,7 +382,15 @@ console.log('--- 4: the rule, and a check that keeps it ---');
      `store.js` with no line here is a new local id nobody decided on.
      Each batch strikes its own line when it moves its kind. */
   const LOCAL = [
-    { p: 'ev', what: 'event',            table: 'events',     moves: '649' },
+    /* ⚠️ REVERSED IN `649`, and named rather than struck. The event RECORD
+       moved to the server — `addEvent` takes the row's id now — and ONE
+       mint of this prefix is left: the repeat draft `spawnRepeat` makes,
+       which `649` §6 kept local by decision (generating next year's copy
+       on the server needs a scheduled job, which is a structure and not a
+       line). So the line stays, its meaning is the draft, and `4.6` below
+       holds the count at one so nobody can quietly mint an event id
+       again. */
+    { p: 'ev', what: 'repeat draft',     table: 'events',     moves: '' },
     { p: 'ub', what: 'business',         table: 'businesses', moves: '650' },
     /* ⚠️ `u` and `of` have a table and NO batch named for them in the
        queue — recorded as they stand, never assigned here. The queue is
@@ -423,6 +431,14 @@ console.log('--- 4: the rule, and a check that keeps it ---');
   const doc = read('CLAUDE.md');
   ok('4.5 the rule is written down where the next batch reads it',
      /A row that lives on the server takes its id FROM the server/.test(doc));
+
+  /* ⚠️ `649` moved the event record to the server, so the ONE mint left is
+     the repeat draft. Counting it is what stops a later batch writing a
+     local event id back into `addEvent` and passing `4.2`/`4.3` — both of
+     which stay green on any number of mints greater than zero. */
+  const evMints = (st.match(/mintId\('ev'\)/g) || []).length;
+  ok('4.6 exactly one event id is still minted here, and it is the repeat draft',
+     evMints === 1 && /spawnRepeat[\s\S]*?mintId\('ev'\)/.test(st), String(evMints));
 }
 
 console.log('--- console ---');

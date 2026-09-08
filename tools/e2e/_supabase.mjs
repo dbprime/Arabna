@@ -53,7 +53,8 @@ function columnsOf(table) {
   }
   return cols;
 }
-const SCHEMA = { classifieds: columnsOf('classifieds'), businesses: columnsOf('businesses') };
+const SCHEMA = { classifieds: columnsOf('classifieds'), businesses: columnsOf('businesses'),
+                 events: columnsOf('events') };
 
 /* ⚠️ AND THE SEEDED SETTINGS ARE READ FROM THE MIGRATION TOO, for the same
    reason the columns are: the listing limit lives in `settings` from `0009`,
@@ -81,6 +82,7 @@ function freshDb() {
     profiles: new Map(),   // id    -> { id, display_name, email_verified, tier2_by, is_admin }
     businesses: [],
     classifieds: [],
+    events: [],
     settings: SETTINGS_SEED.map(r => Object.assign({}, r)),
     session: null,
     seq: 0,
@@ -339,6 +341,12 @@ export async function mockSupabase(ctx, opts = {}) {
         if (table === 'businesses') {
           return isAdmin || (uid && row.owner_id === uid) || row.status === 'live';
         }
+        /* ⚠️ `events` is «all: read using (true)» in `0002` and that is
+           deliberate: the admin's queue of PENDING events is read by the
+           same select everybody uses, and `upcomingEvents()` is what keeps
+           a pending row off the public list. Mirrored explicitly so it
+           cannot drift into a filter nobody decided on. */
+        if (table === 'events') return true;
         return true;
       };
       const wantsOne = /pgrst\.object/.test(req.headers()['accept'] || '');
@@ -397,6 +405,13 @@ export async function mockSupabase(ctx, opts = {}) {
           if (pr) Object.assign(pr, body);
           return route.fulfill(json(pr ? [pr] : []));
         }
+        /* ⚠️ `events` carries `proposer_id`, NOT `owner_id`, and `0002`
+           gives an organiser «propose» — an INSERT policy — and no update
+           of any kind. So an organiser cannot rewrite their own proposal
+           on the real server either, and the mock must refuse it or `649`
+           would be tested against a permission the database does not
+           grant. It falls out of the line below by itself; it is named
+           here so a later edit cannot widen it by accident. */
         const mayUpdate = (row) => isAdmin || row.owner_id === uid;
         const hit = (db[table] || []).filter(matches).filter(mayUpdate);
         hit.forEach(row => Object.assign(row, body, { updated_at: new Date().toISOString() }));
@@ -433,6 +448,18 @@ export async function mockSupabase(ctx, opts = {}) {
           const all = (db.classifieds || []).filter(live).length;
           if (inCat >= lim || (lim === base && all >= base)) {
             return route.fulfill(json({ code: 'P0001', message: 'ARABNA_LISTING_LIMIT' }, 400));
+          }
+        }
+        /* ⚠️ THE EVENTS POLICIES OF `0002`, MIRRORED. «organiser: propose»
+           demands `status = 'pending'` AND `proposer_id = auth.uid()`, and
+           «admin: write» is what lets staff publish. A mock that accepted
+           `status: 'live'` from anybody would make `649`'s security item —
+           an ordinary account cannot publish to everyone, and cannot pin
+           the $99 placement — green on a database that had lost it. */
+        if (table === 'events' && !isAdmin) {
+          if (body.status !== 'pending' || body.proposer_id !== uid) {
+            return route.fulfill(json({ code: '42501',
+              message: 'new row violates row-level security policy for table "events"' }, 403));
           }
         }
         const known = SCHEMA[table];

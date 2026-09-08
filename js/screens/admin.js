@@ -170,13 +170,22 @@ function panelView(root) {
       toast(t('itemRejected'), 'ok'); paint();
     }));
     // --- events awaiting approval ---
-    $$('#aBody [data-evok]').forEach(b => b.addEventListener('click', () => {
-      S.approveEvent(b.dataset.evok); toast(t('eventApproved'), 'ok'); paint();
+    /* ⚠️ AWAITED, all four. The decision reaches the server first (649), so
+       a repaint before the answer draws the row still pending under a green
+       toast — and a refusal has to be said, not swallowed. The same shape
+       `630` gave the marketplace queue. */
+    $$('#aBody [data-evok]').forEach(b => b.addEventListener('click', async () => {
+      b.disabled = true;
+      const ok = await S.approveEvent(b.dataset.evok);
+      toast(ok ? t('eventApproved') : t('eventSaveFailed'), ok ? 'ok' : 'err');
+      if (ok) paint(); else b.disabled = false;
     }));
-    $$('#aBody [data-evno]').forEach(b => b.addEventListener('click', () => {
+    $$('#aBody [data-evno]').forEach(b => b.addEventListener('click', async () => {
       const box = $('#why-' + b.dataset.evno);
-      S.rejectEvent(b.dataset.evno, box ? box.value : '');
-      toast(t('eventRejected'), 'ok'); paint();
+      b.disabled = true;
+      const ok = await S.rejectEvent(b.dataset.evno, box ? box.value : '');
+      toast(ok ? t('eventRejected') : t('eventSaveFailed'), ok ? 'ok' : 'err');
+      if (ok) paint(); else b.disabled = false;
     }));
     $$('#aBody [data-evdel]').forEach(b => b.addEventListener('click', () => {
       /* The sibling action — deleting a business — has opened a confirmation
@@ -187,13 +196,19 @@ function panelView(root) {
         title: t('adminDelEvent'),
         sub: t('adminDelEventAsk').replace('{title}', ev ? L(ev.title) : id),
         confirmText: t('delete'), danger: true,
-        onConfirm: () => { S.deleteEvent(id); toast(t('eventDeleted'), 'ok'); paint(); },
+        onConfirm: async () => {
+          const ok = await S.deleteEvent(id);
+          toast(ok ? t('eventDeleted') : t('eventSaveFailed'), ok ? 'ok' : 'err');
+          if (ok) paint();
+        },
       });
     }));
-    $$('#aBody [data-evfeat]').forEach(b => b.addEventListener('click', () => {
+    $$('#aBody [data-evfeat]').forEach(b => b.addEventListener('click', async () => {
       const ev = S.eventById(b.dataset.evfeat);
-      S.featureEvent(b.dataset.evfeat, !(ev && ev.featured));
-      toast(t('eventSaved'), 'ok'); paint();
+      b.disabled = true;
+      const ok = await S.featureEvent(b.dataset.evfeat, !(ev && ev.featured));
+      toast(ok ? t('eventSaved') : t('eventSaveFailed'), ok ? 'ok' : 'err');
+      if (ok) paint(); else b.disabled = false;
     }));
     // --- profile photos + verification badges ---
     $$('#aBody [data-avok]').forEach(b => b.addEventListener('click', () => {

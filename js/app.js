@@ -5,7 +5,7 @@
 import { setLang, bothPacks } from './i18n.js';
 import { state, registerStrings, runReminders, runSubscriptionCycle,
          liveGreeting, markGreetingSeen, noteVisit, requestPersistence,
-         loadLiveBusinesses, loadLiveClassifieds, onLiveRows } from './store.js';
+         loadLiveBusinesses, loadLiveClassifieds, loadLiveEvents, onLiveRows } from './store.js';
 import { $, renderHeader, renderNav, hideNav, closeSheet, hideDrawer, drawerOwnsEntry, closeDropdown,
          mountScrollMemory, restoreScroll, historyKey, markShown, startClock, mountAdShare,
          applyTheme, applyFontScale, mountThemeWatch, openGreeting, sheetOpen,
@@ -319,6 +319,14 @@ async function boot() {
   });
   /* the marketplace's rows, the same shape and the same rule (630) */
   loadLiveClassifieds().then(rows => {
+    if (!rows || !rows.length) return;
+    if (location.hash !== route) return;
+    render();
+  });
+  /* and the events' (649) — the visitor who never signs in reads them here,
+     exactly as they read the directory: `refreshLiveRows` covers the
+     session changing, and this covers the launch that has no session. */
+  loadLiveEvents().then(rows => {
     if (!rows || !rows.length) return;
     if (location.hash !== route) return;
     render();
