@@ -11653,6 +11653,40 @@ is known to carry `||` and was run as a `concat` copy — a check written over
 the whole folder demands rewriting a file that has already been executed, so
 it is scoped to this batch's own migration.
 
+### And the group closes — the net, run on segments over one frozen tree
+```
+164 runs · 82 suites · 7,798 assertions · zero red · zero crash
+```
+Twenty segments over `857b4f6`, `HEAD` re-checked at the head of each,
+**82 present and 82 run, each exactly twice, and no result borrowed.** The
+arithmetic closes itself: 7,696 + 100 (`v84` × 2) + 2 (`v83 · 4.6` × 2) =
+**7,798**, and — measured run for run against the `648` net — **not one
+older suite moved by a single assertion.**
+
+**Two suites carry a reversal, each named and neither softened:**
+
+- **`v83 · 4`** is the two-way agreement doing its work rather than being
+  struck: the event record moved to the server, so the `ev` line's subject
+  is now the repeat draft `spawnRepeat` keeps local by decision, and
+  **`4.6` holds the count at exactly one** — `4.2` and `4.3` are both green
+  on any number of mints above zero, so without it a later batch could
+  quietly write a local event id back into `addEvent`.
+- **`v29 · 3.6` and `3.10`** await calls that reach the server now. ⚠️ **And
+  `3.6` was not weakened by it — it is guarded twice**: the store still
+  refuses to ASK for `live` or `featured` on anybody's behalf, and
+  `0002`'s «organiser: propose» refuses it again at the database
+  (`test_v84 · 4`, which bypasses the screen on purpose to measure the
+  policy and not the guard).
+
+⚠️ **And one measurement about the harness, worth a line because it cost an
+hour.** The container is suspended whenever the session goes idle, **and a
+background job freezes with it** — polled across several turns, the clock
+did not advance by one minute and a suite that takes ninety seconds made no
+progress at all. The segments were run in the FOREGROUND, and each finished
+inside its own window. **That is the same fault `615` measured from the
+other side, and the answer is the same: what counts is the awake time, and
+a job left running in the background does not have any.**
+
 
 
 ## Known open items
