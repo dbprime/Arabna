@@ -130,13 +130,25 @@ const user = p => p.evaluate(() => ({
 /* ---- 4. undoing it cancels it, and emptying is a removal ---- */
 {
   const { ctx, p } = await fresh();
-  const r = await p.evaluate(([mail, o, n]) => {
+  /* ⚠️ EACH CALL IS AWAITED, and `648` is what made that necessary rather
+     than optional. `updateProfile` has been `async` since `620`, and these
+     three calls never awaited it — they passed because the function
+     happened to reach `save()` with no await ACTUALLY taken on this
+     fixture: the address never moves, so the re-authentication is skipped,
+     and the one write to `profiles` was guarded on `u.id`, which was
+     `undefined` on every account (that is the fault `648` measured and
+     fixed). With the id present the write is real, the function suspends,
+     and the state was read before any of the three had parked anything.
+     ⚠️ The behaviour is unchanged and block 3 above — which does await —
+     proves it. What is corrected is a fixture that was relying on an async
+     function running synchronously by accident. */
+  const r = await p.evaluate(async ([mail, o, n]) => {
     const S = window.__S;
-    S.updateProfile({ name: 'أحمد سالم', email: mail, phone: n });
+    await S.updateProfile({ name: 'أحمد سالم', email: mail, phone: n });
     const parked = S.pendingPhone();
-    S.updateProfile({ name: 'أحمد سالم', email: mail, phone: o });
+    await S.updateProfile({ name: 'أحمد سالم', email: mail, phone: o });
     const undone = S.pendingPhone();
-    S.updateProfile({ name: 'أحمد سالم', email: mail, phone: '' });
+    await S.updateProfile({ name: 'أحمد سالم', email: mail, phone: '' });
     return { parked, undone, phone: S.state.user.phone,
              verified: S.state.user.phoneVerified, pending: S.pendingPhone() };
   }, [MAIL, OLD, NEW]);
