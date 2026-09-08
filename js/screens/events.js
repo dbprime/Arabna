@@ -3,7 +3,8 @@ import { t, L, icon, $, $$, go, back, renderHeader, toast, wireRoutes, replaceHa
          emptyState, query, sectionNote, pickerBtn, setPickerValue, openDropdown, ltr,
          sectionSlider, sponsoredRows, historyKey, esc } from '../ui.js';
 import { getLang } from '../i18n.js';
-import { EVENT_TYPES, nextOccurrence, AD_SLOTS, eventIsAllDay, eventStamp } from '../data.js';
+import { EVENT_TYPES, nextOccurrence, AD_SLOTS, eventIsAllDay, eventStamp,
+         eventTypeIcon } from '../data.js';
 import { startSlider } from './home.js';
 import * as S from '../store.js';
 import { mountPhotoPicker } from './marketplace.js';
@@ -419,20 +420,37 @@ export function EventFormScreen(root, params) {
       desc: { ar: $('#evDesc').value.trim(), en: $('#evDesc').value.trim() },
       photo: pic.photos[0] || '',
       featured: isAdmin ? $('#evFeat').checked : false,
-      icon: e.icon || 'calendar',
+      /* ⚠️ DERIVED FROM THE TYPE, not frozen onto the record (649): a live
+         row read back on a second device has no icon column to read, so a
+         frozen one meant the same event wore two different marks on two
+         phones. `EVENT_TYPES` already carries the answer. */
+      icon: eventTypeIcon(kind),
+    };
+
+    /* ⚠️ AWAITED, because both writes reach the server first now and the
+       screen must not say «saved» over a row that did not move — the very
+       promise this batch exists to keep. */
+    const btn = $('#evSave');
+    if (btn) btn.disabled = true;
+    const done = (ok, msg) => {
+      if (btn) btn.disabled = false;
+      if (!ok) { toast(t('eventSaveFailed'), 'err'); return false; }
+      toast(msg, 'ok');
+      return true;
     };
 
     if (editing) {
-      S.updateEvent(editing.id, payload, isAdmin);
-      toast(t('eventSaved'), 'ok');
-      go(isAdmin ? '#/admin' : '#/events/' + editing.id);
+      S.updateEvent(editing.id, payload, isAdmin).then(rec => {
+        if (!done(!!rec, t('eventSaved'))) return;
+        go(isAdmin ? '#/admin' : '#/events/' + editing.id);
+      });
       return;
     }
 
-    const rec = S.addEvent(payload, isAdmin ? 'live' : 'pending');
-    if (!rec) { toast(t('storageFull'), 'err'); return; }
-    toast(isAdmin ? t('eventSaved') : t('eventProposed'), 'ok');
-    go(isAdmin ? '#/admin' : '#/events');
+    S.addEvent(payload, isAdmin ? 'live' : 'pending').then(rec => {
+      if (!done(!!rec, isAdmin ? t('eventSaved') : t('eventProposed'))) return;
+      go(isAdmin ? '#/admin' : '#/events');
+    });
   });
 }
 

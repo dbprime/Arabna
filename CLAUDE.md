@@ -11,7 +11,7 @@ ARABNA · عربنا — a mobile-first web app for the Arab community in the U.
 **business directory + marketplace + events + magazine**, Arabic-first with a full English toggle.
 ("Classifieds / الإعلانات الشخصية" is now "Marketplace / السوق" — the old `#/classifieds`
 routes still resolve so shared links keep working.)
-Current version: **V.10.8 (prototype)**. Owner: dbprime. Deploys to Vercel (team DB Prime).
+Current version: **V.10.9 (prototype)**. Owner: dbprime. Deploys to Vercel (team DB Prime).
 
 ## Hard rules (from the product brief)
 0. ⚠️ **THE OWNER'S NAME IS NEVER WRITTEN — anywhere.** Not in this file, not
@@ -11446,6 +11446,212 @@ and everything the account id newly makes true was measured (`v76` 75 ·
 profile row by an `undefined` id before and reads a real row now, so it
 measures something it could not measure at all.
 
+
+## V.10.9 — the events reach the server, so adding one needs no batch (649)
+
+⚠️ **This file closes its own group, and its group is itself** — it touches
+`js/store.js` and the boot path, two of the three the 5 September decision
+names as a reason a batch is treated as its group's closer.
+
+### The owner's reason, and the measurement that agrees with it word for word
+> «لازم تفهم إنّ الفعاليّات والمناسبات كلّ يوم حيصير عليها تعديل. مش منطقيّ
+> كلّ ما يعدّل هيك ياخد اليوم كلّه.»
+
+`642` put **four events** into the app and cost **664 added lines · a new
+suite · a version raise · a full net of 160 runs · a pull request and the
+owner's own hand.** ⚠️ **That is the price of CODE, paid for CONTENT.** An
+event is not a feature — it is a row in a table — and a festival is
+postponed, a hall changes and an hour is announced late, and every one of
+those was a whole batch.
+
+### And the fault was a missing wire, not a missing idea
+Measured on `main`, four separate readings:
+
+```
+the form        js/screens/events.js:274   complete — title · type · two dates ·
+                                           venue · city · organiser · ticket url ·
+                                           description · photo · «featured», and
+                                           the five concert fields
+the panel       js/screens/admin.js:173    approve · reject · delete · pin, all built
+the table       0001_schema.sql:246        public.events — fourteen columns
+the policies    0002_rls.sql:168           «all read» · «admin writes» ·
+                                           «an organiser proposes, and it lands pending»
+
+grep -rn "from('events')" js/          →   NOTHING
+```
+
+⚠️ **Four things ready from the first day, and nobody wrote the table and
+nobody read it.** So an event the admin added from his phone was seen by
+nobody — not by himself from his laptop — an organiser's proposal landed in
+`extraEvents` **on their own device** while the screen said «وصلنا
+اقتراحك», and the **$99 featured pin reached no reader at all**. That last
+one is revenue, not an interface.
+
+⚠️ **AND IT IS THE THIRD TIME THIS EXACT SHAPE HAS BEEN FOUND** — `hidden`
+(`645` §10) and `city` (`645` §8) were both a column, a policy and a map
+standing ready with the wire missing. So it stops being an incident and
+becomes a rule, with a check that counts:
+
+> **A live table is measured by a writer and a reader, never by its
+> existence.** A table with its columns, its policies and its screen all
+> built and **zero `from()` in the code is a DEAD table** — and one that
+> looks alive is more dangerous than one that looks unfinished, because
+> everybody who reads the schema believes it works.
+>
+> **And the guard COUNTS, it does not read:** every table in `0001` has at
+> least one writer, **or a named line in `docs/الحالة.md` §1.د saying when
+> it will be wired.** «لا دفعةَ مجدولة» is an answer; **silence is not a
+> third option.**
+
+`test_v84 · 7` reads the tables out of the schema, sweeps `js/` for a
+writer of each, and matches both against that block. Measured today:
+**17 tables · 3 with a writer** (`profiles` · `classifieds` · `events`) ·
+**12 naming a batch · 2 saying «no batch scheduled»** — `offers` and
+`biz_verify`, which `665` §8 puts out of scope by the owner's decision, and
+whose price is written beside them: **the verification badge is paid for and
+its request does not reach the admin.**
+
+### Eleven boxes a human fills, and no column for any of them
+`645` §8.4's rule, broken eleven times in one form: `type` · `city` ·
+`organizer` · `ticketUrl` · `photo` · `featured` · the five `concert`
+fields · `repeat` · `source`/`externalId`/`sourceUrl` — and `venue`, which
+had **one column for two languages** (`place`).
+
+- **`0010_events_columns.sql` adds fifteen columns**, and **no policy is
+  touched**: «admin: write» and «organiser: propose» govern the whole row,
+  and a new column inside a governed row needs nothing — `0008`'s own words.
+- ⚠️ **`jsonb` is accepted HERE AND NOWHERE ELSE**, for `concert` and
+  `repeat`: five fields that belong to one type out of eleven, and five
+  empty columns on every row that is not a concert are worse. **The
+  exception is not widened.**
+- **`place` is not written and is not dropped.** It has no row today, and
+  dropping a column is not this batch's; it is recorded in the state file as
+  having lost its reader, rather than quietly kept half in step.
+- ⚠️ **And `end_time_tba` is DECIDED rather than passed over a third time.**
+  It has had no reader and no writer since `0001`. Its meaning is real —
+  «the closing hour is not announced yet», which is not `all_day` (no clock
+  at all) — and **nothing in the form asks it and nothing on any screen says
+  it**, so wiring it is a feature and not a wire. Recorded with what it
+  would need.
+
+### The day is the day — and this is where the batch could have undone `642`
+`642` made the difference between «17 October» and «17 October at 11:00»
+**the presence of the hour in the string itself**, and built two things on
+it: an event whose organiser announced no hour prints none, and a two-day
+festival ends on its LAST day.
+
+⚠️ **A `timestamptz` column erases that difference, and then adds a worse
+one.** `2026-10-17` becomes `2026-10-17T00:00:00Z` and comes back carrying
+an hour, so «12:00 ص» — an hour nobody said — is printed, **the very fault
+repaired the day before, returning through the server's door.** And UTC
+midnight on the 17th is **the evening of the 16th in Houston**, so a
+festival on the 17th is shown on the 16th and hidden while it is still
+running. **Half a day wrong on a festival's date is not a display fault: it
+is a reader standing at the door on the wrong day.**
+
+- **`all_day boolean` carries the meaning, and the date goes in at NOON.**
+  Noon does not cross a day boundary in any zone; midnight crosses one in
+  every zone east or west of the writer.
+- ⚠️ **And the zone is the DIRECTORY'S, never the reader's** —
+  `DIRECTORY_TZ` in `js/data.js`, one constant in one place, with
+  `eventToInstant` / `eventFromInstant` beside it. An event in Houston
+  happens at Houston's clock even when it is read from Amman, the same rule
+  that keeps a city name English.
+- ⚠️ **The timed case needed it just as badly, and the spec did not name
+  it**: `2027-05-20T16:00` sent with no zone is read by the server as 16:00
+  **UTC** — eleven in the morning there. Measured: the round trip returns
+  `2027-05-20T16:00` exactly, and with the noon rule reverted it returns
+  `11:00`.
+- ⚠️ **A mixed pair is not representable and that is written down**: one
+  flag for the row, so an all-day start with a timed end cannot be
+  expressed. The form's `datetime-local` cannot produce one and no seed has
+  one; asserted as a known limit rather than discovered later.
+- **The offset is asked for twice** in `dirWallToMs`, because on the two days
+  a year the clock moves, a guess taken at the wrong side of the change is
+  an hour out.
+
+### The order the reader declares, and why `created_at` would be a silent lie
+`648` gave every live reader an order and paging, with `created_at desc` as
+the fallback. ⚠️ **Here that fallback is wrong twice**, and neither shows as
+an error:
+
+1. **An event next week entered a month ago falls onto a second page** and is
+   shown under one in December entered yesterday — the reader misses what is
+   nearest.
+2. **A featured event with a distant date falls onto a later page and never
+   floats.** That is the $99 pin: **a customer who paid and does not
+   appear.**
+
+So the events reader declares `featured desc, starts_at asc`, and the
+factory appends `id` — which is what stops two events on the same day
+trading places between one page and the next.
+
+⚠️ **And the panel's own order is untouched**: remote rows are appended
+newest-first, because the panel shows what ARRIVED while the public list
+shows what is SOONEST, and `upcomingEvents()` is what sorts that one. The
+owner asked this exact question on 7 September; the answer was measured
+before anything was changed, and both screens still behave as they did.
+
+### The server first, and the seed is a coat
+Every write goes to the server before anything local moves — `620`'s order
+for the password, `630`'s for the moderation queue — and **a refusal changes
+nothing and is said.**
+
+- ⚠️ **`.select()` and then the COUNT.** PostgREST answers a row the policy
+  hides with **200 and an empty list, never an error**, so a caller reading
+  «no error» as «done» tells its owner the change was saved over a row that
+  did not move. `test_v84 · 3.3b` is the guard, and it is the one item a
+  behavioural sweep would have missed: **the first tooth aimed at it did not
+  bite until that assertion existed.**
+- ⚠️ **A SEED gets a coat row, on the EDIT and on the DELETE alike** — and
+  the delete half is a gap that would have survived the batch. A seed has no
+  row of its own, so deleting one pushed its id onto a list **on the admin's
+  own device** and the event stayed on the screen of the world: the very
+  fault the batch exists to close, left standing in the one path nobody was
+  looking at.
+- ⚠️ **A record that never reached the server is answered `true` and nothing
+  is sent** — a `spawnRepeat` draft (kept local by decision, §6) and anything
+  a device carries from before this batch. Nobody else has ever seen one, so
+  the device IS the whole record.
+- **`state.extraEvents`, `eventEdits` and `hiddenEvents` are not deleted**:
+  the successful write clears its own, the failed one leaves it, and there is
+  no blind sweep.
+
+### And the two things this batch does not do
+- **The photo is not uploaded.** The column is added and stays empty: a row
+  carrying a `data:` image makes every read of the table carry it. The picker
+  keeps working and the photo stays on the device that chose it. ⚠️ **And
+  `660` does not name events anywhere today** — it names `avatars`,
+  `biz-photos` and `listings` — so a line in the state file names it by
+  number, because *a reference to a batch that does not know it is the
+  referent is not a reference, it is a drop.*
+- **The repeat draft stays local** (§6): generating next year's copy on the
+  server needs a scheduled job, which is a structure and not a line. So one
+  `mintId('ev')` survives, and `test_v83 · 4.6` holds it at exactly one — the
+  two-way agreement working rather than being struck.
+
+### `test_v84` — 50 assertions, and seven teeth
+```
+addEvent local again              → 16 red, and 2.3 prints the fault in one line:
+                                    a device-minted `evmtsi75hp-…` where the row's id belongs
+all_day dropped from the row      → 6.1 · 6.3 «2027-10-17T12:00» — an hour nobody said
+midnight instead of noon          → 6.2 · 6.3 «2027-10-16» — the day BEFORE the festival
+                                    · 6.6 «11:00» for an event announced at 16:00
+the reader's order removed        → 1.3 · 8.3 «created_at.desc,id.asc»
+a table with no line in the docs  → 7.2 · 7.3 · 7.4, naming `events`
+a refused write read as a success → 3.3b
+a seed deleted on the device only → 1.8 · 3b.4 · 3b.5, printing `true`:
+                                    the second device still sees it
+```
+
+⚠️ **And two faults of my own are recorded rather than smoothed.** An
+unguarded subscript in `2.3` turned the first tooth into a CRASH — nine
+assertions measured and forty lost, which is exactly how a batch reports
+green while it is not; every subscript in the suite is guarded now. And the
+`||`/`*` check first read **every** migration and went red on `0005`, which
+is known to carry `||` and was run as a `concat` copy — a check written over
+the whole folder demands rewriting a file that has already been executed, so
+it is scoped to this batch's own migration.
 
 
 

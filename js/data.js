@@ -111,7 +111,7 @@ export const CLASSIFIED_CATS = MARKET_CATS;
    hand-typed «0.1» while the project had reached V.03.6 — two literals,
    both stale, and a reader reporting a fault could not tell us which build
    they were on. Raise it here when CLAUDE.md's version line moves. */
-export const APP_VERSION = '0.10.8';
+export const APP_VERSION = '0.10.9';
 
 /* ⚠️ توثيق الجوال مؤجَّلٌ إلى ما بعد الإطلاق على App Store — قرار مالك
    البرنامج، وسببه الكلفة: مزوّد الرسائل حسابٌ مدفوعٌ بكلفةٍ لكلّ رسالة،
@@ -6658,6 +6658,97 @@ export function eventStamp(iso, endOfDay = false) {
   const [y, m, d] = s.split('-').map(Number);
   return endOfDay ? new Date(y, m - 1, d, 23, 59, 59, 999).getTime()
                   : new Date(y, m - 1, d).getTime();
+}
+
+/* ---------- the wall clock the directory keeps, and the instant it names (649)
+   ------------------------------------------------------------------
+   The column on the server is `timestamptz`, which holds an INSTANT. What
+   an organiser writes is a WALL TIME — «17 October», «20 February at
+   16:00» — and the two are not the same thing until a zone is named.
+
+   ⚠️ Naming none is what breaks it, twice over. A bare `2026-10-17` sent
+   to the column becomes UTC midnight, which in Houston is the EVENING OF
+   16 OCTOBER: the festival of the 17th is shown on the 16th and hidden
+   while it is still running. And `2026-02-20T16:00`, sent with no zone,
+   is read by the server as 16:00 UTC — 10:00 in the morning there. So the
+   round trip has to go through a zone in both directions, and the zone is
+   the directory's own.
+
+   ⚠️ AND IT IS THE DIRECTORY'S ZONE, NEVER THE READER'S. An event in
+   Houston happens at Houston's clock even when it is read from Amman —
+   the same rule that keeps a city name English and the address as it is
+   written on the door. One constant, in one place.
+
+   ⚠️ And an all-day date is stored at NOON and never at midnight: noon
+   does not cross a day boundary in any zone, and midnight crosses one in
+   every zone east or west of the writer. `all_day` is the column that
+   remembers there was no clock to begin with, so the date comes back the
+   bare `YYYY-MM-DD` shape `eventIsAllDay` is built on and the screen goes
+   on printing no hour. */
+export const DIRECTORY_TZ = 'America/Chicago';
+
+const DIR_FMT = new Intl.DateTimeFormat('en-US', {
+  timeZone: DIRECTORY_TZ, hour12: false,
+  year: 'numeric', month: '2-digit', day: '2-digit',
+  hour: '2-digit', minute: '2-digit', second: '2-digit',
+});
+/** what the directory's own clock reads at this instant */
+function dirParts(ms) {
+  const p = {};
+  for (const x of DIR_FMT.formatToParts(new Date(ms))) if (x.type !== 'literal') p[x.type] = x.value;
+  /* ⚠️ `hour: '2-digit'` with `hour12: false` yields «24» for midnight in
+     some engines — a documented quirk, and `% 24` is the whole fix. */
+  return { y: +p.year, m: +p.month, d: +p.day, h: (+p.hour) % 24, mi: +p.minute, s: +p.second };
+}
+function dirOffsetMs(ms) {
+  const p = dirParts(ms);
+  return Date.UTC(p.y, p.m - 1, p.d, p.h, p.mi, p.s) - ms;
+}
+/** the instant at which the directory's clock reads this wall time.
+    ⚠️ The offset is asked for TWICE on purpose: the first answer is taken
+    at a guessed instant, and on the two days a year the clock moves that
+    guess can sit on the other side of the change. The second reading is
+    taken at the corrected instant and settles it. */
+function dirWallToMs(y, m, d, h, mi) {
+  const guess = Date.UTC(y, m - 1, d, h, mi, 0);
+  const once = guess - dirOffsetMs(guess);
+  return guess - dirOffsetMs(once);
+}
+const two = (n) => String(n).padStart(2, '0');
+
+/**
+ * An event's own wall-clock string → the instant it names, as ISO.
+ * A bare date is noon; anything else is the hour it carries.
+ * @returns {string|null} null for an empty or unreadable value
+ */
+export function eventToInstant(iso) {
+  const s = String(iso || '').trim();
+  if (!s) return null;
+  const m = /^(\d{4})-(\d{2})-(\d{2})(?:[T ](\d{2}):(\d{2}))?/.exec(s);
+  if (!m) return null;
+  const allDay = eventIsAllDay(s);
+  const ms = dirWallToMs(+m[1], +m[2], +m[3], allDay ? 12 : +m[4], allDay ? 0 : +m[5]);
+  return isNaN(ms) ? null : new Date(ms).toISOString();
+}
+
+/** …and back: the instant → the wall-clock string the organiser wrote. */
+export function eventFromInstant(ts, allDay) {
+  if (!ts) return '';
+  const ms = Date.parse(ts);
+  if (isNaN(ms)) return '';
+  const p = dirParts(ms);
+  const day = `${p.y}-${two(p.m)}-${two(p.d)}`;
+  return allDay ? day : `${day}T${two(p.h)}:${two(p.mi)}`;
+}
+
+/** The event's icon is DERIVED from its type and is not a column (649).
+    ⚠️ It is one function and not two: the form used to freeze `calendar`
+    onto every new event while a live row read back on a second device had
+    no icon at all to freeze — so the same event wore two different marks
+    on two phones. `EVENT_TYPES` already carries the answer. */
+export function eventTypeIcon(type) {
+  const row = EVENT_TYPES.find(x => x.id === type);
+  return (row && row.icon) || 'calendar';
 }
 
 export const HIJRI_YEAR_DAYS = 354.367;

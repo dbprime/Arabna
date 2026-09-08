@@ -194,10 +194,15 @@ ok('3.4 …and rewriting it from the console is refused',
 await go('#/events/propose?admin=1');
 ok('3.5 ?admin=1 does not hand out the staff form',
    !(await page.locator('#evFeat').count()));
+/* ⚠️ AWAITED SINCE `649`: the event reaches the server before anything
+   local moves, so the call is a promise. What is guarded is unchanged and
+   is now guarded twice — the store still refuses to ASK for `live` or
+   `featured` on anybody's behalf, and `0002`'s «organiser: propose» refuses
+   it again at the database (`test_v84 · 4`). */
 ok('3.6 …and the store refuses a live event from anyone but the panel',
-   await S(() => {const S = window.__m.S;
-     const r = S.addEvent({ title: { ar: 'ت', en: 't' }, startsAt: '2027-01-01T10:00', featured: true }, 'live');
-     const okk = r.status === 'pending' && !r.featured;
+   await S(async () => {const S = window.__m.S;
+     const r = await S.addEvent({ title: { ar: 'ت', en: 't' }, startsAt: '2027-01-01T10:00', featured: true }, 'live');
+     const okk = !!r && r.status === 'pending' && !r.featured;
      S.state.extraEvents = S.state.extraEvents.filter(e => e.id !== r.id); S.save();
      return okk;
    }));
@@ -218,13 +223,13 @@ ok('3.8 my own listing still boosts', (await page.locator('#payBtn').count()) ==
 await go('#/post?edit=cMine');
 ok('3.9 my own listing still edits',
    (await page.evaluate(() => { const i = document.querySelector('#pTitle'); return i ? i.value : ''; })) === 'سيارتي');
-ok('3.10 the panel keeps every power it had', await S(() => {const S = window.__m.S;
+ok('3.10 the panel keeps every power it had', await S(async () => {const S = window.__m.S;
   S.state.user.isAdmin = true;                 // 630: the account is the lock
-  const r = S.addEvent({ title: { ar: 'ت', en: 't' }, startsAt: '2027-01-01T10:00' }, 'pending');
-  S.approveEvent(r.id);
-  S.featureEvent(r.id, true);
+  const r = await S.addEvent({ title: { ar: 'ت', en: 't' }, startsAt: '2027-01-01T10:00' }, 'pending');
+  await S.approveEvent(r.id);
+  await S.featureEvent(r.id, true);
   const e = S.eventById(r.id);
-  const okk = e.status === 'live' && e.featured === true;
+  const okk = !!e && e.status === 'live' && e.featured === true;
   S.state.extraEvents = S.state.extraEvents.filter(x => x.id !== r.id);
   S.state.user.isAdmin = false; S.save();
   return okk;
