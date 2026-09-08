@@ -2303,8 +2303,8 @@ export function everyBusiness() {
      working exactly as it did.
      ⚠️ And the signature stays SYNCHRONOUS. Twenty-three call sites across
      eight files read it, and not one of them gains an `await`: the rows are
-     fetched once at boot into `_liveBiz` and merged here. */
-  const liveById = new Map((_liveBiz || []).map(r => [r.seed_id, r]));
+     fetched once at boot by `bizReader` and merged here. */
+  const liveById = new Map((bizReader.get() || []).map(r => [r.seed_id, r]));
   return withoutDemo(state.extraBusinesses.concat(BUSINESSES))
     .filter(b => !dropped.includes(b.id))
     .map(b => {
@@ -2321,32 +2321,123 @@ export function everyBusiness() {
  * the difference matters: neither erases `data.js`, but only the second
  * means «we asked».
  */
-let _liveBiz = null;
-let _liveBizAt = 0;
+/* ============================================================
+   makeLiveReader — every read of a live table, in one place (648)
+   ------------------------------------------------------------
+   Measured before this batch: both readers were `sb.from(t).select('*')`
+   with NO order, NO range and NO limit, and `.order(` / `.range(` /
+   `.limit(` appeared ZERO times in the whole of `js/`.
+
+   ⚠️ AND THE FAULT THAT MAKES IS SILENT. PostgREST caps the number of rows
+   it returns; past the cap the answer comes back SHORT with no error and
+   no marker, and the rows that did arrive are in no defined order — so the
+   part that was cut is arbitrary. Said in one sentence: the day the
+   directory holds a thousand businesses you stop seeing some of them, and
+   nothing tells you. No message, no line in a log, no suite going red.
+   A silent fault in a READ is worse than a loud one in a write.
+
+   ⚠️ And today both tables are nearly empty, so the fault is asleep — the
+   batch that fills them is the one that wakes it, which is why this is
+   built before it and not after.
+
+   ⚠️ THE FACTORY IS BUILT HERE AND NOT IN THE BATCH THAT NEEDS IT NEXT.
+   Three separate files each named a different owner for it, and the
+   result of three owners is that nobody builds it in time. The ordering,
+   the paging and the ceiling live here and in no caller.
+   ============================================================ */
+
+/** rows per request, beside the project's other limits and never written
+    inside the function that uses it */
+export const LIVE_PAGE = 500;
+/** ⚠️ a loop with no ceiling spins for ever on a broken answer. The number
+    is chosen so it is reached only in a fault, and reaching it is SAID
+    rather than swallowed. */
+export const LIVE_MAX_PAGES = 40;
+
+/* every table a live reader reads, in registration order. ⚠️ EXPORTED, and
+   that is the item rather than a convenience: `test_v36` counted outside
+   requests and excluded the boot reads by a hand-written list of table
+   names — so the next three batches, each adding a reader, would each turn
+   a calendar suite red without naming it. `615` replaced a hand-written
+   COUNT with a path and left the path itself hand-written; the list is
+   derived from the factory now, because the factory is what does the
+   reading. A batch that adds a reader adds its name once, here. */
+const _liveTables = [];
+export function liveReaderTables() { return _liveTables.slice(); }
+
+/**
+ * One live reader for one table.
+ * @param {string} table
+ * @param {{order?: Array<[string, {ascending: boolean}]>}} opts
+ */
+function makeLiveReader(table, { order } = {}) {
+  /* ⚠️ `created_at desc` is the fallback and NOT the rule: the server's
+     order has to match the screen's or the page lies. The events reader
+     orders `featured desc, starts_at asc` — ordered by `created_at` a
+     pinned event with a distant date falls onto a later page and never
+     floats, and the $99 pin a customer paid for does not appear. Every
+     reader declares its own key; one that declares none gets this. */
+  const keys = order && order.length ? order : [['created_at', { ascending: false }]];
+  _liveTables.push(table);
+  let rows = null, at = 0;
+
+  /** ⚠️ IT NEVER THROWS AND NEVER EMPTIES WHAT IT HOLDS: a network failure
+      leaves the last good answer standing, or `null` if none ever came. */
+  async function load() {
+    try {
+      const out = [];
+      let pages = 0;
+      for (;;) {
+        if (pages >= LIVE_MAX_PAGES) {
+          console.warn('[arabna] live read of ' + table + ' hit the page ceiling');
+          break;
+        }
+        /* ⚠️ NO `.eq('status', …)` HERE, AND NONE IN ANY READER FROM THE
+           SERVER. The policy in `0002_rls.sql` already decides who sees
+           what: a stranger gets the live rows, an owner their own, staff
+           everything. A filter written here on top of it filtered in the
+           CLIENT what the database was ready to give — so the admin's
+           queue of held listings was blind for exactly the accounts RLS
+           had opened it to. Ordering is not filtering. */
+        let q = sb.from(table).select('*');
+        for (const [col, opt] of keys) q = q.order(col, opt);
+        /* ⚠️ `id` last, always. Two rows sharing the leading key with no
+           unique tiebreak swap places between one page and the next: one
+           of them appears twice and the other disappears. A known family
+           of paging faults, closed by one line. */
+        q = q.order('id');
+        const from = pages * LIVE_PAGE;
+        const { data, error } = await q.range(from, from + LIVE_PAGE - 1);
+        if (error) throw error;
+        const got = data || [];
+        out.push.apply(out, got);
+        pages++;
+        /* the whole table, not its first page: the screen orders a
+           complete set and not a page of one */
+        if (got.length < LIVE_PAGE) break;
+      }
+      rows = out;
+      at = Date.now();
+    } catch (e) { /* the last good answer stands */ }
+    return rows;
+  }
+
+  return {
+    load,
+    get: () => rows,
+    set: v => { rows = v; },
+    loadedAt: () => at,
+    forget: () => { rows = null; at = 0; },
+  };
+}
+
+const bizReader = makeLiveReader('businesses');
 
 /** when the live rows last arrived, or 0 — read by the suite, not by a screen */
-export function liveBizLoadedAt() { return _liveBizAt; }
+export function liveBizLoadedAt() { return bizReader.loadedAt(); }
 
-/** Fetch the live rows once. ⚠️ IT NEVER THROWS AND NEVER EMPTIES WHAT IT
-    HOLDS: a network failure leaves the last good answer standing, or `null`
-    if none ever came, and `everyBusiness()` reads both safely. */
-export async function loadLiveBusinesses() {
-  try {
-    /* ⚠️ NO `.eq('status', 'live')` HERE, AND NONE IN ANY READER FROM THE
-       SERVER. The policy in `0002_rls.sql` already decides who sees what:
-       a stranger gets the live rows, an owner their own, staff everything.
-       A filter written here on top of it filtered in the CLIENT what the
-       database was ready to give — so the admin's queue of held listings
-       was blind for exactly the accounts RLS had opened it to. What a
-       stranger receives does not change by one row; what changes is that
-       we stopped hiding from ourselves what the database allowed us. */
-    const { data, error } = await sb.from('businesses').select('*');
-    if (error) throw error;
-    _liveBiz = data || [];
-    _liveBizAt = Date.now();
-  } catch (e) { /* the last good answer stands */ }
-  return _liveBiz;
-}
+/** Fetch the live rows once. */
+export async function loadLiveBusinesses() { return bizReader.load(); }
 
 /** One map from a live row to the shape `data.js` uses, written once and
     read by everything that ever reads a live business row — two copies of a
@@ -2407,7 +2498,7 @@ export function businessById(id) { return allBusinesses().find(b => b.id === id)
  * never visible to anyone else.
  */
 /* ---------------- THE LIVE MARKETPLACE ----------------
- * The directory's pattern, copied to the letter (`_liveBiz` above):
+ * The directory's pattern, copied to the letter (`bizReader` above):
  * `null` = nothing has arrived yet, `[]` = the table answered and is empty;
  * the loader never throws and never empties what it holds; and the readers
  * stay synchronous — the rows are fetched once at boot and merged here.
@@ -2420,29 +2511,19 @@ export function businessById(id) { return allBusinesses().find(b => b.id === id)
  * unlike the directory these rows are not coats over seeds — they are new
  * listings, and `data.js`'s are demo seeds, not records of people.
  */
-let _liveCls = null;
-let _liveClsAt = 0;
+const clsReader = makeLiveReader('classifieds');
 
 /** when the live listings last arrived, or 0 — read by the suite */
-export function liveClsLoadedAt() { return _liveClsAt; }
+export function liveClsLoadedAt() { return clsReader.loadedAt(); }
 
-/** Fetch the live listings once. ⚠️ NO `.eq('status', …)`: RLS decides
-    who receives a pending row, and a filter here would blind the queue. */
-export async function loadLiveClassifieds() {
-  try {
-    const { data, error } = await sb.from('classifieds').select('*');
-    if (error) throw error;
-    _liveCls = data || [];
-    _liveClsAt = Date.now();
-  } catch (e) { /* the last good answer stands */ }
-  return _liveCls;
-}
+/** Fetch the live listings once. */
+export async function loadLiveClassifieds() { return clsReader.load(); }
 
 /* ---- the live readers run whenever the SESSION changes (635) ----
    Both readers ran in `boot` once and nobody called them again, so the
    page read the server AS A VISITOR before anyone signed in, RLS answered
    the visitor with what a visitor may see — no pending row — and the
-   session that arrived a moment later never asked again: `_liveCls` held
+   session that arrived a moment later never asked again: the reader held
    the visitor's answer for as long as the page stayed open. Measured on
    the live host: a staff account signed in, opened `#/admin`, and the
    queue was empty until `F5`. It is the hole `620` closed in `is_admin`
@@ -2466,8 +2547,8 @@ function refreshLiveRows() {
     good answer stays» in the loaders was written for a network failure,
     not to keep a previous account's pending rows on a phone it has left */
 function forgetLiveRows() {
-  _liveBiz = null; _liveBizAt = 0;
-  _liveCls = null; _liveClsAt = 0;
+  bizReader.forget();
+  clsReader.forget();
 }
 
 /** «قبل n يوم» in the four Arabic forms, without importing i18n */
@@ -2510,7 +2591,7 @@ export function mapLiveClsRowToJs(r) {
     approved here), a row it does not hold is appended as it came. */
 function mergedClassifieds() {
   const local = state.extraClassifieds || [];
-  const liveById = new Map((_liveCls || []).map(r => [r.id, mapLiveClsRowToJs(r)]));
+  const liveById = new Map((clsReader.get() || []).map(r => [r.id, mapLiveClsRowToJs(r)]));
   const out = local.map(c => {
     const l = liveById.get(c.id);
     if (!l) return c;
@@ -2518,6 +2599,31 @@ function mergedClassifieds() {
     return Object.assign({}, c, { status: l.status, hidden: l.hidden });
   });
   return out.concat(Array.from(liveById.values()));
+}
+
+/**
+ * Is this listing mine? THE ACCOUNT FIRST, and the device's list beside it.
+ *
+ * ⚠️ `state.myListings` is a list on ONE PHONE. So the server counted the
+ * account and the client counted the device: somebody who published four
+ * from their laptop opened the form on their phone, was told «go ahead»,
+ * and the server refused — a form that permits what the server forbids.
+ * The account is what owns a listing; the device list stays BESIDE it and
+ * is not deleted, because a seed listing has no row to carry an owner and
+ * neither has anything published before there was an account.
+ *
+ * ⚠️ It takes a RECORD from inside `allClassifieds()` and only looks one up
+ * when handed an id — `classifiedById` calls `allClassifieds`, so a lookup
+ * inside that chain is an infinite recursion. Same shape as `isHidden`.
+ */
+export function mineListing(c) {
+  const id = typeof c === 'string' ? c : (c && c.id);
+  if (!id) return false;
+  if ((state.myListings || []).includes(id)) return true;
+  const uid = state.user && state.user.id;
+  if (!uid) return false;
+  const rec = typeof c === 'string' ? classifiedById(c) : c;
+  return !!(rec && rec.ownerId && rec.ownerId === uid);
 }
 
 export function allClassifieds() {
@@ -2531,8 +2637,15 @@ export function allClassifieds() {
     /* Hidden is not deleted. The owner still sees it under «إعلاناتي» and
        can put it back while its 14 days last; everyone else stops seeing
        it the moment they press the button. */
-    .filter(c => !isHidden(c) || state.myListings.includes(c.id))
-    .filter(c => c.status !== 'pending' || state.myListings.includes(c.id))
+    .filter(c => !isHidden(c) || mineListing(c))
+    .filter(c => c.status !== 'pending' || mineListing(c))
+    /* ⚠️ «ينتهي بعد 14 يوماً» — and nothing ended it. `daysLeft` was
+       computed and printed in three places and never filtered on, so a
+       listing reached zero and stayed in the marketplace for ever. Its
+       OWNER still sees it under «إعلاناتي», or they would think it had
+       been deleted, and the renew button is what brings it back: the
+       filter is for the public list and not for its owner's. */
+    .filter(c => c.daysLeft !== 0 || mineListing(c))
     .map(c => Object.assign({ status: 'live', photos: [] }, c, {
       boosted: state.boosted.includes(c.id),
       status: isHidden(c) ? 'hidden' : (c.status || 'live'),
@@ -2541,7 +2654,7 @@ export function allClassifieds() {
 export function classifiedById(id) { return allClassifieds().find(c => c.id === id); }
 
 export function myActiveListings() {
-  return allClassifieds().filter(c => state.myListings.includes(c.id));
+  return allClassifieds().filter(c => mineListing(c));
 }
 /* Four active listings, fourteen days each. The numbers live here and
    nowhere else: a screen that carries its own copy is a second source of
@@ -3807,7 +3920,7 @@ export async function checkUserPassword(pw) {
     connection (420) — creating an account does not, and says so.
     Returns null on success, or a short reason the screen can print. */
 export async function signUp({ name, email, password, phone }) {
-  const { error } = await sb.auth.signUp({
+  const { data, error } = await sb.auth.signUp({
     email,
     password: password || '',
     options: { data: { display_name: name } },
@@ -3815,6 +3928,16 @@ export async function signUp({ name, email, password, phone }) {
   if (error) return error.message || 'signUpFailed';
   state.user = {
     name, email,
+    /* ⚠️ THE ACCOUNT'S OWN ID, FROM THE FIRST MOMENT IT EXISTS. It was
+       written by `hydrateUserFromSession` alone — which runs on sign-IN —
+       so a brand-new account carried NO id until its owner signed in again
+       on that device. Everything keyed on the account was therefore blind
+       for the whole of its first session: `updateProfile` never wrote the
+       display name to the server (that line reads `u.id`), and the listing
+       count fell back to the device's own list, which is the very thing
+       this batch replaced. It costs one field and it is measured, not
+       inferred: `state.user.id` was `undefined` after a real sign-up. */
+    id: (data && data.user && data.user.id) || null,
     // collected at sign-up and stored unverified; the code is asked for at
     // the first action that actually needs it
     emailVerified: false, phone: phone || null, phoneVerified: false,
@@ -3854,12 +3977,17 @@ export async function confirmEmail(code) {
   const type = state.user.pendingEmail ? 'email_change'
              : !state.user.emailVerified ? 'signup'
              : 'email';
-  const { error } = await sb.auth.verifyOtp({
+  const { data, error } = await sb.auth.verifyOtp({
     email: target,
     token: String(code || ''),
     type,
   });
   if (error) return error.message || 'wrongCode';
+  /* the id again, for the account whose sign-up did not carry a session:
+     ⚠️ and NOT `hydrateUserFromSession` here — `635` limited the live
+     readers to two entry sites on purpose, and a brand-new account owns no
+     rows on the server for them to fetch. */
+  if (state.user && !state.user.id && data && data.user) state.user.id = data.user.id;
   /* a change waiting on this very code is promoted here, and ONLY here —
      this is the one function that is never called without a correct code,
      and a promotion anywhere else would undo the whole guard. */
@@ -4364,7 +4492,16 @@ function priceNumber(p) {
   return isFinite(n) && String(p).replace(/[^\d.]/g, '') !== '' ? n : null;
 }
 
+/* why the last publish was refused: '' | 'limit' | 'other'.
+   ⚠️ The server guards the limit now (`0009`), and a raw database error
+   code on the screen is a second fault on top of the first — so the
+   refusal is translated into the very sentence the client already says
+   when it stops the publish itself. */
+let _lastPublishError = '';
+export function lastPublishError() { return _lastPublishError; }
+
 export async function addClassified(item) {
+  _lastPublishError = '';
   const rule = catRule(item.cat);
   /* ⚠️ THE ROW IS WRITTEN ON THE SERVER FIRST AND ITS ID IS THE SERVER'S.
      A listing is the one thing here that another person has to be able to
@@ -4397,7 +4534,11 @@ export async function addClassified(item) {
     }).select().single();
     if (error) throw error;
     id = data && data.id;
-  } catch (e) { return null; }
+  } catch (e) {
+    const msg = [e && e.message, e && e.details, e && e.hint].filter(Boolean).join(' ');
+    _lastPublishError = /ARABNA_LISTING_LIMIT/.test(msg) ? 'limit' : 'other';
+    return null;
+  }
   if (!id) return null;
   const rec = Object.assign({
     id, daysLeft: rule.days, boosted: false, photos: [], owner: 'me',
@@ -4458,6 +4599,11 @@ export function updateClassified(id, patch) {
     city: (c.city || '').trim() || null,
     price: c.price === FREE_PRICE ? null : priceNumber(c.price),
     cat: c.cat,
+    /* ⚠️ `status` was written on the device and left out of the patch, so a
+       free-section listing edited to add a price told its poster it had been
+       pulled for review AND STAYED LIVE, with its price, for every reader.
+       They then stop worrying about a breach that is still published. */
+    status: c.status,
   });
   return { rec: c, flagged };
 }
@@ -4582,13 +4728,14 @@ async function setListingStatus(id, status) { return patchListing(id, { status }
     without a refetch — the sister of `markLiveCls` below, for the fields
     that are not the status */
 function markLiveClsField(id, field, value) {
-  const row = (_liveCls || []).find(r => r.id === id);
+  const row = (clsReader.get() || []).find(r => r.id === id);
   if (row) row[field] = value;
 }
 /** flip the row we hold in memory so the queue drops it without a refetch */
 function markLiveCls(id, status) {
-  if (!_liveCls) return;
-  _liveCls = _liveCls.map(r => r.id === id ? Object.assign({}, r, { status }) : r);
+  const rows = clsReader.get();
+  if (!rows) return;
+  clsReader.set(rows.map(r => r.id === id ? Object.assign({}, r, { status }) : r));
 }
 
 export async function approveClassified(id) {
@@ -4633,7 +4780,12 @@ export function saveDraft(draft) { state.draft = draft; save(); return lastSaveO
 export function takeDraft() { const d = state.draft; state.draft = null; save(); return d; }
 export function peekDraft() { return state.draft; }
 /** the single definition of "this listing is mine" */
-export function ownsListing(id) { return !!id && state.myListings.includes(id); }
+/* ⚠️ ONE definition of «mine», not two. This read the device's list
+   alone, so a listing published from a laptop could not be edited or
+   hidden from its owner's own phone. It grants nothing the server does
+   not: every write below goes through RLS, which asks the same
+   question of the same column. */
+export function ownsListing(id) { return mineListing(id); }
 
 /**
  * Boosting somebody else's listing pins THEIR advertisement to the top of

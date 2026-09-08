@@ -11169,6 +11169,35 @@ what any later cut is decided from.**
 suite dropped for looking small can cost the net nothing at all, and the
 axis to cut on is this table, never the number of `ok()` lines in a file.
 
+## V.10.8 — the foundation, before anything is poured onto it (648)
+
+⚠️ **This file closes its own group, and its group is itself** — it touches
+`js/store.js`, which the 5 September decision names as a reason a batch is
+treated as its group's closer.
+
+⚠️ **Its PLACE in the queue is the batch.** `650` begins to fill the business
+table, `655` fills five more and `665` the settings — and four of the things
+here cannot be repaired after the filling except by migrating data: **a
+column with no writer, a read that truncates in silence, an id that
+collides, and a limit nobody guards.** The foundation is built before it is
+poured onto, or it is broken up to be built.
+
+⚠️ **And not one of the four is visible on a screen today, while every one of
+them is visible in a month.** They came from a sweep, not from the net and
+not from a complaint — which is why the batch is measured by suites alone
+and needs measuring more, not less: nobody will find its faults by using the
+app.
+
+### An id that lives on the server comes from the server
+> **A row that lives on the server takes its id FROM the server.** `mintId`
+> is for what never leaves the device, **and for nothing else.** ⚠️ **The
+> test is one question: does this record have a table in
+> `supabase/migrations/`?** If it does, the id comes from
+> `.insert(...).select().single()`, never from `mintId`.
+
+__REST_648__
+
+
 ## Known open items
 - **The header image is still far larger than its box.** V.04.7 replaced
   the 831/837 KB lockups with the cropped marks at **333/338 KB** — 60% off
