@@ -73,11 +73,35 @@ const errors = [];
 page.on('console', m => { if (m.type() === 'error') errors.push(m.text()); });
 page.on('pageerror', e => errors.push('PAGEERROR ' + e.message + ' @ ' + (e.stack||'').split('\n')[1] ));
 
+/* ⚠️ 615 §3 — A FLAT WAIT REPLACED BY THE CONDITION IT STOOD FOR, AND THE
+   OLD NUMBER KEPT AS THE CAP. `render()` in `app.js` is synchronous: the
+   hash changes, `#app` is emptied, a `.screen` is appended and the screen
+   function fills it — so «the screen for this route is drawn» is a real
+   condition, not a guess at a duration.
+
+   ⚠️ AND THE CAP IS WHAT MAKES THIS SAFE. On timeout the wait simply ends,
+   so this is never slower than the number it replaces and never waits for
+   less than that number would have allowed. A condition that could outrun
+   its own sleep is the intermittent red 615 warns about — «a suite that
+   passes on a fast machine and collapses on a slow one is worse than the
+   sleep, because it can be neither believed nor disbelieved». */
+const shown = async (p, h, cap) => {
+  try {
+    await p.waitForFunction(x => location.hash === x
+      && !!document.querySelector('#app .screen')
+      && (document.querySelector('#app .screen').childElementCount > 0
+          || (document.querySelector('#app').textContent || '').trim().length > 0),
+      h, { timeout: cap, polling: 25 });
+  } catch (_) { /* the cap is the flat number this replaces */ }
+};
 const go = async (h) => {
+  /* ⚠️ the bounce through Home is NOT removed: it is what forces a
+     re-render when the route is already the one being asked for, and the
+     suite reads a freshly painted screen after it. */
   await page.evaluate(() => { location.hash = '#/home'; });
-  await page.waitForTimeout(110);
+  await shown(page, '#/home', 110);
   await page.evaluate(x => { location.hash = x; }, h);
-  await page.waitForTimeout(420);
+  await shown(page, h, 420);
 };
 const txt = () => page.textContent('#app');
 const hash = () => page.evaluate(() => location.hash);

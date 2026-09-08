@@ -16,6 +16,11 @@
    Ramadan, five and a half months out, while the Prophet's birthday was
    two days away and simply absent. */
 import { chromium } from '/opt/node22/lib/node_modules/playwright/index.mjs';
+/* ⚠️ 615 — the host is READ, never written here. A second copy of it in a
+   suite parts from `js/supabase-config.js` the day the project moves, and
+   then this filter excludes a host that no longer exists while letting the
+   real one through. One source, imported. */
+import { SUPABASE_URL } from '../../js/supabase-config.js';
 
 const BASE = process.env.BASE || 'http://localhost:8099/index.html';
 let pass = 0, fail = 0;
@@ -31,16 +36,26 @@ let reqs = 0;
    counted our OWN files as outside requests and printed a red FAIL on a
    clean build. A check that lies about a green build is worse than no check. */
 const ORIGIN = new URL(BASE).origin;
-/* ⚠️ 610 adds ONE legitimate outside call at boot — the live rows — and the
-   identity host is excluded here for that reason alone. What this counter
-   guards is unchanged and is not relaxed: THE CALENDAR FETCHES NOTHING.
-   `feasts.js` imports nothing and asks nobody, and any request from any
-   other host still turns 15.2 red. Excluding the one call the app really
-   makes is what keeps this check about the calendar rather than about the
-   app having a server at all. */
+/* ⚠️ 610 adds legitimate outside calls at boot — the live rows — and they
+   are excluded for that reason alone. What this counter guards is unchanged
+   and is not relaxed: THE CALENDAR FETCHES NOTHING.
+
+   ⚠️ AND 615 NARROWED IT, because the exclusion was wider than its own
+   sentence. It read «the identity host is excluded», and the code excluded
+   THE WHOLE HOST — so the day the calendar fetched something from Supabase,
+   15.2 would have stayed green over exactly the fault it exists to catch.
+   Now the two boot READS are excluded by their paths and nothing else is:
+   an auth call, a storage call, a table this screen has no business asking
+   for — every one of them still turns 15.2 red. */
+const LIVE_HOST = new URL(SUPABASE_URL).host;
+const isBootRead = (u) => {
+  try { const x = new URL(u);
+    return x.host === LIVE_HOST && /^\/rest\/v1\/(businesses|classifieds)\b/.test(x.pathname);
+  } catch (_) { return false; }
+};
 page.on('request', r => { if (/^https?:/.test(r.url()) && !r.url().startsWith(ORIGIN)
   && !/fonts\.(googleapis|gstatic)/.test(r.url())
-  && !/ijubbqvbkfzillkhwdzp\.supabase\.co/.test(r.url())) reqs++; });
+  && !isBootRead(r.url())) reqs++; });
 page.on('console', m => { if (m.type() === 'error' && !/ERR_CONNECTION|ERR_CERT|ERR_TUNNEL|ERR_NAME|ERR_FAILED|fonts\.googleapis/.test(m.text())) errors.push(m.text().slice(0, 130)); });
 page.on('pageerror', e => errors.push('PAGEERROR ' + e.message.slice(0, 130)));
 
