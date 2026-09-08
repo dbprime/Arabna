@@ -111,7 +111,7 @@ export const CLASSIFIED_CATS = MARKET_CATS;
    hand-typed «0.1» while the project had reached V.03.6 — two literals,
    both stale, and a reader reporting a fault could not tell us which build
    they were on. Raise it here when CLAUDE.md's version line moves. */
-export const APP_VERSION = '0.10.9';
+export const APP_VERSION = '0.11.0';
 
 /* ⚠️ توثيق الجوال مؤجَّلٌ إلى ما بعد الإطلاق على App Store — قرار مالك
    البرنامج، وسببه الكلفة: مزوّد الرسائل حسابٌ مدفوعٌ بكلفةٍ لكلّ رسالة،
@@ -258,7 +258,39 @@ export function isAllDay(spans) {
   return !!spans && spans.length === 1 && spans[0][0] === '00:00' && spans[0][1] === '24:00';
 }
 
-/* ---- tiny ZIP dataset for the prototype (V.02: geocoding API) ---- */
+/* ============================================================
+   ZIP centres — the first step of the ladder that gives a listing a point
+   ------------------------------------------------------------
+   Read by `lookupZip()` in `js/screens/home.js` for the reader's own ZIP,
+   and since `650` by `pointForBusiness()` in `js/store.js` for a listing's.
+
+   ⚠️ NOTHING HERE CALLS ANYBODY. The owner's decision of 6 September was a
+   table shipped inside the app rather than a geocoding service: Google's
+   terms keep a coordinate thirty days and forbid its use with any map but
+   Google's — and this app lets the reader choose Google, Apple or Waze —
+   while the Census geocoder, free and accurate though it is, is a NEW
+   EXTERNAL PROVIDER and calls down the same compliance controls that
+   suspended Nominatim (Schedule E-08).
+
+   ⚠️ AND IT IS TEN ROWS, WHICH IS NOT THE TABLE THAT WAS ASKED FOR, AND THE
+   REASON IS MEASURED AND NOT AN OPINION. The intended fill is the US Census
+   Bureau's ZCTA gazetteer — federal work in the public domain, no licence,
+   no attribution, no deletion clause — and it CANNOT BE FETCHED FROM THE
+   BUILD CONTAINER: every external host answers 403 at the egress proxy,
+   measured on both the 2023 and the 2024 files. Writing centroids from
+   memory under a header that names the Census would be a claim of
+   provenance nobody can support, and this project does not invent a number
+   it does not have. So the ten prototype rows stand, unlabelled as
+   anything they are not, and filling the table is a data job done outside
+   the app — exactly like geocoding the 514 addresses.
+
+   ⚠️ AND NOTHING FALLS OUT OF THE ORDER WHILE IT WAITS. Step two of the
+   ladder gives a ZIP this table has never heard of the point of its CITY,
+   and measured on this tree all 514 listings name a city that is in
+   `CITY_POINTS`. Adding a ZIP later is one line here and nothing anywhere
+   else; the day the coverage tables move into the database (the panel's own
+   reminder of 3 September) this table moves with them.
+   ============================================================ */
 export const ZIPS = {
   '77036': { city: 'Houston', state: 'TX', lat: 29.699, lng: -95.535 },
   '77074': { city: 'Houston', state: 'TX', lat: 29.688, lng: -95.510 },

@@ -399,13 +399,22 @@ function panelView(root) {
 
     // --- listings held over a certain duplicate match ---
     $$('#aBody [data-bizok]').forEach(b => b.addEventListener('click', () => {
-      S.approvePendingBusiness(b.dataset.bizok); toast(t('done'), 'ok'); paint();
+      /* awaited, and the row repaints only on a real answer: the decision
+         reaches the server now, and a refusal is said rather than a queue
+         repainted over a write that did not take (`630`'s rule). */
+      S.approvePendingBusiness(b.dataset.bizok).then(ok => {
+        toast(t(ok ? 'done' : 'bizSaveFailed'), ok ? 'ok' : 'err');
+        if (ok) paint();
+      });
     }));
     $$('#aBody [data-bizno]').forEach(b => b.addEventListener('click', () => {
       const id = b.dataset.bizno;
       askReason({
         title: t('rejectReason'), sub: t('rejectReasonPlaceholder'), confirmText: t('reject'), danger: true,
-        onGo: (why) => { S.rejectPendingBusiness(id, why); toast(t('itemRejected'), 'ok'); paint(); },
+        onGo: (why) => { S.rejectPendingBusiness(id, why).then(ok => {
+          toast(t(ok ? 'itemRejected' : 'bizSaveFailed'), ok ? 'ok' : 'err');
+          if (ok) paint();
+        }); },
       });
     }));
     $$('#aBody [data-bizmerge]').forEach(b => b.addEventListener('click', () => {
@@ -557,7 +566,10 @@ function panelView(root) {
         title: t('adminDelBiz'),
         sub: t('adminDelBizAsk').replace('{name}', biz ? L(biz.name) : b.dataset.bizdel),
         confirmText: t('delete'), danger: true,
-        onConfirm: () => { S.deleteBusiness(b.dataset.bizdel); toast(t('adminDeleted'), 'ok'); paint(); },
+        onConfirm: () => { S.deleteBusiness(b.dataset.bizdel).then(ok => {
+          toast(t(ok ? 'adminDeleted' : 'bizSaveFailed'), ok ? 'ok' : 'err');
+          if (ok) paint();
+        }); },
       });
     }));
 

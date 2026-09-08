@@ -8,7 +8,7 @@ import { CLASSIFIEDS, BUSINESSES, NOTIFICATIONS, SLIDER_ADS, HOUSE_SLIDE, MINI_A
          MARKET_CATS, FREE_PRICE, EVENTS, VERIFY_BADGE_PRICE, blankEvent,
          ATTRIBUTES, ATTR_GROUPS, CATEGORIES, DAY_KEYS, CHIP_MIN, CHIP_MAX_SHARE, EVENT_TYPES,
          GENERIC_WORDS, NAME_SIM_MIN, STREET_WORDS, SUBSCRIPTION_PRICE, AD_CARD_COLOR,
-         CITY_POINTS, REGIONS, REGION_RADIUS_MI, STATE_SUGGEST,
+         CITY_POINTS, ZIPS, REGIONS, REGION_RADIUS_MI, STATE_SUGGEST,
          AD_PRODUCTS, AD_SLOTS, APP_VERSION,
          attrById, attrInCat, isAllDay, week, nextOccurrence, PHONE_AUTH,
          eventIsAllDay, eventStamp, eventToInstant, eventFromInstant,
@@ -1742,6 +1742,69 @@ export function paidFirst(list, manualSort, groupOf, key) {
   return { list: top.concat(list.filter(b => !seen.has(b.id))), ids };
 }
 
+/* ============================================================
+   The three-step ladder that gives a new listing a point (650 §5.3ج)
+   ------------------------------------------------------------
+   Measured before this batch: ZERO of the 514 listings carries a point, and
+   `lat`/`lng` are not even fields on a seed — so «the seed can do what a new
+   row cannot» is not the fault here; NEITHER could, which makes the columns
+   more urgent rather than less.
+
+   ⚠️ NOT ONE CALL LEAVES THE DEVICE. The owner's decision of 6 September was
+   a table shipped inside the app rather than a geocoding service, and the
+   two reasons are in writing: Google's terms keep a coordinate thirty days
+   and forbid its use with any map but Google's — while this app lets the
+   reader choose between Google, Apple and Waze — and the Census geocoder,
+   free and accurate though it is, is a NEW EXTERNAL PROVIDER and so falls
+   under the same compliance controls that suspended Nominatim (Schedule
+   E-08): a proxy, an app-wide rate limit, a cache, a kill switch and
+   re-test evidence. A shipped table calls none of that down on us.
+
+   ⚠️ AND STEP TWO IS WHAT MAKES A NEW ZIP HARMLESS. A ZIP the table has
+   never heard of, in a city we cover, takes ITS CITY'S point — so it stays
+   in the order approximately instead of falling out of it. Measured on this
+   tree: 93 distinct ZIPs across the 512 listings that carry one, and all
+   514 name a city that IS in `CITY_POINTS`. So step two covers the whole
+   directory today and step three never fires for a seed.
+
+   ⚠️ AND WHAT STEP THREE LEAVES IS NOT HIDDEN. `byNearest` already sorts the
+   pointless to the END of the list rather than dropping them, and
+   `needsGeoList()` counts them for the panel. A listing that disappears
+   because its ZIP is unknown TO US is punished for a gap in us.
+   ============================================================ */
+
+/** the five digits at the end of a US address, or '' */
+export function zipOf(biz) {
+  const z = biz && biz.zip && String(biz.zip).trim();
+  if (z && /^\d{5}$/.test(z)) return z;
+  const m = String((biz && biz.address) || '').match(/\b(\d{5})(?:-\d{4})?\s*$/);
+  return m ? m[1] : '';
+}
+
+/**
+ * A point for a listing, by the first thing that is known.
+ * @returns {{lat:number,lng:number}|null}
+ */
+export function pointForBusiness(biz) {
+  const zip = zipOf(biz);
+  const z = zip && ZIPS[zip];
+  if (z && isFinite(z.lat) && isFinite(z.lng)) return { lat: z.lat, lng: z.lng };
+  const city = cityOf(biz);
+  if (city) {
+    const c = CITY_POINTS.find(p => p.city.toLowerCase() === String(city).toLowerCase());
+    if (c) return { lat: c.lat, lng: c.lng };
+  }
+  return null;
+}
+
+/** the ladder, as the shape a record carries: a point and the flag together,
+    so no caller has to remember to clear one when it sets the other */
+export function geoFieldsFor(biz) {
+  const p = pointForBusiness(biz);
+  return p ? { lat: p.lat, lng: p.lng, needsGeo: false }
+           : { lat: null, lng: null, needsGeo: true };
+}
+
 /** listings still waiting for coordinates — the admin queue and its export */
 export function needsGeoList() {
   return everyBusiness().filter(b => !hasCoords(b));
@@ -2305,15 +2368,44 @@ export function everyBusiness() {
      ⚠️ And the signature stays SYNCHRONOUS. Twenty-three call sites across
      eight files read it, and not one of them gains an `await`: the rows are
      fetched once at boot by `bizReader` and merged here. */
-  const liveById = new Map((bizReader.get() || []).map(r => [r.seed_id, r]));
-  return withoutDemo(state.extraBusinesses.concat(BUSINESSES))
+  const rows = bizReader.get() || [];
+  const coats = new Map();
+  const own = new Map();
+  for (const r of rows) (r.seed_id ? coats : own).set(r.seed_id || r.id, r);
+
+  const local = withoutDemo(state.extraBusinesses.concat(BUSINESSES))
     .filter(b => !dropped.includes(b.id))
     .map(b => {
       const edit = state.businessEdits && state.businessEdits[b.id];
       const base = edit ? Object.assign({}, b, edit) : b;
-      const live = liveById.get(b.id);
-      return live ? Object.assign({}, base, mapLiveRowToJs(live)) : base;
+      const live = coats.get(b.id);
+      /* a row of this device's own that has since reached the server: the
+         server's fields stand over the local copy, and the local one is
+         dropped from the tail below so it never appears twice */
+      const mine = own.get(b.id);
+      if (mine) own.delete(b.id);
+      const row = live || mine;
+      return row ? Object.assign({}, base, mapLiveRowToJs(row)) : base;
     });
+
+  /* ⚠️ THE HALF THAT WAS BLIND, AND IT IS THE WHOLE POINT OF THE BATCH.
+     The loop above walks WHAT THIS DEVICE KNOWS — the `data.js` seeds and
+     what this device itself added — so a live row somebody ADDED ON ANOTHER
+     PHONE matched nothing in the list and was never read, not once. Whoever
+     added their masjid or their restaurant saw it and NOBODY ELSE IN THE
+     WORLD did, and it never reached the admin either.
+     This is `630`'s own fix for `mergedClassifieds`, arriving for the
+     directory: a live row with no local twin is mapped and APPENDED. */
+  const remote = Array.from(own.values())
+    .filter(r => !dropped.includes(r.id))
+    .map(liveBizRecord)
+    .sort((a, b) => (b.created || 0) - (a.created || 0));
+
+  /* ⚠️ «deletion is a mark, not a wipe» — the row stays on the server and the
+     list drops it, exactly as `allClassifieds` drops a deleted listing. The
+     local `removedBusinesses` stays beside it for the seeds that have no row
+     yet. */
+  return local.concat(remote).filter(b => b.status !== 'deleted');
 }
 
 /* ---------------- THE LIVE DIRECTORY ----------------
@@ -2448,14 +2540,88 @@ export function mapLiveRowToJs(r) {
   if (r.name_ar || r.name_en) out.name = { ar: r.name_ar || r.name_en || '', en: r.name_en || '' };
   if (r.desc_ar || r.desc_en) out.desc = { ar: r.desc_ar || '', en: r.desc_en || '' };
   for (const k of ['cat', 'phone', 'address', 'hours', 'tags', 'attributes', 'worship',
-                   'plan', 'verified', 'rating', 'claimed', 'photos', 'videos',
-                   'lat', 'lng', 'status']) {
+                   'plan', 'zip', 'lat', 'lng', 'status', 'source']) {
     if (r[k] !== undefined && r[k] !== null) out[k] = r[k];
   }
-  if (r.review_count !== undefined && r.review_count !== null) out.reviewCount = r.review_count;
+  if (r.mobile_service !== undefined && r.mobile_service !== null) out.mobileService = r.mobile_service;
   if (r.non_commercial !== undefined && r.non_commercial !== null) out.nonCommercial = r.non_commercial;
   if (r.entry_price !== undefined && r.entry_price !== null) out.entryPrice = r.entry_price;
+  /* ⚠️ `claimed` IS DERIVED, and it is the reason no column of that name is
+     ever added: `owner_id` already answers the question, and a second copy
+     of one fact parts from the first the day one of them is written and the
+     other is not — the lesson `0005` records about a second copy of the
+     email address. */
+  if (r.owner_id !== undefined) { out.ownerId = r.owner_id || ''; out.claimed = !!r.owner_id; }
   return out;
+}
+
+/* ⚠️ THE FIVE THAT ARE NOT IN THE MAP, AND WHY EACH IS ABSENT (650 §5.2).
+   Every one of them is READ by a screen, so the absence is a decision and
+   not an oversight, and the reasoned list is in `docs/الحالة.md` §1.هـ
+   where the matching suite reads it:
+     claimed      derived above from `owner_id`
+     verified     derived from `biz_verify` — no batch is scheduled for it
+                  (`665` §8 puts that table out of scope), and the honesty
+                  is the item: a paid badge with no road
+     rating       computed at READ from the reviews when they land (`655`),
+                  never a column and never a trigger — the stars become real
+                  the day the reviews do, not the day somebody writes a
+                  trigger
+     review_count the same, counted rather than stored
+     photos       derived from `biz_photos where status = 'approved'` (`660`)
+     videos       ⚠️ DROPPED FROM THE READ ENTIRELY, a decision and not a
+                  slip: nothing writes it, and a field nothing writes is a
+                  field that lies — it would make the seed look as though it
+                  has video and everything added afterwards look as though it
+                  has none, which is the seed parting from the row all over
+                  again. It returns with the video batch or not at all.
+   ⚠️ And the derivations live where they are READ, never here: a map turns a
+   column into a field and does not query a second table. */
+
+/** what a row that is nobody's coat still needs before a screen reads it —
+    the same defaults `addBusiness` writes, in ONE place so a new listing and
+    a listing read back from the server cannot be two different shapes */
+export const BIZ_DEFAULTS = {
+  plan: 'free', verified: false, rating: 0, reviewCount: 0,
+  photos: 0, claimed: false, needsGeo: true,
+};
+
+/** a live row that stands on its own — not a coat over a `data.js` seed */
+function liveBizRecord(r) {
+  return Object.assign({ id: r.id }, BIZ_DEFAULTS, mapLiveRowToJs(r),
+                       { needsGeo: !(r.lat || r.lng) });
+}
+
+/**
+ * The one reverse map: the only place that knows `name.ar` becomes `name_ar`
+ * and `nonCommercial` becomes `non_commercial`.
+ * ⚠️ Two maps for the same columns part company at the first column that is
+ * added — which is the sentence written over `mapLiveRowToJs` itself, read
+ * from the other side.
+ * ⚠️ And only the keys the caller actually passed are written: an edit is a
+ * PATCH, and filling in every column from a half-known record would write
+ * blanks over what the seed already says.
+ */
+export function mapJsToLiveRow(biz) {
+  const b = biz || {};
+  const row = {};
+  const put = (col, v) => { if (v !== undefined) row[col] = v; };
+  if (b.name) { put('name_ar', b.name.ar || b.name.en || ''); put('name_en', b.name.en || ''); }
+  if (b.desc) { put('desc_ar', b.desc.ar || ''); put('desc_en', b.desc.en || ''); }
+  for (const k of ['cat', 'phone', 'address', 'hours', 'tags', 'attributes', 'worship',
+                   'zip', 'lat', 'lng', 'status', 'source']) put(k, b[k]);
+  put('mobile_service', b.mobileService);
+  put('non_commercial', b.nonCommercial);
+  put('entry_price', b.entryPrice);
+  /* ⚠️ `plan` IS WRITTEN HERE BY NAME, and it is a small line that prevents a
+     silent fault later: the subscription lives on `businesses.plan`, so a
+     panel that issues one sends a patch whose `plan` key this map would drop
+     without a word. The admin would read success, and `businessPlan()` reads
+     the device's own `state.subscription` first — so the subscription would
+     look live on the admin's phone alone. Nothing writes it until the
+     subscription batch; the column is read today, and the door is open. */
+  put('plan', b.plan);
+  return row;
 }
 
 /**
@@ -2464,8 +2630,19 @@ export function mapLiveRowToJs(r) {
  * exactly like a pending marketplace ad.
  */
 export function allBusinesses() {
+  /* ⚠️ THE CONDITION IS THE ACCOUNT, NOT THE DEVICE. It read
+     `state.myPendingBusinesses` — a list on ONE phone — so somebody who
+     added their shop from their mobile could not find it on their laptop.
+     ⚠️ And RLS is the guard, never this line: `0002_rls.sql` does not send a
+     held row to anyone but its owner and staff in the first place. The
+     filter here is for the ORDER of what already arrived, not for the
+     protection of it. The local list stays beside the account for the rows
+     that have not reached the server yet, and for nothing else. */
+  const me = state.user && state.user.id;
   return everyBusiness().filter(b =>
-    b.status !== 'pendingReview' || (state.myPendingBusinesses || []).includes(b.id));
+    b.status !== 'pendingReview'
+    || (me && b.ownerId && b.ownerId === me)
+    || (state.myPendingBusinesses || []).includes(b.id));
 }
 
 /** listings this device entered that are still waiting on the admin */
@@ -2479,17 +2656,24 @@ export function pendingBusinesses() {
   return everyBusiness().filter(b => b.status === 'pendingReview');
 }
 
-export function approvePendingBusiness(id) {
+/* ⚠️ Both decisions pass through `applyBusinessEdit`, so the server write is
+   written ONCE and not three times — and both are `async` now, so the panel
+   awaits the answer and says a refusal rather than repainting a row it only
+   believes it changed. Nothing is logged and nobody is notified over a write
+   that did not take. */
+export async function approvePendingBusiness(id) {
+  if (!await applyBusinessEdit(id, { status: 'live' })) return false;
   logAdminAction(id, 'approveBusiness', '', '');
-  applyBusinessEdit(id, { status: 'live' });
   notifyKeys('bizOkTitle', 'bizOkBody', '#/directory/' + id, 'checkCircle');
   save();
+  return true;
 }
-export function rejectPendingBusiness(id, reason) {
+export async function rejectPendingBusiness(id, reason) {
+  if (!await applyBusinessEdit(id, { status: 'rejected' })) return false;
   logAdminAction(id, 'rejectBusiness', '', reason || '');
-  applyBusinessEdit(id, { status: 'rejected' });
   notifyKeys('bizNoTitle', 'bizNoBody', '#/directory', 'alert', reason);
   save();
+  return true;
 }
 export function businessById(id) { return allBusinesses().find(b => b.id === id); }
 
@@ -3404,23 +3588,98 @@ export function adminLog(limit = 50) {
   return (state.adminLog || []).slice().reverse().slice(0, limit);
 }
 
-export function applyBusinessEdit(bizId, patch) {
+/** the live row for a business, coat or standalone, or null */
+function liveBizRow(id) {
+  return (bizReader.get() || []).find(r => r.seed_id === id || r.id === id) || null;
+}
+
+/**
+ * The ONE door: `approvePendingBusiness`, `rejectPendingBusiness` and the
+ * panel's edit screen all call this, so the server write is written once
+ * rather than three times.
+ * @returns {Promise<boolean>} false when the server refused — and then
+ *   nothing local is cleaned, because the edit still has to reach it.
+ */
+export async function applyBusinessEdit(bizId, patch) {
   // the caller's own keys, before the address rule adds any of its own
   if (patch && adminEditing(bizId)) recordAdminEdit(bizId, patch);
   /* A shop that moved and kept the coordinates of where it used to be is
-     worse than one with none: it looks right and is wrong. */
+     worse than one with none: it looks right and is wrong. So the point is
+     re-derived from the new address rather than merely cleared — the ladder
+     costs no network call, so there is no reason to leave a gap where an
+     answer is available. */
   if (patch && Object.prototype.hasOwnProperty.call(patch, 'address')) {
     const before = businessById(bizId);
     if (before && String(before.address || '') !== String(patch.address || '')) {
-      patch = Object.assign({}, patch, { lat: null, lng: null, needsGeo: true });
+      patch = Object.assign({}, patch,
+        geoFieldsFor(Object.assign({}, before, patch)));
     }
   }
+  const ok = await pushBusiness(bizId, patch);
   const own = state.extraBusinesses.find(b => b.id === bizId);
   if (own) Object.assign(own, patch);
-  else state.businessEdits = Object.assign({}, state.businessEdits, {
-    [bizId]: Object.assign({}, state.businessEdits[bizId] || {}, patch),
-  });
+  else if (!ok) {
+    /* ⚠️ the local edit is kept ONLY while it has not reached the server, and
+       is dropped the moment it has — `630`'s rule about `adminAuth`: a key
+       is removed by a line that knows it succeeded, never by a blind sweep
+       and never left to rot. */
+    state.businessEdits = Object.assign({}, state.businessEdits, {
+      [bizId]: Object.assign({}, state.businessEdits[bizId] || {}, patch),
+    });
+  } else if (state.businessEdits && state.businessEdits[bizId]) {
+    const next = Object.assign({}, state.businessEdits);
+    delete next[bizId];
+    state.businessEdits = next;
+  }
   save();
+  return ok;
+}
+
+/**
+ * Write a patch to the live table, creating the row if there is none.
+ * @returns {Promise<boolean>}
+ */
+async function pushBusiness(bizId, patch) {
+  const row = liveBizRow(bizId);
+  const cols = mapJsToLiveRow(patch || {});
+  if (!Object.keys(cols).length) return true;
+  if (row) {
+    try {
+      const { data, error } = await sb.from('businesses').update(cols).eq('id', row.id).select();
+      if (error) throw error;
+      /* ⚠️ `.select()` and then the COUNT: PostgREST answers a row the policy
+         hides with 200 and an empty list, never an error — so a write that
+         changed nothing would otherwise read as a success. */
+      if (!data || !data.length) return false;
+      Object.assign(row, data[0]);
+      return true;
+    } catch (e) { return false; }
+  }
+  /* A SEED edited for the first time. The 485 real listings are NOT in the
+     table by design, so the first edit creates a COAT row keyed by
+     `seed_id`.
+     ⚠️ AND THE WHOLE SEED IS NOT COPIED INTO IT — only the three columns the
+     schema demands (`name_ar`, `name_en`, `cat` are `not null`, and a row
+     cannot exist without them) plus the edited fields. A second permanent
+     copy of a seed parts from the first the day a phone number is corrected
+     in one and not the other, and that sentence is what the whole merge is
+     built on. */
+  const seed = withoutDemo(state.extraBusinesses.concat(BUSINESSES)).find(b => b.id === bizId);
+  if (!seed) return false;
+  const identity = mapJsToLiveRow({ name: seed.name, cat: seed.cat });
+  try {
+    const { data, error } = await sb.from('businesses')
+      .insert(Object.assign(identity, cols, {
+        seed_id: bizId,
+        status: cols.status || 'live',
+        source: seed.source || 'owner',
+      }))
+      .select().single();
+    if (error) throw error;
+    const rows = bizReader.get();
+    if (rows) rows.push(data); else bizReader.set([data]);
+    return true;
+  } catch (e) { return false; }
 }
 
 /* ---------------- owner replies to a review ---------------- */
@@ -5406,9 +5665,19 @@ export function sendMessage(listingId, text, lang = 'ar') {
  * filters it. Either way the reviews, favourites and photos that hung off
  * it go too, or they would attach to whatever takes the id next.
  */
-export function deleteBusiness(id) {
-  logAdminAction(id, 'deleteBusiness', '', '');
+/**
+ * ⚠️ «Deletion is a mark, not a wipe» — this project's own rule, written at
+ * `profiles.deleted_at` and followed for a listing by `635`. Measured before
+ * this batch: `deleteBusiness` added the id to `state.removedBusinesses` and
+ * nothing else — A LIST ON THE ADMIN'S OWN PHONE — so the business he had
+ * just deleted stayed on the screen of the whole world.
+ * ⚠️ And no delete policy is opened: `own: update` already carries it, and a
+ * new door is not cut where one exists.
+ */
+export async function deleteBusiness(id) {
   if (!id) return false;
+  if (!await applyBusinessEdit(id, { status: 'deleted' })) return false;
+  logAdminAction(id, 'deleteBusiness', '', '');
   const wasExtra = (state.extraBusinesses || []).some(b => b.id === id);
   state.extraBusinesses = (state.extraBusinesses || []).filter(b => b.id !== id);
   if (!wasExtra && !(state.removedBusinesses || []).includes(id)) {
@@ -5424,18 +5693,64 @@ export function deleteBusiness(id) {
   return true;
 }
 
-export function addBusiness(biz, { pendingReview = false } = {}) {
-  // a counter as well as the clock: two records added inside the same
-  // millisecond must not share an id
-  const id = mintId('ub');
-  const rec = Object.assign({ id, plan: 'free', verified: false, rating: 0, reviewCount: 0, needsGeo: true, claimed: true, photos: 0, videos: 0 }, biz);
+export async function addBusiness(biz, { pendingReview = false } = {}) {
+  /* ⚠️ THE ROW IS WRITTEN ON THE SERVER FIRST AND ITS ID IS THE SERVER'S.
+     Measured before this batch: `addBusiness` ended at
+     `state.extraBusinesses.unshift(rec)` and there was NO insert on the
+     table anywhere in the app — so whoever added their masjid or their
+     restaurant saw it on their own phone, nobody else in the world saw it,
+     and it never reached the moderation queue either. Everything appeared
+     to succeed and everything was lost.
+     ⚠️ And the id comes from the row, not from `mintId('ub')`: the column is
+     `uuid primary key default gen_random_uuid()`, and an id invented on one
+     device collides with an id invented on another — `648`'s rule, and what
+     `630` already does for a listing. */
+  const { data: { session } = {} } = await sb.auth.getSession();
+  if (!session) return null;
+
+  /* the point is worked out here, from a table inside the app, so that a
+     listing added today enters «nearest» today */
+  const withGeo = Object.assign({}, biz, geoFieldsFor(biz));
+  const row = Object.assign(mapJsToLiveRow(withGeo), {
+    owner_id: session.user.id,
+    seed_id: null,                     // not a coat over a seed: a row of its own
+    /* ⚠️ `pendingReview`, never `pending`. Both are in the column's own
+       comment and the app uses the first for a business and the second for
+       a marketplace listing — `pendingBusinesses()` reads the first, so
+       confusing them empties the review queue with no error at all. */
+    status: pendingReview ? 'pendingReview' : 'live',
+    /* ⚠️ and `source` is not decoration: the column's comment cites Apple
+       5.1.1(viii), which asks an app that gathers personal information from
+       anywhere but its subject where it came from. A row with no source is
+       a row with no answer. */
+    source: 'owner',
+  });
+  if (!row.name_en && !row.name_ar) return null;
+
+  let saved = null;
+  try {
+    const { data, error } = await sb.from('businesses').insert(row).select().single();
+    if (error) throw error;
+    saved = data;
+  } catch (e) { return null; }
+  if (!saved || !saved.id) return null;
+
+  /* the local copy stays, exactly as `630` keeps one for a listing: whoever
+     added it sees it the instant they press, without waiting for the next
+     boot to fetch it back — and its id is THE SERVER'S, so the two never
+     split. */
+  const id = saved.id;
+  const rec = Object.assign({ id }, BIZ_DEFAULTS, withGeo, {
+    claimed: true, status: row.status, ownerId: session.user.id, source: 'owner',
+  });
   if (pendingReview) {
     // added over a certain duplicate match: the person said it is a
     // different shop, and an admin decides who is right. It shows on
     // their own device immediately and to nobody else.
-    rec.status = 'pendingReview';
     state.myPendingBusinesses = (state.myPendingBusinesses || []).concat(id);
   }
+  const rows = bizReader.get();
+  if (rows) rows.unshift(saved);
   state.extraBusinesses.unshift(rec);
   if (!pendingReview) {
     state.myBusinessIds = state.myBusinessIds || [];

@@ -391,7 +391,12 @@ console.log('--- 4: the rule, and a check that keeps it ---');
        holds the count at one so nobody can quietly mint an event id
        again. */
     { p: 'ev', what: 'repeat draft',     table: 'events',     moves: '' },
-    { p: 'ub', what: 'business',         table: 'businesses', moves: '650' },
+    /* ⚠️ STRUCK BY `650`, WHICH IS WHAT THIS TABLE IS FOR. The business
+       record moved to the server — `addBusiness` takes the row's id from
+       `.insert(...).select().single()` — so the prefix is not minted any
+       more, and a line left standing for it would read a year from now as
+       a local id somebody decided on. The batch that moves a kind strikes
+       its own line. */
     /* ⚠️ `u` and `of` have a table and NO batch named for them in the
        queue — recorded as they stand, never assigned here. The queue is
        written by whoever writes the files, and a session that fills in a
@@ -414,7 +419,9 @@ console.log('--- 4: the rule, and a check that keeps it ---');
      what a gateway will hand back one day, and are stored in our own rows */
   const minted = [...new Set([...st.matchAll(/mintId\('([a-z_]+)'\)/g)].map(m => m[1]))]
     .filter(x => !/_$/.test(x));
-  ok('4.1 fourteen kinds are still minted on the device', LOCAL.length === 14,
+  /* ⚠️ the count is a NUMBER on purpose and moves with a decision, never
+     derived from the list it guards: thirteen since `650` struck `ub` */
+  ok('4.1 thirteen kinds are still minted on the device', LOCAL.length === 13,
      String(LOCAL.length));
   const listedNotMinted = LOCAL.map(e => e.p).filter(x => !minted.includes(x));
   ok('4.2 every listed kind is really minted here — one that moved and was not struck turns this red',
