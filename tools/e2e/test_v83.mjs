@@ -384,14 +384,18 @@ console.log('--- 4: the rule, and a check that keeps it ---');
   const LOCAL = [
     { p: 'ev', what: 'event',            table: 'events',     moves: '649' },
     { p: 'ub', what: 'business',         table: 'businesses', moves: '650' },
-    { p: 'u',  what: 'suggested masjid', table: 'businesses', moves: '650' },
+    /* ⚠️ `u` and `of` have a table and NO batch named for them in the
+       queue — recorded as they stand, never assigned here. The queue is
+       written by whoever writes the files, and a session that fills in a
+       blank in it has invented an order nobody decided. */
+    { p: 'u',  what: 'suggested masjid', table: 'businesses', moves: '' },
     { p: 'r',  what: 'review',           table: 'reviews',    moves: '655' },
     { p: 'm',  what: 'message',          table: 'messages',   moves: '655' },
     { p: 'f',  what: 'flag',             table: 'flags',      moves: '655' },
     { p: 'cl', what: 'claim',            table: 'claims',     moves: '655' },
     { p: 'g',  what: 'greeting',         table: 'greetings',  moves: '665' },
     { p: 'ua', what: 'article',          table: 'articles',   moves: '665' },
-    { p: 'of', what: 'offer',            table: 'offers',     moves: '665' },
+    { p: 'of', what: 'offer',            table: 'offers',     moves: '' },
     { p: 'wf', what: 'worship-time fix', table: '',           moves: '' },
     { p: 'n',  what: 'notification',     table: '',           moves: '' },
     { p: 'ad', what: 'ad order',         table: '',           moves: '' },
