@@ -10,12 +10,14 @@ import { CLASSIFIEDS, BUSINESSES, NOTIFICATIONS, SLIDER_ADS, HOUSE_SLIDE, MINI_A
          GENERIC_WORDS, NAME_SIM_MIN, STREET_WORDS, SUBSCRIPTION_PRICE, AD_CARD_COLOR,
          CITY_POINTS, REGIONS, REGION_RADIUS_MI, STATE_SUGGEST,
          AD_PRODUCTS, AD_SLOTS, APP_VERSION,
-         attrById, attrInCat, isAllDay, week, nextOccurrence, PHONE_AUTH } from './data.js';
+         attrById, attrInCat, isAllDay, week, nextOccurrence, PHONE_AUTH,
+         eventIsAllDay, eventStamp } from './data.js';
 import { expandQuery, hayMatches, catMatches, squash } from './synonyms.js';
 import { holidaysOn } from './holidays.js';
 
 export { ATTRIBUTES, ATTR_GROUPS, DAY_KEYS, CHIP_MIN, CHIP_MAX_SHARE, EVENT_TYPES,
-         attrById, attrInCat, isAllDay, week, nextOccurrence };
+         attrById, attrInCat, isAllDay, week, nextOccurrence,
+         eventIsAllDay, eventStamp };
 
 export { blankEvent };
 
@@ -4728,7 +4730,10 @@ function mergeEvent(e) {
 export function eventIsPast(e, now = Date.now()) {
   const end = e.endsAt || e.startsAt;
   if (!end) return false;
-  const ts = Date.parse(end);
+  /* `eventStamp` and not `Date.parse`: a date with no hour is local
+     midnight, and an `endsAt` with no hour names the LAST day — so the
+     festival is over when that day is over, never when it begins. */
+  const ts = eventStamp(end, true);
   return !isNaN(ts) && ts < now;
 }
 
@@ -4748,7 +4753,7 @@ export function upcomingEvents() {
     .filter(e => e.status === 'live')
     .filter(e => !eventIsPast(e))
     .sort((a, b) => (b.featured === true) - (a.featured === true)
-                 || (Date.parse(a.startsAt) || 0) - (Date.parse(b.startsAt) || 0));
+                 || (eventStamp(a.startsAt) || 0) - (eventStamp(b.startsAt) || 0));
 }
 export function eventById(id) { return allEvents().find(e => e.id === id) || null; }
 export function pendingEvents() { return allEvents().filter(e => e.status === 'pending'); }
@@ -5680,7 +5685,7 @@ export function runReminders() {
 
   // an event they asked to be reminded about, the day before
   savedEvents().forEach(e => {
-    const at = Date.parse(e.startsAt);
+    const at = eventStamp(e.startsAt);
     if (!at) return;
     if (t >= at - DAY && t < at) {
       once('ev:' + e.id + ':' + at,

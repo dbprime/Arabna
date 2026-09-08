@@ -11,7 +11,7 @@ ARABNA · عربنا — a mobile-first web app for the Arab community in the U.
 **business directory + marketplace + events + magazine**, Arabic-first with a full English toggle.
 ("Classifieds / الإعلانات الشخصية" is now "Marketplace / السوق" — the old `#/classifieds`
 routes still resolve so shared links keep working.)
-Current version: **V.10.6 (prototype)**. Owner: dbprime. Deploys to Vercel (team DB Prime).
+Current version: **V.10.7 (prototype)**. Owner: dbprime. Deploys to Vercel (team DB Prime).
 
 ## Hard rules (from the product brief)
 0. ⚠️ **THE OWNER'S NAME IS NEVER WRITTEN — anywhere.** Not in this file, not
@@ -10748,6 +10748,155 @@ the console errors its own last item counts. It signs in for real, awaits
 both calls, and **both blocks use one import expression**, because on the
 single-file build a relative path hands back a second module instance and
 the session would have been made in one while the hide ran in the other.
+
+## V.10.7 — four real events, and a section that was empty for everybody (642)
+
+⚠️ **This file closes its own group, and its group is itself** — the
+measurement below moved it out of `js/data.js` and into `js/store.js` and
+one screen, and `js/store.js` is one of the three the 5 September decision
+names as a reason a batch is treated as its group's closer.
+
+### The section showed a visitor nothing at all
+Measured on `main` before a line was written:
+
+```
+EVENTS                     3 records, all three inside markDemo()
+showDemo (the default)     false, since 510
+withoutDemo(EVENTS)        []
+state.extraEvents          [] on a device that added nothing
+upcomingEvents()           []
+```
+
+> **The events section on `arabna.app` showed not one event, to any
+> visitor.**
+
+⚠️ **And neither scheduled check could see it.** The daily one measures
+that the screen opens and does not fall over — it did. The events check
+looks for festivals **in the world** and never opens the app. **Each is
+right in its own lane, and the gap was between them.**
+
+⚠️ **The factory was running and the warehouse was locked.** That events
+check has produced **four valid festivals measured from their organisers'
+own pages** — three on 1 September, one on 7 September — and not one of
+them was in the app, because there was no road: `EVENTS` is a seed file,
+`extraEvents` is local to one device, and the `events` table on the server
+is dead until `665`. **This batch is a one-off opening by hand, and it is
+not the way events arrive from now on.**
+
+### The four, and the rule they are written under
+`e4`–`e7` sit **outside `markDemo`**, so they carry no `demo` flag and are
+what a visitor sees with the default state and no key touched. **The three
+seeds are not deleted** — that is a launch decision with its own place, and
+they are not displayed today anyway.
+
+- ⚠️ **Every field is what the ORGANISER published, and nothing else.**
+  Two of the four have announced no doors, so those records carry **a date
+  and no hour** — and the app prints none. «$10 on-site before 4 PM» is a
+  price boundary, the 7:00 and 8:00 concerts are shows **inside** the
+  festival, and «VIP access at 5 PM» is one ticket class: not one of them
+  is an opening hour, so not one is lifted into `startsAt`.
+- **«Midtown Park» is written now because it became STATED on 7 September**
+  — the 1 September check refused it, correctly, while it was still an
+  inference of ours. The date it became text is what changed, not the time
+  that passed.
+- **The price is the organiser's own wording, whole, never reduced to one
+  figure.** All four are compound, and «من $5» on the Palestinian one is a
+  floor and not an entry price: its tiers appear only inside the payment
+  portal, so that is what the line says.
+- ⚠️ **«Free Admissions\*» is never carried across as «مجّاني» alone.** The
+  organiser's own footnote says the free half is the visual art display;
+  the Saturday evening theatre is ticketed and its price and hour read
+  «COMING SOON» on that same page, so neither is written.
+- **The year of the Palestinian festival was confirmed by the owner himself,
+  on the official site, on 7 September.** It is written down not because it
+  was doubted but because this is a field's source record: the site prints
+  «October 10-11» and «12th Annual» with **no year in the body**, so the
+  year was not carried from an aggregator and not inferred from the
+  calendar. And the «1:00 PM» an aggregator printed **is not carried
+  across** — no organiser said it.
+- ⚠️ **`houstonmedfest.com` was NOT re-opened before the close.** The
+  egress proxy refuses the host (403 on the tunnel), by `curl` and by
+  fetch alike, so its dates stand on the 1 September measurement recorded
+  in `docs/تقارير/2026-09-01-فعاليات.md`. **A check that did not run is
+  said not to have run.**
+- **One field the spec left unnamed and this batch had to choose:** the
+  Palestinian venue's Arabic side. The other three were given
+  («حديقة ميدتاون» · «كنيسة القدّيس جاورجيوس الأرثوذكسيّة» ·
+  «المركز الإسماعيلي»), so the fourth follows the same idiom —
+  «ذا ووتر ووركس — حديقة بافالو بايو». It is one line to overturn.
+
+### And the one line the spec allowed turned out to be a wrong DAY, not a wrong hour
+The spec expected, at most, that a date with no time would print
+«12:00 ص» — an hour nobody said. **Measured in Houston's own timezone, it
+was worse:**
+
+```
+new Date('2026-10-17')                UTC midnight
+…in America/Chicago                   Fri 16 October, 7:00 pm
+the card would have read              «الجمعة، 16 أكتوبر · 7:00 م»
+eventIsPast(endsAt '2026-10-18')      true from 17 October at 7:00 pm
+```
+
+⚠️ **So the app would have printed the day BEFORE the festival, and hidden
+a festival that was still running.** A wrong hour is an invention; a wrong
+day sends a family out on the wrong day.
+
+- **`eventIsAllDay(iso)` and `eventStamp(iso, endOfDay)` in `js/data.js`**,
+  beside `nextOccurrence`. A bare date is **local** midnight, never UTC;
+  and `endOfDay` is for an `endsAt`, because the day it names is the LAST
+  day — the festival is over when that day is **over**, not when it begins.
+- **Four readers, and no fifth.** `fmtEventDate` and `whenLabel` in
+  `js/screens/events.js` (which `admin.js` inherits, since it calls the
+  first), and `eventIsPast` and the `upcomingEvents` sort in `js/store.js`.
+  The saved-event reminder reads it too, or it would fire on the wrong day.
+- **The propose/edit form is untouched**: its `datetime-local` always emits
+  `YYYY-MM-DDTHH:mm`, so it cannot make an all-day event and needs nothing.
+
+### A price inside an Arabic line is isolated at the source
+⚠️ **Measured before the fix, by the glyph rectangles:** «$25» in the
+Arabic description rendered with the `$` **18px to the RIGHT of its own
+digits** — «25$» on the screen, which is exactly the V.02.7 fault that
+`fmtMoney()` exists to prevent. **There is no formatter here**: these are
+data strings that reach the page through `esc()`, so there is no element to
+hang `unicode-bidi` on and the isolate has to travel **inside the text**.
+
+- **`ltrRun()` in `js/data.js`** wraps a price or a Latin run in U+2066…
+  U+2069. Measured after: the `$` at **298** against its digits at **307**.
+- **The street addresses go through it too**, and that is the same rule
+  from the other side: a mixed Arabic/Latin line with no isolating ancestor
+  is what `test_v40 · 5.1` refuses. Measured on both event pages: **zero**.
+- **Nothing wraps the English side** — that paragraph is already LTR.
+
+### `test_v82` — 46 assertions, and five teeth
+```
+the four put back inside markDemo   → 1.2 · 1.3 · 1.4 · 1.5 · 2.1 · 2.2 · 2.3 · 4.1
+                                       and «real events now: 0» — the fault itself
+Date.parse back in the two display  → 5.1 «الجمعة، 16 أكتوبر · 7:00 م» · 5.2 «9 أكتوبر»
+   functions                          · 5.3 · 5.6 · 5.11 · 6.4
+Date.parse back in eventIsPast      → 5.7 · 5.8 · 5.12
+a compound price cut to one figure  → 7.1
+the isolates taken out              → 8.1 «$ at 316 · digits at 298» · 8.4
+```
+
+⚠️ **And one of its own items was a green that measured nothing, found by
+running the first tooth rather than by reading.** `1.5` asked for
+`.empty-state`; `emptyState()` in `ui.js` builds **`.empty`**, so it stayed
+green over a section with no events in it — a check asleep on the very
+fault the suite is about. It reads `#app .empty` now, and under that same
+tooth it goes red with the rest.
+
+### And the group closes — the net, run on segments over one frozen tree
+```
+160 runs · 80 suites · 7,583 assertions · zero red · zero crash
+```
+Twenty-seven segments over `1e79c0a`, `HEAD` re-checked at the head of each
+(the runner exits 2 on a moved character or a dirty tree, and none did),
+**80 present and 80 run, each exactly twice, and no result borrowed.**
+
+⚠️ **The arithmetic closes itself: 7,491 + 92 (`v82` × 2) = 7,583 — and not
+one older suite moved by a single assertion.** That is what a batch of four
+records plus a display fix contained to one subsystem should look like: the
+day it moves an older number, the number is the thing to read.
 
 ## Known open items
 - **The header image is still far larger than its box.** V.04.7 replaced

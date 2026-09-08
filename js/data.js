@@ -15,6 +15,17 @@
  */
 export const markDemo = (list) => list.map(x => Object.assign({ demo: true }, x));
 
+/* A Latin run or a price sitting inside an Arabic line is ISOLATED at the
+   source, exactly as `fmtMoney()` isolates every figure it formats.
+   ⚠️ Measured before this was written: «$25» in an Arabic paragraph came
+   out «25$» — the `$` sat 18px to the RIGHT of its own digits — and a
+   street address is the same shape, which is why `test_v40 · 5.1` refuses
+   a mixed line with no isolating ancestor. These are DATA strings that
+   reach the page through `esc()`, so there is no element to hang
+   `unicode-bidi` on: the isolate has to travel inside the text.
+   Nothing wraps the English side — that paragraph is already LTR. */
+const ltrRun = (s) => `\u2066${s}\u2069`;
+
 /* ============================================================
    The twenty-one directory categories (V.02.1)
    ------------------------------------------------------------
@@ -100,7 +111,7 @@ export const CLASSIFIED_CATS = MARKET_CATS;
    hand-typed «0.1» while the project had reached V.03.6 — two literals,
    both stale, and a reader reporting a fault could not tell us which build
    they were on. Raise it here when CLAUDE.md's version line moves. */
-export const APP_VERSION = '0.10.6';
+export const APP_VERSION = '0.10.7';
 
 /* ⚠️ توثيق الجوال مؤجَّلٌ إلى ما بعد الإطلاق على App Store — قرار مالك
    البرنامج، وسببه الكلفة: مزوّد الرسائل حسابٌ مدفوعٌ بكلفةٍ لكلّ رسالة،
@@ -6486,6 +6497,104 @@ export const EVENTS = markDemo([
     repeat: { kind: 'hijri', spawned: [] },
     source: '', externalId: '', sourceUrl: '',
   },
+]).concat([
+  /* ---------------------------------------------------------------
+     FOUR REAL EVENTS, and they sit OUTSIDE `markDemo` on purpose:
+     they carry no `demo` flag, so `withoutDemo()` keeps them and they
+     are what a visitor sees with the invented data switched off — which
+     it has been by default since 510. Before them the events section
+     was empty for every visitor: the three seeds above are all demo,
+     and `extraEvents` is empty on a device that added nothing.
+
+     Every field below is what the ORGANISER published, and nothing
+     else. What the organiser did not say is left out and never
+     guessed — the doors hour of two of them is not announced, so
+     `startsAt` carries a date with no time and the screen prints none.
+
+     This is a one-off opening by hand. The permanent road is the
+     `events` table on the server; nothing here makes seeds the way
+     events arrive from now on.
+     --------------------------------------------------------------- */
+  {
+    id: 'e4', type: 'festival', status: 'live',
+    title: { ar: 'مهرجان هيوستن اللبناني الثامن', en: '8th Houston Lebanese Festival' },
+    /* A DATE WITH NO TIME: the organiser has not announced the doors.
+       «$10 on-site before 4 PM» is a price boundary and the 7:00 and
+       8:00 concerts are shows inside the festival — neither is an
+       opening hour, so neither is lifted up here. */
+    startsAt: '2026-10-17', endsAt: '2026-10-18',
+    venue: { ar: 'حديقة ميدتاون', en: 'Midtown Park' },
+    city: 'Houston, TX',
+    desc: { ar: `مهرجان لبناني على مدى يومين في ${ltrRun('2811 Travis St')}، بأكل ومزّة وموسيقى حيّة.\n`
+              + `حفلتان داخل المهرجان: السبت 7:00 مساءً، والأحد 8:00 مساءً.\n`
+              + `التذاكر: ${ltrRun('$25')} مسبقاً · ${ltrRun('$10')} على الباب قبل الرابعة · ${ltrRun('$25')} بعدها.\n`
+              + `وتذكرة ${ltrRun('VIP')}: ${ltrRun('$150')} لليلة و${ltrRun('$270')} لليلتين. والأطفال دون العاشرة مجّاناً.\n`
+              + `ساعة افتتاح المهرجان لم يعلنها المنظّم بعد.`,
+            en: 'A two-day Lebanese festival at 2811 Travis St, with food, mezze and live music.\n'
+              + 'Two concerts inside the festival: Saturday 7:00 PM and Sunday 8:00 PM.\n'
+              + 'Tickets: $25 in advance · $10 at the gate before 4 PM · $25 after · VIP $150 for one night and $270 for both · children under 10 free.\n'
+              + 'The festival’s opening hour has not been announced by the organiser.' },
+    organizer: { ar: 'المركز الثقافي اللبناني الأمريكي', en: 'American Lebanese Cultural Center' },
+    ticketUrl: 'https://alcchouston.wildapricot.org/2026-Festival',
+    icon: 'utensils', photo: '', featured: false,
+    source: 'manual', externalId: '', sourceUrl: 'https://alcchouston.wildapricot.org/2026-Festival',
+  },
+  {
+    id: 'e5', type: 'festival', status: 'live',
+    title: { ar: 'مهرجان هيوستن المتوسّطي', en: 'Houston Mediterranean Festival' },
+    /* Both hours are stated by the organiser: «11:00 AM – 10:00 PM both days». */
+    startsAt: '2026-10-23T11:00', endsAt: '2026-10-24T22:00',
+    venue: { ar: 'كنيسة القدّيس جاورجيوس الأرثوذكسيّة', en: 'St. George Orthodox Christian Church' },
+    city: 'Houston, TX',
+    desc: { ar: `مهرجان متوسّطي على مدى يومين في ${ltrRun('5311 Mercer St')}، من 11:00 صباحاً إلى 10:00 مساءً في اليومين.\n`
+              + `التذاكر: ${ltrRun('$5')} مسبقاً ليوم واحد · ${ltrRun('$5')} على الباب قبل الخامسة · ${ltrRun('$10')} بعدها · الأطفال دون الرابعة مجّاناً مع بالغ دافع.`,
+            en: 'A two-day Mediterranean festival at 5311 Mercer St, 11:00 AM to 10:00 PM on both days.\n'
+              + 'Tickets: $5 in advance for one day · $5 at the gate before 5 PM · $10 after · children under 4 free with a paying adult.' },
+    organizer: { ar: 'كنيسة القدّيس جاورجيوس الأرثوذكسيّة', en: 'St. George Orthodox Christian Church' },
+    ticketUrl: 'https://houstonmedfest.com/',
+    icon: 'utensils', photo: '', featured: false,
+    source: 'manual', externalId: '', sourceUrl: 'https://houstonmedfest.com/',
+  },
+  {
+    id: 'e6', type: 'festival', status: 'live',
+    title: { ar: 'مهرجان الفنون الإسلاميّة الثالث عشر', en: '13th Annual Islamic Arts Festival' },
+    startsAt: '2026-11-21T10:30', endsAt: '2026-11-22T17:30',
+    venue: { ar: 'المركز الإسماعيلي', en: 'Ismaili Center, Houston' },
+    city: 'Houston, TX',
+    /* «Free Admissions*» carries a published footnote: the free half is
+       the visual art display alone. The Saturday evening theatre is
+       ticketed, and its price and its hour read «COMING SOON» on the
+       organiser's own page — so neither is written here. */
+    desc: { ar: `مهرجان فنون على مدى يومين في ${ltrRun('2323 Allen Pkwy')}، من 10:30 صباحاً إلى 5:30 مساءً.\n`
+              + `الدخول إلى معرض الفنون البصريّة مجّاني. أمّا عروض مسرح السبت المسائيّة فبتذكرة، وسعرها وساعتها لم يعلنهما المنظّم بعد.`,
+            en: 'A two-day arts festival at 2323 Allen Pkwy, 10:30 AM to 5:30 PM.\n'
+              + 'Entry to the visual art display is free. The Saturday evening theatre programmes are ticketed, and their price and hour have not been announced by the organiser.' },
+    organizer: { ar: 'جمعية الفنون الإسلامية', en: 'Islamic Arts Society' },
+    ticketUrl: 'https://islamicartssociety.org/festival-2026/',
+    icon: 'sparkles', photo: '', featured: false,
+    source: 'manual', externalId: '', sourceUrl: 'https://islamicartssociety.org/festival-2026/',
+  },
+  {
+    id: 'e7', type: 'festival', status: 'live',
+    title: { ar: 'مهرجان هيوستن الفلسطيني الثاني عشر', en: '12th Houston Palestinian Festival' },
+    /* A DATE WITH NO TIME, again: the official site and the ticket
+       portal both give the days and no opening hour. The «1:00 PM» an
+       aggregator printed is not carried across — no organiser said it. */
+    startsAt: '2026-10-10', endsAt: '2026-10-11',
+    venue: { ar: 'ذا ووتر ووركس — حديقة بافالو بايو', en: 'The Water Works at Buffalo Bayou Park' },
+    city: 'Houston, TX',
+    desc: { ar: `مهرجان فلسطيني على مدى يومين في ${ltrRun('105-B Sabine St')}، بأكل وتراث وبرنامج عائلي.\n`
+              + `التذاكر: تبدأ من ${ltrRun('$5')}، وجدول الفئات لا يظهر إلّا داخل بوّابة الدفع.\n`
+              + `ساعة الافتتاح لم يعلنها المنظّم بعد.`,
+            en: 'A two-day Palestinian festival at 105-B Sabine St, with food, heritage and a family programme.\n'
+              + 'Tickets: from $5, and the full price list appears only inside the ticket portal.\n'
+              + 'The opening hour has not been announced by the organiser.' },
+    organizer: { ar: `المركز الثقافي الفلسطيني الأمريكي في ${ltrRun('Houston')}`,
+                 en: 'Palestinian American Cultural Center of Houston (PACC)' },
+    ticketUrl: 'https://tzkrti.com/en/events/4391',
+    icon: 'sparkles', photo: '', featured: false,
+    source: 'manual', externalId: '', sourceUrl: 'https://www.houstonpalestinianfestival.com/',
+  },
 ]);
 
 /** A brand-new event record — one place that defines the shape. */
@@ -6524,6 +6633,32 @@ export function blankEvent() {
    a mosque: a wrong mass time sends somebody to a locked door on a Sunday
    morning, and the blank is what creates the pressure that fills it. */
 export const BLANK_SERVICES = { sunday: [], weekday: [], note: { ar: '', en: '' } };
+
+/* ---------------- an event date with no hour on it ----------------
+   An organiser publishes «October 17 & 18» and announces no doors. The
+   record then carries a DATE and no time, and two things must hold.
+
+   ⚠️ It is read as LOCAL midnight and never as UTC. Measured in Houston
+   before this was written: `new Date('2026-10-17')` is UTC midnight,
+   which is **16 October at 7:00 pm** there — so the app printed the day
+   BEFORE the festival, and `eventIsPast` hid a festival that was still
+   running. A wrong date sends a family out on the wrong day.
+
+   ⚠️ And nothing prints an hour for it. `12:00 ص` is an hour nobody
+   said, which is the same fault as an invented jumuah time.
+
+   `endOfDay` is for an `endsAt`: the day it names is the LAST day, so
+   the event is over when that day is over, not when it begins. */
+export function eventIsAllDay(iso) { return /^\d{4}-\d{2}-\d{2}$/.test(String(iso || '')); }
+
+export function eventStamp(iso, endOfDay = false) {
+  const s = String(iso || '');
+  if (!s) return NaN;
+  if (!eventIsAllDay(s)) return Date.parse(s);
+  const [y, m, d] = s.split('-').map(Number);
+  return endOfDay ? new Date(y, m - 1, d, 23, 59, 59, 999).getTime()
+                  : new Date(y, m - 1, d).getTime();
+}
 
 export const HIJRI_YEAR_DAYS = 354.367;
 export function nextOccurrence(iso, kind) {
