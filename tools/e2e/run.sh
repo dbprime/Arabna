@@ -2,7 +2,15 @@
 # Every suite against both builds, two at a time.
 #
 #   python3 -m http.server 8099        # from the repo root
-#   tools/e2e/run.sh                   # ~1h45 (measured 5 Sep 2026 · 72 suites × 2 builds)
+#   tools/e2e/run.sh
+#
+# ⚠️ NO DURATION IS WRITTEN HERE ANY MORE, AND THAT IS THE POINT OF 615.
+# There were three hand-written figures for one run — «~50 min» in
+# CLAUDE.md, «~25 minutes» in this head, and a third in the gate table —
+# and no two of them agreed, because the net was 43 suites when the first
+# was typed and is 80 now. A number written by hand ages with nobody
+# noticing; `run.sh` MEASURES its own time and prints it at the tail of
+# every run, per suite and per build. Read it there.
 #
 # These live in the repository ON PURPOSE. They spent five batches in a
 # scratch directory and a container reset destroyed three of them at once,
@@ -68,34 +76,107 @@ fi
 # The exit code has to travel out of the two background subshells, or
 # `daily.sh` prints "suites: clean" over a red run — which is the same
 # fault as counting only `^FAIL` and reading a crashed suite as zero.
-# Clear the previous run's per-suite files first. They are not the report
-# — the summary lines are — but they are what somebody reads while a run
-# is in progress, and a stale set from an earlier run sitting beside the
-# current one reads as progress that has not happened. It misled me into
-# reporting a run near v38 when it was at v9.
-rm -f /tmp/e2e-m-*.txt /tmp/e2e-s-*.txt
+# ⚠️ THE RESULTS OF ONE TREE ACCUMULATE; THE RESULTS OF ANOTHER ARE WIPED.
+# The full net is run ON SEGMENTS — the container is suspended whenever the
+# session goes idle, so one long invocation freezes with it (measured once:
+# two and a half hours of wall clock against ninety seconds of work). The
+# old line here was `rm -f /tmp/e2e-m-*.txt /tmp/e2e-s-*.txt`, so THE LAST
+# SEGMENT ERASED THE EVIDENCE OF EVERY SEGMENT BEFORE IT and «the whole net
+# is green» became a sentence somebody added up by hand — which is the same
+# arithmetic that once printed 48 for 49.
+#
+# The reason that line existed is still right and is kept: a stale set from
+# an EARLIER TREE sitting beside the current one reads as progress that has
+# not happened. So the wipe is made conditional rather than deleted — the
+# folder is named after the tree, and only other trees' folders go.
+SHA=$(git rev-parse --short HEAD 2>/dev/null || echo nogit)
+OUT="/tmp/e2e-$SHA"
+mkdir -p "$OUT"
+for d in /tmp/e2e-*; do
+  [ -e "$d" ] || continue
+  [ "$d" = "$OUT" ] && continue
+  rm -rf "$d"
+done
+INDEX="$OUT/index.tsv"
 BAD=$(mktemp)
+# ⚠️ `$SECONDS` and not `date`: a counter bash keeps itself, with no second
+# process spawned inside a loop that turns 160 times, and no dependence on a
+# format that differs between systems.
 run() {
   build=$1; tag=$2
+  t_build=$SECONDS
   for v in $SUITES; do
-    BASE="$HOST/$build" node test_v$v.mjs > /tmp/e2e-$tag-$v.txt 2>&1
+    t0=$SECONDS
+    BASE="$HOST/$build" node test_v$v.mjs > "$OUT/$tag-$v.txt" 2>&1
     code=$?
+    dt=$((SECONDS - t0))
     [ $code -ne 0 ] && echo "$tag v$v" >> "$BAD"
-    line=$(grep -a 'passed,' /tmp/e2e-$tag-$v.txt | tail -1)
+    line=$(grep -a 'passed,' "$OUT/$tag-$v.txt" | tail -1)
+    nfail=$(grep -ac '^FAIL' "$OUT/$tag-$v.txt")
     if [ -z "$line" ]; then
-      echo "$tag v$v: *** CRASHED (exit $code) — no result line ***"
-      tail -6 /tmp/e2e-$tag-$v.txt
+      echo "$tag v$v: *** CRASHED (exit $code) — no result line *** [${dt}s]"
+      tail -6 "$OUT/$tag-$v.txt"
+      # a crash has no assertion count of its own — recorded as one, and
+      # the verdict below counts it apart rather than silently as zero
+      printf '%s\t%s\t%s\t%s\t%s\t%s\n' "$tag" "$v" "0" "0" "$dt" "CRASH" >> "$INDEX"
     else
-      echo "$tag v$v: $line | $(grep -ac '^FAIL' /tmp/e2e-$tag-$v.txt) FAIL$([ "$code" != 0 ] && echo " (exit $code)")"
-      grep -a '^FAIL' /tmp/e2e-$tag-$v.txt | head -5
+      echo "$tag v$v: $line | $nfail FAIL [${dt}s]$([ "$code" != 0 ] && echo " (exit $code)")"
+      grep -a '^FAIL' "$OUT/$tag-$v.txt" | head -5
+      npass=$(echo "$line" | sed -n 's/^\([0-9][0-9]*\) passed.*/\1/p')
+      nf=$(echo "$line" | sed -n 's/.*, \([0-9][0-9]*\) failed.*/\1/p')
+      printf '%s\t%s\t%s\t%s\t%s\t%s\n' "$tag" "$v" "${npass:-0}" "${nf:-0}" "$dt" "OK" >> "$INDEX"
     fi
   done
-  echo "DONE-$tag"
+  echo "DONE-$tag [$((SECONDS - t_build))s]"
 }
 run index.html m &
 run index-single-file.html s &
 wait
 echo "SUITES ($RUN_N$([ "$RUN_N" -ne "$DERIVED_N" ] && echo " of $DERIVED_N — PARTIAL")) — a different number here means a run went missing"
+echo "INVOCATION: ${SECONDS}s"
+
+# ⚠️ THE VERDICT IS READ FROM THE INDEX, NEVER ADDED UP BY HAND.
+# Each segment still announces itself PARTIAL above — that guard is not
+# softened and not switched off — and COMPLETENESS is declared here and
+# only here, from the accumulated index of one tree. A sentence somebody
+# summed across nineteen segments is a sentence, not a measurement.
+#
+# ⚠️ And it reads the LAST line for each (build, suite): a suite re-run
+# after a fix counts once, with its latest result, so a re-run neither
+# inflates the count nor keeps its old red alive.
+awk -F'\t' -v derived="$DERIVED" -v sha="$SHA" -v out="$OUT" '
+  { key = $1 "\t" $2; pass[key]=$3; fail[key]=$4; secs[key]=$5; state[key]=$6;
+    build[$1]=1; }
+  END {
+    n = split(derived, D, " ");
+    print "";
+    print "INDEX  " out "/index.tsv   ·   HEAD " sha;
+    runs=0; asserts=0; reds=0; crashes=0;
+    for (k in pass) { runs++; asserts+=pass[k]+fail[k]; reds+=fail[k];
+                      if (state[k]=="CRASH") crashes++;
+                      split(k, P, "\t"); tot[P[1]] += secs[k]; seen[k]=1; }
+    # the COUNT is always printed and the names are capped: a working run
+    # of three suites would otherwise bury its own result under a hundred
+    # and fifty lines naming everything it did not ask for.
+    miss=""; nmiss=0;
+    for (b in build) for (i=1;i<=n;i++) if (D[i] != "" && !((b "\t" D[i]) in seen)) {
+      nmiss++; if (nmiss <= 20) miss = miss " " b "/v" D[i]; }
+    if (nmiss > 20) miss = miss " …";
+    distinct=0; for (k in seen) { split(k,P,"\t"); if (!(P[2] in su)) { su[P[2]]=1; distinct++; } }
+    nb=0; for (b in build) nb++;
+    printf "  runs %d   ·   %d distinct suite(s) × %d build(s)   ·   %d derived\n", runs, distinct, nb, n;
+    printf "  assertions %d   ·   FAIL %d   ·   CRASH %d\n", asserts, reds, crashes;
+    for (b in build) printf "  build %s: %ds in this index (all segments)\n", b, tot[b];
+    # ⚠️ and BOTH builds, named: a net measured on one build is not the net,
+    # and «distinct == derived» alone would say COMPLETE over half of it.
+    if (nmiss == 0 && distinct == n && ("m" in build) && ("s" in build))
+      print "  NET COMPLETE — every derived suite ran on both builds in this index";
+    else
+      printf "  NET INCOMPLETE — %d run(s) missing:%s\n", nmiss, miss;
+    print "  SLOWEST:";
+    for (k in secs) { split(k, P, "\t"); printf "    %s v%-3s %4ds\n", P[1], P[2], secs[k] | "sort -rn -k3 | head -10"; }
+    close("sort -rn -k3 | head -10");
+  }' "$INDEX"
 echo ALLDONE
 if [ -s "$BAD" ]; then
   echo "RED: $(wc -l < "$BAD" | tr -d ' ') suite run(s) failed — $(tr '\n' ' ' < "$BAD")"
