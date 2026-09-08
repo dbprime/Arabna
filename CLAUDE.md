@@ -824,6 +824,12 @@ already exist, so nineteen segments cost what one invocation costs.
 - **The last line for each (build, suite) wins**, so a suite re-run after a
   fix counts once with its latest result: a re-run neither inflates the
   count nor keeps its old red alive.
+- ⚠️ **A net is STARTED with `FRESH=1`, and the reason was measured rather
+  than reasoned about.** The index accumulates, which is what makes segments
+  one proof — and by the same property **a teeth run leaves its deliberate
+  red in it**, which the next invocation reads as the net's own. An index
+  was seen carrying «FAIL 2» from two mutations run an hour earlier. The
+  first segment clears the index; every segment after it appends.
 
 ### The full net runs once per GROUP, and the closing file says so at its head
 the owner's decision of 28 August: the full net is the better part of two hours, and

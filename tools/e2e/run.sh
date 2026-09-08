@@ -98,6 +98,14 @@ for d in /tmp/e2e-*; do
   rm -rf "$d"
 done
 INDEX="$OUT/index.tsv"
+# ⚠️ AND A NET IS STARTED WITH A CLEAN INDEX — `FRESH=1 tools/e2e/run.sh`.
+# The index accumulates on purpose, which is what makes segments one proof;
+# the same property means a TEETH RUN on this tree (a check deliberately
+# broken to prove it bites) leaves its red in the index and the next
+# invocation reads it as the net's own. Found by measuring, not by reading:
+# an index showed «FAIL 2» from two mutations run an hour earlier.
+# The first segment of a net clears it; every segment after it appends.
+[ -n "$FRESH" ] && rm -f "$INDEX"
 BAD=$(mktemp)
 # ⚠️ `$SECONDS` and not `date`: a counter bash keeps itself, with no second
 # process spawned inside a loop that turns 160 times, and no dependence on a
