@@ -10945,6 +10945,157 @@ one older suite moved by a single assertion.** That is what a batch of four
 records plus a display fix contained to one subsystem should look like: the
 day it moves an older number, the number is the thing to read.
 
+## The net says where its time goes, before anything is cut from it (615)
+
+**No version raise:** nothing in `js/` or `styles/` is touched, so no line
+reaches a reader. `tools/e2e/`, `tools/audit/daily.sh`, `LICENSES.md` and
+this file — the rule of `180`, `185`, `210`, `344` and `560`.
+
+### The fault: the net does not measure itself, so its figure ages unwatched
+⚠️ **Measured by searching the whole file: `tools/e2e/run.sh` carried not
+one time measurement.** No timestamp, no `SECONDS`, no `date`. It printed
+each suite's `passed,` line and its `FAIL` count **and never said how long
+any of them took.**
+
+```
+CLAUDE.md            «about an hour and three quarters»   typed when the net was 43 suites
+tools/e2e/run.sh     «~25 minutes» in its own head        a second figure
+the gate table       «~1h45»                              a third
+the real net         eighty suites
+```
+
+**Three hand-written figures for one run and no two of them agreed** — and
+the truest was an estimate from a single invocation. It is exactly the class
+this project warns about in two other places — «a number written here ages
+with nobody noticing» in `docs/الحالة.md`, and «the suite list is computed,
+never written» in `395`. **The duration was the last number still written by
+hand.**
+
+⚠️ **And nothing is cut from the net before it is measured.** Dropping a
+suite for looking small could as easily remove the cheapest thing in the net
+as the dearest, **and until this batch nobody could say which.**
+
+### `run.sh` measures itself
+`$SECONDS` and not `date` — a counter bash keeps itself, with no second
+process spawned inside a loop that turns 160 times, and no dependence on a
+format that differs between systems. Each suite prints `[Ns]` beside its own
+line, each build prints its total, and the invocation prints its own.
+
+**And the first real numbers, on the day it landed:**
+
+```
+v59    1s        v66   7s / 14s
+v3   166s      v8  291s      v14  251s
+```
+
+⚠️ **The distribution is extreme, and that is the finding.** `v8` is nearly
+three hundred times `v59`. Three suites alone hold about **twelve minutes**
+of one build's net. **A merge or a cut decided by eye — by counting `ok()`
+lines, say — would have been decided on the wrong axis entirely**, which is
+why `615`'s own §4 refuses to name a single suite for deletion and writes
+only the rules for the day it is decided.
+
+### The results of one tree accumulate; another tree's are wiped
+See the rule above («The full net is run ON SEGMENTS»). The mechanism landed
+here, in the same batch, because **a rule written before its mechanism reads
+as permission to add up by hand** — the very thing it forbids.
+
+⚠️ **The old `rm -f /tmp/e2e-m-*.txt` was right for its own reason and wrong
+for this one.** A stale set from an EARLIER TREE beside the current one reads
+as progress that has not happened — true, and kept. But it also meant **the
+nineteenth segment erased the evidence of the eighteen before it**, so «the
+whole net is green» became a sentence somebody summed. The wipe is now
+conditional: the folder is `/tmp/e2e-<sha>/`, and only other trees' folders
+go.
+
+**Proven rather than intended:** two consecutive invocations of one suite
+each accumulated into one index — `runs 4 · 2 distinct suites × 2 builds` —
+and the re-run of a suite replaced its own earlier line rather than adding
+one.
+
+### The flat waits: one helper, and the old number kept as the cap
+⚠️ **The measurement in `615` was of the LITERALS in the source, and the
+literals undercount.** 1,106 calls summing to 665 seconds — but a literal
+inside a helper is executed once per call site, not once: `go()` alone is
+**41 × 530 ms in `v14`, 49 × 340 in `v8`, 43 × 260 in `v3`** — about fifty
+seconds a build from three lines.
+
+**So the three heaviest suites had their navigation helper changed, and
+nothing else.** `shown(page, hash, cap)` waits for the condition the sleep
+stood for — `render()` in `app.js` is synchronous, so «the hash is this one
+and `#app` holds a drawn `.screen`» is a real condition — **and the cap is
+the number it replaces**, so on timeout it simply ends.
+
+⚠️ **The cap is what makes it safe, and it is not decoration.** `615`'s own
+warning is that a wrong condition produces a suite that passes on a fast
+machine and collapses on a slow one — **an intermittent red that can be
+neither believed nor disbelieved, and worse than the sleep.** With the old
+number as the ceiling this change can only ever be faster, never less
+patient.
+
+```
+            before (2 runs)      after (3 runs)
+v3   m        166 · 165            148
+v8   m        291 · 289            280
+v14  m        251 · 253            231
+                                   −48s a build, and every assertion kept
+```
+
+⚠️ **And the seventeen `reload()` waits in those same suites were measured
+and deliberately LEFT.** A reload's wait is not covering a render — it is
+covering `boot()`, which fetches the live rows and repaints afterwards.
+«The screen is drawn» would return before that lands, which is precisely the
+intermittent red above. **The rest of the 1,106 is a follow-up item in
+`docs/الحالة.md`, not this batch's.**
+
+### Two guards were wider than their own sentences
+Both were found after `610` merged, and neither is fixed by loosening.
+
+- **`v36`'s exclusion said «the identity call» and excluded THE WHOLE
+  HOST.** So the day the calendar fetched anything at all from Supabase,
+  `15.2` would have stayed green over the exact fault it exists to catch. It
+  now excludes the two boot READS by their paths, **and the host is imported
+  from `js/supabase-config.js` rather than written into the suite** — a
+  second copy parts from the first the day the project moves.
+  ⚠️ **Proven both ways:** a fetch to `/rest/v1/events` on that host turns
+  `15.2` red (`-> 1`) with the narrowing, **and passes green with the old
+  wide exclusion restored** — the fault reproduced, not argued.
+- **`v53 · 6.5` ranged 100–400 KB for a file of 211.** It caught the library
+  DISAPPEARING and never caught it GROWING: it could have doubled to 399 KB
+  and stayed green.
+
+⚠️ **AND A CORRECTION TO THE SPEC, MEASURED: neither `LICENSES.md` nor
+`docs/SBOM.md` recorded a size at all.** They record the version and the
+date. So the figure is written into `LICENSES.md` — 216,019 bytes — beside
+the version and date its own rule already updates together or not at all,
+and the check reads it from there.
+
+⚠️ **And NOT from the file itself.** A reference taken from the thing it
+measures moves with it and never fires — the trap this whole batch is about.
+**Proven:** a declared figure 30% low prints `211 KB against 146 KB
+declared`, and the line deleted prints `NaN`.
+
+⚠️ **And it is written in ONE place, not the two the spec asked for.** One
+number in two places is the same gap in another coat, and `docs/SBOM.md`
+already points at `LICENSES.md` for the attribution.
+
+### And one record corrected without rewriting history
+`d69603f`'s message says «eight suites» and names **ten** in its own body
+(`v20 · v27 · v29 · v36 · v42 · v43 · v44 · v50 · v53 · v55`). **History is
+not rewritten for it**; what matters is that the wrong figure is not carried
+anywhere else, and it is not.
+
+### What this batch deliberately does not do
+```
+delete or merge a suite        not here — §4 of the spec is rules, not an order
+more parallelism               the machine has two cores and run.sh has both busy
+                               with the two builds: fewer suites, not faster ones
+any line in js/ or styles/     not one character
+raise the version              no — nothing reaches a reader
+```
+
+__NET_LINE_615__
+
 ## Known open items
 - **The header image is still far larger than its box.** V.04.7 replaced
   the 831/837 KB lockups with the cropped marks at **333/338 KB** — 60% off

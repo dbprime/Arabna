@@ -172,11 +172,25 @@ console.log('--- online, nothing moved ---');
   if (!BASE.includes('single-file')) {
     ok('6.4 …and the first visit of the real build is unchanged, the vendored client apart',
        bytes / 1024 < 2200, Math.round(bytes / 1024) + ' KB');
-    /* and the deliberate part is measured too, so it cannot grow unnoticed
-       either: one library, and the figure `LICENSES.md` records */
+    /* ⚠️ 615 NARROWED THIS. The range was 100–400 KB for a file of 211, so
+       it caught the library DISAPPEARING and never caught it GROWING: it
+       could have doubled to 399 KB and stayed green, which is the opposite
+       of what its own line claims to guard.
+
+       ⚠️ And the reference is NOT the file's own size on disk. Reading it
+       from the thing it measures makes both sides move together and the
+       guard never fires — the trap this whole batch is about. It is the
+       figure RECORDED in `LICENSES.md`, beside the version and the date
+       that are already updated together or not at all: growing the library
+       without recording it is what turns this red. */
+    const declared = +(read('LICENSES.md').match(/الحجم\s+([0-9,]+)\s+بايت/) || [])[1]
+      ?.replace(/,/g, '');
+    ok('6.5a LICENSES.md records the vendored client\u2019s size', Number.isFinite(declared),
+       String(declared));
     ok('6.5 …and the vendored client is the one file it is meant to be',
-       vendorBytes > 100 * 1024 && vendorBytes < 400 * 1024,
-       Math.round(vendorBytes / 1024) + ' KB');
+       Number.isFinite(declared)
+       && vendorBytes > declared * 0.85 && vendorBytes < declared * 1.15,
+       Math.round(vendorBytes / 1024) + ' KB against ' + Math.round(declared / 1024) + ' KB declared');
   } else {
     ok('6.4 …and the single-file build registers nothing, so its weight is not this batch\u2019s',
        !/serviceWorker\.register/.test(await page.content()) || true,
