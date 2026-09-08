@@ -276,6 +276,19 @@ console.log('--- 3b: the form permitted what the server forbade ---');
 {
   const { ctx, p, db } = await fresh({ preConfirm: true });
   await open(p);
+  /* ⚠️ THE ID IS CAPTURED AT SIGN-UP, MEASURED BEFORE THE CODE SCREEN.
+     `confirmEmail` records it too, and the two layers hide each other: with
+     the sign-up line removed every behavioural item here stayed green,
+     because the second layer covered it. So the first one is measured on
+     its own — the same lesson `475` and V.07.9 wrote down, that a structural
+     check has to stand beside a behavioural one and not instead of it. */
+  const raw = await p.evaluate(async () => {
+    const S = window.__S;
+    await S.signUp({ name: 'Fresh', email: 'fresh@a.app', password: 'Qx7#mVzt2026', phone: '' });
+    return { id: S.state.user.id, verified: S.state.user.emailVerified };
+  });
+  ok('3b.0 a brand-new account carries its id before the code screen',
+     !!raw.id, JSON.stringify(raw));
   const uid = await member(p, 'dev2@a.app');
   /* a row this account owns that THIS DEVICE never published — which is
      precisely what a second phone sees */
