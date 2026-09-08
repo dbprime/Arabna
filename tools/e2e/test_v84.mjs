@@ -24,6 +24,7 @@
  */
 import { chromium } from '/opt/node22/lib/node_modules/playwright/index.mjs';
 import { readFileSync, readdirSync } from 'node:fs';
+import { pathToFileURL } from 'node:url';
 import { mockSupabase, MOCK_CODE } from './_supabase.mjs';
 import { unlockAdmin } from './_admin.mjs';
 
@@ -547,6 +548,114 @@ console.log('--- 9: null is not [] ---');
   const empty = await p.evaluate(() => (document.querySelectorAll('#app .empty') || []).length);
   ok('9.2 …and the section is not an empty state', empty === 0, String(empty));
   await ctx.close();
+}
+
+/* ============================================================
+   11 — the seed and the row are one thing (650 §5.5)
+   ------------------------------------------------------------
+   ⚠️ Block 7 above asks whether a table has a WRITER. This asks the other
+   half, and it comes from the owner's question of 6 September: «make sure
+   whatever we change on the businesses that are here today applies to any
+   new business that comes in later.» Measured, it did not — the app read
+   EIGHT fields off a `js/data.js` seed that had no column at all, so a
+   business added tomorrow could never be verified, never be claimed, never
+   carry a rating and never enter «nearest».
+
+   ⚠️ EVERY NUMBER HERE IS DERIVED. The tables come from the migrations, the
+   seed fields from `js/data.js`, and the pairing from the table's own name —
+   `businesses` ↔ `BUSINESSES` — so a table added tomorrow with a seed array
+   joins this by itself. Nothing is written as a count and nothing as a list.
+
+   ⚠️ And a field with no column is not an error: it is an EXCEPTION, and an
+   exception has to be WRITTEN with its reason in `docs/الحالة.md` §1.هـ. The
+   written one is a decision; the silent one is a fault waiting.
+   ============================================================ */
+console.log('--- 11: every field a screen reads has a source on the server ---');
+{
+  const sql = sqlCode();
+  const colsOf = (table) => {
+    const set = new Set();
+    const m = new RegExp('create table public\\.' + table + '\\s*\\(([\\s\\S]*?)\\n\\);').exec(sql);
+    if (m) for (const line of m[1].split('\n')) {
+      const c = /^\s*([a-z_]+)\s+[a-z]/.exec(line);
+      if (c) set.add(c[1]);
+    }
+    /* ⚠️ `add column` is matched across a newline: `0008` writes the table on
+       one line and the column on the next, so a single-line pattern would
+       have reported `city` missing on a schema that has carried it since
+       `645` — a red on a correct tree. */
+    for (const a of sql.matchAll(new RegExp('alter table\\s+public\\.' + table +
+        '\\s+add column\\s+(?:if not exists\\s+)?([a-z_]+)', 'g'))) set.add(a[1]);
+    return set;
+  };
+
+  const tables = [...sql.matchAll(/create table public\.([a-z_]+)/g)].map(m => m[1]);
+  const D = await import(pathToFileURL(ROOT + 'js/data.js').href);
+  /* the pairing is the table's own name in capitals — derived, not declared */
+  const paired = tables.filter(t => Array.isArray(D[t.toUpperCase()]));
+  ok('11.1 the tables with a seed array are found by name, not listed',
+     paired.length >= 3, paired.join(', '));
+
+  /* the reasoned exceptions, read from the state file */
+  const doc = read('docs/الحالة.md');
+  const sec = /## 1\.هـ\)[\s\S]*?(?:\n## |$)/.exec(doc);
+  const excused = new Map();
+  for (const m of (sec ? sec[0] : '').matchAll(/^\|\s*`([a-z_]+)`\s*\|\s*`([A-Za-z_]+)`\s*\|([^\n]*)\|/gm)) {
+    excused.set(m[1] + '.' + m[2], m[3].trim());
+  }
+  ok('11.2 …and the exceptions are read from the state file, not from here',
+     excused.size > 0, String(excused.size));
+
+  const snake = f => f.replace(/[A-Z]/g, c => '_' + c.toLowerCase());
+  const orphans = [];
+  for (const t of paired) {
+    const cols = colsOf(t);
+    const fields = new Set();
+    for (const row of D[t.toUpperCase()]) for (const k of Object.keys(row)) fields.add(k);
+    for (const f of fields) {
+      const c = snake(f);
+      // `id` is the row's identity (`id` / `seed_id`), never a field of its own
+      if (f === 'id' || cols.has(c) || (cols.has(c + '_ar') && cols.has(c + '_en'))) continue;
+      if (excused.has(t + '.' + f)) {
+        // an exception with an empty cell is a line, not a reason
+        if (!excused.get(t + '.' + f)) orphans.push(t + '.' + f + ' (no reason)');
+        continue;
+      }
+      orphans.push(t + '.' + f);
+    }
+  }
+  ok('11.3 every seed field is a column, or an exception with a written reason',
+     orphans.length === 0, orphans.join(', '));
+
+  /* the other direction, and it is the one `645` §8 paid for: a box a human
+     fills that has no column works once, on one device, and is then lost */
+  const dir = code('js/screens/directory.js');
+  const call = /S\.addBusiness\(\{([\s\S]*?)\n *\}, \{ pendingReview \}\)/.exec(dir);
+  ok('11.4 the add-business form’s own call is read from the screen', !!call,
+     call ? String(call[1].length) : 'not found');
+  const sent = [...(call ? call[1] : '').matchAll(/^\s{6}([A-Za-z]+):/gm)].map(m => m[1]);
+  const store = code('js/store.js');
+  const map = /export function mapJsToLiveRow\(biz\) \{([\s\S]*?)\n\}/.exec(store);
+  const mapped = map ? map[1] : '';
+  const lost = sent.filter(k => !new RegExp("\\b" + k + "\\b").test(mapped));
+  ok('11.5 …and every field it sends reaches a column through the one reverse map',
+     sent.length >= 8 && lost.length === 0, sent.length + ' sent | lost: ' + lost.join(', '));
+
+  /* ⚠️ `plan` by name: the subscription lives on that column, and a reverse
+     map that dropped its key would let a panel issue a subscription, read
+     success, and leave it standing on one device alone. */
+  ok('11.6 …and `plan` is one of them, by name',
+     /\bplan\b/.test(mapped), mapped.includes('plan') ? 'present' : 'MISSING');
+  /* ⚠️ and `videos` is NOT read back: a field nothing writes is a field that
+     lies, and returning it to the read is what this asserts against */
+  ok('11.7 `videos` is not read from a live row',
+     !/'videos'/.test(/export function mapLiveRowToJs[\s\S]*?\n\}/.exec(store)[0]),
+     'read map');
+  /* ⚠️ and no column is ever added for what `owner_id` already answers */
+  ok('11.8 no `claimed` or `verified` column is added to the table',
+     !/alter table\s+public\.businesses\s+add column\s+(?:if not exists\s+)?(claimed|verified)\b/.test(sql)
+     && !colsOf('businesses').has('claimed') && !colsOf('businesses').has('verified'),
+     [...colsOf('businesses')].filter(c => c === 'claimed' || c === 'verified').join(', ') || 'neither');
 }
 
 console.log('--- console ---');

@@ -456,16 +456,48 @@ if (dl) {
   ok('6.49 with the id and the address', /^id,name,address$/.test(csv[0]) && csv[1].split(',').length >= 3, csv[1].slice(0, 60));
 } else { ok('6.48 the file holds every waiting address', false, 'no download'); ok('6.49 with the id and the address', false, 'no download'); }
 
-/* k. a moved shop never keeps the old point */
-const moved = await S(() => {const S = window.__S;
-    
-  S.applyBusinessEdit('b30', { address: '9999 Somewhere Else Rd, Katy, TX 77450' });
+/* k. a moved shop never keeps the old point.
+   ⚠️ REVERSED IN `650`, and the SUBJECT is unchanged: «a shop that moved and
+   kept the coordinates of where it used to be is worse than one with none».
+   What changed is the remedy. The old line CLEARED the point and put the
+   listing back in the queue; `650` re-derives it from the NEW address through
+   the three-step ladder, which costs no network call — so the shop is placed
+   approximately instead of dropped out of «الأقرب» altogether, and the stale
+   point is gone either way.
+   ⚠️ So both branches are measured now where one was: a move to a place we
+   can place, and a move to one we cannot. That is stronger than the original,
+   which never exercised the second.
+   ⚠️ AND THE FIXTURE AWAITS. `applyBusinessEdit` writes the server first since
+   `650`, so a call read on the next line reads the state BEFORE the edit
+   lands — which is what this item first reported, a red on correct code. */
+/* ⚠️ AND THE THREE ASK `hasCoords` AND THE QUEUE, NEVER `needsGeo`. Measured
+   while rewriting them: `needsGeo` is WRITTEN in five places and READ in
+   none — `needsGeoList()` filters on `hasCoords(b)` and every panel line
+   reads that list. So a check on the flag measures a field nothing acts on,
+   which is a green that guards nothing; these read what the app itself
+   reads. (The dead field is recorded in `docs/الحالة.md`, not deleted here.) */
+const moved = await S(async () => {const S = window.__S;
+  await S.applyBusinessEdit('b30', { address: '9999 Somewhere Else Rd, Katy, TX 77450' });
   const b = S.businessById('b30');
-  return { lat: b.lat, lng: b.lng, needsGeo: b.needsGeo, dist: S.distanceTo(b) };
+  return { lat: b.lat, lng: b.lng, placed: S.hasCoords(b), dist: S.distanceTo(b),
+           queued: S.needsGeoList().some(x => x.id === 'b30') };
 });
-ok('6.50 an address change clears the coordinates', moved.lat === null && moved.lng === null, JSON.stringify(moved));
-ok('6.51 and puts the listing back in the queue', moved.needsGeo === true);
-ok('6.52 so it stops claiming a distance', moved.dist === null);
+ok('6.50 an address change never leaves the OLD point standing — the new address places it',
+   moved.lat === 29.744 && moved.lng === -95.744 && moved.placed === true, JSON.stringify(moved));
+/* ⚠️ the QUEUE alone, not the distance: a mile figure needs the READER's own
+   point as well, which this step does not hold — and that half is measured
+   with one, six items above (6.24 · 6.31 · 6.36). An item that reaches into
+   a second subject fails on that subject and reads as a fault in this one. */
+ok('6.51 …so it leaves the «awaiting coordinates» queue',
+   moved.queued === false, JSON.stringify(moved));
+const lost = await S(async () => {const S = window.__S;
+  await S.applyBusinessEdit('b30', { address: '1 Nowhere St, Elsewhere, ZZ 00000' });
+  const b = S.businessById('b30');
+  return { lat: b.lat, placed: S.hasCoords(b), dist: S.distanceTo(b),
+           queued: S.needsGeoList().some(x => x.id === 'b30') };
+});
+ok('6.52 …and a move somewhere we cannot place clears it, queues it, and claims no distance',
+   lost.placed === false && lost.queued === true && lost.dist === null, JSON.stringify(lost));
 
 /* l. the rules underneath */
 /* V.04.2: this used to lean on `state.geo` happening to be null at this

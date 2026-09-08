@@ -189,11 +189,29 @@ const open = async (p, hash = '#/home') => {
   /* ⚠️ 485 real listings are NOT copied into the table — `0001` says so in
      as many words — so a live row exists only where somebody added or
      edited something, and it dresses the seed rather than replacing it. */
+  /* ⚠️ REVERSED IN `650`, and the reversal is the point rather than a
+     rename: `review_count` is NOT a column and never was — `650` measured
+     eight fields the app read off a seed with no column behind them, and
+     decided six of the eight are DERIVED rather than stored. So the count
+     is computed at read from the reviews when they land (`655`), and a map
+     that pretended to carry it would be reading a column that does not
+     exist. `zip` and `mobile_service` are the two the same batch added:
+     real columns a required box was filling and nobody was reading. */
   ok('6.2 mapLiveRowToJs turns a row into the shape data.js uses', await p.evaluate(() => {
     const o = window.__S.mapLiveRowToJs({ seed_id: 'b30', name_ar: 'س', name_en: 'S',
-      phone: '7130000000', review_count: 4, non_commercial: true });
+      phone: '7130000000', zip: '77036', mobile_service: true, non_commercial: true });
     return o.name.ar === 'س' && o.name.en === 'S' && o.phone === '7130000000' &&
-           o.reviewCount === 4 && o.nonCommercial === true;
+           o.zip === '77036' && o.mobileService === true && o.nonCommercial === true;
+  }));
+  /* ⚠️ and the other half of that decision, asserted rather than assumed: a
+     field with no column is not invented on the way through — `videos` is
+     dropped from the read entirely, because a field nothing writes is a
+     field that lies. */
+  ok('6.2b …and a field with no column behind it is not invented', await p.evaluate(() => {
+    const o = window.__S.mapLiveRowToJs({ seed_id: 'b30', name_ar: 'س', name_en: 'S',
+      review_count: 4, rating: 5, videos: 3, verified: true });
+    return o.reviewCount === undefined && o.rating === undefined
+        && o.videos === undefined && o.verified === undefined;
   }));
   ok('6.3 …and it invents nothing that was not in the row', await p.evaluate(() => {
     const o = window.__S.mapLiveRowToJs({ seed_id: 'b30' });

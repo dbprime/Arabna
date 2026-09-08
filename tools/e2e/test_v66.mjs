@@ -203,8 +203,16 @@ async function open(seed = {}) {
     .replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');   // the code, never the prose about it
   const mints = (src.match(/mintId\(/g) || []).length - 1;            // minus the declaration
   const handmade = src.match(/['"][a-z_]{1,5}['"]\s*\+\s*(Date\.now\(\)|now\(\))/g) || [];
-  ok('11.1 every id in the store is minted — and the count is read, not written',
-     mints >= 17, `${mints} call sites`);
+  /* ⚠️ 17 → 16 IN `650`, and the floor MOVES WITH A DECISION rather than
+     being derived — the rule this project keeps for `run.sh`'s floor of
+     forty and `v16`'s category count: a threshold derived from the thing it
+     guards always agrees with itself. `650` deleted `mintId('ub')` from
+     `addBusiness` because a row that lives on the server takes its id FROM
+     the server, so a kind left the device — exactly what `648`'s two-way
+     agreement asks, and `test_v83 · 4` is the registry that names which
+     kinds are still minted and holds their count at thirteen. */
+  ok('11.1 every id in the store is minted — and the floor moves with a decision',
+     mints >= 16, `${mints} call sites`);
   ok('11.2 zero ids are still made out of the clock alone', handmade.length === 0, handmade.join(' '));
   ok('11.3 the time in an id comes from now(), which carries the test clock',
      /mintId\(prefix\)[\s\S]{0,200}now\(\)\.toString\(36\)/.test(src));

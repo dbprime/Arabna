@@ -1663,18 +1663,9 @@ export function AddBusinessScreen(root) {
      that one exists, and a pattern imposed here refuses a correct
      international number. */
   const nonCommBox = $('#bNonComm');
-  const phoneOptional = () => nonCommBox.checked;
-  function paintPhoneMark() {
-    const opt = phoneOptional();
-    $('#bPhoneMark').innerHTML = opt
-      ? `<span class="muted">(${t('optional')})</span>`
-      : '<span class="req">*</span>';
-    // the standing hint explains an absence, so it belongs to the case
-    // where an absence is allowed
-    $('#bPhoneHint').hidden = !opt;
-  }
-  nonCommBox.addEventListener('change', paintPhoneMark);
-  paintPhoneMark();
+  const paintPhone = () => paintPhoneMark($('#bPhoneMark'), $('#bPhoneHint'), nonCommBox);
+  nonCommBox.addEventListener('change', paintPhone);
+  paintPhone();
 
   /* item 5 — one place says what is wrong, and it stays there.
      `toast` is for what leaves no mark; an error that stops the save leaves
@@ -1735,11 +1726,13 @@ export function AddBusinessScreen(root) {
     address: $('#bAddr').value.trim(),
   });
 
-  const save = (pendingReview = false) => {
+  const save = async (pendingReview = false) => {
     const { name, nameAr, phone, address } = collect();
     const tags = $('#bTags').value.split(/[,\u060C\n]/).map(x => x.trim()).filter(Boolean);
     const mobile = $('#bMobile').checked;
-    const rec = S.addBusiness({
+    const btn = $('#bSave');
+    if (btn) btn.disabled = true;
+    const rec = await S.addBusiness({
       // Most shops here trade under an English name only. Rather than invent
       // an Arabic one, the English name stands in both fields.
       name: { ar: nameAr || name, en: name }, cat, phone,
@@ -1751,6 +1744,17 @@ export function AddBusinessScreen(root) {
       entryPrice: cat === 'outings' ? $('#bEntry').value.trim() : '',
       desc: { ar: $('#bDesc').value, en: $('#bDesc').value },
     }, { pendingReview });
+    /* ⚠️ THE FAILURE IS SAID AND THE SCREEN DOES NOT MOVE. `addBusiness`
+       could not fail before this batch, so the old line went straight to
+       `#/directory/<id>`; a write that did not reach the server would have
+       sent somebody to the page of a thing that was never created, with
+       their typing gone. The form stays filled and the reason stands in the
+       error line, where the work is. */
+    if (!rec) {
+      if (btn) btn.disabled = false;
+      fail(t('bizSaveFailed'), []);
+      return;
+    }
     toast(pendingReview ? t('bizHeldForReview') : t('done'), 'ok');
     go('#/directory/' + rec.id);
   };
@@ -1789,7 +1793,7 @@ export function AddBusinessScreen(root) {
     }
 
     // item 3: it exists, or the listing is non-commercial. Nothing else.
-    if (!phoneOptional() && !$('#bPhone').value.trim()) {
+    if (!phoneOptional(nonCommBox) && !$('#bPhone').value.trim()) {
       return fail(t('phoneRequiredBiz'), [$('#bPhone')]);
     }
 
@@ -2015,6 +2019,45 @@ function ownerOnly(bizId, allowAdmin = false) {
   return true;
 }
 
+/* ============================================================
+   The phone rule, written ONCE and called from both doors (650 §7ب)
+   ------------------------------------------------------------
+   `645` made the phone required in the ADD form, derived from the
+   non-commercial box rather than written by hand — and the EDIT form, the
+   one a shop owner opens for their own page, was never touched. So a
+   trading business could open its page, clear its number, save, and stay
+   published with no way to be reached: the very fault §3 was built to
+   prevent, walking in through the second door.
+
+   ⚠️ ONE RULE IN ONE PLACE. A screen carrying its own copy is a second
+   source of truth, and a second source is what makes the next correction
+   land on one door and miss the other. So the derivation and the painting
+   are written here and called twice — never an `if` repeated.
+   ⚠️ And there is no exception for staff. The panel opens this same screen,
+   and an exception for the admin is two doors again, two lines later.
+   ============================================================ */
+
+/** the phone is optional exactly when the listing is non-commercial — a
+    masjid, a church, a city park — and never otherwise */
+function phoneOptional(nonCommBox) {
+  return !!(nonCommBox && nonCommBox.checked);
+}
+
+/** the required mark and the standing hint, both moving with the box live:
+    a field that reads «(optional)» and then refuses the save is worse than
+    either answer on its own */
+function paintPhoneMark(markEl, hintEl, nonCommBox) {
+  const opt = phoneOptional(nonCommBox);
+  if (markEl) {
+    markEl.innerHTML = opt
+      ? `<span class="muted">(${t('optional')})</span>`
+      : '<span class="req">*</span>';
+  }
+  // the hint explains an absence, so it belongs to the case where an
+  // absence is allowed
+  if (hintEl) hintEl.hidden = !opt;
+}
+
 export function BusinessEditScreen(root, params) {
   const b = S.businessById(params[0]);
   if (!b) { toast(t('gone'), 'err'); go('#/directory'); return; }
@@ -2038,9 +2081,11 @@ export function BusinessEditScreen(root, params) {
       <div class="field"><label class="label">${t('nameAr')} <span class="muted">(${t('optional')})</span></label>
         <input class="input" id="eNameAr" value="${esc((b.name && b.name.ar) || '')}" />
         <div class="hint">${t('nameArHint')}</div></div>
-      <div class="field"><label class="label">${t('phoneLabel')} <span class="muted">(${t('optional')})</span></label>
+      ${/* the mark is painted, not written: it moves with the non-commercial
+            box below, by the same function the add form calls */''}
+      <div class="field"><label class="label">${t('phoneLabel')} <span id="ePhoneMark"></span></label>
         <input class="input" id="ePhone" inputmode="tel" value="${esc(b.phone || '')}" />
-        <div class="hint">${t('phoneOptionalHint')}</div></div>
+        <div class="hint" id="ePhoneHint">${t('phoneOptionalHint')}</div></div>
       <div class="field"><label class="label">${t('address')} <span class="muted">(${t('optional')})</span></label>
         <input class="input" id="eAddr" value="${esc(b.address || '')}" /></div>
       <div class="field"><label class="label">${t('descLabel')}</label><textarea class="textarea" id="eDesc">${esc(L(b.desc || ''))}</textarea></div>
@@ -2057,6 +2102,7 @@ export function BusinessEditScreen(root, params) {
         <input type="checkbox" id="eNonComm" ${b.nonCommercial ? 'checked' : ''} />
         <span><b>${t('nonCommercial')}</b><br><span class="muted fs-12">${t('nonCommercialHint')}</span></span>
       </label>
+      <div class="field-err" id="eErr"></div>
       <button class="btn btn-gold btn-block" id="eSave">${icon('check', 19)} ${t('saveChanges')}</button>
     </div>`;
 
@@ -2101,11 +2147,48 @@ export function BusinessEditScreen(root, params) {
     $('#eHolRange').hidden = false;
   });
 
-  $('#eSave').addEventListener('click', () => {
+  /* the phone rule, by the same two functions the add form uses */
+  const eNonComm = $('#eNonComm');
+  const paintEPhone = () => paintPhoneMark($('#ePhoneMark'), $('#ePhoneHint'), eNonComm);
+  eNonComm.addEventListener('change', paintEPhone);
+  paintEPhone();
+
+  /* ⚠️ one place says what is wrong and it STAYS there — `645` §5's rule,
+     built in the add form and never carried to this save, whose
+     `toast(t('required'))` was the last of the old pattern left on this
+     screen. A `toast` is for what leaves no mark; an error that stops a
+     save leaves work to do, so it is written where the work is and the
+     field that caused it is marked. */
+  function eFail(msg, els) {
+    $$('.input-err', root).forEach(el => el.classList.remove('input-err'));
+    (els || []).forEach(el => el && el.classList.add('input-err'));
+    $('#eErr').textContent = msg;
+    const first = (els || [])[0];
+    if (first) {
+      first.scrollIntoView({ block: 'center', behavior: 'smooth' });
+      if (typeof first.focus === 'function') first.focus();
+    }
+    return false;
+  }
+  root.addEventListener('input', (e) => {
+    const el = e.target.closest('.input-err');
+    if (el) el.classList.remove('input-err');
+  });
+
+  $('#eSave').addEventListener('click', async () => {
     const name = $('#eName').value.trim();
     const nameAr = $('#eNameAr').value.trim();
-    if (!name) { toast(t('required'), 'err'); return; }
-    S.applyBusinessEdit(b.id, {
+    $('#eErr').textContent = '';
+    if (!name) { eFail(t('required'), [$('#eName')]); return; }
+    /* the same condition as the add form, from the same function: a trading
+       business must be reachable, and whoever really has no number — a park
+       or a masjid — ticks the box below and saves */
+    if (!phoneOptional(eNonComm) && !$('#ePhone').value.trim()) {
+      eFail(t('phoneRequiredBiz'), [$('#ePhone')]);
+      return;
+    }
+    $('#eSave').disabled = true;
+    const ok = await S.applyBusinessEdit(b.id, {
       name: { ar: nameAr || name, en: name },
       phone: $('#ePhone').value.trim(),
       address: $('#eAddr').value.trim(),
@@ -2117,6 +2200,11 @@ export function BusinessEditScreen(root, params) {
       ...readHolidayFields(),
       entryPrice: cat === 'outings' ? $('#eEntry').value.trim() : (b.entryPrice || ''),
     });
+    if (!ok) {
+      $('#eSave').disabled = false;
+      eFail(t('bizSaveFailed'), []);
+      return;
+    }
     toast(t('done'), 'ok');
     go('#/directory/' + b.id);
   });

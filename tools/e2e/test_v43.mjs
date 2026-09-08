@@ -103,12 +103,16 @@ const disk = p => p.evaluate(() => JSON.parse(localStorage.getItem('arabna.v1'))
 /* ---- 3. three approvals leave three owned --------------------------- */
 {
   const { ctx, p } = await openWith({ lang: 'ar', user: ACCOUNT, myBusinessIds: [] });
-  const r = await p.evaluate(() => {
+  /* ⚠️ AWAITED SINCE `650`: `approveClaim` reaches `applyBusinessEdit`, which is
+     async. It passed un-awaited only because `myBusinessIds` is pushed BEFORE
+     the await inside it — an accident of statement order, and the kind that
+     turns red the day the order moves. The fixture measures the app as it is. */
+  const r = await p.evaluate(async () => {
     const S = window.__S;
     const ids = S.allBusinesses().slice(0, 3).map(b => b.id);
     for (const id of ids) {
       const c = S.requestClaim(id, { name: 'أحمد', role: 'مالك', phone: '7134669182' });
-      S.approveClaim(c.id);
+      await S.approveClaim(c.id);
     }
     return { ids, owned: S.state.myBusinessIds.slice(),
              owns: ids.map(id => S.ownsBusiness(id)),
@@ -125,11 +129,11 @@ const disk = p => p.evaluate(() => JSON.parse(localStorage.getItem('arabna.v1'))
   ok('3.5 the deletion sheet counts three', r.deletion === 3, String(r.deletion));
 
   /* approving the same claim twice must not double the entry */
-  const again = await p.evaluate(() => {
+  const again = await p.evaluate(async () => {
     const S = window.__S;
     const id = S.state.myBusinessIds[0];
     const c = S.requestClaim(id, { name: 'أحمد', role: 'مالك', phone: '7134669182' });
-    S.approveClaim(c.id);
+    await S.approveClaim(c.id);
     return S.state.myBusinessIds.filter(x => x === id).length;
   });
   ok('3.6 a repeated approval does not duplicate', again === 1, String(again));

@@ -11,7 +11,7 @@ ARABNA · عربنا — a mobile-first web app for the Arab community in the U.
 **business directory + marketplace + events + magazine**, Arabic-first with a full English toggle.
 ("Classifieds / الإعلانات الشخصية" is now "Marketplace / السوق" — the old `#/classifieds`
 routes still resolve so shared links keep working.)
-Current version: **V.10.9 (prototype)**. Owner: dbprime. Deploys to Vercel (team DB Prime).
+Current version: **V.11.0 (prototype)**. Owner: dbprime. Deploys to Vercel (team DB Prime).
 
 ## Hard rules (from the product brief)
 0. ⚠️ **THE OWNER'S NAME IS NEVER WRITTEN — anywhere.** Not in this file, not
@@ -11687,6 +11687,289 @@ inside its own window. **That is the same fault `615` measured from the
 other side, and the answer is the same: what counts is the awake time, and
 a job left running in the background does not have any.**
 
+
+
+## V.11.0 — the business reaches the server (650)
+
+⚠️ **This file closes its own group, and its group is itself** — it touches
+`js/store.js`, which the 5 September decision names as a reason a batch is
+treated as its group's closer.
+
+### The fault, and it is the widest in the queue
+Measured by one command before a line was written: `businesses` appeared in
+the whole of `js/` **once**, as a read. No `insert`, no `update`, and
+`addBusiness` ended at `state.extraBusinesses.unshift(rec)`.
+
+> **Whoever opened ARABNA and added their masjid or their restaurant saw
+> their own addition and NOBODY ELSE IN THE WORLD did — and it never reached
+> the admin either. No error message, no review queue: everything appeared
+> to succeed and everything was lost.**
+
+⚠️ **And the fault was two-sided, which is what made it invisible.** Even a
+row that HAD reached the table could not be read back: `everyBusiness()`
+walked **what the device knows** — the `data.js` seeds and its own
+additions — and a live row added on another phone matched nothing in that
+list, so it was never mapped and never appended. **That is `630`'s own fix
+for `mergedClassifieds`, arriving for the directory.**
+
+### The seed and the row are one thing — the owner's question, and what it found
+⚠️ **His question of 6 September was the batch:** «make sure whatever we
+change on the businesses that are here today applies to any new business
+that comes in later.» **Measured, it did not.** The app read EIGHT fields
+off a seed with no column at all:
+
+```
+verified · rating · review_count · claimed · photos · videos · lat · lng
+```
+
+**So a business added tomorrow could never be verified, never be claimed,
+never carry a rating, and never enter «nearest» — while the 514 seeds
+could.** ⚠️ **And two corrections to the specification's own measurement,
+taken on this tree:** it said 183 seed rows carry those fields — all 514
+carry the six as KEYS and only the four demo seeds carry real values — and
+it said `lat`/`lng` are among them. **They are on none of the 514.** So the
+coordinates are not a case of «the seed can do what the row cannot»;
+**neither could**, which makes the two columns more urgent, not less.
+
+**The answer is derivation, not eight columns:**
+
+```
+claimed       ←  owner_id is not null                 — derived in the map
+verified      ←  biz_verify.status = 'approved'       — NO batch scheduled
+rating        ←  computed at READ from the reviews    — 655, no trigger
+review_count  ←  counted at read, the same
+photos        ←  biz_photos where status='approved'   — 660
+videos        ←  DROPPED FROM THE READ ENTIRELY
+lat · lng     ←  two real columns, and no alternative — 0011
+```
+
+⚠️ **`videos` is a decision, not a slip.** Nothing writes it, and **a field
+nothing writes is a field that lies**: it would make the seed look as though
+it has video and everything added afterwards look as though it has none,
+which is the seed parting from the row all over again.
+
+⚠️ **And `verified` must never become a column**, for the reason `0005`
+records about a second copy of an email address: `biz_verify` is the fact,
+and a column beside it makes a business verified and unverified in the same
+instant the day one is written and the other is not.
+
+### THE RULE, written with its guard and not after it
+> **The seed and the row are one thing.** Every field the app reads has ONE
+> source on the server: a column, or a derivation from a column. **A field
+> that exists only in `js/data.js` means that whatever is added tomorrow
+> cannot carry it.**
+>
+> **And every box in a form has a column.** A box that is filled and does
+> not arrive works once, on one device, and is then lost.
+
+`test_v84 · 11` is the guard, and every number in it is derived: the tables
+from `supabase/migrations/`, the seed fields from `js/data.js`, and the
+pairing from the table's own name (`businesses` ↔ `BUSINESSES`), so a table
+added tomorrow with a seed array joins it by itself. **A field with no
+column is not an error — it is an EXCEPTION, and an exception has to be
+written with its reason** in `docs/الحالة.md` §1.هـ. ⚠️ **It extends block 7
+rather than becoming a second suite: `649` §8 built the first direction, and
+two suites for one rule are two rules a year later.**
+
+⚠️ **AND THE FIRST THING IT FOUND WAS OUTSIDE ITS OWN BATCH.** The
+`articles` table is eight columns and its seed carries **ten fields with no
+column** — the category, the excerpt, the author, the date, the media, **and
+the sponsorship and the advertiser**. So `665` as it stands would create a
+generation of articles with no category and no excerpt, **and no way to sell
+a sponsored story** — a priced line in the revenue table. **Written in §1.هـ
+field by field, and not fixed here**: the columns belong to the batch that
+writes the table.
+
+### The point: three steps, and none of them leaves the device
+⚠️ **The owner's decision of 6 September was a table shipped inside the app**,
+and both refusals are in writing: Google's terms keep a coordinate thirty
+days and forbid its use with any map but Google's — **and this app lets the
+reader choose between Google, Apple and Waze** — while the Census geocoder,
+free and accurate, is a NEW EXTERNAL PROVIDER and calls down the same
+controls that suspended Nominatim under Schedule E-08.
+
+```
+1) a ZIP the table knows        →  its centre
+2) else a city in CITY_POINTS   →  the city's centre
+3) else no point, needsGeo true
+```
+
+⚠️ **Step two is what makes a new ZIP harmless** — a code the table has never
+heard of, in a city we cover, keeps its place in the order approximately
+instead of falling out of it. Measured: **93 distinct ZIPs across the 512
+listings that carry one, and 514 of 514 name a city that IS in
+`CITY_POINTS`** — so step two covers the whole directory today and step
+three never fires for a seed.
+
+⚠️ **AND THE TABLE IS TEN ROWS, NOT THE CENSUS GAZETTEER, AND THE REASON IS
+MEASURED.** The gazetteer — federal work in the public domain, no licence
+and no attribution — **cannot be fetched from the build container**: every
+external host answers 403 at the egress proxy, measured on both the 2023 and
+the 2024 files. **Writing centroids from memory under a header naming the
+Census would be a claim of provenance nobody can support**, and this project
+does not invent a number it does not have. So the ten prototype rows stand,
+labelled as nothing they are not, and the fill is a data job done outside
+the app — like geocoding the 514 addresses. **The specification's own §5.3هـ
+already wrote the answer for this case: adding a ZIP is one line, and step
+two covers it meanwhile.**
+
+⚠️ **And what has no point is LAST, never hidden.** `byNearest` already sorts
+the pointless to the tail and `needsGeoList()` counts them for the panel —
+**a listing that disappears because its ZIP is unknown TO US is punished for
+a gap in us**, so that net is not touched and is asserted instead.
+
+### One door for the decision, and a coat that is not a copy
+`approvePendingBusiness`, `rejectPendingBusiness` and the panel's edit
+screen all pass through `applyBusinessEdit`, so the server write is written
+once. **And a seed's first edit creates a COAT row keyed by `seed_id`** —
+the 485 real listings are deliberately not in the table — **carrying only
+the three columns the schema demands (`name_ar`, `name_en`, `cat` are `not
+null`) and the edited fields.** ⚠️ **The whole seed is never copied:** a
+second permanent copy parts from the first the day a number is corrected in
+one and not the other, which is the sentence the whole merge is built on.
+
+⚠️ **And the local edit is dropped only because it SUCCEEDED**, never by a
+blind sweep — `630`'s rule about `adminAuth`. A refused write keeps it, so
+it still has somewhere to reach.
+
+### Deletion is a mark, and `allBusinesses` asks the account
+`deleteBusiness` added an id to a list **on the admin's own phone**, so the
+business he had just deleted stayed on the screen of the world. It writes
+`status = 'deleted'` now, **and no delete policy is opened** — `own: update`
+already carries it, and a new door is not cut where one exists.
+
+**And `allBusinesses()` reads the ACCOUNT, not the device**: it filtered on
+`state.myPendingBusinesses`, a list on one phone, so somebody who added
+their shop from their mobile could not find it on their laptop. ⚠️ **RLS is
+the guard and this line is the ORDER** — the policy does not send a held row
+to anyone but its owner and staff in the first place, and no reader writes
+`.eq('status', …)`, which is `630`'s lesson word for word.
+
+### The phone, on both doors
+⚠️ **`645` made the phone required in the ADD form and never touched the EDIT
+form — the one a shop owner opens for their own page.** So a trading
+business could open its page, clear its number, save, and stay published
+with no way to be reached: the fault `645` §3 was built to prevent, walking
+in through the second door.
+
+**`phoneOptional` is now one definition in `directory.js`, called from
+both**, with the mark and the hint painted from the same function — a screen
+carrying its own copy is a second source of truth, and a second source is
+what makes the next correction land on one door and miss the other. **The
+refusal is a mark and a sentence that stays**, never a `toast`
+(`toast(t('required'))` at the old save was the last of that pattern on the
+screen), **and there is no exception for staff**: the panel opens the same
+screen, and an exception for the admin is two doors again, two lines later.
+
+### Three measured gaps, recorded rather than closed
+- ⚠️ **A row's own OWNER can publish it.** `0002`'s `own: update` is
+  `using (owner_id = auth.uid() or is_admin())` **with no `with check`**, so
+  a business held for review can be set `live` by whoever entered it — from
+  a console, not from a screen, since the button is behind `is_admin`. It is
+  `620`'s lesson exactly, and **the remedy is one `with check`, outside this
+  batch's two-line migration.** The suite measures the boundary where it
+  really is — a stranger is refused — rather than asserting the gap away.
+- ⚠️ **A claimed owner of a seed cannot create its coat**: `own: insert`
+  demands `owner_id = auth.uid()` and a coat carries no owner. **And it is
+  not fixed by writing `owner_id` from `myBusinessIds`** — that is device
+  state anyone with a browser console can edit, so a row's server ownership
+  would be handed to whoever claims it. ⚠️ **Measured unreachable today**: a
+  claim is written to `state.claims` on the claimant's OWN phone and never
+  reaches the admin, so `approveClaim` can only ever fire on the device that
+  made it. It closes in `655`, where a claim becomes a row.
+- **The Census table, above.**
+
+### `test_v85` — 72 assertions, and ten teeth, each aimed and each landing
+```
+the appended live rows removed   → 2.5 prints {"every":false} — the fault in one line
+the addition never leaves        → 14 items, and 2.4 prints a `ub…` id
+the reverse map drops `plan`     → 9.6 ALONE
+`videos` back in the read        → 9.3, and 9.10 once the row carries one
+the edit screen copies the rule  → 7.1 -> 2
+the refusal back to a toast      → 7.8 {"err":"","marked":false} · 7.9 -> 1
+step two of the ladder removed   → 8.3 {"lat":null,"needsGeo":true}
+deletion back on the device      → 6.6 -> true, standing on every other phone
+`.eq('status','live')` restored  → seven items, the queue blinded
+a seed field with no column      → v84 · 11.3 -> businesses.newField
+```
+
+⚠️ **And two of the suite's own checks were corrected rather than the app.**
+`9.10` («`videos` is not read») **stayed green with the field put back**,
+because nothing writes that column so there was nothing to read — the
+two-layer trap this project has recorded twice; it now puts a value on the
+row and measures the READ itself. And `1.7` («no reader filters by status»)
+was written around a literal table name while the factory reads
+`sb.from(table)` with a VARIABLE — **so it would have stayed green over the
+filter put back in the one place it does the most harm.**
+
+⚠️ **A migration is executed by the owner after the merge:
+`0011_business_coords.sql`** — two columns, `lat` and `lng`, and those two
+alone.
+
+### ⚠️ And the net found a fault this batch's own suite did not
+`v11` went red on both builds, and it was **not** a stale assertion: the
+panel's non-commercial control called `setNonCommercial`, raised «تمّ» and
+**repainted the list over a write that had not answered.**
+
+**This batch gave approve, reject and delete the awaited shape and missed the
+fourth door** — the same shape, in the same file, twenty lines away. `v11`
+had measured «marking one adds it to the list» since it was written, and that
+is what caught it. **Not one assertion was touched: the app was wrong and the
+check was right.**
+
+⚠️ **So the CLASS was swept rather than the instance** — `570`'s and `572`'s
+rule — and it found two more un-awaited callers: `approveClaim` (whose write
+is local-only today, since `claimed` is derived and the reverse map drops it —
+**awaited for the ORDER, not for the network**) and `saveWorshipTimes`, which
+has no caller at all and is left in the right shape for the day it gets one.
+
+**And the class is asserted closed rather than declared closed.** `test_v85 ·
+10` reads the writers out of `store.js` — `export async function` whose body
+reaches `applyBusinessEdit` or the table — and sweeps every screen for a call
+that does not wait. ⚠️ **Derived, so it cannot age**: a writer added tomorrow
+joins it by itself. Proven: reverting `flip` prints
+`js/screens/admin.js:434 setNonCommercial` and names its own line.
+
+> **A batch that makes a function async owns every caller of it, not the
+> three it was thinking about.**
+
+### Five suites carry a reversal, and one of them was the app being wrong
+| suite | asserted | now |
+|---|---|---|
+| `v11` | ⚠️ **not a reversal at all** — «marking one adds it to the list» was right and the app was wrong. Nothing was touched | — |
+| `v15 · 6.50–6.52` | an address change **clears** the point and re-queues the listing | ⚠️ the SUBJECT is unchanged — «a shop that moved never keeps the coordinates of where it used to be» — and the remedy changed: §5.3ج asks for the ladder on the EDIT door as well, so the point is **re-derived from the new address**, which costs no network call. **Both branches are measured where one was**: a move we can place, and one we cannot. And the three ask `hasCoords` and the queue, never `needsGeo` |
+| `v43 · 3` | `approveClaim` read on the next line | awaited — it passed only because `myBusinessIds` is pushed BEFORE the await inside it, an accident of statement order |
+| `v66 · 11.1` | seventeen `mintId` call sites | **sixteen**, and the floor **moves with a decision** rather than being derived — `run.sh`'s floor of forty and `v16`'s category count keep the same shape, and `v83 · 4` is the registry that names the kinds |
+| `v75 · 6.2` | the map carries `review_count` | ⚠️ **`review_count` is not a column and never was.** `650` measured eight fields read off a seed with nothing behind them and derived six of the eight, so a map pretending to carry it would read a column that does not exist. It asserts `zip` and `mobile_service` — the two real columns nobody was reading — and **`6.2b` is new: a field with no column is not invented on the way through** |
+
+⚠️ **And `needsGeo` was found dead while rewriting `v15`**: written in five
+places, **read in none** — `needsGeoList()` filters on `hasCoords`, and every
+panel line reads that list. So a check on the flag measures a field the app
+does not act on. **The three now read what the app reads**, and the field is
+recorded in `docs/الحالة.md` for the clearing-up batch rather than deleted
+here: deleting a field is not the job of the batch that wires the table.
+
+### And the group closes — the net, run on segments over one frozen tree
+```
+166 runs · 83 suites · 7,964 assertions · zero red · zero crash
+```
+Twenty-eight segments over `905a50b`, `HEAD` re-checked at the head of each —
+the runner exits 2 on a moved character or a dirty tree, and none did —
+**83 present and 83 run, each exactly twice, and no result borrowed.** The
+arithmetic closes itself: 7,798 + 148 (`v85` × 2) + 16 (the eight assertions
+`v84` gains in block 11, × 2) + 2 (`v75 · 6.2b` × 2) = **7,964**, and — read
+suite by suite against the `649` net rather than assumed — **not one other
+suite moved by a single assertion.** The verdict is READ from the index and
+never summed: `NET COMPLETE — every derived suite ran on both builds`.
+
+⚠️ **AND THE NET WAS RUN FROM THE TOP FOUR TIMES.** Three suites moved after
+the third run had reached `v75` — and a fix to a suite makes a new tree, so
+every segment already measured was spent. **The lesson is the one `645` paid
+for and this batch paid again: sweep the CLASS before restarting, never wait
+for the net to meet the next instance.** Before the fourth run the ten suites
+this batch could touch (76–85) were run individually and came back green with
+no edit, so no reversal was left standing for the net to find at segment
+twenty.
 
 
 ## Known open items

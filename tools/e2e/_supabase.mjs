@@ -456,6 +456,16 @@ export async function mockSupabase(ctx, opts = {}) {
            `status: 'live'` from anybody would make `649`'s security item —
            an ordinary account cannot publish to everyone, and cannot pin
            the $99 placement — green on a database that had lost it. */
+        /* ⚠️ THE BUSINESSES POLICIES OF `0002` AND `0007`, MIRRORED.
+           «own: insert» demands `owner_id = auth.uid()`, and «admin:
+           insert» — written in `0007` for exactly the coat row an admin's
+           first edit of a seed creates — is what lets staff insert one with
+           no owner at all. A mock that accepted either from anybody would
+           keep `650`'s coat item green on a database that refuses it. */
+        if (table === 'businesses' && !isAdmin && body.owner_id !== uid) {
+          return route.fulfill(json({ code: '42501',
+            message: 'new row violates row-level security policy for table "businesses"' }, 403));
+        }
         if (table === 'events' && !isAdmin) {
           if (body.status !== 'pending' || body.proposer_id !== uid) {
             return route.fulfill(json({ code: '42501',
