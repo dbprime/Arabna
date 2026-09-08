@@ -232,10 +232,26 @@ let shared, listingId;
 console.log('--- 2 · 5. structure ---');
 {
   const st = code('js/store.js');
-  const readers = st.match(/from\('(?:businesses|classifieds)'\)\s*\.select\(/g) || [];
-  ok('2.1 both tables are read from the server', readers.length >= 2, String(readers.length));
+  /* ⚠️ REVERSED BY `648`, AND THE SUBJECT IS UNCHANGED. This counted
+     `from('businesses'|'classifieds').select(` in the source — a
+     HAND-WRITTEN list of table names, which is the very shape `648` removed
+     from `v36`. Both tables are read through one factory now, by the name it
+     is given (`sb.from(table)`), so the literal names are gone from the read
+     sites and the old count was 0 on a build that reads both perfectly.
+     What replaces it is stronger, not weaker: a reader added WITHOUT going
+     through the factory registers nothing and turns this red. */
+  const registered = [...st.matchAll(/makeLiveReader\('([a-z_]+)'/g)].map(m => m[1]);
+  ok('2.1 both tables are read from the server',
+     registered.includes('businesses') && registered.includes('classifieds'),
+     registered.join(' · '));
+  ok('2.1b …through one factory, by the name it is handed',
+     /sb\.from\(table\)\.select\('\*'\)/.test(st));
+  /* ⚠️ AND THIS ONE HAD TO MOVE WITH IT, or it would have passed vacuously:
+     a NEGATIVE built on the same literal names matches nothing once the
+     names are gone, and a green that measures nothing is worse than a red.
+     It is asked of every `sb.from` chain now, whatever the table. */
   ok('2.2 …and no reader writes `.eq(\'status\', …)` on top of RLS',
-     !/from\('(?:businesses|classifieds)'\)\s*\.select\([^)]*\)\s*\.eq\('status'/.test(st));
+     !/sb\.from\([^)]*\)[^;]*\.eq\('status'/.test(st));
   ok('5.1 everyBusiness() and allClassifieds() are plain functions, not async',
      /export function everyBusiness\(\)/.test(st) && /export function allClassifieds\(\)/.test(st));
   const files = ['js/store.js', 'js/ui.js', 'js/app.js'].concat(
