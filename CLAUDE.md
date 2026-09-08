@@ -11949,6 +11949,28 @@ does not act on. **The three now read what the app reads**, and the field is
 recorded in `docs/الحالة.md` for the clearing-up batch rather than deleted
 here: deleting a field is not the job of the batch that wires the table.
 
+### And the group closes — the net, run on segments over one frozen tree
+```
+166 runs · 83 suites · 7,964 assertions · zero red · zero crash
+```
+Twenty-eight segments over `905a50b`, `HEAD` re-checked at the head of each —
+the runner exits 2 on a moved character or a dirty tree, and none did —
+**83 present and 83 run, each exactly twice, and no result borrowed.** The
+arithmetic closes itself: 7,798 + 148 (`v85` × 2) + 16 (the eight assertions
+`v84` gains in block 11, × 2) + 2 (`v75 · 6.2b` × 2) = **7,964**, and — read
+suite by suite against the `649` net rather than assumed — **not one other
+suite moved by a single assertion.** The verdict is READ from the index and
+never summed: `NET COMPLETE — every derived suite ran on both builds`.
+
+⚠️ **AND THE NET WAS RUN FROM THE TOP FOUR TIMES.** Three suites moved after
+the third run had reached `v75` — and a fix to a suite makes a new tree, so
+every segment already measured was spent. **The lesson is the one `645` paid
+for and this batch paid again: sweep the CLASS before restarting, never wait
+for the net to meet the next instance.** Before the fourth run the ten suites
+this batch could touch (76–85) were run individually and came back green with
+no edit, so no reversal was left standing for the net to find at segment
+twenty.
+
 
 ## Known open items
 - **The header image is still far larger than its box.** V.04.7 replaced
