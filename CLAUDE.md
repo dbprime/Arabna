@@ -668,34 +668,40 @@ number that is not their build's, and the report cannot be placed.
 ## Testing: what is run, and when
 
 There are three gates, and **the session goes into the work, not into the
-tests**. ⚠️ **The whole set is every `tools/e2e/test_v<n>.mjs` × 2 builds
-and takes about an hour and three quarters** — measured 1h44 over 144 runs
-on 5 September 2026, and it grows with every suite added, so read that
-figure as «the last time it was timed», never as a constant.
-⚠️ **And the same figure is written in FIVE other places** — the gate table
-below, the command list further down, two lines in `tools/e2e/run.sh`'s own
-head and one in `tools/audit/daily.sh`'s. They are one measurement, so they
-are re-timed together or not at all: **correcting one of them alone is
-worse than leaving all six stale, because the file then contradicts itself
-and whoever reads it first works from whichever they hit.** That is exactly
-what happened here — the paragraph was corrected and the table was not —
-and it is how the table and the command list came to give **~50 min and ~20
-minutes for the very same script** for months before that. The count is deliberately NOT written
-here: `run.sh` derives the list from the files and prints the number at
-the head and the tail of every run. It was a hand-written figure and it
-dried out twice in a single day — 48 → 49 → 50 — **and correcting it each
-time is not a fix, it is the same fault living in the documentation.**
-Running it after every edit eats the session and leaves the work
-unfinished — four calls is an hour and a half of testing before a line is
-written. And more parallelism does not help: the machine has two cores and
+tests**. The whole set is every `tools/e2e/test_v<n>.mjs` × 2 builds, and it
+is the longest thing in the project by a wide margin.
+
+⚠️ **NO DURATION IS WRITTEN HERE ANY MORE — `run.sh` MEASURES ITS OWN
+(`615`).** The figure used to stand in six places and no two of them agreed:
+this paragraph, the gate table below, the command list further down, two
+lines in `tools/e2e/run.sh`'s own head and one in `tools/audit/daily.sh`'s.
+The table and the command list gave **~50 min and ~20 minutes for the very
+same script** for months. And they could not have been kept right by hand:
+the net was 43 suites when the first was typed and is eighty now, so every
+one of them was ageing the day it was written. **A number the program prints
+never ages; a number written by hand aged three times here.**
+
+**`run.sh` prints the seconds beside every suite, the total per build, and
+the ten slowest**, and the closing report of each batch carries that run's
+own figures with its date. Read it there. The count is derived the same way
+and for the same reason — it was hand-written and dried out twice in one
+day, 48 → 49 → 50, **and correcting it each time is not a fix, it is the
+same fault living in the documentation.**
+
+Running the whole set after every edit eats the session and leaves the work
+unfinished. And more parallelism does not help: the machine has two cores and
 `run.sh` already has both busy with the two builds, so the way out is
-**fewer suites, not faster ones**.
+**fewer suites, not faster ones** — and `615` is what makes that decision
+possible at all, because until it landed nobody could say which suites the
+time was in. ⚠️ **Measured the day it landed, and it is why no suite is cut
+by eye: `v59` takes ONE second and `v8` takes 291.** A suite dropped for
+looking small could as easily have been the cheapest thing in the net.
 
 | when | what | measured |
 |---|---|---|
 | **after every change** | `tools/audit/quick.sh` | **~100s** — the static pass and all 42 screens in both languages |
 | **while working on one area** | `SUITES="33 37" tools/e2e/run.sh` | seconds to a minute — only what your change touches |
-| **once, at the end of a GROUP** | `tools/audit/daily.sh` | **~1h45** (measured 5 Sep 2026 · 72 suites × 2 builds) — the second build, the four roles, the admin panel, everything |
+| **once, at the end of a GROUP** | `tools/audit/daily.sh` | the longest gate by far — **read the figure from `run.sh`'s own tail**, which prints it per suite, per build and in total (`615`); the second build, the four roles, the admin panel, everything |
 
 `quick.sh` is `index.html` only, on purpose: the single-file build comes
 from the same source, and a fault in it alone is rare and of a known kind
@@ -777,7 +783,47 @@ guard whose only guard has already failed is not a guard.**
   «PARTIAL, not the full net».
 - **The manual override stays** (`SUITES="8 33" tools/e2e/run.sh`):
   running three while you work is what keeps a batch from paying the
-  full hour and three quarters, and removing it would slow every batch down.
+  whole net's time, and removing it would slow every batch down.
+
+### The full net is run ON SEGMENTS, and completeness is READ, never summed
+the owner's decision of 6 September, and it is a rule rather than a habit
+somebody follows once — built with its mechanism in `615`, because **a rule
+written before its mechanism reads as permission to add up by hand**, which
+is the very thing it forbids.
+
+**Its reason is measured, not comfort.** The container is suspended whenever
+the session goes idle, so its processes freeze with it: one run measured
+**two and a half hours of wall clock against ninety seconds of work**. A
+single long invocation therefore requires a person to hold a session awake
+for hours — a price a human pays for a fault in the infrastructure. And it
+costs nothing: **`run.sh` builds nothing**, it runs suites against files that
+already exist, so nineteen segments cost what one invocation costs.
+
+> **The full net is run on segments.** Each segment finishes inside one
+> waking window. **Three conditions make them one proof:** every suite with
+> no exception, counted from `tools/e2e/` at the start · all of them on the
+> same tree, checked at the head of every segment · **and no suite's result
+> borrowed from an earlier run.** **And completeness is read from the
+> index, never added up by hand.**
+
+- **The results of one tree accumulate; another tree's are wiped.** The
+  folder is `/tmp/e2e-<sha>/` and `run.sh` deletes only the folders that do
+  not belong to this tree. ⚠️ **The old line wiped everything on every
+  invocation**, so the last segment erased the evidence of every segment
+  before it and «the net is green» became a sentence somebody summed —
+  which is the same arithmetic that once printed 48 for 49.
+- **Each suite appends one line to `index.tsv`** — build · suite · passed ·
+  failed · seconds · state — and the tail reads it: distinct suites × builds,
+  assertions, red, crashed, the ten slowest, the total per build, and the
+  verdict. **`NET COMPLETE` is printed only when every derived suite has run
+  on BOTH builds**; otherwise the shortfall is printed with its count.
+- ⚠️ **The PARTIAL guard is not softened and not switched off.** Every
+  segment still announces itself partial at both ends — that is what stops a
+  segment being read as the whole net — **and completeness is announced from
+  the index alone, never from a segment.**
+- **The last line for each (build, suite) wins**, so a suite re-run after a
+  fix counts once with its latest result: a re-run neither inflates the
+  count nor keeps its old red alive.
 
 ### The full net runs once per GROUP, and the closing file says so at its head
 the owner's decision of 28 August: the full net is the better part of two hours, and
@@ -794,8 +840,9 @@ end of the group**.
 
 **Reaffirmed by the owner on 5 September, from the next batch onward and not
 retroactively, because the price stopped being an estimate:** the net was 43
-suites and is 72, and one run measured **1h44 over 144 runs** on 5 September.
-**Four runs inside one group is close to seven hours** — which is how a
+suites and is eighty, and it is measured now rather than estimated — `615`
+put the counter in `run.sh` and it prints the figure at the tail of every
+run. **Four runs of it inside one group is most of a day** — which is how a
 single batch came to stretch over a night and the day after it.
 
 ⚠️ **AND THE RULE WAS NOT BROKEN — IT WAS MADE VACUOUS, WHICH IS HARDER TO
@@ -969,7 +1016,7 @@ being correct and has to be rewritten in the same batch.
 python3 -m http.server 8099        # from the repo root
 node tools/e2e/chk_i18n.mjs        # both packs, every derived key, seconds
 tools/audit/quick.sh               # the fast gate — ~100 seconds
-tools/audit/daily.sh               # everything, once at the end — ~1h45 (measured 5 Sep 2026)
+tools/audit/daily.sh               # everything, once at the end — it prints its own time (615)
 python3 tools/build_single.py > index-single-file.html
 node tools/audit/provenance.mjs  # يُولَّد docs/AI-PROVENANCE.md ويدخل كومِتَ الإغلاق
 ```

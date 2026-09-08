@@ -51,12 +51,12 @@ if [ "$DERIVED_N" -lt 40 ]; then
   exit 2
 fi
 # ⚠️ The manual override stays. Running three suites while you work is what
-# keeps a batch from paying the full hour and three quarters, and deleting it would
+# keeps a batch from paying the whole net's time, and deleting it would
 # slow every batch down. The derived list is the DEFAULT, nothing more.
 SUITES="${SUITES:-$DERIVED}"
 RUN_N=$(echo $SUITES | wc -w)
 # ⚠️ Printed in full, once, at the head: a stray file is seen in the first
-# line rather than an hour and three quarters later. And the COUNT is printed at both
+# line rather than at the end of the whole net. And the COUNT is printed at both
 # ends, so the report carries the number instead of somebody counting the
 # lines by hand — which is exactly how «48» happened.
 #
