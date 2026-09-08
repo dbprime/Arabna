@@ -55,6 +55,25 @@ function columnsOf(table) {
 }
 const SCHEMA = { classifieds: columnsOf('classifieds'), businesses: columnsOf('businesses') };
 
+/* ⚠️ AND THE SEEDED SETTINGS ARE READ FROM THE MIGRATION TOO, for the same
+   reason the columns are: the listing limit lives in `settings` from `0009`,
+   and a mock that carried its own copy of «4» and «1» would agree with
+   itself for ever while the migration moved underneath it. */
+function seededSettings() {
+  const out = [];
+  for (const f of readdirSync(MIG).filter(n => n.endsWith('.sql')).sort()) {
+    const sql = readFileSync(MIG + f, 'utf8').replace(/--[^\n]*/g, '');
+    const ins = sql.matchAll(/insert\s+into\s+public\.settings\s*\(\s*key\s*,\s*value\s*\)\s*values([\s\S]*?);/gi);
+    for (const m of ins) {
+      for (const row of m[1].matchAll(/\(\s*'([^']+)'\s*,\s*'([^']*)'/g)) {
+        out.push({ key: row[1], value: JSON.parse(row[2]) });
+      }
+    }
+  }
+  return out;
+}
+const SETTINGS_SEED = seededSettings();
+
 /** The whole stand-in server's memory, per browser context. */
 function freshDb() {
   return {
@@ -62,6 +81,7 @@ function freshDb() {
     profiles: new Map(),   // id    -> { id, display_name, email_verified, tier2_by, is_admin }
     businesses: [],
     classifieds: [],
+    settings: SETTINGS_SEED.map(r => Object.assign({}, r)),
     session: null,
     seq: 0,
   };
@@ -332,9 +352,39 @@ export async function mockSupabase(ctx, opts = {}) {
           }
           return route.fulfill(json(rows));
         }
-        const rows = (db[table] || []).filter(visible).filter(matches);
-        db.reads = (db.reads || []).concat([{ table, filters: wants.slice(), n: rows.length }]);
-        return route.fulfill(json(wantsOne ? (rows[0] || null) : rows));
+        let rows = (db[table] || []).filter(visible).filter(matches);
+        /* ⚠️ ORDER AND RANGE ARE APPLIED, NOT IGNORED — and this version of
+           postgrest-js sends BOTH as query parameters (measured in the
+           vendored build: `.order(c,{ascending})` → `order=c.asc`, and
+           `.range(a,b)` → `offset=a&limit=b-a+1`), never as a `Range`
+           header. A mock that dropped them would keep `648`'s paging green
+           while the live reader returned one arbitrary page. */
+        const ord = url.searchParams.get('order');
+        if (ord) {
+          const keys = ord.split(',').map(part => {
+            const [col, ...rest] = part.split('.');
+            return { col, desc: rest.includes('desc'), nullsLast: !rest.includes('nullsfirst') };
+          });
+          rows = rows.slice().sort((a, b) => {
+            for (const { col, desc } of keys) {
+              const x = a[col], y = b[col];
+              if (x === y) continue;
+              if (x == null) return 1;
+              if (y == null) return -1;
+              const c = x < y ? -1 : 1;
+              return desc ? -c : c;
+            }
+            return 0;
+          });
+        }
+        const off = Number(url.searchParams.get('offset') || 0);
+        const lim = url.searchParams.get('limit');
+        const paged = rows.slice(off, lim ? off + Number(lim) : undefined);
+        db.reads = (db.reads || []).concat([{ table, filters: wants.slice(),
+                                              order: ord || '', offset: off,
+                                              limit: lim ? Number(lim) : null,
+                                              n: paged.length }]);
+        return route.fulfill(json(wantsOne ? (paged[0] || null) : paged));
       }
       /* ⚠️ PATCH is how PostgREST updates. RLS again: a row the session
          may not update is simply not updated — PostgREST answers 200 with
@@ -362,15 +412,42 @@ export async function mockSupabase(ctx, opts = {}) {
         if (table === 'classifieds' && body.price != null && typeof body.price !== 'number') {
           return route.fulfill(json({ code: '22P02', message: 'invalid input syntax for type numeric: "' + String(body.price) + '"' }, 400));
         }
+        /* ⚠️ THE LIMIT TRIGGER OF `0009`, MIRRORED. Without it the whole
+           point of the third item — «the server refuses the fifth even
+           when the request never went through the screen» — would be a
+           check on a server that accepts anything, which is the permissive
+           mock this file's own head warns about. The counting rule is the
+           migration's: live or pending, not hidden, per category, and the
+           account-wide default for the categories that carry no own limit. */
+        if (table === 'classifieds' && body.owner_id) {
+          const setting = k => {
+            const row = (db.settings || []).find(r => r.key === k);
+            return row == null ? null : Number(row.value);
+          };
+          const base = setting('listingLimit.default') != null ? setting('listingLimit.default') : 4;
+          const own = setting('listingLimit.' + body.cat);
+          const lim = own != null ? own : base;
+          const live = r => r.owner_id === body.owner_id && !r.hidden
+                            && (r.status === 'live' || r.status === 'pending');
+          const inCat = (db.classifieds || []).filter(r => live(r) && r.cat === body.cat).length;
+          const all = (db.classifieds || []).filter(live).length;
+          if (inCat >= lim || (lim === base && all >= base)) {
+            return route.fulfill(json({ code: 'P0001', message: 'ARABNA_LISTING_LIMIT' }, 400));
+          }
+        }
         const known = SCHEMA[table];
         if (known && known.size) {
           const stray = Object.keys(body).find(k => !known.has(k));
           if (stray) return route.fulfill(json({ code: 'PGRST204',
             message: "Could not find the '" + stray + "' column of '" + table + "' in the schema cache" }, 400));
         }
+        /* ⚠️ ONE timestamp for both, as a transaction's `now()` is: two
+           calls to `new Date()` can differ by a millisecond, and `648`'s
+           first item asserts that a NEW row carries the two equal. */
+        const stamp = new Date().toISOString();
         const row = Object.assign({ id: 'mock-row-' + (++db.seq),
-                                    created_at: new Date().toISOString(),
-                                    updated_at: new Date().toISOString() },
+                                    created_at: stamp,
+                                    updated_at: stamp },
                                   table === 'classifieds' ? { status: 'live', hidden: false } : {},
                                   body);
         (db[table] = db[table] || []).push(row);

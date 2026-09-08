@@ -20,7 +20,9 @@ import { chromium } from '/opt/node22/lib/node_modules/playwright/index.mjs';
    suite parts from `js/supabase-config.js` the day the project moves, and
    then this filter excludes a host that no longer exists while letting the
    real one through. One source, imported. */
+import { readFileSync } from 'node:fs';
 import { SUPABASE_URL } from '../../js/supabase-config.js';
+const ROOT = new URL('../../', import.meta.url).pathname;
 
 const BASE = process.env.BASE || 'http://localhost:8099/index.html';
 let pass = 0, fail = 0;
@@ -48,9 +50,24 @@ const ORIGIN = new URL(BASE).origin;
    an auth call, a storage call, a table this screen has no business asking
    for — every one of them still turns 15.2 red. */
 const LIVE_HOST = new URL(SUPABASE_URL).host;
+/* ⚠️ THE TABLES ARE DERIVED FROM THE FACTORY, NEVER WRITTEN HERE (648).
+   `615` narrowed this exclusion from «the whole host» to a path and was
+   right to — and the path it wrote was `(businesses|classifieds)`, a
+   hand-written list of table names. Three batches each add a live reader,
+   so each of them would have turned this calendar suite red without naming
+   it in a single line: `615` replaced a hand-written COUNT with a path and
+   left the path itself hand-written. The one place that knows which tables
+   are read at boot is the factory that reads them, so the list comes from
+   its call sites. A batch that adds a reader adds its name once, there.
+   ⚠️ And the exclusion is NOT widened to `/rest/v1/` as a whole: that
+   reopens the gap `615` closed, since a table the calendar has no business
+   touching would be read and the check would stay green. */
+const READER_TABLES = [...readFileSync(ROOT + 'js/store.js', 'utf8')
+  .matchAll(/makeLiveReader\('([a-z_]+)'/g)].map(m => m[1]);
 const isBootRead = (u) => {
   try { const x = new URL(u);
-    return x.host === LIVE_HOST && /^\/rest\/v1\/(businesses|classifieds)\b/.test(x.pathname);
+    return x.host === LIVE_HOST
+      && new RegExp('^/rest/v1/(' + READER_TABLES.join('|') + ')\\b').test(x.pathname);
   } catch (_) { return false; }
 };
 page.on('request', r => { if (/^https?:/.test(r.url()) && !r.url().startsWith(ORIGIN)

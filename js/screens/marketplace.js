@@ -1,5 +1,5 @@
 /* ======================= MARKETPLACE ======================= */
-import { t, L, icon, $, $$, go, back, renderHeader, confirmSheet, toast, wireRoutes, cityChipLabel,
+import { t, arCount, L, icon, $, $$, go, back, renderHeader, confirmSheet, toast, wireRoutes, cityChipLabel,
          pickerBtn, setPickerValue, openDropdown,
          emptyState, query, shareItem, fmtMoney, priceLabel, statusBadgeHtml,
          openSheet, closeSheet, openFilterSheet, activeFilterCount, sectionNote,
@@ -350,7 +350,9 @@ export function ListingDetailScreen(root, params) {
   if (rn) rn.addEventListener('click', async () => {
     rn.disabled = true;
     if (!await S.renewClassified(c.id)) { rn.disabled = false; toast(t('somethingWrong'), 'err'); return; }
-    toast(t('renewed'), 'ok');
+    /* ⚠️ the number is READ, never written: the Arabic said 14 days and
+       the English 30, for one button, and the truth is `catRule().days`. */
+    toast(t('renewed').replace('{c}', arCount(S.catRule(c.cat).days, t('plDay'))), 'ok');
     go('#/marketplace/' + c.id);
   });
   const hd = $('#hideBtn');
@@ -759,7 +761,16 @@ export function PostScreen(root) {
     /* ⚠️ The one line in `js/screens/*` that gains an `await` for the live
        row: the listing is written on the server before it is anybody's. */
     const rec = await S.addClassified(payload);
-    if (!rec) { toast(t('storageFull'), 'err'); return; }
+    if (!rec) {
+      /* ⚠️ The limit is guarded on the server as well now, because the
+         device's own count only ever knew this device. Its refusal is said
+         in the same words this screen says a few lines above, never as a
+         database error code. */
+      toast(S.lastPublishError() === 'limit'
+        ? (rule.maxActive !== S.MAX_ACTIVE_LISTINGS ? t('catLimitReached') : t('limitReached'))
+        : t('storageFull'), 'err');
+      return;
+    }
     if (flagged) {
       S.addFlag({ kind: 'listing', refId: rec.id, risk: 'high', item: rec.title,
         reason: { ar: 'لغة تجارية في إعلان شخصي', en: 'Business language in a personal listing' } });

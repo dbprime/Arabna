@@ -11,7 +11,7 @@ ARABNA · عربنا — a mobile-first web app for the Arab community in the U.
 **business directory + marketplace + events + magazine**, Arabic-first with a full English toggle.
 ("Classifieds / الإعلانات الشخصية" is now "Marketplace / السوق" — the old `#/classifieds`
 routes still resolve so shared links keep working.)
-Current version: **V.10.7 (prototype)**. Owner: dbprime. Deploys to Vercel (team DB Prime).
+Current version: **V.10.8 (prototype)**. Owner: dbprime. Deploys to Vercel (team DB Prime).
 
 ## Hard rules (from the product brief)
 0. ⚠️ **THE OWNER'S NAME IS NEVER WRITTEN — anywhere.** Not in this file, not
@@ -11168,6 +11168,286 @@ what any later cut is decided from.**
 **0 seconds** at the counter's own resolution against `v8`'s 280 — so a
 suite dropped for looking small can cost the net nothing at all, and the
 axis to cut on is this table, never the number of `ok()` lines in a file.
+
+## V.10.8 — the foundation, before anything is poured onto it (648)
+
+⚠️ **This file closes its own group, and its group is itself** — it touches
+`js/store.js`, which the 5 September decision names as a reason a batch is
+treated as its group's closer.
+
+⚠️ **Its PLACE in the queue is the batch.** `650` begins to fill the business
+table, `655` fills five more and `665` the settings — and four of the things
+here cannot be repaired after the filling except by migrating data: **a
+column with no writer, a read that truncates in silence, an id that
+collides, and a limit nobody guards.** The foundation is built before it is
+poured onto, or it is broken up to be built.
+
+⚠️ **And not one of the four is visible on a screen today, while every one of
+them is visible in a month.** They came from a sweep, not from the net and
+not from a complaint — which is why the batch is measured by suites alone
+and needs measuring more, not less: nobody will find its faults by using the
+app.
+
+### An id that lives on the server comes from the server
+> **A row that lives on the server takes its id FROM the server.** `mintId`
+> is for what never leaves the device, **and for nothing else.** ⚠️ **The
+> test is one question: does this record have a table in
+> `supabase/migrations/`?** If it does, the id comes from
+> `.insert(...).select().single()`, never from `mintId`.
+
+### 1 — `updated_at`: seventeen columns and no writer for one of them
+```
+updated_at in the schema     17 columns — one on every table
+a trigger that writes it     zero
+mentions of it in js/        zero
+```
+**So it carried the `now()` of the moment the row was created and never
+moved again** — ⚠️ **a column that names itself «last updated» and only ever
+says «created».** It is the family this project has hunted twice: `tier2_by`
+written and never read, `is_admin` written and never read. **This is their
+inverse: declared and never written.**
+
+⚠️ **And it is three consequences, not one.** There is no «last modified»
+anywhere; **there is no guard against a write over a write** — two staff
+open the same business and save, and the second erases the first in silence
+with nothing knowing anything was lost; and **any later differential sync
+(«what changed since») is impossible**, since the door to it is this column.
+
+- **One function and a `before update` trigger on each of the seventeen** —
+  ⚠️ **on all seventeen and not on the three live ones**: the other fourteen
+  fill in later batches, and **a trigger added after a table fills leaves its
+  first rows with no date.**
+- ⚠️ **No `security definer`.** The function reads and writes nothing outside
+  the row in its hands, and **a privilege the build does not need is not
+  granted** — `0005`'s own rule, read backwards.
+- ⚠️ **And the client never writes it.** A date the device supplies is a date
+  its owner controls — and this app shifts that clock on purpose
+  (`clockOffset`) to test the panel. **The server is what knows when.**
+- **The suite counts from the schema, never from a written list of
+  seventeen**: a table added tomorrow with the column and without the trigger
+  turns it red by itself.
+
+⚠️ **A correction to the spec's own count, measured:** it says eighteen
+columns. There are **seventeen columns on seventeen tables**; the eighteenth
+match is the header comment that describes the convention.
+
+### 2 — a read with no order and no limit is cut short IN SILENCE
+```
+sb.from('businesses').select('*')     no order · no range · no limit
+sb.from('classifieds').select('*')    the same
+.order( · .range( · .limit( in js/    zero
+```
+⚠️ **PostgREST caps the rows it returns, and past the cap the answer comes
+back short with no error and no marker — and unordered, so what was cut is
+arbitrary.** Said in one sentence: **the day the directory holds a thousand
+businesses you stop seeing some of them, and nothing tells you.** No message,
+no line in a log, no suite going red. **A silent fault in a read is worse
+than a loud one in a write** — and today both tables are nearly empty, so it
+is asleep, and `650` is what wakes it. **That is why this is built before
+that batch and not after.**
+
+- **`makeLiveReader(table, {order})` in `js/store.js`, and both readers moved
+  onto it.** ⚠️ **The factory is built HERE**, and that is the item: three
+  separate specification files each named a different owner for it, and the
+  result of three owners is that nobody builds it in time.
+- ⚠️ **`created_at desc` is the FALLBACK and not the rule.** The server's
+  order has to match the screen's or the page lies: events order
+  `featured desc, starts_at asc` — ordered by `created_at`, **a pinned event
+  with a distant date falls onto a later page and never floats, and the $99
+  pin a customer paid for does not appear.**
+- ⚠️ **`id` is always the last key.** Two rows sharing the leading key with
+  no unique tiebreak **swap places between one page and the next: one shows
+  twice and the other disappears.** A known family of paging faults, closed
+  by one line.
+- **Paging until the table ends**, `LIVE_PAGE` named beside the project's
+  other limits, and **a ceiling that is announced rather than swallowed** —
+  a loop with no ceiling spins for ever on a broken answer.
+- ⚠️ **And no `.eq('status', …)` in any reader**, which is `630`'s lesson:
+  the policy decides who sees what and a filter in the client blinds the
+  queue. **Ordering is not filtering.**
+
+**And the factory exports the tables it reads.** ⚠️ **`615` narrowed
+`v36`'s exclusion from «the whole host» to a path and was right to — and the
+path it wrote was a hand-written list of table names.** `649`, `655` and
+`665` each add a reader, so **each of them would have turned a calendar
+suite red without naming it in a single line: the number became a list, and
+a list ages exactly as a number does.** The list comes from the factory now,
+because the factory is what does the reading.
+
+### 3 — the limit was guarded on the device alone
+`MAX_ACTIVE_LISTINGS` lived in `js/store.js` and `state.myListings` is **a
+list on one phone**, with zero constraint and zero trigger on the server. ⚠️
+**So one account publishing from two devices had no limit at all**: each
+device counted what it knew, and nobody counted the total. **The limit is
+not decoration — it is what stops one account filling the marketplace, and
+it is also what a subscription BUYS.** A limit that is passed for free is a
+product given away.
+
+- **A `before insert` trigger**, counting the row owner's live and unhidden
+  listings — per category, with the account-wide default for the categories
+  that carry no limit of their own, **mirroring the client's two conditions
+  letter for letter.**
+- ⚠️ **The limit is read from `settings`, and its rows are seeded in THIS
+  batch's own migration.** A trigger that reads a row nobody ever writes
+  works on its fallback for ever. ⚠️ **And the rule is written precisely:
+  «no number in the function» would be wrong**, because a trigger that
+  refuses for want of a setting closes publishing for everybody. **The
+  fallback is allowed, is one, and must EQUAL the seeded row — and a check
+  compares the two.**
+- ⚠️ **The refusal is translated into the sentence the client already says.**
+  A raw database error code on the screen is a second fault on top of the
+  first.
+- **The client's guard now counts the ACCOUNT, not the device** — one
+  definition, `mineListing()`, with the device's list **beside** the account
+  and not replaced by it: a seed listing has no row to carry an owner, and
+  neither has anything published before there was an account.
+
+**And three live faults rode here because they are three lines** — none of
+them urgent, and all three cheaper here than in a batch of their own:
+
+- **«pulled for review» while still published.** `updateClassified` wrote the
+  status on the device and **left it out of the patch**, so a free-section
+  listing edited to add a price told its poster it had been withdrawn **and
+  stayed live, with its price, for every reader** — who then stops worrying
+  about a breach that is still on the screen.
+- **«14 days» in Arabic and «30» in English, for one button.** The truth is
+  `catRule(cat).days`, so **the string carries `{c}` and reads its number**
+  rather than writing it — the same rule `505` set for the rotation seconds.
+- **«expires in 14 days» and nothing ended it.** `daysLeft` was computed and
+  printed in three places and **never filtered on**, so a listing reached
+  zero and stayed in the marketplace. ⚠️ **Its owner still sees it** — else
+  they would think it deleted, and the renew button is what brings it back:
+  **the filter is for the public list, not for its owner's.**
+
+### 4 — an id that lives on the server comes from the server
+Fourteen kinds of id are minted on the device. ⚠️ **`mintId`'s own comment
+carries the measurement that produced it: twenty thousand reviews minted in
+a loop came out as six distinct ids, and two devices in the same millisecond
+produced the same string letter for letter.** It was given randomness after
+that — **and randomness reduces a collision without preventing it, and
+preventing it is not the client's work at all**: the table carries
+`gen_random_uuid()` and a primary key that refuses a duplicate. **The server
+forbids; the device hopes.**
+
+**Measured: `classifieds` is the ONE table written from the client today,
+and `630` already takes its id from the server.** ⚠️ **So there is nothing
+here to repair and something to prevent** — the rule above, and a check that
+keeps it rather than a sentence that is forgotten.
+
+⚠️ **The check is a TWO-WAY agreement, and that is what makes it bite.** The
+fourteen are written out with the batch each one moves in — `ev` → `649`,
+`ub` → `650`, `r`·`m`·`f`·`cl` → `655`, `g`·`ua` → `665`, exactly the eight
+the queue names and not one more. **A kind listed there and no longer minted
+is one that moved to the server and was not struck**, and a `mintId` with no
+line is **a local id nobody decided on.** Either way it is red.
+
+⚠️ **And two of the fourteen — `u` (a masjid a stranger suggested) and `of`
+(an offer) — HAVE a table and are named in no batch.** That is written down
+as it stands and **not filled in here**: the queue is written by whoever
+writes the files, and a session that completes a blank in it has invented an
+order nobody decided.
+
+### And one thing measured while building it, which is the batch's own find
+```
+after a real sign-up      state.user.id  undefined
+```
+⚠️ **The id was written by `hydrateUserFromSession` alone — which runs on
+sign-IN — so a brand-new account carried no id for the whole of its first
+session.** Everything keyed on the account was blind in it: `updateProfile`
+never wrote the display name to the server (that line reads `u.id`), and
+this batch's own listing count would have fallen back to the device list —
+**the very thing it replaces.** It is captured at sign-up now, and again at
+the code screen for an account whose sign-up carried no session. ⚠️ **And
+NOT by calling `hydrateUserFromSession` there**: `635` limited the live
+readers to two entry sites on purpose, and a new account owns no rows for
+them to fetch.
+
+⚠️ **AND THE TWO LAYERS HID EACH OTHER FROM THE SUITE.** With the sign-up
+line removed, **every behavioural item stayed green** — the code screen
+covered it. So the first layer is measured on its own (`3b.0`), which is
+`475`'s and V.07.9's lesson written a third time: **a structural check
+stands beside a behavioural one, never instead of it.**
+
+### What this batch deliberately does not do
+```
+differential fetch («what changed since»)   the column opens its door; it is not built here
+a concurrent-edit lock                      `updated_at` is its precondition, not itself
+the other entities' ids                     each moves in its own batch, and the check guards it
+quotas on businesses and events             there is none today, and a limit invented in a
+                                            foundation batch is a limit with no decision behind it
+```
+
+### ⚠️ And a fault of my own, recorded because the rule it leaves is general
+The teeth run for this batch restored each mutated file with
+`git checkout -- <file>`. **That restores a file to its last COMMIT, and a
+teeth run happens on an UNCOMMITTED tree by definition** — so the first
+restore wiped every change this batch had made to `js/store.js`, and the
+whole of it had to be rebuilt from the session's own record.
+
+> **A teeth run restores from a COPY taken before the mutation, never from
+> `git`.** The existing rule — «a teeth run owns the working tree» — was
+> about not committing in the middle of one. **This is the other half: the
+> restore must be able to put back work that was never committed.**
+
+And a second one in the same script, smaller and worth naming: **a mutation
+whose anchor is not found must stop the run**, not fall through to the next
+tooth — otherwise the run reports on a tree carrying the PREVIOUS tooth's
+break, which is what happened here and made a green look like a red in a
+place nothing was wrong.
+
+### Two things this batch could NOT do, named rather than skipped
+- ⚠️ **The spec asks that the sentence «the factory is not built here» be
+  struck from `649` §4.1 and `655` §6.** Those are specification files the
+  owner holds; **they are not in this repository**, so the strike cannot be
+  made here. It is named so whoever holds them makes it — `645`'s rule (the
+  batch that closes a gap strikes it from every list that names it) can only
+  be obeyed where the list is.
+- **`u` (a masjid a stranger suggested) and `of` (an offer) have a table and
+  are named in no batch.** Recorded as they stand and **not filled in**: the
+  queue is written by whoever writes the files.
+
+### And the group closes — the net, run on segments over one frozen tree
+```
+162 runs · 81 suites · 7,696 assertions · zero red · zero crash
+```
+Twenty-seven segments over `b13d4ae`, `HEAD` re-checked at the head of each,
+**81 present and 81 run, each exactly twice, and no result borrowed.** The
+arithmetic closes itself: 7,584 + 110 (`v83` × 2) + 2 (`v79 · 2.1b`) = 7,696.
+
+**Two suites carry a reversal, each named and neither softened:**
+
+- **`v79 · 2.1` counted `from('businesses'|'classifieds').select(` in the
+  source — a hand-written list of table names, THE VERY SHAPE THIS BATCH
+  REMOVED FROM `v36`.** Both tables are read through one factory by the name
+  it is handed, so the literals are gone from the read sites and the count
+  was 0 on a build that reads both perfectly. What replaced it is stronger:
+  a reader added without going through the factory registers nothing and
+  turns it red. ⚠️ **And `2.2` had to move with it or it would have passed
+  VACUOUSLY** — a negative built on the same literal names matches nothing
+  once the names are gone, and a green that measures nothing is worse than a
+  red. It asks every `sb.from` chain now, whatever the table.
+- ⚠️ **`v48 · 4` was green for a reason unrelated to what it measures.** It
+  calls the async `updateProfile` three times **without awaiting** and then
+  reads the state — and it passed because the function reached `save()` with
+  no await actually taken on that fixture: the address never moves, so the
+  re-authentication is skipped, and the one write to `profiles` was guarded
+  on `u.id`, **which was `undefined` on every account**. Giving the account
+  its id made that write real, the function suspended, and the state was
+  read before anything had been parked. **The behaviour is unchanged** — the
+  block above it awaits and passes, and the app's own call site awaits — so
+  what was corrected is the fixture.
+
+⚠️ **AND THE NET WAS RESTARTED FROM THE TOP, not patched from segment 16.**
+A fix to a suite makes a new tree, and a suite not run on THIS tree is a
+suite not run. **And before restarting, the CLASS was swept rather than the
+instance** — `645`'s rule: no other un-awaited call anywhere in the harness,
+and everything the account id newly makes true was measured (`v76` 75 ·
+`v66` 18 · `v78` 41, all green). ⚠️ **`v76 · 10` gained by it:** it read the
+profile row by an `undefined` id before and reads a real row now, so it
+measures something it could not measure at all.
+
+
+
 
 ## Known open items
 - **The header image is still far larger than its box.** V.04.7 replaced

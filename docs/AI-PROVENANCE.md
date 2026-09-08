@@ -1,7 +1,7 @@
 # سجلُّ مصدر التطوير بالذكاء الاصطناعيّ — مولَّدٌ من المستودع
 
 يُولَّد بـ `tools/audit/provenance.mjs` عند كلّ إغلاق. لا يُحرَّر بيد.
-آخرُ توليد: 2026-09-08 · على `51c118e` (HEAD) · آخرُ كومِتٍ فيه 2026-09-08 · 319 كومِتاً
+آخرُ توليد: 2026-09-08 · على `b13d4ae` (HEAD) · آخرُ كومِتٍ فيه 2026-09-08 · 326 كومِتاً
 كومِتُ الإغلاق الأخير يدخل السجلَّ في الإغلاق الذي يليه.
 
 كيف يُقرأ: كلُّ دفعةٍ تبدأ بملفّ مواصفةٍ يكتبه مالكُ البرنامج ويقرّره
@@ -14,6 +14,13 @@ git لا يدخل الجدول. والخانةُ التي لا مصدرَ لها
 
 | التاريخ | الرقم | النوع | الكومِت | المواصفة | الجلسة | الشبكة | قبولُ المالك |
 |---|---|---|---|---|---|---|---|
+| 2026-09-08 | 648 | وثائق | `b13d4ae` | 648 | [جلسة](https://claude.ai/code/session_01FQktTvq1yNPmo67XBoW8hs) | — | owner ✓ |
+| 2026-09-08 | 648 | وثائق | `40f18e0` | 648 | [جلسة](https://claude.ai/code/session_01FQktTvq1yNPmo67XBoW8hs) | — | owner ✓ |
+| 2026-09-08 | 648 | وثائق | `41c5358` | 648 | [جلسة](https://claude.ai/code/session_01FQktTvq1yNPmo67XBoW8hs) | — | owner ✓ |
+| 2026-09-08 | 648 | شغل | `54a92a2` | 648 | [جلسة](https://claude.ai/code/session_01FQktTvq1yNPmo67XBoW8hs) | — | owner ✓ |
+| 2026-09-08 | 648 | وثائق | `2549f1e` | 648 | [جلسة](https://claude.ai/code/session_01FQktTvq1yNPmo67XBoW8hs) | — | owner ✓ |
+| 2026-09-08 | — | وثائق | `3e1e9c7` | — | — | — | — |
+| 2026-09-08 | 615 | وثائق | `9ce2a0b` | 615 | [جلسة](https://claude.ai/code/session_01FQktTvq1yNPmo67XBoW8hs) | 160 · 80 · 7,584 | owner ✓ |
 | 2026-09-08 | 615 | وثائق | `51c118e` | 615 | [جلسة](https://claude.ai/code/session_01FQktTvq1yNPmo67XBoW8hs) | — | owner ✓ |
 | 2026-09-08 | 615 | وثائق | `3b97ddd` | 615 | [جلسة](https://claude.ai/code/session_01FQktTvq1yNPmo67XBoW8hs) | — | owner ✓ |
 | 2026-09-08 | 615 | وثائق | `5c82633` | 615 | [جلسة](https://claude.ai/code/session_01FQktTvq1yNPmo67XBoW8hs) | — | owner ✓ |

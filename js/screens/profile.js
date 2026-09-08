@@ -836,8 +836,12 @@ export function MyAdsScreen(root) {
   }));
   $$('[data-renew]', root).forEach(b => b.addEventListener('click', async () => {
     b.disabled = true;
+    const rec = S.classifiedById(b.dataset.renew);
     if (!await S.renewClassified(b.dataset.renew)) { b.disabled = false; toast(t('somethingWrong'), 'err'); return; }
-    toast(t('renewed'), 'ok'); go('#/my-ads');
+    /* ⚠️ the number is READ, never written: the Arabic said 14 days and the
+       English 30, for one button, and the truth is `catRule().days`. */
+    toast(t('renewed').replace('{c}', arCount(S.catRule(rec && rec.cat).days, t('plDay'))), 'ok');
+    go('#/my-ads');
   }));
   $$('[data-share]', root).forEach(b => b.addEventListener('click', () => {
     const c = S.classifiedById(b.dataset.share);
