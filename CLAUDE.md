@@ -11395,7 +11395,57 @@ tooth — otherwise the run reports on a tree carrying the PREVIOUS tooth's
 break, which is what happened here and made a green look like a red in a
 place nothing was wrong.
 
-__NET_648__
+### Two things this batch could NOT do, named rather than skipped
+- ⚠️ **The spec asks that the sentence «the factory is not built here» be
+  struck from `649` §4.1 and `655` §6.** Those are specification files the
+  owner holds; **they are not in this repository**, so the strike cannot be
+  made here. It is named so whoever holds them makes it — `645`'s rule (the
+  batch that closes a gap strikes it from every list that names it) can only
+  be obeyed where the list is.
+- **`u` (a masjid a stranger suggested) and `of` (an offer) have a table and
+  are named in no batch.** Recorded as they stand and **not filled in**: the
+  queue is written by whoever writes the files.
+
+### And the group closes — the net, run on segments over one frozen tree
+```
+162 runs · 81 suites · 7,696 assertions · zero red · zero crash
+```
+Twenty-seven segments over `b13d4ae`, `HEAD` re-checked at the head of each,
+**81 present and 81 run, each exactly twice, and no result borrowed.** The
+arithmetic closes itself: 7,584 + 110 (`v83` × 2) + 2 (`v79 · 2.1b`) = 7,696.
+
+**Two suites carry a reversal, each named and neither softened:**
+
+- **`v79 · 2.1` counted `from('businesses'|'classifieds').select(` in the
+  source — a hand-written list of table names, THE VERY SHAPE THIS BATCH
+  REMOVED FROM `v36`.** Both tables are read through one factory by the name
+  it is handed, so the literals are gone from the read sites and the count
+  was 0 on a build that reads both perfectly. What replaced it is stronger:
+  a reader added without going through the factory registers nothing and
+  turns it red. ⚠️ **And `2.2` had to move with it or it would have passed
+  VACUOUSLY** — a negative built on the same literal names matches nothing
+  once the names are gone, and a green that measures nothing is worse than a
+  red. It asks every `sb.from` chain now, whatever the table.
+- ⚠️ **`v48 · 4` was green for a reason unrelated to what it measures.** It
+  calls the async `updateProfile` three times **without awaiting** and then
+  reads the state — and it passed because the function reached `save()` with
+  no await actually taken on that fixture: the address never moves, so the
+  re-authentication is skipped, and the one write to `profiles` was guarded
+  on `u.id`, **which was `undefined` on every account**. Giving the account
+  its id made that write real, the function suspended, and the state was
+  read before anything had been parked. **The behaviour is unchanged** — the
+  block above it awaits and passes, and the app's own call site awaits — so
+  what was corrected is the fixture.
+
+⚠️ **AND THE NET WAS RESTARTED FROM THE TOP, not patched from segment 16.**
+A fix to a suite makes a new tree, and a suite not run on THIS tree is a
+suite not run. **And before restarting, the CLASS was swept rather than the
+instance** — `645`'s rule: no other un-awaited call anywhere in the harness,
+and everything the account id newly makes true was measured (`v76` 75 ·
+`v66` 18 · `v78` 41, all green). ⚠️ **`v76 · 10` gained by it:** it read the
+profile row by an `undefined` id before and reads a real row now, so it
+measures something it could not measure at all.
+
 
 
 
