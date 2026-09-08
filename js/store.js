@@ -1235,9 +1235,9 @@ export function worshipOf(biz) { return (biz && biz.worship) || null; }
  * computed and never can be: ISGH prays jumuah at 1:30 and the mosque
  * down the road at 2:00, and that is a decision, not astronomy.
  */
-export function saveWorshipTimes(bizId, worship) {
+export async function saveWorshipTimes(bizId, worship) {
   const before = businessById(bizId);
-  applyBusinessEdit(bizId, { worship: Object.assign({}, (before && before.worship) || {}, worship) });
+  return applyBusinessEdit(bizId, { worship: Object.assign({}, (before && before.worship) || {}, worship) });
 }
 
 /**
@@ -3494,7 +3494,7 @@ export function requestClaim(bizId, details) {
   save();
   return rec;
 }
-export function approveClaim(id) {
+export async function approveClaim(id) {
   logAdminAction(id, 'approveClaim', '', '');
   const c = (state.claims || []).find(x => x.id === id);
   if (!c) return;
@@ -3505,7 +3505,11 @@ export function approveClaim(id) {
   state.myBusinessIds = state.myBusinessIds || [];
   if (!state.myBusinessIds.includes(c.bizId)) state.myBusinessIds.push(c.bizId);
   const biz = businessById(c.bizId);
-  if (biz) applyBusinessEdit(c.bizId, { claimed: true });
+  /* ⚠️ `claimed` is DERIVED from `owner_id` and has no column, so the reverse
+     map drops it and nothing leaves the device — but `applyBusinessEdit` is
+     async either way, so the mark lands a microtask later and a caller that
+     repaints at once misses it. Awaited for the ORDER, not for the network. */
+  if (biz) await applyBusinessEdit(c.bizId, { claimed: true });
   notifyKeys('claimOkTitle', 'claimOkBody', '#/directory/' + c.bizId, 'checkCircle');
   save();
 }
@@ -3731,7 +3735,15 @@ export function deleteReply(reviewId) {
 export function isNonCommercial(b) {
   return !!(b && (b.nonCommercial || b.cat === 'worship'));
 }
-export function setNonCommercial(bizId, on) { applyBusinessEdit(bizId, { nonCommercial: !!on }); }
+/* ⚠️ IT RETURNS THE PROMISE, and that is the item rather than a tidiness.
+   `nonCommercial` is a real column, so this write goes to the server like any
+   other — and a caller that repaints without waiting draws the answer it
+   HOPES for. `test_v11` caught exactly that: the panel said «تمّ» and redrew
+   the list over a write that had not landed. The three decisions above were
+   given this shape by this batch; this one was missed, and the net found it. */
+export async function setNonCommercial(bizId, on) {
+  return applyBusinessEdit(bizId, { nonCommercial: !!on });
+}
 
 /**
  * Halal restaurants near an outing. A family heading out has to eat, and this

@@ -577,8 +577,62 @@ console.log('--- 9: the map, both ways ---');
   await c2.close(); await ctx.close();
 }
 
+/* ============================================================
+   10 — every writer that reaches the server is WAITED FOR
+   ------------------------------------------------------------
+   ⚠️ THE NET FOUND THIS AND THE BATCH'S OWN SUITE DID NOT. `flip` in the
+   panel called `setNonCommercial`, said «تمّ» and repainted the list —
+   over a write that had not answered. The three decisions above were given
+   the awaited shape by this batch and that one was missed, so `test_v11`
+   went red on a real fault rather than a stale assertion.
+
+   ⚠️ So the CLASS is asserted, never the instance — `570`'s and `572`'s
+   rule. A writer added tomorrow and called without waiting turns this red
+   AND NAMES ITS LINE, instead of waiting for the next suite to trip over
+   it. The list of writers is read from `store.js` (`export async function`
+   whose body reaches `applyBusinessEdit` or `sb.from('businesses')`), so
+   it is derived and cannot age.
+   ============================================================ */
+console.log('--- 10: nothing repaints over a write that has not answered ---');
+{
+  const st = code('js/store.js');
+  const writers = [];
+  for (const m of st.matchAll(/export async function ([A-Za-z]+)\s*\([^)]*\)\s*\{/g)) {
+    const from = m.index + m[0].length;
+    // the function's own body, to its closing brace at column 0
+    const end = st.indexOf('\n}', from);
+    const body = st.slice(from, end < 0 ? st.length : end);
+    if (/applyBusinessEdit|from\('businesses'\)/.test(body)) writers.push(m[1]);
+  }
+  ok('10.1 the writers are read from the store, not listed here',
+     writers.length >= 5, writers.join(' · '));
+
+  const files = ['js/screens/admin.js', 'js/screens/directory.js', 'js/screens/profile.js',
+                 'js/ui.js', 'js/app.js'];
+  const loose = [];
+  for (const f of files) {
+    const src = code(f);
+    const lines = src.split('\n');
+    lines.forEach((line, i) => {
+      for (const w of writers) {
+        const re = new RegExp('(^|[^.\\w])(await\\s+)?S\\.' + w + '\\s*\\(');
+        const hit = re.exec(line);
+        if (!hit) continue;
+        /* awaited on the spot, chained with `.then`, or handed straight back
+           to a caller that will wait — any of the three is waiting */
+        const awaited = /await\s+S\./.test(line)
+          || /S\.[A-Za-z]+\([\s\S]*/.test(line) && /\)\s*\.then\(/.test(line + (lines[i + 1] || ''))
+          || /return\s+S\./.test(line);
+        if (!awaited) loose.push(f + ':' + (i + 1) + ' ' + w);
+      }
+    });
+  }
+  ok('10.2 …and every screen that calls one waits for its answer',
+     loose.length === 0, loose.join(' | ') || 'none loose');
+}
+
 console.log('--- console ---');
-ok('10.1 zero console errors across the batch', errors.length === 0, errors.slice(0, 3).join(' | '));
+ok('11.1 zero console errors across the batch', errors.length === 0, errors.slice(0, 3).join(' | '));
 
 await browser.close();
 console.log(`\n${pass} passed, ${fail} failed`);

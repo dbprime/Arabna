@@ -11906,6 +11906,33 @@ filter put back in the one place it does the most harm.**
 `0011_business_coords.sql`** — two columns, `lat` and `lng`, and those two
 alone.
 
+### ⚠️ And the net found a fault this batch's own suite did not
+`v11` went red on both builds, and it was **not** a stale assertion: the
+panel's non-commercial control called `setNonCommercial`, raised «تمّ» and
+**repainted the list over a write that had not answered.**
+
+**This batch gave approve, reject and delete the awaited shape and missed the
+fourth door** — the same shape, in the same file, twenty lines away. `v11`
+had measured «marking one adds it to the list» since it was written, and that
+is what caught it. **Not one assertion was touched: the app was wrong and the
+check was right.**
+
+⚠️ **So the CLASS was swept rather than the instance** — `570`'s and `572`'s
+rule — and it found two more un-awaited callers: `approveClaim` (whose write
+is local-only today, since `claimed` is derived and the reverse map drops it —
+**awaited for the ORDER, not for the network**) and `saveWorshipTimes`, which
+has no caller at all and is left in the right shape for the day it gets one.
+
+**And the class is asserted closed rather than declared closed.** `test_v85 ·
+10` reads the writers out of `store.js` — `export async function` whose body
+reaches `applyBusinessEdit` or the table — and sweeps every screen for a call
+that does not wait. ⚠️ **Derived, so it cannot age**: a writer added tomorrow
+joins it by itself. Proven: reverting `flip` prints
+`js/screens/admin.js:434 setNonCommercial` and names its own line.
+
+> **A batch that makes a function async owns every caller of it, not the
+> three it was thinking about.**
+
 
 ## Known open items
 - **The header image is still far larger than its box.** V.04.7 replaced

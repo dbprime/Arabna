@@ -290,7 +290,7 @@ function panelView(root) {
     // --- admin password ---
     // --- ownership claims ---
     $$('#aBody [data-clok]').forEach(b => b.addEventListener('click', () => {
-      S.approveClaim(b.dataset.clok); toast(t('claimApproved'), 'ok'); paint();
+      S.approveClaim(b.dataset.clok).then(() => { toast(t('claimApproved'), 'ok'); paint(); });
     }));
     $$('#aBody [data-clno]').forEach(b => b.addEventListener('click', () => {
       const box = $('#why-' + b.dataset.clno);
@@ -479,10 +479,13 @@ function panelView(root) {
     });
 
     // --- a public place is not a business: flag it either way ---
+    /* awaited, and the list repaints only on a real answer — the shape this
+       batch gave approve, reject and delete, and this one was missed */
     const flip = (id, on) => {
-      S.setNonCommercial(id, on);
-      toast(t('done'), 'ok');
-      paint();
+      S.setNonCommercial(id, on).then(ok => {
+        toast(t(ok ? 'done' : 'bizSaveFailed'), ok ? 'ok' : 'err');
+        if (ok) paint();
+      });
     };
     const ncOn = $('#ncOn');
     if (ncOn) ncOn.addEventListener('click', () => flip($('#ncPick').value, true));
