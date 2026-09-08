@@ -11933,6 +11933,22 @@ joins it by itself. Proven: reverting `flip` prints
 > **A batch that makes a function async owns every caller of it, not the
 > three it was thinking about.**
 
+### Five suites carry a reversal, and one of them was the app being wrong
+| suite | asserted | now |
+|---|---|---|
+| `v11` | ⚠️ **not a reversal at all** — «marking one adds it to the list» was right and the app was wrong. Nothing was touched | — |
+| `v15 · 6.50–6.52` | an address change **clears** the point and re-queues the listing | ⚠️ the SUBJECT is unchanged — «a shop that moved never keeps the coordinates of where it used to be» — and the remedy changed: §5.3ج asks for the ladder on the EDIT door as well, so the point is **re-derived from the new address**, which costs no network call. **Both branches are measured where one was**: a move we can place, and one we cannot. And the three ask `hasCoords` and the queue, never `needsGeo` |
+| `v43 · 3` | `approveClaim` read on the next line | awaited — it passed only because `myBusinessIds` is pushed BEFORE the await inside it, an accident of statement order |
+| `v66 · 11.1` | seventeen `mintId` call sites | **sixteen**, and the floor **moves with a decision** rather than being derived — `run.sh`'s floor of forty and `v16`'s category count keep the same shape, and `v83 · 4` is the registry that names the kinds |
+| `v75 · 6.2` | the map carries `review_count` | ⚠️ **`review_count` is not a column and never was.** `650` measured eight fields read off a seed with nothing behind them and derived six of the eight, so a map pretending to carry it would read a column that does not exist. It asserts `zip` and `mobile_service` — the two real columns nobody was reading — and **`6.2b` is new: a field with no column is not invented on the way through** |
+
+⚠️ **And `needsGeo` was found dead while rewriting `v15`**: written in five
+places, **read in none** — `needsGeoList()` filters on `hasCoords`, and every
+panel line reads that list. So a check on the flag measures a field the app
+does not act on. **The three now read what the app reads**, and the field is
+recorded in `docs/الحالة.md` for the clearing-up batch rather than deleted
+here: deleting a field is not the job of the batch that wires the table.
+
 
 ## Known open items
 - **The header image is still far larger than its box.** V.04.7 replaced
