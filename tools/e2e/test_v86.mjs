@@ -203,7 +203,7 @@ console.log('--- 6: the ledger is asked, not assumed ---');
      the same reason run.sh derives its suites: a migration forgotten in a
      hand-written list never runs while the script reports success. */
   ok('6.2 the file list is discovered from the folder, not written down',
-     /migrations\(\)\s*\{\s*ls -1 "\$DIR"/.test(sh) &&
+     /migrations\(\)\s*\{[\s\S]{0,300}?ls -1 "\$DIR"/.test(sh) &&
      !/0008_|0009_|0010_|0011_/.test(sh), 'no file name hard-coded but the ledger');
   ok('6.3 the ledger migration runs only when the ledger is absent',
      /ledger_exists \|\| \{[^}]*apply_one "\$LEDGER"/.test(sh));
@@ -215,6 +215,22 @@ console.log('--- 6: the ledger is asked, not assumed ---');
   ok('6.4 an unreachable server is announced, never read as an answer',
      /reachable\(\)/.test(sh) && /need_server/.test(sh) &&
      (sh.match(/need_server \|\| exit 1/g) || []).length === 2);
+
+  /* ⚠️ AND THE CLASS, NOT THE INSTANCE. `6.4` closed the first example —
+     an unreachable server read as «the table is not there». Sweeping the
+     runner for the SHAPE rather than waiting for its next example found
+     three more places where a failure could be read as an answer, and the
+     rule this project already carries (`570`, `572`, `645`) is that a
+     class is swept, never met one instance at a time. */
+  ok('6.5 a failed read of the ledger is never «nothing pending»',
+     !/\|\| true/.test(sh) && (sh.match(/P="\$\(pending\)" \|\|/g) || []).length === 2,
+     '`|| true` in the code: ' + /\|\| true/.test(sh));
+  ok('6.6 an empty or unreadable folder is never «nothing to run»',
+     /migrations\(\)\s*\{[\s\S]*?\[ -n "\$out" \] \|\|/.test(sh));
+  /* only «t» or «f» is an answer; an error, an empty string or a refused
+     permission is a failure and is announced */
+  ok('6.7 …and only a real answer about the ledger counts as one',
+     /ledger_exists\(\)\s*\{[\s\S]*?case "\$a" in[\s\S]*?\*\)[^\n]*exit 1/.test(sh));
 }
 
 /* ============================================================

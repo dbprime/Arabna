@@ -12153,6 +12153,27 @@ close it for ever.** The grants are withdrawn from `anon` and
 they do not reach the table. **And `test_v86 · 4.5` asserts the app never
 so much as names it**: the runner is its only writer, for ever.
 
+### ⚠️ And the same class had a SECOND instance, found by sweeping and not by waiting
+`6.4` closed the first — an unreachable server read as «the table is not
+there». **The rule this project already carries is that a class is swept,
+never met one instance at a time** (`570`, `572`, `645`), so the runner was
+read again for the SHAPE rather than for that example. Three more places
+could read a failure as an answer:
+
+```
+P="$(pending || true)"    ×2   a failed read of the ledger → «no pending migrations»
+ledger_exists()                anything but «t» → «the table is not there»
+migrations()                   an empty or unreadable folder → «nothing to run»
+```
+
+⚠️ **Every one of them ends in the same sentence on a pull request — «لا
+هجرةَ معلَّقة» over a server that was never asked — in the runner whose
+whole subject is that a failure is announced and never swallowed.** All
+three are closed: `pending` fails loudly, only `t` or `f` counts as an
+answer about the ledger, and an empty folder listing is refused. **The one
+`|| true` left in the file is inside the comment forbidding it**, and
+`v86 · 6.5` reads the code with comments stripped.
+
 ### ⚠️ And the batch's own table walked through a blind spot in three suites
 Measured while writing it, and it is bigger than this batch: the rules that
 ask **«what tables exist»** were written

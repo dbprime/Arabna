@@ -46,7 +46,13 @@ LEDGER="0012_migration_ledger.sql"
 # The same reason `run.sh` derives its suites: a migration forgotten in a
 # hand-written list is a migration that never runs, while the script
 # reports success.
-migrations() { ls -1 "$DIR" | grep -E '^[0-9]{4}_[a-z0-9_]+\.sql$' | sort; }
+migrations() {
+  local out; out="$(ls -1 "$DIR" | grep -E '^[0-9]{4}_[a-z0-9_]+\.sql$' | sort)"
+  # ⚠️ An unreadable or empty folder must never read as «nothing to run».
+  # It is the same swallowed failure as the one below, one level further out.
+  [ -n "$out" ] || { echo "لم يُقرأ أيُّ ملفِّ هجرةٍ من $DIR — ولا يُستنتج من ذلك أنّ لا شيءَ ينتظر." >&2; return 1; }
+  printf '%s\n' "$out"
+}
 
 need_key() {
   if [ -z "${SUPABASE_DB_URL:-}" ]; then
@@ -81,7 +87,18 @@ need_server() {
   fi
 }
 
-ledger_exists() { [ "$(q -c "select to_regclass('public.migration_log') is not null")" = "t" ]; }
+# ⚠️ ONLY «t» OR «f» IS AN ANSWER. Anything else — an error, an empty
+# string, a refused permission — is a FAILURE and is announced. Reading a
+# failure as «the table is not there» is what the first run of this file
+# did, and it is the fault this whole batch forbids.
+ledger_exists() {
+  local a; a="$(q -c "select to_regclass('public.migration_log') is not null")" || a=''
+  case "$a" in
+    t) return 0 ;;
+    f) return 1 ;;
+    *) echo "لم يُجب الخادمُ عن وجود جدول السجلّ — ولا يُستنتج من صمته شيء." >&2; exit 1 ;;
+  esac
+}
 
 ran() { q -c "select file from public.migration_log order by file"; }
 
@@ -133,7 +150,10 @@ case "${1:-}" in
       echo "جدولُ السجلّ غير موجود بعد — ينشئه ويزرعه $LEDGER في أوّل تشغيلٍ على main." >&2
       exit 0
     fi
-    P="$(pending || true)"
+    # ⚠️ NEVER `|| true` HERE. A failed read of the ledger is not «no
+    # pending migrations» — it is a failure, and saying «لا هجرةَ معلَّقة»
+    # over it is the swallowed failure, in the runner that forbids it.
+    P="$(pending)" || { echo "تعذّرت قراءةُ سجلّ الهجرات." >&2; exit 1; }
     [ "${1}" = "list" ] && { [ -n "$P" ] && printf '%s\n' "$P"; exit 0; }
 
     if [ -z "$P" ]; then echo "لا هجرةَ معلَّقة."; exit 0; fi
@@ -165,7 +185,7 @@ case "${1:-}" in
     # It records itself through the ordinary path, so the loop then skips
     # it and there is no special case anywhere below.
     ledger_exists || { echo "إنشاءُ جدول السجلّ:"; apply_one "$LEDGER"; }
-    P="$(pending || true)"
+    P="$(pending)" || { echo "تعذّرت قراءةُ سجلّ الهجرات." >&2; exit 1; }
     if [ -z "$P" ]; then echo "لا هجرةَ جديدة."; exit 0; fi
     echo "تنفيذ:"
     for f in $P; do apply_one "$f"; done
