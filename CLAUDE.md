@@ -12663,19 +12663,32 @@ been green while nothing was removed.
 ```
 170 runs · 85 suites · 8,232 assertions · zero red · zero crash
 ```
-Seventeen segments over `55cd330`, `HEAD` re-checked at the head of each —
+Twenty-nine segments over `4aaef60`, `HEAD` re-checked at the head of each —
 the runner exits 2 on a moved character or a dirty tree — **85 present and
 85 run, each on both builds, and no result borrowed.** The verdict is READ
 from the index and never summed: `NET COMPLETE — every derived suite ran on
-both builds in this index`. Measured suite time: **6,987s on the single-file
-build and 6,653s on the module one.**
+both builds in this index`. Measured suite time: **6,963s on the single-file
+build and 6,644s on the module one**, and the three heaviest are unchanged
+from `615`'s own table: `v8` 285/283 · `v20` 282/275 · `v14` 236/235.
 
-⚠️ **The arithmetic closes itself: 8,056 + 174 (`v87` × 2) + 2 (`v83 · 1.5b`
-× 2) = 8,232**, and **not one other suite moved by a single assertion** —
-`v3`, `v14`, `v29`, `v33`, `v43`, `v45` and `v66` each carry a reversal that
-REPLACED an assertion rather than adding or dropping one, which is what a
-reversal should look like: it changes what a check measures, never how many
-checks there are.
+⚠️ **The arithmetic closes itself, and it was written down BEFORE the run
+rather than read off it: 8,232 + 16 (`v87`'s eight new assertions × 2
+builds) = 8,248**, and `v87` reads **95 passed, 0 failed** on both builds.
+**The total landing on the predicted figure to the unit is what proves no
+other suite moved** — the only alternative is a pair of changes cancelling
+each other, and none was made.
+
+⚠️ **AND 8,232 IS THE SAME NET'S FIRST CLOSE, BEFORE THE CASCADE.** It is
+named rather than quietly overwritten, because **the net was paid for TWICE
+here**: once when `655` closed, and again when the owner's decision reopened
+its migration. A figure simply replaced hides the second run.
+
+**In that first run** `v3`, `v14`, `v29`, `v33`, `v43`, `v45` and `v66` each
+carried a reversal that REPLACED an assertion rather than adding or dropping
+one, which is what a reversal should look like: it changes what a check
+measures, never how many checks there are. **The second run moved none of
+them** — the cascade is a migration and one suite block, and it touched no
+older subject.
 
 ## Known open items
 - **The header image is still far larger than its box.** V.04.7 replaced
