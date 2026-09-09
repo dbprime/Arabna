@@ -12510,6 +12510,28 @@ prefix of this very fault.**
   account is dropped — **only ever when the server says so**, since dropping
   it otherwise takes the listing from the person who published it.
 
+### Five older suites carry a reversal, one was the app being wrong, and the classes were swept
+⚠️ **And two of them were swept from the class rather than met one instance
+at a time** — the rule `645` and `650` paid for, and it paid again here.
+
+| suite | asserted | now |
+|---|---|---|
+| `v9` | ⚠️ **NOT A REVERSAL — the app was wrong.** The sites moved off `notifyKeys` passed through `strOf`, which returns ONE language where a notification's title and body are a pair. A row stored and read back after the reader flips the language reads the wrong one, and `n.title.ar` is undefined. `pairOf` builds the pair `notifyKeys` built: the shape did not change, only who receives it | — |
+| `v3 · 10` | the report's kind is `'contact-attempts'` | that is not a KIND but a description of what happened — the same fault corrected for `'report'`. The kind is one the column takes, **and the reason names the repetition**: measured harder, not softer |
+| `v14 · F` | «a review on your own business notifies you» | the opposite of that block's own subject: the notification had no addressee, so it rang on the REVIEWER's phone. Here the fixture owned `b2` and the two coincided. Now: nothing on the actor's phone, and the review is a ROW |
+| `v45 · 4.6` | the ad refusal «reaches its owner verbatim» | ⚠️ the batch's headline example — an ad order has no table, so there is no account to address. The sentence changed; what is asserted is that **nothing** lands on the phone of whoever refused it |
+| `v66 · 11.1` · `v83 · 1.1` · `v83 · 4` | frozen counts | each moves with a decision, never derived from the thing it guards — five mint kinds struck, eighteen tables carrying `updated_at` |
+| `v83 · 1.5` | a blanket text search for `updated_at` in `js/` | the subject is «the client never WRITES it», and the old line could not tell a write from a read. `655` opened tables whose rows carry an edited-at and the app READS it — a review that was edited says so. What is asserted is what the rule always said |
+| `v33 · 7` · `v43 · 3` · `v29 · 3.4` | a suggestion, a claim and an edit as device records | each takes the real path now — an account, a row, an awaited answer — rather than being seeded around |
+
+⚠️ **AND THE NET WAS RESTARTED FROM THE TOP THREE TIMES, ALL THREE MY OWN
+DOING** — twice for a suite fix (which makes a new tree), and once because I
+edited a suite **while the net was running**, so the runner's dirty-tree
+guard stopped every segment after it and they reported nothing at all. That
+is `652`'s lesson in a second costume, and the answer is the same: **sweep
+the class and pre-check the untouched range BEFORE restarting**, which is
+what made the last run the last one.
+
 ### `test_v87` — 87 assertions, and eight teeth, each aimed at its own item
 ```
 the message never leaves the device   → 2.5 prints {"n":0}: the seller reads nothing
