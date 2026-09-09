@@ -39,7 +39,7 @@ const schema = code(read('0001_schema.sql'));
 const rls = code(read('0002_rls.sql'));
 const rawSchema = read('0001_schema.sql');
 
-const tables = [...schema.matchAll(/create table public\.([a-z_]+)/g)].map(m => m[1]);
+const tables = [...schema.matchAll(/create table (?:if not exists )?public\.([a-z_]+)/g)].map(m => m[1]);
 ok('0.2 the schema declares tables at all', tables.length >= 10, tables.length + ' tables');
 
 /* ---- 1) not one table without row level security ---- */
@@ -157,7 +157,7 @@ ok('0.2 the schema declares tables at all', tables.length >= 10, tables.length +
 {
   ok('9.1 supabase/ holds migrations only — nothing executable was added',
      readdirSync(ROOT + 'supabase/migrations/').every(f => f.endsWith('.sql')));
-  const files = [...schema.matchAll(/create table public\.([a-z_]+)/g)];
+  const files = [...schema.matchAll(/create table (?:if not exists )?public\.([a-z_]+)/g)];
   ok('9.2 …and the contract is complete enough to be worth checking',
      files.length === tables.length && tables.length >= 15, tables.length + ' tables');
 }

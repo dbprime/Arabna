@@ -12153,6 +12153,38 @@ close it for ever.** The grants are withdrawn from `anon` and
 they do not reach the table. **And `test_v86 · 4.5` asserts the app never
 so much as names it**: the runner is its only writer, for ever.
 
+### ⚠️ And the batch's own table walked through a blind spot in three suites
+Measured while writing it, and it is bigger than this batch: the rules that
+ask **«what tables exist»** were written
+`/create table public\.([a-z_]+)/g` — and `public.migration_log` is created
+`create table if not exists public.migration_log`.
+
+```
+narrow pattern  → []
+widened         → ["migration_log"]
+```
+
+> **So a table created with three extra words was invisible to «every table
+> has row level security» (`v73`), to the column reader (`v83`), and to
+> «every table has a writer or a named line» (`v84 · 7`).** A rule any
+> future migration escapes by writing `if not exists` is not a rule.
+
+**Widened at all five sites, each keeping its own subject.** Proven in the
+direction that matters: a second `if not exists` table added with no line
+anywhere turns `v84 · 7.2` and `7.3` red — **and with the narrow pattern
+restored the same table produces `0 FAIL`, green over a table nobody
+declared.**
+
+### ⚠️ And the rule could not say the truth about it, so it gained a third category
+`v84 · 7` knew two answers, both written when every writer was in `js/`:
+«the app writes it today», and «a batch will wire it». **`migration_log` is
+neither** — the runner writes it, and the app must never so much as name
+it. Squeezing it into «a batch will wire it» would have passed the check
+and read, six months from now, **as an invitation to wire it from `js/`**,
+which is exactly the harm. So the row says who writes it and the check
+asserts **the app does not** — and putting a `sb.from('migration_log')`
+into `js/store.js` while the row stands turns `7.3` and `7.4` red.
+
 ### What the owner does — once, and it is not programming
 ```
 1) Supabase → Project Settings → Database → Connection string → URI
