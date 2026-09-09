@@ -54,7 +54,12 @@ function columnsOf(table) {
   return cols;
 }
 const SCHEMA = { classifieds: columnsOf('classifieds'), businesses: columnsOf('businesses'),
-                 events: columnsOf('events') };
+                 events: columnsOf('events'),
+                 /* the four dead tables `655` opened, plus the replies and
+                    the notifications table `0013` adds */
+                 messages: columnsOf('messages'), reviews: columnsOf('reviews'),
+                 review_replies: columnsOf('review_replies'), flags: columnsOf('flags'),
+                 claims: columnsOf('claims'), notifications: columnsOf('notifications') };
 
 /* ⚠️ AND THE SEEDED SETTINGS ARE READ FROM THE MIGRATION TOO, for the same
    reason the columns are: the listing limit lives in `settings` from `0009`,
@@ -83,6 +88,8 @@ function freshDb() {
     businesses: [],
     classifieds: [],
     events: [],
+    messages: [], reviews: [], review_replies: [], flags: [], claims: [],
+    notifications: [],
     settings: SETTINGS_SEED.map(r => Object.assign({}, r)),
     session: null,
     seq: 0,
@@ -347,6 +354,24 @@ export async function mockSupabase(ctx, opts = {}) {
            a pending row off the public list. Mirrored explicitly so it
            cannot drift into a filter nobody decided on. */
         if (table === 'events') return true;
+        /* ⚠️ THE FIVE `655` OPENED, MIRRORED FROM `0002`. Without them the
+           batch's own items — «a third party who has nothing to do with
+           the listing reads nothing», «a reporter reads their own report
+           and not somebody else's» — would be green on a mock that hands
+           everything to everybody, which is the permissive mock this
+           file's head warns about. */
+        if (table === 'messages') {
+          if (isAdmin || row.sender_id === uid) return true;
+          const c = (db.classifieds || []).find(x => x.id === row.listing_id);
+          return !!(c && uid && c.owner_id === uid);
+        }
+        /* reviews and their replies are «all: read using (true)» */
+        if (table === 'reviews' || table === 'review_replies') return true;
+        if (table === 'flags')  return isAdmin || row.reporter_id === uid;
+        if (table === 'claims') return isAdmin || row.claimer_id === uid;
+        /* a notification is its addressee's and nobody else's — not even
+           the admin's, by the policy in `0013` */
+        if (table === 'notifications') return row.user_id === uid;
         return true;
       };
       const wantsOne = /pgrst\.object/.test(req.headers()['accept'] || '');
@@ -412,10 +437,42 @@ export async function mockSupabase(ctx, opts = {}) {
            would be tested against a permission the database does not
            grant. It falls out of the line below by itself; it is named
            here so a later edit cannot widen it by accident. */
-        const mayUpdate = (row) => isAdmin || row.owner_id === uid;
+        /* ⚠️ EACH TABLE NAMES ITS OWN OWNER COLUMN. `events` carries
+           `proposer_id` and no update policy at all, so it falls out by
+           itself; the five of `655` each name theirs, and `flags` and
+           `claims` are the ADMIN's to judge and nobody else's. */
+        const mayUpdate = (row) => {
+          if (isAdmin) return true;
+          if (table === 'flags' || table === 'claims') return false;
+          if (table === 'reviews') return row.author_id === uid;
+          if (table === 'review_replies') return row.author_id === uid;
+          if (table === 'notifications') return row.user_id === uid;
+          if (table === 'messages') return false;   // no update policy, for anyone
+          return row.owner_id === uid;
+        };
         const hit = (db[table] || []).filter(matches).filter(mayUpdate);
         hit.forEach(row => Object.assign(row, body, { updated_at: new Date().toISOString() }));
         db.writes = (db.writes || []).concat([{ table, filters: wants.slice(), body, n: hit.length }]);
+        return route.fulfill(json(hit));
+      }
+      /* ⚠️ DELETE WAS NOT HANDLED AT ALL until `655`, because nothing in
+         the app deleted a row — it fell through to the empty 200 at the
+         foot of this function, which would have made «the review really
+         goes» green while nothing was removed. `reviews` grants delete to
+         its author and to staff, `review_replies` the same by `0013`, and
+         `messages`, `flags` and `claims` grant it to nobody. */
+      if (req.method() === 'DELETE') {
+        if (!db.session) return route.fulfill(json({ message: 'row-level security' }, 401));
+        const mayDelete = (row) => {
+          if (table === 'reviews' || table === 'review_replies') {
+            return isAdmin || row.author_id === uid;
+          }
+          return false;
+        };
+        const hit = (db[table] || []).filter(matches).filter(mayDelete);
+        db[table] = (db[table] || []).filter(r => !hit.includes(r));
+        db.writes = (db.writes || []).concat([{ table, filters: wants.slice(),
+                                                body: { _delete: true }, n: hit.length }]);
         return route.fulfill(json(hit));
       }
       if (req.method() === 'POST') {
@@ -462,10 +519,51 @@ export async function mockSupabase(ctx, opts = {}) {
            first edit of a seed creates — is what lets staff insert one with
            no owner at all. A mock that accepted either from anybody would
            keep `650`'s coat item green on a database that refuses it. */
-        if (table === 'businesses' && !isAdmin && body.owner_id !== uid) {
+        /* ⚠️ `0013` WIDENS `own: insert` BY EXACTLY ONE SHAPE and no more:
+           an OWNERLESS row marked `source = 'suggested'` and held at
+           `pendingReview` — the masjid a stranger suggests. Anything else
+           still needs `owner_id = auth.uid()`, so a suggestion can never
+           make its sender the owner of somebody else's masjid, and cannot
+           be published without an admin. */
+        const suggested = body.owner_id == null
+          && body.source === 'suggested' && body.status === 'pendingReview';
+        if (table === 'businesses' && !isAdmin && body.owner_id !== uid && !suggested) {
           return route.fulfill(json({ code: '42501',
             message: 'new row violates row-level security policy for table "businesses"' }, 403));
         }
+        /* ⚠️ THE FIVE OF `655`, MIRRORED FROM `0002` AND `0013`. Each one
+           is what one of the batch's own items measures, and a mock that
+           said yes to all of them would keep every one of those green on a
+           database that refuses them. */
+        const deny = (t) => route.fulfill(json({ code: '42501',
+          message: 'new row violates row-level security policy for table "' + t + '"' }, 403));
+        if (table === 'messages'  && body.sender_id  !== uid) return deny('messages');
+        if (table === 'flags'     && body.reporter_id !== uid) return deny('flags');
+        if (table === 'claims'    && body.claimer_id !== uid) return deny('claims');
+        /* ⚠️ AND THE FTC LINE: `0002` refuses a business owner reviewing
+           their own business, and `0013` widens the lookup to reach a SEED
+           by its `seed_id` as well — without that half, a claimed owner of
+           a seed could review their own shop, since `b.id = biz_id` finds
+           no row for `b30` and `is distinct from NULL` is true. */
+        if (table === 'reviews') {
+          if (body.author_id !== uid) return deny('reviews');
+          const b = (db.businesses || []).find(x => x.id === body.biz_id || x.seed_id === body.biz_id);
+          if (b && b.owner_id && b.owner_id === uid) return deny('reviews');
+          if ((db.reviews || []).some(r => r.author_id === uid && r.biz_id === body.biz_id)) {
+            return route.fulfill(json({ code: '23505',
+              message: 'duplicate key value violates unique constraint "reviews_author_id_biz_id_key"' }, 409));
+          }
+        }
+        /* a reply belongs to the business owner alone */
+        if (table === 'review_replies') {
+          const rv = (db.reviews || []).find(r => r.id === body.review_id);
+          const b = rv && (db.businesses || []).find(x => x.id === rv.biz_id || x.seed_id === rv.biz_id);
+          if (!b || !b.owner_id || b.owner_id !== uid) return deny('review_replies');
+        }
+        /* ⚠️ INSERT ON `notifications` IS THE ADMIN'S ALONE — a table any
+           signed-in account may write into anybody's list is a spam
+           channel with a policy on it. */
+        if (table === 'notifications' && !isAdmin) return deny('notifications');
         if (table === 'events' && !isAdmin) {
           if (body.status !== 'pending' || body.proposer_id !== uid) {
             return route.fulfill(json({ code: '42501',

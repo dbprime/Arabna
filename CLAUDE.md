@@ -11,7 +11,7 @@ ARABNA · عربنا — a mobile-first web app for the Arab community in the U.
 **business directory + marketplace + events + magazine**, Arabic-first with a full English toggle.
 ("Classifieds / الإعلانات الشخصية" is now "Marketplace / السوق" — the old `#/classifieds`
 routes still resolve so shared links keep working.)
-Current version: **V.11.0 (prototype)**. Owner: dbprime. Deploys to Vercel (team DB Prime).
+Current version: **V.11.1 (prototype)**. Owner: dbprime. Deploys to Vercel (team DB Prime).
 
 ## Hard rules (from the product brief)
 0. ⚠️ **THE OWNER'S NAME IS NEVER WRITTEN — anywhere.** Not in this file, not
@@ -918,6 +918,28 @@ anything else     is not reported
 which of forty files it names. **The number is the other half, and the two
 together are the whole thing.**
 
+### An id column holds the ids the app really passes — for REAL records
+`655`'s own biggest finding, and the spec it came from caught one of three.
+The test is not «is this an id» but **what the app actually hands it**:
+
+```
+reviews.biz_id · claims.biz_id · flags.ref_id   →  'b1' … 'b515', all 514
+                                                    real businesses: TEXT
+messages.listing_id                             →  only demo seeds are text,
+                                                    and demo is deleted at
+                                                    launch: the uuid and its
+                                                    foreign key STAY
+```
+
+> **A `uuid` column against a value the app never produces is a write that
+> cannot happen — and with a foreign key on top it cannot happen twice.**
+> Convert the column when the app's real ids are text; keep the key where the
+> only text ids are development data.
+>
+> ⚠️ **And when a column's type changes, every POLICY that compares it is
+> rewritten in the same migration** — PostgreSQL refuses `uuid = text` rather
+> than guessing, so a policy left behind raises on every evaluation.
+
 ### Every box a human fills has a column, and every field read has one source
 Measured in `645`: the marketplace form **collects a city and refuses to
 publish without one**, and there was no column to send it to — so the value
@@ -941,6 +963,21 @@ reports it and it is found only by opening the same account on a second
 device. **The guard is a suite that matches each table's columns against
 the fields the maps read**, and it belongs with the batch that fills the
 tables, not with the one that repairs a field.
+
+### A gap line names what breaks for the READER, not what is missing in the code
+The rule `655`'s appendix leaves behind, and it is measured rather than
+argued: `648`'s own log carried the signal for the add-a-masjid fault and
+**nobody moved on it for two batches** — «the prefixes `u` and `of` have a
+table and no batch the queue names for them» — while `u` was the prefix of
+that very fault.
+
+> **Every line in «فجوات معروفة» names the button or the screen BY NAME and
+> says what the reader loses. Not the column that is missing, not the prefix
+> that has no batch — what a person pressing that button does not get.**
+>
+> ⚠️ **«A prefix with a table and no batch» is read and nobody moves. «The
+> button that suggests a masjid does not reach the admin» is read and
+> everybody moves.**
 
 ### A batch that closes a gap strikes it from the list, in the same commit
 Two entries under «Known open items» described a state that had ended —
@@ -12283,6 +12320,362 @@ command line contains `drive.sh`, so it waited on itself for ever. Found by
 measuring the process table rather than by trusting that it had started. **A
 pattern that matches the watcher as well as the watched is not a wait, it is
 a deadlock.**
+
+## V.11.1 — the messages, the reviews, the reports and the claims (655)
+
+⚠️ **This file closes its own group, and its group is itself** — it touches
+`js/store.js`, `js/screens/marketplace.js`, `js/screens/directory.js` and
+`js/screens/admin.js`.
+
+### Four dead tables, and one pattern applied to them four times
+Measured on `main` before a line was written, and it is the same shape this
+project has now found five times:
+
+```
+messages · reviews · review_replies · claims · flags
+  columns and policies standing since 0001
+  from('<table>') in the whole of js/            ZERO, for every one
+```
+
+⚠️ **AND THE HEAVIEST IS NOT THE BIGGEST.** The message stayed on the
+sender's phone — the owner tried it from both sides on 6 September and both
+halves happened — and **the report stayed on the reporter's.** Whoever
+pressed «report» was satisfied that somebody would read it, and nobody read
+it. **A message is sent again when no answer comes; a report is not.**
+
+### «Mine» is computed, never stored — and it is the same fault twice
+The message carried `from: 'me'` and the review carried `mine: true`, and
+«me» is a fact about a DEVICE: a row that reaches another phone carrying
+either is read there as belonging to its reader. The schema names both
+together above the table because they are one fault with two faces.
+
+```js
+mine = row.sender_id === state.user?.id     // and author_id for a review
+```
+
+⚠️ **A tooth found that nothing was measuring the half that matters.** The
+first mutation — `mine` read off a stored field — came back **85/85**,
+because on a two-device test the sender's own device still holds the local
+copy and the recipient's row has no `from` at all. **The fault appears only
+when the SENDER reads from a SECOND device of their own account**, where
+there is no local copy: a stored `mine` answers `false` and they meet their
+own words as somebody else's. `test_v87 · 2.10` and `2.11` were added for
+it, and the re-aimed tooth prints `{"mine":false}`.
+
+### THE CLASS THE SPEC CAUGHT ONCE, AND THERE WERE THREE OF IT
+⚠️ **The batch's own biggest finding, and it decides two of its five items.**
+The spec measured `flags.ref_id` and stopped:
+
+```
+flags.ref_id     uuid           named in the spec
+reviews.biz_id   uuid  FK->businesses(id)      NOT named, and identical
+claims.biz_id    uuid  FK->businesses(id)      NOT named, and identical
+what the app passes      'b1' … 'b515' — all 514 directory businesses
+admin_log.ref_id         text — the schema's OWN precedent for this value
+```
+
+**So a review or a claim on ANY business in the directory could not be
+written at all**: the type is wrong AND the foreign key has nothing to point
+at, because a seed has no row in `businesses` until somebody edits it into a
+coat — and `own: insert` refuses to let a reviewer create one. The spec's own
+acceptance tests («a review is written, read by somebody else», «a claim is
+approved → `businesses.owner_id`») cannot pass without it.
+
+> **The owner's decision of 6 September, applied to its class.** His reason is
+> written in `655` §4.2 and holds word for word here: the directory is the
+> product, the button stands on 514 pages, and «locking it to the live rows
+> alone leaves the button visible on 499 pages and working on none of them —
+> a button that lies is worse than a button that is missing».
+
+- ⚠️ **AND THE PRICE WAS SAID, AND THEN IT WAS NOT PAID.** The conversion
+  drops the foreign key to `businesses` **and the `on delete cascade` that
+  came with it**, and that half was flagged as the one item the owner could
+  overturn without the batch being rebuilt. **He overturned it the same day:
+  «القرار قائم — on delete cascade يبقى» — the text column stands and the
+  cascade comes back.** `0014` restores it as a `before delete` trigger on
+  `public.businesses` that removes the matching `reviews` and `claims`: a
+  foreign key's behaviour where a foreign key cannot reach, since the values
+  are text and half of them (`b30` … `b515`) name a seed with no row in
+  `businesses` at all. ⚠️ **And it reaches a seed through `seed_id`, which
+  the old key never could** — the key compared `businesses.id`, so the
+  children of every seed business were beyond its reach even while it
+  existed. `flags` stays out of it: it never had a key to lose (`ref_id`
+  points at four tables by `kind`), and the decision is that the cascade
+  **stays**, not that a new one is invented.
+- ⚠️ **AND THE SWEEP IS NOT «CONVERT EVERY ID COLUMN».** `messages.listing_id`
+  keeps its uuid and its key, and the line is precise: **a column that holds
+  an id the app really passes for REAL records.** Every seed classified is
+  demo data, deleted before launch; 514 of 514 real businesses are not.
+- ⚠️ **And rewriting the two policies that compared that column closed a hole
+  the old shape had:** a seed is reached by `seed_id`, so `b.id = biz_id`
+  found no row for `b30` and `auth.uid() is distinct from NULL` is TRUE —
+  which would have let the claimed owner of a seed review their own shop.
+  That is the FTC line the policy exists to hold, so both halves are asked.
+
+### And a report asks for an account, for the same reason
+Swept as a CLASS after the suggestion was gated, not met one instance at a
+time. The report used to go to `state.flags` — the reporter's own phone —
+so it needed no server and no identity, and it reached the admin never. It
+is a row now, and **`flags.reporter_id` is the policy's whole hinge**: a
+report with nobody behind it is one nobody can weigh, and an
+unauthenticated write to a shared table is a spam channel. **Both report
+buttons keep their place** — on the business page and on a listing — and the
+gate is at the action, with the intent parked.
+
+### The guard is the database's, and the screen says the reason
+`0002` refuses a business owner reviewing their own business, and its reason
+is a legal line: the FTC rule of October 2024. **The screen does not guard it
+a second time** — two guards part company one day, and the one in the
+database cannot be walked around. `addReview` hands back `ownBusiness` and
+the screen prints it.
+
+### The notification finally has an addressee (§6ب)
+`pushNotif` took no addressee, wrote no row and knew no account: it unshifted
+onto the list of whichever device ran it. **Ten of its fourteen callers
+address somebody who is not the person acting**, so the notification reached
+the actor.
+
+⚠️ **And its heaviest form deceives the ADMIN, not the reader:** he rejects
+an advertisement and writes his reason, the screen says «the advertiser was
+told», and the notification lands in HIS OWN list — so he believes a warning
+was given and escalates against somebody who was told nothing.
+
+- **`notifyUser(userId, …)`, and a call with no addressee means «for me» and
+  is written as such.** `public.notifications` is this batch's own table.
+- ⚠️ **INSERT IS THE ADMIN'S ALONE, and that is the decision, not an
+  oversight.** A table any signed-in account may write into another account's
+  list is a spam channel with a policy on it. So the ten that deceive — every
+  one of them the panel's own decision — are delivered.
+- ⚠️ **And where it cannot be delivered THE SENTENCE CHANGES rather than the
+  fault being swallowed.** An ad order has no table at all, so there is no
+  account to address: the panel says **«تم رفض الطلب»**, never «and the buyer
+  was told», and the misdirected local copy is deleted. A notification from
+  one ordinary user to another — «somebody reviewed your business», «a
+  message about your listing» — is not deliverable either, and the reader
+  reads the review and the message themselves, which the tables now really
+  deliver. Both are recorded as debts needing a trigger.
+- ⚠️ **THE ADDRESSEE IS READ BEFORE THE ROW LEAVES THE LIST.** Once a listing
+  is `rejected` it is filtered out of `allClassifieds`, so `classifiedById`
+  answers nothing and the refusal reaches nobody — the fault one step later.
+  Measured: the notification was written for no account at all until
+  `listingOwnerOf` read `mergedClassifieds()` instead.
+
+### The masjid a stranger suggests (appendix §1)
+The owner asked on 9 September whether the add-a-masjid button works, and it did
+not. `suggestWorship` unshifted onto `state.extraBusinesses` — the
+suggester's own phone — **and the screen said «شكراً».**
+
+- **It goes through `addBusiness`, never round it** — the fifth door into the
+  same table and the only one still writing to a list on a phone.
+- ⚠️ **`pendingReview`, NEVER `pending`, and that is half the repair rather
+  than a naming choice.** The public list filters `status !== 'pendingReview'`
+  and the admin queue filters `status === 'pendingReview'`, so a row marked
+  `pending` is **published to the whole world with no review and appears in no
+  queue for anybody to stop** — worse than the fault being fixed.
+- ⚠️ **AND IT CANNOT SIMPLY USE `own: insert`**, which demands
+  `owner_id = auth.uid()` — a suggestion would have made its sender the OWNER
+  of somebody else's masjid, and «owned» is derived from `owner_id`. `0013`
+  widens that policy by **exactly one shape**: ownerless, `source =
+  'suggested'`, held at `pendingReview`. It cannot be published and it makes
+  nobody an owner of anything.
+- **Two fields with no column had two columns already standing**: `suggested`
+  is `source = 'suggested'` (in the schema since `0001` with no writer at all)
+  and `worshipHint` goes inside the `worship` jsonb of `0003`. No migration
+  for either, and `mintId('u')` is struck — **five kinds struck in one batch**,
+  which is what `v83`'s two-way registry is for.
+- ⚠️ **And a failed write does not say «thank you».**
+- ⚠️ **AND IT ASKS FOR AN ACCOUNT, which the net found and is a real change.**
+  Before this batch the suggestion went to `state.extraBusinesses` — that
+  is, NOWHERE — so «the door is open to a visitor» was true and meant
+  nothing. It opens onto a SHARED TABLE now, and an unauthenticated write to
+  one is a spam channel with nobody behind it. The appendix's own acceptance
+  test says «AN ACCOUNT suggests a masjid», which is what this is. **The
+  DOOR is untouched and still stands for a visitor**, exactly as
+  `#/advertise` does: the gate is at the action, and `requireTier` parks the
+  intent so they land back on `#/prayer` after signing up.
+
+### THE RULE THE APPENDIX LEAVES BEHIND
+`648`'s log carried the signal and nobody read it — «the prefixes `u` and
+`of` have a table and no batch the queue names for them» — **and `u` was the
+prefix of this very fault.**
+
+> **Every line in «فجوات معروفة» names WHAT BREAKS FOR THE READER, never what
+> is missing in the code, and names the button or the screen by name.**
+>
+> ⚠️ **«A prefix with a table and no batch» is read and nobody moves. «The
+> button that suggests a masjid does not reach the admin» is read and
+> everybody moves.**
+
+### And the two smaller halves of it
+- **`notif_prefs` had stood on `profiles` since `0001` with zero readers and
+  zero writers**, so whoever turned message alerts off on their phone found
+  them burning on their laptop. Read in `hydrateUserFromSession`, written when
+  a switch is flipped, and the switch moves only when the write took.
+- **Ownership is the account's** (`648` built `mineListing` and this finishes
+  its remaining sites): the deletion summary counted a list on one phone and
+  showed «0 listings» to somebody who had published from a laptop, in the very
+  sheet that says what deletion destroys. `myListings` is for what has not
+  reached the server yet, and an id the server already attributes to this
+  account is dropped — **only ever when the server says so**, since dropping
+  it otherwise takes the listing from the person who published it.
+
+### Five older suites carry a reversal, one was the app being wrong, and the classes were swept
+⚠️ **And two of them were swept from the class rather than met one instance
+at a time** — the rule `645` and `650` paid for, and it paid again here.
+
+| suite | asserted | now |
+|---|---|---|
+| `v9` | ⚠️ **NOT A REVERSAL — the app was wrong.** The sites moved off `notifyKeys` passed through `strOf`, which returns ONE language where a notification's title and body are a pair. A row stored and read back after the reader flips the language reads the wrong one, and `n.title.ar` is undefined. `pairOf` builds the pair `notifyKeys` built: the shape did not change, only who receives it | — |
+| `v3 · 10` | the report's kind is `'contact-attempts'` | that is not a KIND but a description of what happened — the same fault corrected for `'report'`. The kind is one the column takes, **and the reason names the repetition**: measured harder, not softer |
+| `v14 · F` | «a review on your own business notifies you» | the opposite of that block's own subject: the notification had no addressee, so it rang on the REVIEWER's phone. Here the fixture owned `b2` and the two coincided. Now: nothing on the actor's phone, and the review is a ROW |
+| `v45 · 4.6` | the ad refusal «reaches its owner verbatim» | ⚠️ the batch's headline example — an ad order has no table, so there is no account to address. The sentence changed; what is asserted is that **nothing** lands on the phone of whoever refused it |
+| `v66 · 11.1` · `v83 · 1.1` · `v83 · 4` | frozen counts | each moves with a decision, never derived from the thing it guards — five mint kinds struck, eighteen tables carrying `updated_at` |
+| `v83 · 1.5` | a blanket text search for `updated_at` in `js/` | the subject is «the client never WRITES it», and the old line could not tell a write from a read. `655` opened tables whose rows carry an edited-at and the app READS it — a review that was edited says so. What is asserted is what the rule always said |
+| `v33 · 7` · `v43 · 3` · `v29 · 3.4` | a suggestion, a claim and an edit as device records | each takes the real path now — an account, a row, an awaited answer — rather than being seeded around |
+
+⚠️ **AND THE NET WAS RESTARTED FROM THE TOP THREE TIMES, ALL THREE MY OWN
+DOING** — twice for a suite fix (which makes a new tree), and once because I
+edited a suite **while the net was running**, so the runner's dirty-tree
+guard stopped every segment after it and they reported nothing at all. That
+is `652`'s lesson in a second costume, and the answer is the same: **sweep
+the class and pre-check the untouched range BEFORE restarting**, which is
+what made the last run the last one.
+
+### The cascade stays, and a real PostgreSQL found what reading had not
+
+⚠️ **THE MIGRATION WAS MEASURED AGAINST A REAL POSTGRESQL 16 AND NOT READ,
+AND THE FIRST THING IT SAID WAS THAT `0013` ABORTS.** A cluster was started
+in the container, `auth.users` and the three Supabase roles were shimmed,
+and every migration was applied in order:
+
+```
+0013_655_live_rows.sql   ERROR: cannot alter type of a column used in a
+                         policy definition
+```
+
+**PostgreSQL refuses to alter the type of a column a policy depends on, and
+`0013` dropped those policies AFTER the alter.** Two policies reach
+`reviews.biz_id` — its own «own: insert», and `review_replies`'s «biz owner:
+insert», which reaches it **through the join** and depends on it exactly as
+if it were its own. `claims.biz_id` and `flags.ref_id` are named in no
+policy at all, which is why only that one line raised.
+
+⚠️ **And the runner would have been loud about it, which is the design
+working and not a reason to relax.** `652` applies each file inside one
+transaction with `ON_ERROR_STOP=1`, so nothing would have been half-applied
+— **and the batch that had already declared itself finished, with a green
+net behind it, would have landed a server half that never ran.** A structural
+suite cannot see this: the file parses perfectly. Only the database can.
+
+> **A migration is not «read and correct». It is applied to a real
+> PostgreSQL, in order, from empty, before it is called finished.**
+
+**Fixed by moving the two drops above the alter, and `test_v87 · 9.10`
+asserts the ORDER** — the one assertion in the batch a database earned
+rather than a reading. Measured after: **0001…0014 apply to a clean database
+with zero failures**, and `0013` and `0014` both re-run cleanly, which is
+what their own heads promise.
+
+### And the reason I first wrote for `security definer` was not measured
+`0014`'s first draft said the grant «IS REQUIRED» because a trigger under
+the caller's rights meets RLS and `claims` has no delete policy. ⚠️ **Half
+of that is true and the conclusion was wrong for today, and measuring it is
+what showed the difference:** `public.businesses` carries **no delete policy
+whatsoever**, so the only roles that can delete a business are the table
+owner and `service_role`, and **both bypass RLS anyway** — so both forms of
+the function behave identically now. The app never deletes one at all:
+`deleteBusiness` writes `status = 'deleted'`, because deletion here is a
+mark and not a wipe.
+
+**So the reason was rewritten to the measurement, taken on two identical
+databases with the delete policy `businesses` does not have today added to
+both, and an admin performing the delete:**
+
+```
+security definer   businesses 2→1 · reviews 3→2 · claims 3→2
+caller's rights    businesses 2→1 · reviews 3→2 · claims 3→3
+```
+
+⚠️ **The claim survives, with nothing raised** — `reviews` carries
+`own+admin: delete` so the admin may remove one, and `claims` carries none.
+An orphan still saying somebody owns a business that no longer exists, and
+it looks exactly like a cascade that works. **The grant costs nothing to
+hold**: a `returns trigger` function has no direct-call surface — measured,
+calling it as an ordinary account answers «trigger functions can only be
+called as triggers».
+
+> **A reason written into a migration is measured or it is not written.**
+> The first draft read better than the truth, which is how it survived being
+> re-read twice.
+
+**And the cascade itself, measured on real rows** — a live business, a coat
+row over the seed `b30`, children keyed both ways, and a bystander on `b99`:
+
+```
+                 before   after
+reviews             3        1     the bystander alone
+review_replies      2        0     by their own untouched uuid key
+claims              3        1
+```
+
+⚠️ **`review_replies` needed nothing and was not touched**, which is asserted
+rather than assumed: its key is `review_id uuid references public.reviews(id)
+on delete cascade`, and `0013` never moved a review's own id because a review
+id is a uuid the server minted.
+
+⚠️ **And two faults of my own in the measuring are recorded rather than
+smoothed.** My harness printed `exit $?` after a `$(basename …)` — the
+command substitution runs first and resets `$?`, **so every migration
+reported «exit 0» while one of them was raising**. That is `652`'s own
+swallowed failure, committed inside the script written to check for it. And
+the first aim at the `security definer` tooth measured nothing: the *business*
+delete matched zero rows under RLS, so the trigger never fired — **prove the
+break landed where it was aimed, not merely that a red appeared.**
+
+### `test_v87` — 95 assertions, and ten teeth, each aimed at its own item
+```
+the message never leaves the device   → 2.5 prints {"n":0}: the seller reads nothing
+«mine» read off a stored field        → 2.11 prints {"mine":false}: the sender
+                                        meets their own words as somebody else's
+the suggestion goes back to «pending» → eight items, and the widened policy
+                                        refuses the write outright
+approveClaim writes `claimed` again   → 5.6 prints «no coat row»: the write went
+                                        nowhere with no error at all
+the notification loses its addressee  → 8.2 · 8.3 · 8.4, and it lands on the admin
+the report's kind goes back           → 4.2 prints «report»
+resolveFlag erases the row            → 4.6 · 4.7 · 4.8
+the id columns stay uuid              → 9.2 · 9.3 ALONE
+the cascade trigger removed           → 9.11 ALONE
+the policy drops moved back below     → 9.10 ALONE, and on a real cluster
+   the alter                            the file aborts outright
+```
+⚠️ **The last one is the two-layer point, measured rather than argued:** with
+the columns left `uuid` **every behavioural item stays green**, because the
+stand-in server does not type-check — so the structural assertions stand
+beside the behavioural ones and not instead of them.
+
+⚠️ **And the stand-in server had to learn six tables, their policies, and
+DELETE — which it had never handled at all**, because nothing in the app
+deleted a row until now. Without that, «the review really goes» would have
+been green while nothing was removed.
+
+### And the group closes — the net, run on segments over one frozen tree
+```
+170 runs · 85 suites · 8,232 assertions · zero red · zero crash
+```
+Seventeen segments over `55cd330`, `HEAD` re-checked at the head of each —
+the runner exits 2 on a moved character or a dirty tree — **85 present and
+85 run, each on both builds, and no result borrowed.** The verdict is READ
+from the index and never summed: `NET COMPLETE — every derived suite ran on
+both builds in this index`. Measured suite time: **6,987s on the single-file
+build and 6,653s on the module one.**
+
+⚠️ **The arithmetic closes itself: 8,056 + 174 (`v87` × 2) + 2 (`v83 · 1.5b`
+× 2) = 8,232**, and **not one other suite moved by a single assertion** —
+`v3`, `v14`, `v29`, `v33`, `v43`, `v45` and `v66` each carry a reversal that
+REPLACED an assertion rather than adding or dropping one, which is what a
+reversal should look like: it changes what a check measures, never how many
+checks there are.
 
 ## Known open items
 - **The header image is still far larger than its box.** V.04.7 replaced

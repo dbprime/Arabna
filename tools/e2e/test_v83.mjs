@@ -86,7 +86,14 @@ console.log('--- 1: a column that named itself «last updated» and never moved 
      has to turn this red on its own. */
   const tables = [...sql.matchAll(/create table (?:if not exists )?public\.(\w+) \(([\s\S]*?)\n\);/g)]
     .filter(m => /^\s*updated_at\s+timestamptz/m.test(m[2])).map(m => m[1]);
-  ok('1.1 every table in the schema carries `updated_at`', tables.length === 17,
+  /* ⚠️ REVERSED IN `655`: eighteen, not seventeen. `0013` adds
+     `notifications` — the table that finally gives a notification an
+     addressee — and it carries the column AND the trigger, which is the
+     half that matters: a table added after `0009` that skipped the trigger
+     would reopen the fault `0009` was written to close. The number is a
+     literal on purpose and moves with a decision, never derived from the
+     list it guards. */
+  ok('1.1 every table in the schema carries `updated_at`', tables.length === 18,
      tables.length + ' tables');
   const missing = tables.filter(t =>
     !new RegExp('create trigger set_updated_at before update on public\\.' + t + '\\b').test(sql));
@@ -103,7 +110,19 @@ console.log('--- 1: a column that named itself «last updated» and never moved 
      knows when. */
   const jsAll = readdirSync(ROOT + 'js').filter(n => n.endsWith('.js'))
     .map(n => strip(read('js/' + n))).join('\n');
-  ok('1.5 the client never writes `updated_at`', !/updated_at/.test(jsAll));
+  /* ⚠️ REVERSED IN `655`, and the SUBJECT is unchanged — it is «the client
+     never WRITES it», and the old line was a blanket text search that could
+     not tell a write from a read. `655` opened the tables whose rows carry
+     an edited-at, and the app READS it: a review that was edited says so.
+     Reading a column the server owns is the point of the column. What is
+     asserted is what the rule always said: no `updated_at` in anything the
+     app SENDS — an insert, an update, or the reverse map. */
+  const writes = [...jsAll.matchAll(/\.(?:insert|update)\(\{[^}]{0,400}\}/g)]
+    .map(m => m[0]).filter(x => /updated_at/.test(x));
+  ok('1.5 the client never writes `updated_at`', writes.length === 0,
+     writes.length ? writes[0].slice(0, 60) : 'reads only');
+  ok('1.5b …and the reverse map does not carry it either',
+     !/put\('updated_at'/.test(jsAll), 'not in mapJsToLiveRow');
 
   const { ctx, p, db } = await fresh({ preConfirm: true });
   await open(p);
@@ -338,7 +357,7 @@ console.log('--- 3c: pulled for review and published · 14 or 30 · never expire
     const rec = await S.addClassified({ cat: 'free', title: { ar: 'كنبة', en: 'sofa' },
       desc: { ar: 'مجاني', en: 'free' }, price: S.FREE_PRICE, city: 'Houston' });
     await S.approveClassified(rec.id);
-    const r = S.updateClassified(rec.id, { price: '$50' });
+    const r = await S.updateClassified(rec.id, { price: '$50' });
     return { id: rec.id, flagged: r.flagged };
   });
   await p.waitForTimeout(500);
@@ -397,15 +416,18 @@ console.log('--- 4: the rule, and a check that keeps it ---');
        more, and a line left standing for it would read a year from now as
        a local id somebody decided on. The batch that moves a kind strikes
        its own line. */
-    /* ⚠️ `u` and `of` have a table and NO batch named for them in the
-       queue — recorded as they stand, never assigned here. The queue is
-       written by whoever writes the files, and a session that fills in a
-       blank in it has invented an order nobody decided. */
-    { p: 'u',  what: 'suggested masjid', table: 'businesses', moves: '' },
-    { p: 'r',  what: 'review',           table: 'reviews',    moves: '655' },
-    { p: 'm',  what: 'message',          table: 'messages',   moves: '655' },
-    { p: 'f',  what: 'flag',             table: 'flags',      moves: '655' },
-    { p: 'cl', what: 'claim',            table: 'claims',     moves: '655' },
+    /* ⚠️ STRUCK BY `655`, FIVE OF THEM, WHICH IS WHAT THIS TABLE IS FOR —
+       `r` (review), `m` (message), `f` (report), `cl` (claim) and `u`
+       (a masjid a stranger suggested). Each one's record moved to its own
+       table and takes the row's id from `.insert(...).select()`, so the
+       prefix is not minted any more and a line left standing for it would
+       read a year from now as a local id somebody decided on.
+       ⚠️ `u` had been recorded here with NO batch named for it — «a prefix
+       with a table and no batch» — and that is exactly the wording the
+       `655` appendix replaced: it was read and nobody moved, because it
+       named what was missing in the code and not what broke for the
+       reader. What broke was «the button that suggests a masjid does not
+       reach the admin», and that is read and everybody moves. */
     { p: 'g',  what: 'greeting',         table: 'greetings',  moves: '665' },
     { p: 'ua', what: 'article',          table: 'articles',   moves: '665' },
     { p: 'of', what: 'offer',            table: 'offers',     moves: '' },
@@ -420,8 +442,8 @@ console.log('--- 4: the rule, and a check that keeps it ---');
   const minted = [...new Set([...st.matchAll(/mintId\('([a-z_]+)'\)/g)].map(m => m[1]))]
     .filter(x => !/_$/.test(x));
   /* ⚠️ the count is a NUMBER on purpose and moves with a decision, never
-     derived from the list it guards: thirteen since `650` struck `ub` */
-  ok('4.1 thirteen kinds are still minted on the device', LOCAL.length === 13,
+     derived from the list it guards: eight since `655` struck five */
+  ok('4.1 eight kinds are still minted on the device', LOCAL.length === 8,
      String(LOCAL.length));
   const listedNotMinted = LOCAL.map(e => e.p).filter(x => !minted.includes(x));
   ok('4.2 every listed kind is really minted here — one that moved and was not struck turns this red',

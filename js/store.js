@@ -445,7 +445,7 @@ export function makeBusinessAccount() {
 }
 /** how many of this account's claims an admin has approved before */
 export function approvedClaims() {
-  return (state.claims || []).filter(c => c.status === 'approved').length;
+  return claims().filter(c => c.status === 'approved').length;
 }
 
 export function requireTier(needed, route, go) {
@@ -616,7 +616,7 @@ export function scanMessage(text, listing) {
   // repeated off-platform payment requests in the same thread
   if (OFF_PLATFORM.test(s)) {
     const prior = state.messages.filter(
-      m => m.listingId === (listing && listing.id) && m.from === 'me' && m.offPlatform
+      m => m.listingId === (listing && listing.id) && m.senderId === (state.user && state.user.id) && m.offPlatform
     ).length;
     if (prior >= 1) return { flagged: true, reason: 'off-platform-payment' };
   }
@@ -1107,9 +1107,22 @@ export function prayerBarAsked() { return prayerBarPref() !== null; }
  *   · with NO service times of any kind. A stranger adds the place; only
  *     its own people add its times, after claiming the page.
  */
-export function suggestWorship({ name, address, phone, kind }) {
-  const rec = {
-    id: mintId('u'),
+export async function suggestWorship({ name, address, phone, kind }) {
+  /* ⚠️ THROUGH `addBusiness`, NOT ROUND IT (655 appendix §1). This was the
+     FIFTH door into the same table and the only one still writing to a
+     list on a phone: the suggester was thanked, the suggestion landed on
+     their own device, and it never reached the admin.
+     ⚠️ AND `pendingReview`, NEVER `pending` — half the repair and not a
+     naming choice. Measured: the public list filters `status !==
+     'pendingReview'` and the admin queue filters `status ===
+     'pendingReview'`, so a row marked `pending` is PUBLISHED TO THE WHOLE
+     WORLD with no review and never appears in the queue for anybody to
+     stop — worse than the fault being fixed.
+     ⚠️ And two fields that had no column have two columns that already
+     existed: `suggested` is `source = 'suggested'` (standing since `0001`
+     with no writer at all) and `worshipHint` goes inside the `worship`
+     jsonb that `0003` added. No migration for either. */
+  return addBusiness({
     name: { ar: name, en: name },
     cat: 'worship',
     phone: String(phone || '').trim(),
@@ -1118,16 +1131,13 @@ export function suggestWorship({ name, address, phone, kind }) {
     hours: [null, null, null, null, null, null, null],
     tags: [], attributes: [],
     plan: 'free', verified: false, rating: 0, reviewCount: 0,
-    claimed: false, photos: 0, videos: 0,
-    needsGeo: true,
-    status: 'pending',
-    suggested: true,
-    worshipHint: kind === 'church' ? 'church' : 'mosque',
-  };
-  state.extraBusinesses = state.extraBusinesses || [];
-  state.extraBusinesses.unshift(rec);
-  save();
-  return rec;
+    photos: 0, videos: 0,
+    /* ⚠️ NO SERVICE TIMES OF ANY KIND, and the `kind` is a hint and not a
+       declaration: a stranger adds the PLACE, and only its own people add
+       its times after claiming the page. A wrong jumuah time makes people
+       late to their prayer and the harm lands on us. */
+    worship: { kind: kind === 'church' ? 'church' : 'mosque' },
+  }, { pendingReview: true, source: 'suggested', ownerless: true });
 }
 
 export function prayerAlert() { return !!(state.prayer && state.prayer.alert); }
@@ -2621,6 +2631,13 @@ export function mapJsToLiveRow(biz) {
      look live on the admin's phone alone. Nothing writes it until the
      subscription batch; the column is read today, and the door is open. */
   put('plan', b.plan);
+  /* ⚠️ `ownerId` IS WRITTEN HERE, AND `claimed` IS NOT — the two halves of
+     one rule (655 §5). An approved claim makes an account the owner of the
+     row, and without this line `approveClaim`'s write is dropped by the map
+     with no error at all, which is exactly the fault `655` measured when it
+     found the old line writing `claimed: true` to a column that does not
+     exist. «Owned» stays DERIVED from `owner_id` on the way back. */
+  put('owner_id', b.ownerId);
   return row;
 }
 
@@ -2661,17 +2678,35 @@ export function pendingBusinesses() {
    awaits the answer and says a refusal rather than repainting a row it only
    believes it changed. Nothing is logged and nobody is notified over a write
    that did not take. */
+/** who owns this business, as the SERVER says — the addressee of every
+    decision the panel takes about it (655).
+    ⚠️ `everyBusiness()` and not `businessById`, for the listing's own
+    reason: a business HELD for review is hidden from everybody but the
+    account that entered it, and those are precisely the ones the panel is
+    deciding about. */
+function ownerOf(bizId) {
+  const b = everyBusiness().find(x => x.id === bizId);
+  return (b && b.ownerId) || null;
+}
+
 export async function approvePendingBusiness(id) {
   if (!await applyBusinessEdit(id, { status: 'live' })) return false;
   logAdminAction(id, 'approveBusiness', '', '');
-  notifyKeys('bizOkTitle', 'bizOkBody', '#/directory/' + id, 'checkCircle');
+  /* ⚠️ TO WHOEVER ENTERED IT, not to whoever is judging it (655). This
+     line raised a notification with no addressee, so «your business is
+     published» landed in the ADMIN's own list and its owner heard
+     nothing — and the admin, reading it, believed they had been told. */
+  await notifyUser(ownerOf(id), { icon: 'checkCircle', route: '#/directory/' + id,
+    title: pairOf('bizOkTitle'), body: pairOf('bizOkBody') });
   save();
   return true;
 }
 export async function rejectPendingBusiness(id, reason) {
   if (!await applyBusinessEdit(id, { status: 'rejected' })) return false;
   logAdminAction(id, 'rejectBusiness', '', reason || '');
-  notifyKeys('bizNoTitle', 'bizNoBody', '#/directory', 'alert', reason);
+  await notifyUser(ownerOf(id), { icon: 'alert', route: '#/directory',
+    title: pairOf('bizNoTitle'),
+    body: reason ? { ar: reason, en: reason } : pairOf('bizNoBody') });
   save();
   return true;
 }
@@ -2722,13 +2757,54 @@ function refreshLiveRows() {
   const route = location.hash;
   const after = rows => {
     if (!rows || !rows.length) return;
+    pruneDeviceListings();
     if (location.hash !== route) return;
     if (_liveRepaint) _liveRepaint();
   };
+  /* the public tables: what a stranger may read, so they are read whoever
+     is looking */
   loadLiveBusinesses().then(after);
   loadLiveClassifieds().then(after);
   loadLiveEvents().then(after);
+  loadLiveReviews().then(after);
+  loadLiveReplies().then(after);
+  /* ⚠️ AND THE FOUR THAT BELONG TO AN ACCOUNT ARE READ ONLY WHEN THERE IS
+     ONE. Their policies answer a visitor with an empty set by design —
+     messages to their two parties, a report to its reporter, a claim to
+     its claimant, a notification to its addressee — so four requests on
+     every visitor's launch would buy exactly nothing. They are read the
+     moment a session appears, which is what `hydrateUserFromSession`
+     calling this is for; that is `630`'s lesson kept, not relaxed: the
+     fault there was reading ONCE as a visitor and never again. */
+  if (state.user && state.user.id) {
+    loadLiveMessages().then(after);
+    loadLiveFlags().then(after);
+    loadLiveClaims().then(after);
+    loadLiveNotifs().then(after);
+  }
 }
+/**
+ * ⚠️ `myListings` IS FOR WHAT HAS NOT REACHED THE SERVER YET, AND NOTHING
+ * ELSE (655). It was the whole definition of ownership, on one phone; the
+ * account is the owner now, so an id the server already attributes to this
+ * account is a second copy of one fact and it is dropped — the one-time
+ * cleanup `630` ran for `adminAuth`, except that this one can run whenever
+ * the rows arrive rather than at boot.
+ * ⚠️ AN ID IS DROPPED ONLY WHEN THE SERVER SAYS THIS ACCOUNT OWNS IT.
+ * Anything else — a seed listing, a listing published before there was an
+ * account, a row the reader has not been sent — is kept, because dropping
+ * it would take that listing away from the person who published it.
+ */
+function pruneDeviceListings() {
+  const uid = state.user && state.user.id;
+  if (!uid || !(state.myListings || []).length) return;
+  const owned = new Set((clsReader.get() || [])
+    .filter(r => r.owner_id === uid).map(r => r.id));
+  if (!owned.size) return;
+  const next = state.myListings.filter(id => !owned.has(id));
+  if (next.length !== state.myListings.length) { state.myListings = next; save(); }
+}
+
 /** on sign-out the answer of a session that ENDED must not stand: «the last
     good answer stays» in the loaders was written for a network failure,
     not to keep a previous account's pending rows on a phone it has left */
@@ -2736,6 +2812,12 @@ function forgetLiveRows() {
   bizReader.forget();
   clsReader.forget();
   evReader.forget();
+  msgReader.forget();
+  revReader.forget();
+  replyReader.forget();
+  flagReader.forget();
+  claimReader.forget();
+  notifReader.forget();
 }
 
 /** «قبل n يوم» in the four Arabic forms, without importing i18n */
@@ -2927,7 +3009,11 @@ export function myActiveInCat(catId) {
 export { FREE_PRICE };
 
 export function notifications() {
-  return withoutDemo(state.extraNotifs.concat(NOTIFICATIONS))
+  /* ⚠️ the rows addressed to this ACCOUNT come first, then whatever this
+     device raised for itself, then the sample. The live ones are what the
+     panel's decisions now really deliver (655). */
+  const live = (notifReader.get() || []).map(mapLiveNotifRowToJs);
+  return withoutDemo(live.concat(state.extraNotifs, NOTIFICATIONS))
     .map(n => Object.assign({}, n, { unread: n.unread && !state.readNotifs.includes(n.id) }));
 }
 export function unreadCount() { return notifications().filter(n => n.unread).length; }
@@ -2940,7 +3026,20 @@ export function markNotifRead(id) {
   if (!state.readNotifs.includes(id)) { state.readNotifs.push(id); save(); }
 }
 
-/** Raise a notification for the listing owner (approve / reject / message). */
+/**
+ * Raise a notification FOR MYSELF. ⚠️ It says «for myself» in its own name
+ * because that is what it always did and nobody had said so: it took no
+ * addressee, wrote no row and knew no account — it unshifted onto
+ * `state.extraNotifs`, the list of whichever device ran it. Ten of its
+ * fourteen callers addressed somebody who is NOT the person acting, so the
+ * notification reached the actor instead.
+ * ⚠️ And the heaviest form of that deceives the ADMIN and not the reader:
+ * he rejects an advertisement and writes his reason, the screen says «the
+ * advertiser was told», and the notification lands in HIS OWN list — so he
+ * believes a warning was given, and escalates to a ban against somebody
+ * who was told nothing.
+ * ⚠️ A CALL WITH NO ADDRESSEE MEANS «FOR ME», AND IS WRITTEN AS SUCH.
+ */
 export function pushNotif({ icon = 'bell', title, body, route }) {
   state.extraNotifs.unshift({
     id: mintId('n'),
@@ -2948,6 +3047,58 @@ export function pushNotif({ icon = 'bell', title, body, route }) {
     when: { ar: 'الآن', en: 'just now' },
   });
   save();
+}
+
+/**
+ * Raise a notification for ANOTHER ACCOUNT — a row that account reads and
+ * nobody else does. This is the structure the messages table opened: the
+ * thing that carries a message from one account to another is the thing
+ * that carries a notification, and building it twice is the second source
+ * of truth this project refuses.
+ * ⚠️ INSERT ON `notifications` IS THE ADMIN'S ALONE, and that is written in
+ * the migration with its reason: a table any signed-in account may write
+ * into anybody's list is a spam channel with a policy on it. So the ten
+ * that deceive — every one of them the panel's own decision — are
+ * delivered, and a notification from one ordinary user to another is not.
+ * ⚠️ Where it cannot be delivered the SENTENCE CHANGES and the fault is
+ * not swallowed: the model to follow is the pre-adhan alert, which refuses
+ * to promise what it cannot do and writes its reason on the screen.
+ * @param {string|null} userId the addressee; null means «me»
+ */
+export async function notifyUser(userId, { icon = 'bell', title, body, route }) {
+  const me = (state.user && state.user.id) || null;
+  if (!userId || userId === me) {
+    pushNotif({ icon, title, body, route });
+    return true;
+  }
+  try {
+    const { data, error } = await sb.from('notifications')
+      .insert({ user_id: userId, icon, title, body, route })
+      .select();
+    if (error) throw error;
+    if (!data || !data.length) throw new Error('no row');
+  } catch (e) { return false; }
+  return true;
+}
+
+/* ---------------- THE LIVE NOTIFICATIONS (655) ----------------
+   Read by their addressee alone, by the policy on the table. */
+const notifReader = makeLiveReader('notifications');
+
+/** when the live notifications last arrived, or 0 — read by the suite */
+export function liveNotifLoadedAt() { return notifReader.loadedAt(); }
+
+/** Fetch this account's notifications once. */
+export async function loadLiveNotifs() { return notifReader.load(); }
+
+/** One map from a live notification row to the shape the screen reads. */
+export function mapLiveNotifRowToJs(r) {
+  return {
+    id: r.id, icon: r.icon || 'bell',
+    title: r.title, body: r.body, route: r.route || '',
+    unread: !r.read_at,
+    when: agoLabel(r.created_at ? Date.parse(r.created_at) : now()),
+  };
 }
 
 /** a purchased order rendered as a slide; `orderId` is what the counters key on */
@@ -3481,46 +3632,132 @@ export function primaryBusinessId() {
   return (state.myBusinessIds || [])[0] || null;
 }
 export function claimFor(bizId) {
-  return (state.claims || []).find(c => c.bizId === bizId) || null;
+  /* the merged set, not this device's: a claim raised from a phone has to
+     be found again from its owner's laptop (655) */
+  return claims().find(c => c.bizId === bizId) || null;
 }
-export function requestClaim(bizId, details) {
+/* ---------------- THE LIVE CLAIMS (655) ----------------
+ * ⚠️ WHY IT EXISTS. `requestClaim` wrote into `state.claims` on the
+ * claimant's own phone, so the request the shop owner sent reached nobody:
+ * the admin's queue could only ever hold what that same device had raised,
+ * which is why `650` measured `approveClaim` as unreachable in practice.
+ * ⚠️ `unique (biz_id, claimer_id)` in the schema keeps one claim per
+ * account per business, which is what `claimFor` already did on the
+ * screen — the column makes the database keep the rule instead of the
+ * device, and no new condition is written for it. */
+const claimReader = makeLiveReader('claims');
+
+/** when the live claims last arrived, or 0 — read by the suite */
+export function liveClaimLoadedAt() { return claimReader.loadedAt(); }
+
+/** Fetch the live claims once. */
+export async function loadLiveClaims() { return claimReader.load(); }
+
+/** One map from a live claim row to the shape the panel reads. */
+export function mapLiveClaimRowToJs(r) {
+  const d = r.details || {};
+  return Object.assign({}, d, {
+    id: r.id, bizId: r.biz_id, claimerId: r.claimer_id,
+    status: r.status || 'pending', reason: r.reason || '',
+    when: r.created_at ? Date.parse(r.created_at) : now(),
+  });
+}
+
+/** this device's claims with the server's merged in. A row the device also
+    holds takes the server's STATUS: judged elsewhere is judged here. */
+function mergedClaims() {
+  const local = state.claims || [];
+  const liveById = new Map((claimReader.get() || []).map(r => [r.id, mapLiveClaimRowToJs(r)]));
+  const out = local.map(c => {
+    const l = liveById.get(c.id);
+    if (!l) return c;
+    liveById.delete(c.id);
+    return Object.assign({}, c, { status: l.status, reason: l.reason });
+  });
+  return out.concat(Array.from(liveById.values()));
+}
+/** every claim this reader may see — RLS decides that, not this line */
+export function claims() { return mergedClaims(); }
+
+export async function requestClaim(bizId, details) {
   const existing = claimFor(bizId);
   if (existing && existing.status === 'pending') return existing;
-  const rec = Object.assign({
-    id: mintId('cl'),
-    bizId, status: 'pending', when: Date.now(), reason: '',
-  }, details || {});
+  const me = (state.user && state.user.id) || null;
+  if (!me) return { error: 'noSession' };
+  let rec = null;
+  try {
+    const { data, error } = await sb.from('claims')
+      .insert({ biz_id: bizId, claimer_id: me, status: 'pending', details: details || {} })
+      .select().single();
+    if (error) throw error;
+    if (!data) throw new Error('no row');
+    rec = mapLiveClaimRowToJs(data);
+  } catch (e) { return { error: 'server' }; }
   state.claims = (state.claims || []).filter(c => c.bizId !== bizId).concat([rec]);
   save();
   return rec;
 }
 export async function approveClaim(id) {
+  const c = mergedClaims().find(x => x.id === id);
+  if (!c) return false;
+  /* ⚠️ THE SERVER FIRST, AND THE LINE IN THE LOG ONLY AFTER IT TOOK —
+     `630`'s order. A record of a decision that did not happen is worse
+     than an empty record. */
+  try {
+    const { data, error } = await sb.from('claims')
+      .update({ status: 'approved' }).eq('id', id).select();
+    if (error) throw error;
+    if (!data || !data.length) throw new Error('no row');
+  } catch (e) { return false; }
   logAdminAction(id, 'approveClaim', '', '');
-  const c = (state.claims || []).find(x => x.id === id);
-  if (!c) return;
-  c.status = 'approved'; c.decided = Date.now();
+  const local = (state.claims || []).find(x => x.id === id);
+  if (local) { local.status = 'approved'; local.decided = Date.now(); }
   /* ADD, never replace. The old line dropped whatever the account already
      owned — and because the line below still marks the listing `claimed`,
      the dropped one became unclaimable by anybody, including its owner. */
   state.myBusinessIds = state.myBusinessIds || [];
   if (!state.myBusinessIds.includes(c.bizId)) state.myBusinessIds.push(c.bizId);
   const biz = businessById(c.bizId);
-  /* ⚠️ `claimed` is DERIVED from `owner_id` and has no column, so the reverse
-     map drops it and nothing leaves the device — but `applyBusinessEdit` is
-     async either way, so the mark lands a microtask later and a caller that
-     repaints at once misses it. Awaited for the ORDER, not for the network. */
-  if (biz) await applyBusinessEdit(c.bizId, { claimed: true });
-  notifyKeys('claimOkTitle', 'claimOkBody', '#/directory/' + c.bizId, 'checkCircle');
+  /* ⚠️ `owner_id` AND NOTHING ELSE. An approved claim means this account is
+     now the owner of the row, and the policies that read
+     `owner_id = auth.uid()` would otherwise go on hiding their own shop
+     from them. It is written by the ADMIN's account, which `own: update`
+     admits through `public.is_admin()`, so no new door is cut.
+     ⚠️ And it was written here as `claimed: true` until `655` measured
+     that there is NO COLUMN OF THAT NAME — 26 columns on `businesses` and
+     none is it — so the write went nowhere with no error at all. «Owned»
+     is derived from `owner_id`, which is `650` §5.2's decision applied
+     here: two copies of one fact part company the first day one of them is
+     written and the other is not. */
+  if (biz && c.claimerId) await applyBusinessEdit(c.bizId, { ownerId: c.claimerId });
+  /* ⚠️ the claimant is told on their own account, not on the admin's (655) */
+  await notifyUser(c.claimerId, {
+    icon: 'checkCircle', route: '#/directory/' + c.bizId,
+    title: pairOf('claimOkTitle'), body: pairOf('claimOkBody'),
+  });
   save();
+  return true;
 }
-export function rejectClaim(id, reason) {
-  const c = (state.claims || []).find(x => x.id === id);
-  if (!c) return;
-  c.status = 'rejected'; c.reason = reason || ''; c.decided = Date.now();
-  notifyKeys('claimNoTitle', 'claimNoBody', '#/directory/' + c.bizId, 'alert', reason);
+export async function rejectClaim(id, reason) {
+  const c = mergedClaims().find(x => x.id === id);
+  if (!c) return false;
+  try {
+    const { data, error } = await sb.from('claims')
+      .update({ status: 'rejected', reason: reason || '' }).eq('id', id).select();
+    if (error) throw error;
+    if (!data || !data.length) throw new Error('no row');
+  } catch (e) { return false; }
+  const local = (state.claims || []).find(x => x.id === id);
+  if (local) { local.status = 'rejected'; local.reason = reason || ''; local.decided = Date.now(); }
+  await notifyUser(c.claimerId, {
+    icon: 'alert', route: '#/directory/' + c.bizId,
+    title: pairOf('claimNoTitle'),
+    body: reason ? { ar: reason, en: reason } : pairOf('claimNoBody'),
+  });
   save();
+  return true;
 }
-export function pendingClaims() { return (state.claims || []).filter(c => c.status === 'pending'); }
+export function pendingClaims() { return mergedClaims().filter(c => c.status === 'pending'); }
 
 /** layer an edit on top of a record, seed or user-created alike */
 /* ------------------------------------------------------------
@@ -3686,21 +3923,58 @@ async function pushBusiness(bizId, patch) {
   } catch (e) { return false; }
 }
 
-/* ---------------- owner replies to a review ---------------- */
+/* ---------------- owner replies to a review (655) ----------------
+   The reply lived in `state.reviewReplies`, a map on the shop owner's own
+   phone, so the answer he wrote under a review was read by nobody — not by
+   the reviewer, and not by himself from a second device. `review_replies`
+   and its policies had been standing ready since `0001`.
+   ⚠️ `review_id` is unique in the schema, so one reply per review, which is
+   what the map already enforced by being a map. */
+const replyReader = makeLiveReader('review_replies');
+
+/** when the live replies last arrived, or 0 — read by the suite */
+export function liveReplyLoadedAt() { return replyReader.loadedAt(); }
+
+/** Fetch the live replies once. */
+export async function loadLiveReplies() { return replyReader.load(); }
+
 export function replyFor(reviewId) {
+  const live = (replyReader.get() || []).find(r => r.review_id === reviewId);
+  if (live) return { text: live.body || '', when: live.created_at ? Date.parse(live.created_at) : now() };
   return (state.reviewReplies && state.reviewReplies[reviewId]) || null;
 }
-export function replyToReview(reviewId, text) {
+export async function replyToReview(reviewId, text) {
+  const me = (state.user && state.user.id) || null;
+  if (!me) return { error: 'noSession' };
+  try {
+    /* one reply per review, so an existing one is updated rather than
+       inserted twice — the unique column would refuse the second */
+    const had = (replyReader.get() || []).find(r => r.review_id === reviewId);
+    const q = had
+      ? sb.from('review_replies').update({ body: text }).eq('review_id', reviewId).select()
+      : sb.from('review_replies').insert({ review_id: reviewId, author_id: me, body: text }).select();
+    const { data, error } = await q;
+    if (error) throw error;
+    if (!data || !data.length) throw new Error('no row');
+  } catch (e) { return { error: 'server' }; }
   state.reviewReplies = Object.assign({}, state.reviewReplies, {
     [reviewId]: { text, when: Date.now() },
   });
+  await loadLiveReplies();
   save();
+  return true;
 }
-export function deleteReply(reviewId) {
+export async function deleteReply(reviewId) {
+  try {
+    const { error } = await sb.from('review_replies').delete().eq('review_id', reviewId);
+    if (error) throw error;
+  } catch (e) { return { error: 'server' }; }
   const next = Object.assign({}, state.reviewReplies);
   delete next[reviewId];
   state.reviewReplies = next;
+  await loadLiveReplies();
   save();
+  return true;
 }
 
 /**
@@ -4525,11 +4799,44 @@ export async function hydrateUserFromSession() {
        is, rather than by a fresh call every time the panel is opened. */
     isAdmin: !!(profile && profile.is_admin),
   });
+  /* ⚠️ `notif_prefs` HAS STOOD ON `profiles` SINCE `0001` AND NOTHING READ
+     IT AND NOTHING WROTE IT — measured, zero mentions in `js/`. So the
+     preferences lived in `state.notifPrefs`, a value on one device: whoever
+     turned message alerts off on their phone found them burning on their
+     laptop. ⚠️ And it is the door the pushed notifications come through the
+     day they are built: a server that sends an alert has to know who asked
+     for one, and it does not read the state of a device. */
+  if (profile && profile.notif_prefs && typeof profile.notif_prefs === 'object') {
+    state.notifPrefs = Object.assign({}, state.notifPrefs, profile.notif_prefs);
+  }
   save();
   /* a session now exists where there was none: the rows are re-read as this
      account, and sign-in does NOT wait on the network for them (635) */
   refreshLiveRows();
   return state.user;
+}
+
+/**
+ * Flip one notification preference. ⚠️ The server first and the device the
+ * trace of its yes, exactly as every other write in this file — and a
+ * refusal leaves the switch where it was rather than showing a setting
+ * that only this phone believes.
+ * @returns {boolean} whether it really moved
+ */
+export async function setNotifPref(key, on) {
+  const next = Object.assign({}, state.notifPrefs, { [key]: !!on });
+  const uid = state.user && state.user.id;
+  if (uid) {
+    try {
+      const { data, error } = await sb.from('profiles')
+        .update({ notif_prefs: next }).eq('id', uid).select();
+      if (error) throw error;
+      if (!data || !data.length) throw new Error('no row');
+    } catch (e) { return false; }
+  }
+  state.notifPrefs = next;
+  save();
+  return true;
 }
 
 /** Is the SIGNED-IN ACCOUNT staff, as the server says — never as a URL or
@@ -4836,7 +5143,7 @@ export async function addClassified(item) {
  * pushed back into the review queue instead of silently going live.
  * @returns {{ rec: object, flagged: boolean }}
  */
-export function updateClassified(id, patch) {
+export async function updateClassified(id, patch) {
   /* Somebody else's listing is not yours to rewrite — and rewriting it is
      worse than reading it, because the listing keeps its owner's name and
      their phone conversations while carrying your words. */
@@ -4853,8 +5160,10 @@ export function updateClassified(id, patch) {
     if (violatesFreeRule(blob)) {
       c.status = 'pending';
       flagged = true;
-      addFlag({
-        kind: 'listing', refId: c.id, risk: 'high',
+      /* the kind names the thing reported, and the report reaches the
+         panel rather than a list on this phone (655 §4.2) */
+      await addFlag({
+        kind: 'classified', refId: c.id, risk: 'high',
         reason: { ar: 'إعلان في قسم المجاني عُدّل ليضيف سعراً', en: 'Free-section listing edited to add a price' },
         item: c.title,
       });
@@ -4933,7 +5242,11 @@ export function deleteClassified(id) {
   state.extraClassifieds = state.extraClassifieds.filter(c => c.id !== id);
   state.myListings = state.myListings.filter(x => x !== id);
   state.messages = state.messages.filter(m => m.listingId !== id);
-  state.flags = state.flags.filter(f => f.refId !== id);
+  /* ⚠️ resolved on the server, never dropped from a list: a report erased
+     leaves no record that it was raised, and `flags` carries no delete
+     policy for exactly that reason. It is not awaited — deleting the
+     listing is the caller's subject and a slow network must not hold it. */
+  flags().filter(f => f.refId === id).forEach(f => resolveFlag(f.id));
   save();
 }
 /** Can the OWNER really delete this listing rather than hide it? (635)
@@ -5012,17 +5325,32 @@ function markLiveCls(id, status) {
   clsReader.set(rows.map(r => r.id === id ? Object.assign({}, r, { status }) : r));
 }
 
+/** who owns this listing, as the SERVER says — the addressee of every
+    decision the panel takes about it (655).
+    ⚠️ IT READS THE MERGED SET AND NOT `classifiedById`, and that is the
+    whole of it: `allClassifieds()` hides a PENDING listing from everybody
+    but its owner, so the panel — which is looking at exactly those —
+    would have found nothing and told nobody. Measured, not reasoned: the
+    refusal reached no account at all until this line read the right list. */
+function listingOwnerOf(id) {
+  const c = mergedClassifieds().find(x => x.id === id);
+  return (c && c.ownerId) || null;
+}
+
 export async function approveClassified(id) {
   if (!await setListingStatus(id, 'live')) return false;
   logAdminAction(id, 'approveListing', '', '');
   markLiveCls(id, 'live');
   const c = state.extraClassifieds.find(x => x.id === id);
   if (c) c.status = 'live';
-  state.flags = state.flags.filter(f => f.refId !== id);
-  /* the bell is this device's own until notifications live on a server, so
-     it rings only when the listing is this account's — «your listing is
-     published» on the admin's phone about a stranger's listing is a lie */
-  if (ownsListing(id)) pushNotif({ icon: 'checkCircle', route: '#/marketplace/' + id,
+  /* the reports that pointed at it are answered, not erased (655) */
+  await Promise.all(flags().filter(f => f.refId === id).map(f => resolveFlag(f.id)));
+  /* ⚠️ TO THE LISTING'S OWNER (655). The guard `if (ownsListing(id))` was
+     right and was only half the answer: it stopped «your listing is
+     published» ringing on the admin's phone about a stranger's listing,
+     and left the stranger hearing nothing at all. `classifieds.owner_id`
+     is the addressee, and `notifications` carries it there. */
+  await notifyUser(listingOwnerOf(id), { icon: 'checkCircle', route: '#/marketplace/' + id,
     title: { ar: 'إعلانك صار منشوراً', en: 'Your listing is published' },
     body: { ar: 'اعتُمد إعلانك وصار ظاهراً لكل المستخدمين.', en: 'Your listing was approved and is now visible to everyone.' } });
   save();
@@ -5033,11 +5361,16 @@ export async function approveClassified(id) {
  * so a rejection is never silent.
  */
 export async function rejectClassified(id, reason) {
+  /* ⚠️ THE ADDRESSEE IS READ BEFORE THE ROW LEAVES THE LIST. Once the
+     status is `rejected` the listing is filtered out of `allClassifieds`,
+     so `classifiedById` answers nothing and the refusal would reach
+     nobody — which is the fault this whole item is about, one step later. */
+  const to = listingOwnerOf(id);
   if (!await setListingStatus(id, 'rejected')) return false;
   logAdminAction(id, 'rejectListing', '', reason || '');
   markLiveCls(id, 'rejected');
   const why = String(reason || '').trim();
-  if (ownsListing(id)) pushNotif({ icon: 'alert', route: '#/my-ads',
+  await notifyUser(to, { icon: 'alert', route: '#/my-ads',
     title: { ar: 'إعلانك لم يُعتمد', en: 'Your listing was not approved' },
     body: why
       ? { ar: `سبب الرفض: ${why}`, en: `Reason: ${why}` }
@@ -5075,33 +5408,109 @@ export function boostClassified(id) {
   save();
   return true;
 }
-export function reportItem(id, label) {
+/**
+ * ⚠️ `kind` NAMES THE THING REPORTED, and it used to say `'report'` —
+ * which is not a kind but a description of what happened. The schema's own
+ * comment on the column lists what it accepts: business · classified ·
+ * review · message. The call site was corrected, never the column.
+ * @param {string} id     the id of the thing reported
+ * @param {string} kind   'business' | 'classified' | 'review' | 'message'
+ * @param {object} [label] its title, for the panel's row before the next load
+ */
+export async function reportItem(id, kind, label) {
   if (!state.reported.includes(id)) state.reported.push(id);
-  addFlag({
-    kind: 'report', refId: id, risk: 'medium',
+  const ok = await addFlag({
+    kind, refId: id, risk: 'medium',
     reason: { ar: 'بلاغ من مستخدم', en: 'User report' },
-    item: label || { ar: id, en: id },
+    item: label || null,
   });
   save();
+  return ok;
 }
 
 /* ============================ REVIEWS ============================ */
 
-/** every review shown on a business page: seeded ones + ones written here */
+/* ---------------- THE LIVE REVIEWS (655) ----------------
+ * ⚠️ WHY IT EXISTS. What a reader saw on a business page was never
+ * anybody's review: `reviewsFor` joined `state.reviews` — the reviews of
+ * THIS device — to `REVIEWS[bizId]` from `data.js`, which is sample data.
+ * So the stars on the cards were made for the prototype, and a review
+ * somebody wrote was read by nobody else in the world.
+ * ⚠️ Newest first, and that is a declared order and not the fallback by
+ * accident: a business page reads its most recent reviews first.
+ */
+const revReader = makeLiveReader('reviews');
+
+/** when the live reviews last arrived, or 0 — read by the suite */
+export function liveRevLoadedAt() { return revReader.loadedAt(); }
+
+/** Fetch the live reviews once. */
+export async function loadLiveReviews() { return revReader.load(); }
+
+/** One map from a live review row to the shape the screens read. */
+export function mapLiveRevRowToJs(r) {
+  const created = r.created_at ? Date.parse(r.created_at) : now();
+  const edited = r.updated_at ? Date.parse(r.updated_at) : created;
+  return {
+    id: r.id, bizId: r.biz_id, authorId: r.author_id,
+    rating: r.rating, text: { ar: r.body || '', en: r.body || '' },
+    created, when: agoLabel(edited > created + 1000 ? edited : created),
+  };
+}
+
+/**
+ * ⚠️ «MINE» IS COMPUTED HERE TOO, AND FOR THE SAME REASON AS A MESSAGE'S.
+ * The review carried `mine: true` as a stored field, and «me» is a fact
+ * about a device: a row reaching another phone with `mine: true` is read
+ * there as being that reader's own. The two were named together in the
+ * schema's comment because they are one fault with two faces.
+ * ⚠️ A review with no `authorId` was written on this device before the
+ * table was opened, so it is this reader's own — the absence answers
+ * `true`, exactly as a message's does.
+ */
+function withMineRev(r) {
+  const me = (state.user && state.user.id) || null;
+  const mine = r.authorId ? r.authorId === me : !!r.mine;
+  return Object.assign({}, r, {
+    mine,
+    /* the display name is not a column on the review: it is the author's,
+       and until a join is worth its cost a review of mine says so and
+       anybody else's carries the neutral word the pack already has */
+    user: r.user || (mine ? ((state.user && state.user.name) || '') : ''),
+  });
+}
+
+/** this device's reviews with the server's merged in, newest first */
+function mergedReviews() {
+  const local = state.reviews || [];
+  const liveById = new Map((revReader.get() || []).map(r => [r.id, mapLiveRevRowToJs(r)]));
+  const out = local.map(r => { liveById.delete(r.id); return r; })
+    .concat(Array.from(liveById.values()))
+    .map(withMineRev);
+  out.sort((a, b) => (b.created || 0) - (a.created || 0));
+  return out;
+}
+
+/** every review shown on a business page: live ones, this device's, and
+    the seeded sample until the launch deletion takes it */
 export function reviewsFor(bizId) {
-  const mine = state.reviews.filter(r => r.bizId === bizId);
-  return mine.concat(withoutDemo(REVIEWS[bizId] || []).filter(r => !isBlocked(r)));
+  const written = mergedReviews().filter(r => r.bizId === bizId);
+  return written.concat(withoutDemo(REVIEWS[bizId] || []).filter(r => !isBlocked(r)));
 }
 /** my own review of a business, if I wrote one */
-export function myReviewFor(bizId) { return state.reviews.find(r => r.bizId === bizId) || null; }
-export function myReviews() { return state.reviews.slice(); }
+export function myReviewFor(bizId) {
+  return mergedReviews().find(r => r.bizId === bizId && r.mine) || null;
+}
+export function myReviews() { return mergedReviews().filter(r => r.mine); }
 
 /**
  * Live rating for a business: the seeded aggregate plus every review
  * written in-app, so the average and the count move together.
  */
 export function ratingFor(b) {
-  const mine = state.reviews.filter(r => r.bizId === b.id);
+  /* ⚠️ the merged set, not this device's: an average computed from one
+     phone's reviews is a number nobody else sees the same way */
+  const mine = mergedReviews().filter(r => r.bizId === b.id);
   const baseCount = b.reviewCount || 0;
   const baseSum = (b.rating || 0) * baseCount;
   const count = baseCount + mine.length;
@@ -5110,37 +5519,74 @@ export function ratingFor(b) {
   return { avg: Math.round((sum / count) * 10) / 10, count };
 }
 
-export function addReview(bizId, rating, text) {
+/**
+ * ⚠️ THE GUARD THAT MATTERS IS THE DATABASE'S AND IS NOT REPEATED HERE.
+ * `0002`'s insert policy refuses a business owner reviewing their own
+ * business, and its reason is a legal line and not a nicety: the FTC rule
+ * of October 2024 on fabricated reviews. So the refusal arrives from the
+ * server and this function's whole duty is to hand the screen a reason it
+ * can print — two guards part company one day, and the one in the database
+ * is the one that cannot be walked around.
+ * @returns {object|{error:string}} the review, or a reason
+ */
+export async function addReview(bizId, rating, text) {
   const existing = myReviewFor(bizId);
   if (existing) return updateReview(existing.id, rating, text);
-  const rec = {
-    id: mintId('r'), bizId, rating, mine: true,
-    user: (state.user && state.user.name) || 'أنا',
-    text: { ar: text, en: text },
-    when: { ar: 'الآن', en: 'just now' },
-    created: Date.now(),
-  };
-  state.reviews.unshift(rec);
-  // the owner hears about it — this is the notification shop owners open
-  if ((state.myBusinessIds || []).includes(bizId)) {
-    const stars = '★'.repeat(rating);
-    notifyKeys('revNewTitle', 'revNewBody', '#/directory/' + bizId, 'star', stars);
+  const me = (state.user && state.user.id) || null;
+  if (!me) return { error: 'noSession' };
+  let rec = null;
+  try {
+    const { data, error } = await sb.from('reviews')
+      .insert({ author_id: me, biz_id: bizId, rating, body: text })
+      .select().single();
+    if (error) throw error;
+    if (!data) throw new Error('no row');
+    rec = mapLiveRevRowToJs(data);
+  } catch (e) {
+    /* the policy's two refusals read differently to a reader: one says
+       «you cannot review your own business», the other is anything else */
+    const msg = String((e && e.message) || '');
+    return { error: /row-level security|violates row-level|42501/i.test(msg)
+      ? 'ownBusiness' : 'server' };
   }
+  state.reviews.unshift(rec);
+  /* ⚠️ AND THE OWNER IS NOT «TOLD», BECAUSE HE NEVER WAS: the line here
+     raised a notification with no addressee, so a review of somebody
+     else's shop rang on the REVIEWER's phone and the shop owner heard
+     nothing. It is a user-to-user notification, `notifications` opens
+     INSERT to the admin alone, and the owner reads the review itself now
+     — which is what the table has just made possible. Recorded as a debt
+     with the message one. */
   save();
   return rec;
 }
-export function updateReview(id, rating, text) {
-  const r = state.reviews.find(x => x.id === id);
+export async function updateReview(id, rating, text) {
+  const r = mergedReviews().find(x => x.id === id);
   if (!r) return null;
-  r.rating = rating;
-  r.text = { ar: text, en: text };
-  r.when = { ar: 'عُدّلت الآن', en: 'edited just now' };
+  try {
+    const { error } = await sb.from('reviews')
+      .update({ rating, body: text }).eq('id', id).select();
+    if (error) throw error;
+  } catch (e) { return { error: 'server' }; }
+  const local = (state.reviews || []).find(x => x.id === id);
+  if (local) {
+    local.rating = rating;
+    local.text = { ar: text, en: text };
+    local.when = { ar: 'عُدّلت الآن', en: 'edited just now' };
+  }
+  await loadLiveReviews();
   save();
-  return r;
+  return Object.assign({}, r, { rating, text: { ar: text, en: text } });
 }
-export function deleteReview(id) {
-  state.reviews = state.reviews.filter(x => x.id !== id);
+export async function deleteReview(id) {
+  try {
+    const { error } = await sb.from('reviews').delete().eq('id', id);
+    if (error) throw error;
+  } catch (e) { return { error: 'server' }; }
+  state.reviews = (state.reviews || []).filter(x => x.id !== id);
+  await loadLiveReviews();
   save();
+  return true;
 }
 
 /* ============================ EVENTS ============================
@@ -5474,19 +5920,30 @@ export async function deleteEvent(id) {
   save();
   return true;
 }
+/** who proposed this event, as the SERVER says (655) */
+function proposerOf(id) {
+  const row = liveEventRow(id);
+  return (row && row.proposer_id) || null;
+}
+
 export async function approveEvent(id) {
   if (!await updateEvent(id, { status: 'live' }, true)) return false;
   logAdminAction(id, 'approveEvent', '', '');
-  pushNotif({ icon: 'calendar', route: '#/events/' + id,
+  /* to the ORGANISER who proposed it — `events.proposer_id`, written by
+     `addEvent` since `649` and read for the first time here (655) */
+  await notifyUser(proposerOf(id), { icon: 'calendar', route: '#/events/' + id,
     title: { ar: 'تم اعتماد فعاليتك', en: 'Your event was approved' },
     body: { ar: 'فعاليتك صارت ظاهرة في قسم الفعاليات.', en: 'Your event is now listed in Events.' } });
   return true;
 }
 export async function rejectEvent(id, reason) {
+  /* ⚠️ the addressee is read BEFORE the row goes, or there is nobody left
+     to tell that it went */
+  const to = proposerOf(id);
   if (!await deleteEvent(id)) return false;
   logAdminAction(id, 'rejectEvent', '', reason || '');
   const why = String(reason || '').trim();
-  pushNotif({ icon: 'alert', route: '#/events',
+  await notifyUser(to, { icon: 'alert', route: '#/events',
     title: { ar: 'فعاليتك لم تُعتمد', en: 'Your event was not approved' },
     body: why ? { ar: `سبب الرفض: ${why}`, en: `Reason: ${why}` }
               : { ar: 'ما قدرنا نعتمد الفعالية. راجع التفاصيل وأعد الإرسال.',
@@ -5498,15 +5955,96 @@ export async function featureEvent(id, on = true) { return !!await updateEvent(i
 
 /* ========================= MODERATION QUEUE ========================= */
 
-export function addFlag({ kind, refId, reason, risk = 'medium', item }) {
-  if (state.flags.some(f => f.refId === refId && f.kind === kind)) return;
-  state.flags.unshift({ id: mintId('f'),
-                        kind, refId, reason, risk, item: item || null, created: Date.now() });
-  save();
+/* ---------------- THE LIVE REPORTS (655) ----------------
+ * ⚠️ THE HEAVIEST OF THE FOUR, AND IT IS NOT THE BIGGEST. `reportItem` and
+ * `addFlag` wrote into `state.flags` — the list on the REPORTER's phone —
+ * so the admin never saw a single report, and whoever pressed «report»
+ * was satisfied that somebody would read it, and nobody read it.
+ * ⚠️ And it is heavier than a lost message: a message is sent again when
+ * no answer comes, and a report is not — whoever reported believes they
+ * have done what was theirs to do.
+ */
+const flagReader = makeLiveReader('flags');
+
+/** when the live reports last arrived, or 0 — read by the suite */
+export function liveFlagLoadedAt() { return flagReader.loadedAt(); }
+
+/** Fetch the live reports once. */
+export async function loadLiveFlags() { return flagReader.load(); }
+
+/** One map from a live report row to the shape the panel reads.
+    ⚠️ `item` is DERIVED and is not a column: it is the title of the thing
+    reported, so storing it would be a second copy of a name that changes.
+    It is resolved from `kind` and `ref_id` at read. */
+export function mapLiveFlagRowToJs(r) {
+  const refId = r.ref_id;
+  let item = null;
+  if (r.kind === 'business') { const b = businessById(refId); item = b ? b.name : null; }
+  else if (r.kind === 'classified') { const c = classifiedById(refId); item = c ? c.title : null; }
+  return {
+    id: r.id, kind: r.kind, refId, reason: r.reason, risk: r.risk || 'medium',
+    status: r.status || 'open', item,
+    created: r.created_at ? Date.parse(r.created_at) : now(),
+  };
 }
-export function resolveFlag(id) {
-  state.flags = state.flags.filter(f => f.id !== id);
+
+/** this device's reports with the server's merged in, newest first */
+function mergedFlags() {
+  const local = state.flags || [];
+  const liveById = new Map((flagReader.get() || []).map(r => [r.id, mapLiveFlagRowToJs(r)]));
+  const out = local.map(f => {
+    const l = liveById.get(f.id);
+    if (!l) return f;
+    liveById.delete(f.id);
+    return Object.assign({}, f, { status: l.status });
+  }).concat(Array.from(liveById.values()));
+  out.sort((a, b) => (b.created || 0) - (a.created || 0));
+  return out;
+}
+
+/** every report still waiting on a human decision — what the panel shows
+    and what `pendingCount` counts. A resolved one is kept, never deleted. */
+export function flags() { return mergedFlags().filter(f => (f.status || 'open') === 'open'); }
+/** every report whatever its state, for a screen that wants the history */
+export function allFlags() { return mergedFlags(); }
+
+export async function addFlag({ kind, refId, reason, risk = 'medium', item }) {
+  if (mergedFlags().some(f => f.refId === refId && f.kind === kind && (f.status || 'open') === 'open')) return false;
+  const me = (state.user && state.user.id) || null;
+  if (!me) return false;
+  let rec = null;
+  try {
+    const { data, error } = await sb.from('flags')
+      .insert({ reporter_id: me, kind, ref_id: refId, reason, risk })
+      .select().single();
+    if (error) throw error;
+    if (!data) throw new Error('no row');
+    rec = mapLiveFlagRowToJs(data);
+  } catch (e) { return false; }
+  /* `item` is derived on read, and the local copy keeps whatever the
+     caller had in hand so the panel names the thing before the next load */
+  state.flags.unshift(Object.assign({}, rec, { item: rec.item || item || null }));
   save();
+  return true;
+}
+/** ⚠️ RESOLVED, NEVER DELETED. `0002` carries no delete policy for `flags`
+    and `status` exists for exactly this: a report that is erased leaves no
+    record that it was ever raised or judged. */
+export async function resolveFlag(id) {
+  try {
+    const { data, error } = await sb.from('flags')
+      .update({ status: 'resolved' }).eq('id', id).select();
+    if (error) throw error;
+    /* ⚠️ AND THE ROW IS COUNTED, not merely un-errored: PostgREST answers a
+       row the policy hides with 200 and an empty list, so a caller reading
+       «no error» as «done» marks a report resolved that never moved. */
+    if (!data || !data.length) throw new Error('no row');
+  } catch (e) { return false; }
+  const local = (state.flags || []).find(f => f.id === id);
+  if (local) local.status = 'resolved';
+  await loadLiveFlags();
+  save();
+  return true;
 }
 /** listings still waiting on a human decision */
 export function pendingListings() {
@@ -5533,7 +6071,7 @@ export function adminListings() {
 
 /** how many open reports point at this thing */
 export function reportCount(refId) {
-  return (state.flags || []).filter(f => f.refId === refId).length;
+  return flags().filter(f => f.refId === refId).length;
 }
 
 /**
@@ -5542,13 +6080,15 @@ export function reportCount(refId) {
  * remaining days with it. The owner is told, and told why.
  */
 export async function adminHideListing(id, reason) {
+  /* the addressee is read before the listing leaves the public list (655) */
+  const to = listingOwnerOf(id);
   /* ⚠️ the server first, and the line in the log only after it took —
      `630`'s order: a record of a decision that did not happen is worse
      than an empty record */
   if (!await hideClassified(id)) return false;
   logAdminAction(id, 'hideListing', '', reason || '');
-  (state.flags || []).filter(f => f.refId === id).forEach(f => resolveFlag(f.id));
-  pushNotif({
+  await Promise.all(flags().filter(f => f.refId === id).map(f => resolveFlag(f.id)));
+  await notifyUser(to, {
     icon: 'shield',
     title: strOf('adminHiddenTitle'),
     body: reason || strOf('adminHiddenBody'),
@@ -5559,32 +6099,47 @@ export async function adminHideListing(id, reason) {
 }
 
 /** …and the permanent one, which asks for a reason and delivers it */
-export function adminDeleteListing(id, reason) {
+export async function adminDeleteListing(id, reason) {
+  /* ⚠️ the addressee is read BEFORE the listing goes (655) */
+  const to = listingOwnerOf(id);
   logAdminAction(id, 'deleteListing', '', reason || '');
-  pushNotif({
+  await notifyUser(to, {
     icon: 'alert',
     title: strOf('adminRemovedTitle'),
     body: reason || strOf('adminRemovedBody'),
     route: '#/my-ads',
   });
+  /* `deleteClassified` answers the reports that pointed at it (655) */
   deleteClassified(id);
-  (state.flags || []).filter(f => f.refId === id).forEach(f => resolveFlag(f.id));
   return true;
 }
 
 /** a free-text notice from the panel to whoever owns the listing */
-export function adminNotify(id, text) {
+export async function adminNotify(id, text) {
   const c = classifiedById(id);
-  pushNotif({
+  /* a free-text notice reaches WHOEVER OWNS THE LISTING (655) — it landed
+     in the sender's own list, so the panel's one way of writing directly
+     to a person wrote to itself */
+  return notifyUser(listingOwnerOf(id), {
     icon: 'bell',
     title: strOf('adminNoticeTitle'),
     body: text,
     route: c ? '#/marketplace/' + id : '#/my-ads',
   });
-  return true;
 }
 
 /** one i18n string, in the reader's language, without importing i18n */
+/** ⚠️ A NOTIFICATION'S TITLE AND BODY ARE BILINGUAL, and `strOf` returns
+    ONE language: it is right for a value read once and printed at once, and
+    wrong for a row that is stored and read again after the reader flips the
+    language. `notifyKeys` built the pair and the sites `655` moved off it
+    build the same pair here — the shape did not change, only who receives
+    it. */
+function pairOf(key) {
+  const packs = i18nPacks();
+  const one = (lang) => (packs[lang] && packs[lang][key]) || key;
+  return { ar: one('ar'), en: one('en') };
+}
 function strOf(key) {
   const packs = i18nPacks();
   const lang = state.lang === 'en' ? 'en' : 'ar';
@@ -5601,7 +6156,7 @@ export function pendingBadge() {
   return b && b.status === 'pending' ? b : null;
 }
 export function pendingCount() {
-  return pendingListings().length + pendingEvents().length + state.flags.length
+  return pendingListings().length + pendingEvents().length + flags().length
        + (pendingAvatar() ? 1 : 0) + (pendingBadge() ? 1 : 0)
        + pendingClaims().length + pendingBizPhotos().length + pendingBizVerify().length
        + pendingOffers().length + pendingWorshipFixes().length;
@@ -5609,17 +6164,89 @@ export function pendingCount() {
 
 /* ====================== IN-APP MESSAGES ====================== */
 
+/* ---------------- THE LIVE MESSAGES (655) ----------------
+ * ⚠️ WHY IT EXISTS. `sendMessage` ended at `state.messages.push(msg)`, so
+ * the message stayed on the sender's own phone: it never reached the
+ * listing owner's device, and it never reached a SECOND device of the
+ * sender's own account either. The owner tried it from both sides on
+ * 6 September and both halves happened.
+ * ⚠️ And the table, its two policies and its columns had been standing
+ * ready since `0001` with `from('messages')` appearing in the whole of
+ * `js/` zero times — the fifth time this project has found a live table
+ * with its wire missing.
+ * ⚠️ ORDERED ASCENDING, and that is not the factory's fallback: a
+ * conversation is read oldest-first, and `created_at desc` would page a
+ * long thread so that its beginning fell off the end.
+ */
+const msgReader = makeLiveReader('messages', {
+  order: [['created_at', { ascending: true }]],
+});
+
+/** when the live messages last arrived, or 0 — read by the suite */
+export function liveMsgLoadedAt() { return msgReader.loadedAt(); }
+
+/** Fetch the live messages once. */
+export async function loadLiveMessages() { return msgReader.load(); }
+
+/** One map from a live message row to the shape the screens read. */
+export function mapLiveMsgRowToJs(r) {
+  const created = r.created_at ? Date.parse(r.created_at) : now();
+  return {
+    id: r.id, listingId: r.listing_id, senderId: r.sender_id,
+    text: r.body || '',
+    scrubbed: !!r.scrubbed, offPlatform: !!r.off_platform,
+    created, when: agoLabel(created),
+  };
+}
+
+/**
+ * ⚠️ «MINE» IS COMPUTED AND IS NEVER A STORED FIELD — the most important
+ * line in the messages item. The message used to carry `from: 'me'`, and
+ * «me» is true on one device and does not travel: a row that reaches
+ * another phone carrying `from: 'me'` is read there as being FROM ITS
+ * READER. The schema says so in as many words above the table.
+ * ⚠️ A message with no `senderId` was written on this device before the
+ * table was opened and never left it, so it is this reader's own — which
+ * is why the absence answers `true` rather than `false`.
+ */
+function withMine(m) {
+  const me = (state.user && state.user.id) || null;
+  /* ⚠️ AND A RECORD FROM BEFORE THE TABLE WAS OPENED IS ANSWERED BY ITS OWN
+     OLD FIELD, not by a guess. Every message this device holds from before
+     `655` was written BY it (`sendMessage` pushed only the sender's own, and
+     `data.js` seeds none — measured), so `true` is right for one that has
+     neither field; but where the old `from` is actually there it is the
+     record's own word and it is read. Reading a legacy field is not storing
+     one — the same shape as `isHidden`, which reads the column AND the
+     device's list beside it. */
+  const legacy = m.from === undefined ? true : m.from === 'me';
+  return Object.assign({}, m, { mine: m.senderId ? m.senderId === me : legacy });
+}
+
+/** This device's own messages with the server's merged in, oldest first.
+    A row the device also holds is the same row: it was written here and
+    came back with the server's id. */
+function mergedMessages() {
+  const local = state.messages || [];
+  const liveById = new Map((msgReader.get() || []).map(r => [r.id, mapLiveMsgRowToJs(r)]));
+  const out = local.map(m => { liveById.delete(m.id); return m; })
+    .concat(Array.from(liveById.values()))
+    .map(withMine);
+  out.sort((a, b) => (a.created || 0) - (b.created || 0));
+  return out;
+}
+
 export function messagesFor(listingId) {
-  return state.messages.filter(m => m.listingId === listingId);
+  return mergedMessages().filter(m => m.listingId === listingId);
 }
 
 /** what the owner's button counts: messages from buyers, not their own */
 export function buyerMessageCount(listingId) {
-  return state.messages.filter(m => m.listingId === listingId && m.from !== 'me').length;
+  return mergedMessages().filter(m => m.listingId === listingId && !m.mine).length;
 }
 export function messageThreads() {
   const seen = {};
-  state.messages.forEach(m => { seen[m.listingId] = (seen[m.listingId] || 0) + 1; });
+  mergedMessages().forEach(m => { seen[m.listingId] = (seen[m.listingId] || 0) + 1; });
   return Object.keys(seen).map(id => ({ listingId: id, count: seen[id] }));
 }
 
@@ -5628,29 +6255,66 @@ export function messageThreads() {
  * is stored, and the text is run through the automated scan.
  * @returns {{ msg: object, removed: number, flagged: boolean }}
  */
-export function sendMessage(listingId, text, lang = 'ar') {
+export async function sendMessage(listingId, text, lang = 'ar') {
   const listing = classifiedById(listingId);
   const clean = scrubContact(text, lang);
   const scan = scanMessage(text, listing);
-  const msg = {
-    id: mintId('m'), listingId, from: 'me', text: clean.text,
-    offPlatform: OFF_PLATFORM.test(asciiDigits(String(text || ''))),
-    scrubbed: clean.removed,
-    when: { ar: 'الآن', en: 'just now' }, created: Date.now(),
-  };
+  const offPlatform = OFF_PLATFORM.test(asciiDigits(String(text || '')));
+  const me = (state.user && state.user.id) || null;
+
+  /* ⚠️ THE SERVER FIRST, AND THE DEVICE IS ONLY THE TRACE OF ITS YES —
+     `620`'s order for the password and `630`'s for the moderation queue.
+     A refused write pushes nothing local and is SAID, so the sender is
+     never told a message went where it did not.
+     ⚠️ `scrubContact` runs BEFORE the send exactly as it did, and the
+     schema's own note that it must be repeated on the server stands: what
+     only the client guards is not guarded. That needs a trigger in the
+     database and is recorded as a debt, not built here. */
+  let msg = null;
+  if (me) {
+    try {
+      const { data, error } = await sb.from('messages').insert({
+        listing_id: listingId, sender_id: me, body: clean.text,
+        scrubbed: !!clean.removed, off_platform: offPlatform,
+      }).select().single();
+      if (error) throw error;
+      /* ⚠️ AND THE ROW IS ANSWERED AND THEN COUNTED. PostgREST answers a row
+         the policy hides with 200 and an empty list, never an error, so a
+         caller reading «no error» as «done» tells its sender the message
+         was delivered over a row that was never written. */
+      if (!data) throw new Error('no row');
+      msg = mapLiveMsgRowToJs(data);
+    } catch (e) {
+      return { msg: null, removed: clean.removed, flagged: false, error: 'server' };
+    }
+  } else {
+    /* no session: nothing can be addressed to anybody. The screen gates
+       this behind `requireTier` and never reaches here today; the branch
+       exists so a caller that does gets a refusal and not a lie. */
+    return { msg: null, removed: clean.removed, flagged: false, error: 'noSession' };
+  }
+
+  /* ⚠️ `from: 'me'` IS NOT WRITTEN, HERE OR ANYWHERE. `mine` is computed
+     from `senderId` at read (see `withMine`), because «me» is a fact about
+     a device and the row travels. */
   state.messages.push(msg);
 
-  // the seller is told, on the listing the message is about
-  if (listing && !state.myListings.includes(listingId)) {
-    notifyKeys('msgNewTitle', 'msgNewBody', '#/messages/' + listingId, 'message');
-  }
+  /* ⚠️ AND THE SELLER IS NOT «TOLD» ANY MORE, BECAUSE HE NEVER WAS. The
+     line here raised a notification with no addressee, so it landed in the
+     notification list of whoever sent the message — the sender read
+     «somebody messaged you» about their own message. Delivering it needs a
+     row in another account's list, and `notifications` opens INSERT to the
+     admin alone: a table any signed-in account may write into anybody's
+     list is a spam channel with a policy on it. The seller reads the
+     message itself, which the table now really delivers; a push for it
+     needs a trigger in the database and is recorded as a debt. */
 
   // Repeated attempts to hand out contact details get their own report.
   if (clean.removed) {
-    const attempts = state.messages.filter(m => m.from === 'me' && m.scrubbed).length;
+    const attempts = mergedMessages().filter(m => m.mine && m.scrubbed).length;
     if (attempts >= 2) {
-      addFlag({
-        kind: 'contact-attempts', refId: 'contact-' + listingId, risk: 'medium',
+      await addFlag({
+        kind: 'message', refId: msg.id, risk: 'medium',
         reason: { ar: `تكرار محاولة تبادل وسيلة تواصل خارج التطبيق (${attempts} مرات)`,
                   en: `Repeated attempts to share off-app contact details (${attempts} times)` },
         item: listing ? listing.title : null,
@@ -5658,7 +6322,7 @@ export function sendMessage(listingId, text, lang = 'ar') {
     }
   }
   if (scan.flagged) {
-    addFlag({
+    await addFlag({
       kind: 'message', refId: msg.id, risk: 'high',
       reason: scan.reason === 'free-item-sale'
         ? { ar: 'محاولة بيع غرض منشور في قسم المجاني', en: 'Trying to sell an item posted in the Free section' }
@@ -5705,7 +6369,15 @@ export async function deleteBusiness(id) {
   return true;
 }
 
-export async function addBusiness(biz, { pendingReview = false } = {}) {
+/**
+ * @param {object} biz
+ * @param {{pendingReview?: boolean, source?: string, ownerless?: boolean}} opts
+ *   `source` answers Apple 5.1.1(viii) — where the record came from — and
+ *   `ownerless` is the one shape that has no owner: a place of worship a
+ *   stranger suggested, which belongs to its own people and not to whoever
+ *   typed it in (655 appendix §1).
+ */
+export async function addBusiness(biz, { pendingReview = false, source = 'owner', ownerless = false } = {}) {
   /* ⚠️ THE ROW IS WRITTEN ON THE SERVER FIRST AND ITS ID IS THE SERVER'S.
      Measured before this batch: `addBusiness` ended at
      `state.extraBusinesses.unshift(rec)` and there was NO insert on the
@@ -5724,7 +6396,12 @@ export async function addBusiness(biz, { pendingReview = false } = {}) {
      listing added today enters «nearest» today */
   const withGeo = Object.assign({}, biz, geoFieldsFor(biz));
   const row = Object.assign(mapJsToLiveRow(withGeo), {
-    owner_id: session.user.id,
+    /* ⚠️ null for a suggestion, and that is the whole item: «owned» is
+       derived from `owner_id`, so writing the sender there would hand them
+       somebody else's masjid. `0013` widens `own: insert` by exactly this
+       one shape — ownerless, `source = 'suggested'`, held at
+       `pendingReview` — and by nothing else. */
+    owner_id: ownerless ? null : session.user.id,
     seed_id: null,                     // not a coat over a seed: a row of its own
     /* ⚠️ `pendingReview`, never `pending`. Both are in the column's own
        comment and the app uses the first for a business and the second for
@@ -5735,7 +6412,7 @@ export async function addBusiness(biz, { pendingReview = false } = {}) {
        5.1.1(viii), which asks an app that gathers personal information from
        anywhere but its subject where it came from. A row with no source is
        a row with no answer. */
-    source: 'owner',
+    source,
   });
   if (!row.name_en && !row.name_ar) return null;
 
@@ -5753,7 +6430,8 @@ export async function addBusiness(biz, { pendingReview = false } = {}) {
      split. */
   const id = saved.id;
   const rec = Object.assign({ id }, BIZ_DEFAULTS, withGeo, {
-    claimed: true, status: row.status, ownerId: session.user.id, source: 'owner',
+    claimed: !ownerless, status: row.status,
+    ownerId: ownerless ? null : session.user.id, source,
   });
   if (pendingReview) {
     // added over a certain duplicate match: the person said it is a
@@ -5764,7 +6442,7 @@ export async function addBusiness(biz, { pendingReview = false } = {}) {
   const rows = bizReader.get();
   if (rows) rows.unshift(saved);
   state.extraBusinesses.unshift(rec);
-  if (!pendingReview) {
+  if (!pendingReview && !ownerless) {
     state.myBusinessIds = state.myBusinessIds || [];
     state.myBusinessIds.push(id);
   }
@@ -6140,12 +6818,23 @@ export function addAdOrder(order) {
   save();
   return rec;
 }
+/* ⚠️ AND THE HEADLINE EXAMPLE OF `655` §6ب IS THE ONE THAT CANNOT BE
+   DELIVERED. An advertisement order has no table at all — `addAdOrder`
+   writes into `state.myAds`, a list on the buyer's own phone, and the
+   appendix records that as its own gap — so there is no account to
+   address, and `notifyKeys` here was ringing on the ADMIN's phone about
+   somebody else's $149 order. The admin then read «the advertiser was
+   told» and believed a warning had been given.
+   ⚠️ SO THE SENTENCE CHANGES AND THE FAULT IS NOT SWALLOWED: the
+   misdirected copy is deleted, and the panel says «rejected» rather than
+   «rejected, and the buyer was told», until the buyer can be told. One
+   true sentence is better than ten that reassure. The model is the
+   pre-adhan alert, which refuses to promise what it cannot do. */
 export function approveAd(id) {
   logAdminAction(id, 'approveAd', '', '');
   const a = state.myAds.find(x => x.id === id);
   if (a) {
     a.status = 'live';
-    notifyKeys('adLiveTitle', 'adLiveBody', '#/my-ads', 'checkCircle');
   }
   save();
 }
@@ -6155,7 +6844,6 @@ export function rejectAd(id, reason) {
   if (a) {
     a.status = 'rejected';
     a.reason = reason || '';
-    notifyKeys('adNoTitle', 'adNoBody', '#/my-ads', 'alert', reason);
   }
   save();
 }
@@ -6206,8 +6894,11 @@ export function removeFromWaitlist(id) {
  */
 export function deletionSummary() {
   return {
-    listings: (state.myListings || []).length,
-    reviews: (state.reviews || []).length,
+    /* ⚠️ what the ACCOUNT owns, not what this phone remembers: somebody
+       who published from a laptop was shown «0 listings» on their mobile
+       in the very sheet that lists what deletion destroys (655) */
+    listings: myActiveListings().length,
+    reviews: myReviews().length,
     saved: (state.saved || []).length,
     messages: (state.messages || []).length,
     ads: (state.myAds || []).length,
@@ -6222,9 +6913,12 @@ export function deletionSummary() {
  * subscription and any page they owned.
  */
 export async function deleteAccount() {
-  const mine = state.myListings || [];
+  /* the account's own, plus anything this device published before there
+     was one — both, because either alone leaves a listing behind (655) */
+  const mine = Array.from(new Set((state.myListings || [])
+    .concat(myActiveListings().map(c => c.id))));
   state.extraClassifieds = (state.extraClassifieds || []).filter(c => !mine.includes(c.id));
-  state.messages = (state.messages || []).filter(m => !mine.includes(m.listingId) && m.from !== 'me');
+  state.messages = (state.messages || []).filter(m => !mine.includes(m.listingId) && m.senderId !== (state.user && state.user.id));
 
   /* ⚠️ DELETING AN ACCOUNT LEFT MORE BEHIND THAN SIGNING OUT OF ONE.
      `signOut` was rebuilt in V.05.2 around a list of what STAYS, so every
@@ -6953,8 +7647,8 @@ export function exportMyData() {
   return JSON.stringify({
     app: 'ARABNA', exportedAt: new Date().toISOString(),
     profile: person,
-    listings: (state.extraClassifieds || []).filter(c => (state.myListings || []).includes(c.id)),
-    reviews: state.reviews || [],
+    listings: myActiveListings(),
+    reviews: myReviews(),
     saved: state.saved || [],
     savedEvents: state.savedEvents || [],
     messages: state.messages || [],

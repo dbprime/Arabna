@@ -461,7 +461,16 @@ ok('email address stripped', msgs[2] && msgs[2].includes('[رقم محذوف]') 
 ok('whatsapp link stripped', msgs[3] && !/wa\.me/i.test(msgs[3]), msgs[3]);
 ok('sender is told why', (await page.textContent('#toast')).includes('حذفنا') || true);
 const flags = (await ls()).flags;
-ok('repeated attempts are reported to the admin', flags.some(f => f.kind === 'contact-attempts'),
+/* ⚠️ REVERSED IN `655` §4.2, and named rather than softened. The kind used
+   to read `'contact-attempts'`, which is not a KIND but a description of
+   what happened — the same fault the batch corrected for `'report'`. The
+   schema's own comment on the column lists what it accepts (business ·
+   classified · review · message), and what is reported here IS a message.
+   What the item was ever about — that repeated attempts reach the admin,
+   with a reason that says which attempts — is asserted harder: the kind is
+   one the column takes, AND the reason names the repetition. */
+ok('repeated attempts are reported to the admin',
+   flags.some(f => f.kind === 'message' && /تكرار محاولة/.test((f.reason && f.reason.ar) || '')),
    flags.map(f => f.kind).join(','));
 await adminLogin();
 ok('the report is visible in the admin queue', (await txt()).includes('تكرار محاولة') || (await txt()).includes('محاولات'));

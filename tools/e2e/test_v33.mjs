@@ -11,6 +11,9 @@
    prayer screens need — no advertising anywhere near a prayer time. */
 import { chromium } from '/opt/node22/lib/node_modules/playwright/index.mjs';
 import { withDemoData } from './_demo.mjs';
+/* 655: a suggestion is a ROW now, so the block that makes one needs an
+   account — and an account needs the stand-in server. */
+import { mockSupabase, MOCK_CODE } from './_supabase.mjs';
 
 const BASE = process.env.BASE || 'http://localhost:8099/index.html';
 let pass = 0, fail = 0;
@@ -30,6 +33,7 @@ let ctx, page;
 const fresh = async (opts = {}) => {
   if (ctx) await ctx.close();
   ctx = await browser.newContext(Object.assign({ colorScheme: 'dark', viewport: { width: 390, height: 844 } }, opts));
+  await mockSupabase(ctx, { preConfirm: true });
   page = await ctx.newPage();
   page.on('console', m => { if (m.type() === 'error' && !/ERR_CONNECTION|ERR_CERT|ERR_TUNNEL|ERR_NAME|ERR_FAILED|fonts\.googleapis/.test(m.text())) errors.push(m.text().slice(0, 130)); });
   page.on('pageerror', e => errors.push('PAGEERROR ' + e.message.slice(0, 130)));
@@ -304,11 +308,28 @@ ok('7.3 there is NO denomination field — not optional, absent', !/طائفة|�
 ok('7.4 and no time field of any kind', !/الأذان|الإقامة|الجمعة|القداس/.test(await sheetTxt()));
 await page.fill('#sgName', 'مسجد النور');
 await page.fill('#sgAddr', '1234 Hillcroft, Houston');
-await page.evaluate(() => document.querySelector('#sgSend').click()); await page.waitForTimeout(800);
+/* ⚠️ REVERSED IN `655` APPENDIX §1, and named. The suggestion used to go to
+   `state.extraBusinesses` — the suggester's own phone — so it reached the
+   admin never, and it needed no account because it needed no server. It is
+   a ROW now, and an unauthenticated write to a shared table is a spam
+   channel with nobody behind it, so the send asks for an account exactly as
+   every other gated action does. The DOOR is untouched and 7.1 still
+   measures it standing for a visitor: the gate is at the action.
+   ⚠️ And `pendingReview`, never `pending` — half the repair: the public
+   list filters the first and the admin queue reads it, so a row marked
+   `pending` would be published to everyone with no review at all. */
+await page.evaluate(async ([c]) => {
+  const S = window.__m.S;
+  const err = await S.signUp({ name: 'قارئ', email: 'sugg-v33@arabna.test',
+                              password: 'Qx7#mVzt2026', phone: '' });
+  if (err) throw new Error(err);
+  if (!S.state.user.emailVerified) await S.confirmEmail(c);
+}, [MOCK_CODE]);
+await page.evaluate(() => document.querySelector('#sgSend').click()); await page.waitForTimeout(1200);
 ok('7.5 the thank-you says it arrived', /وصلنا اقتراحك/.test(await page.evaluate(() => document.body.textContent)));
 const rec = await page.evaluate(() => { const s = JSON.parse(localStorage.getItem('arabna.v1')); return (s.extraBusinesses || [])[0] || null; });
-ok('7.6 it lands in the admin queue as worship, pending',
-   !!rec && rec.cat === 'worship' && rec.status === 'pending' && rec.name.ar === 'مسجد النور',
+ok('7.6 it lands in the admin queue as worship, held for review',
+   !!rec && rec.cat === 'worship' && rec.status === 'pendingReview' && rec.name.ar === 'مسجد النور',
    rec ? `${rec.cat}/${rec.status}` : 'nothing saved');
 ok('7.7 …and non-commercial by rule 1, without anyone choosing it',
    await page.evaluate(() => window.__m.S.isNonCommercial(window.__m.S.state.extraBusinesses[0]) === true));

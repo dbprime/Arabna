@@ -238,7 +238,11 @@ function panelView(root) {
       const id = b.dataset.adno;
       askReason({
         title: t('rejectReason'), sub: t('rejectReasonPlaceholder'), confirmText: t('reject'), danger: true,
-        onGo: (why) => { S.rejectAd(id, why); toast(t('itemRejected'), 'ok'); paint(); },
+        /* ⚠️ «تم رفض الطلب» AND NOT «وإبلاغ صاحبه» (655): an ad order has
+           no table, so there is no account to tell — and the sentence that
+           said otherwise made the admin believe a warning had been given
+           and escalate against somebody who was told nothing. */
+        onGo: (why) => { S.rejectAd(id, why); toast(t('adRejected'), 'ok'); paint(); },
       });
     }));
     $$('#aBody [data-wlrm]').forEach(b => b.addEventListener('click', () => {
@@ -292,9 +296,9 @@ function panelView(root) {
     $$('#aBody [data-clok]').forEach(b => b.addEventListener('click', () => {
       S.approveClaim(b.dataset.clok).then(() => { toast(t('claimApproved'), 'ok'); paint(); });
     }));
-    $$('#aBody [data-clno]').forEach(b => b.addEventListener('click', () => {
+    $$('#aBody [data-clno]').forEach(b => b.addEventListener('click', async () => {
       const box = $('#why-' + b.dataset.clno);
-      S.rejectClaim(b.dataset.clno, box ? box.value : '');
+      await S.rejectClaim(b.dataset.clno, box ? box.value : '');
       toast(t('claimRejected'), 'ok'); paint();
     }));
     // --- business photos ---
@@ -529,14 +533,23 @@ function panelView(root) {
       const id = b.dataset.mktdel;
       askReason({
         title: t('adminRemove'), sub: t('adminRemoveAsk'), confirmText: t('delete'), danger: true,
-        onGo: (why) => { S.adminDeleteListing(id, why); toast(t('done'), 'ok'); paint(); },
+        onGo: async (why) => {
+          if (!await S.adminDeleteListing(id, why)) { toast(t('somethingWrong'), 'err'); return; }
+          toast(t('done'), 'ok'); paint();
+        },
       });
     }));
     $$('#aBody [data-mktnote]').forEach(b => b.addEventListener('click', () => {
       const id = b.dataset.mktnote;
       askReason({
         title: t('adminNotice'), sub: t('adminNoticeAsk'), confirmText: t('send'),
-        onGo: (why) => { S.adminNotify(id, why); toast(t('adminNoticeSent'), 'ok'); },
+        /* ⚠️ «تم إرسال التنبيه» is a claim that it reached somebody, and
+           it now really can — so it is said only when the row was written
+           for the listing's owner (655 §6ب). */
+        onGo: async (why) => {
+          if (!await S.adminNotify(id, why)) { toast(t('somethingWrong'), 'err'); return; }
+          toast(t('adminNoticeSent'), 'ok');
+        },
       });
     }));
 
@@ -609,26 +622,26 @@ function panelView(root) {
     });
 
     // --- flags raised by the app (reports, free-section edits, scanned DMs) ---
-    $$('#aBody [data-flagok]').forEach(b => b.addEventListener('click', () => {
-      S.resolveFlag(b.dataset.flagok);
+    $$('#aBody [data-flagok]').forEach(b => b.addEventListener('click', async () => {
+      await S.resolveFlag(b.dataset.flagok);
       toast(t('done'), 'ok');
       paint();
     }));
-    $$('#aBody [data-flagdel]').forEach(b => b.addEventListener('click', () => {
+    $$('#aBody [data-flagdel]').forEach(b => b.addEventListener('click', async () => {
       const fid = b.dataset.flagdel;
-      const f = S.state.flags.find(x => x.id === fid);
+      const f = S.flags().find(x => x.id === fid);
       /* ⚠️ This one took a listing down through `rejectClassified` with NO
          REASON ARGUMENT AT ALL, so its owner was told the listing was
          refused and nothing more — on the strength of somebody else's
          report, which may itself be malicious. */
       const kill = f && f.kind !== 'message' && S.classifiedById(f.refId);
-      if (!kill) { S.resolveFlag(fid); toast(t('itemRejected'), 'ok'); paint(); return; }
+      if (!kill) { await S.resolveFlag(fid); toast(t('itemRejected'), 'ok'); paint(); return; }
       askReason({
         title: t('rejectReason'), sub: t('rejectReasonPlaceholder'), confirmText: t('reject'), danger: true,
         onGo: async (why) => {
           /* the flag is closed only once the server took the rejection */
           if (!await S.rejectClassified(f.refId, why)) { toast(t('somethingWrong'), 'err'); return; }
-          S.resolveFlag(fid);
+          await S.resolveFlag(fid);
           toast(t('itemRejected'), 'ok');
           paint();
         },
@@ -674,7 +687,9 @@ function rejectBox(id) {
 function queueHtml() {
   const pending = S.pendingListings();
   const events = S.pendingEvents();
-  const flags = S.state.flags;
+  /* the merged, still-open reports — a report resolved elsewhere is
+     resolved here, and one raised elsewhere finally arrives (655) */
+  const flags = S.flags();
   const avatar = S.pendingAvatar();
   const badge = S.pendingBadge();
   const total = pending.length + events.length + flags.length + (avatar ? 1 : 0) + (badge ? 1 : 0);

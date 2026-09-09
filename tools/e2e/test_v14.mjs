@@ -382,8 +382,39 @@ await page.click('#revBtn'); await page.waitForTimeout(600);
 await page.fill('#revTxt', 'ممتاز');
 await page.click('#revSend'); await page.waitForTimeout(700);
 const after = ((await ls()).extraNotifs || []).length;
-ok('a review on your own business notifies you', after === before + 1, before + ' → ' + after);
-ok('…and says what it is', (((await ls()).extraNotifs || [])[0].title.ar || '').includes('تقييم جديد'));
+/* ⚠️ REVERSED IN `655` §6ب, and named rather than softened — the subject
+   of this block is «notifications that come from something real», and this
+   pair was the opposite of that. `addReview` raised a notification with NO
+   ADDRESSEE, so it landed in the list of whoever wrote the review: the
+   reviewer was told «somebody reviewed your business» about their own
+   review, and the shop owner heard nothing. Here the fixture owns `b2`, so
+   the two coincided and the line looked right.
+   ⚠️ AND THE SERVER NOW REFUSES THIS WRITE ALTOGETHER: `0002`'s insert
+   policy forbids a business owner reviewing their own business, and its
+   reason is a legal line — the FTC rule of October 2024 on fabricated
+   reviews. So what is asserted is the two things that are true: nothing
+   was written, and NO notification was raised on the actor's own phone.
+   The owner really being told is a user-to-user notification, which `655`
+   records as a debt needing a trigger — and until it exists the app says
+   nothing rather than saying it to the wrong person. */
+ok('a review of your OWN business raises nothing on your own phone',
+   after === before, before + ' → ' + after);
+/* ⚠️ AND NOT `ok(…, true)`: a check that asserts nothing is worse than a
+   red one, because it is trusted. What is measured is that the review is a
+   ROW and not a record on this phone — `655`'s own subject, and revert the
+   wire and it goes red.
+   ⚠️ AND THE FTC GUARD DOES NOT FIRE HERE, which is correct and is worth
+   saying: it asks the SERVER who owns the business, and this fixture owns
+   `b2` only on its own device (`myBusinessId` in `localStorage`). Device
+   state is not ownership — `650`'s rule, since anyone with a browser
+   console can edit it — so the refusal belongs to a business whose
+   `owner_id` really is this account, which is what `test_v87 · 3.6`
+   measures with one. */
+const revRow = await page.evaluate(() =>
+  (JSON.parse(localStorage.getItem('arabna.v1') || '{}').reviews || [])
+    .filter(r => r.bizId === 'b2').map(r => String(r.id))[0] || '');
+ok('…and the review is a row on the server, not a record on this phone',
+   !!revRow && !/^r[a-z0-9]{6,}$/.test(revRow), revRow || 'none');
 
 await go('#/events');
 const evRoute = await page.evaluate(() => {

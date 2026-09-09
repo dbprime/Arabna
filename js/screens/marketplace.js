@@ -238,7 +238,10 @@ export function ListingDetailScreen(root, params) {
   const c = S.classifiedById(params[0]);
   if (!c) { toast(t('gone'), 'err'); go('#/marketplace'); return; }
   renderHeader({ hidden: true });
-  const mine = S.state.myListings.includes(c.id);
+  /* ⚠️ the ACCOUNT owns a listing, not a list on one phone: somebody who
+     published from their mobile opened their laptop and met their own
+     listing as a stranger — no edit button, no «my ads», no counter (655) */
+  const mine = S.mineListing(c);
   const photos = c.photos || [];
 
   root.innerHTML = `
@@ -330,7 +333,16 @@ export function ListingDetailScreen(root, params) {
   });
 
   const rp = $('#repBtn');
-  if (rp) rp.addEventListener('click', () => { S.reportItem(c.id, c.title); toast(t('reported'), 'ok'); });
+  if (rp) rp.addEventListener('click', async () => {
+    /* ⚠️ an account, for the reason written on the directory's own report
+       button: the report is a row now, and `reporter_id` is what lets it be
+       weighed at all (655 §4) */
+    if (!S.requireTier(1, location.hash, go)) return;
+    /* the kind names the thing reported, and the report really reaches
+       the panel now, so a refusal is said (655 §4.2) */
+    if (await S.reportItem(c.id, 'classified', c.title)) toast(t('reported'), 'ok');
+    else toast(t('somethingWrong'), 'err');
+  });
 
   /* Blocking takes effect on the spot — no moderator, no waiting. That is
      what the store guidelines require, and it is the only version of it
@@ -751,7 +763,7 @@ export function PostScreen(root) {
     };
 
     if (editing) {
-      const res = S.updateClassified(editing.id, payload);
+      const res = await S.updateClassified(editing.id, payload);
       if (!S.lastSaveOk) { toast(t('storageFull'), 'err'); return; }
       toast(res.flagged ? t('freeFlagged') : t('listingUpdated'), res.flagged ? 'err' : 'ok');
       goAfterDone('#/marketplace/' + editing.id);
@@ -772,7 +784,7 @@ export function PostScreen(root) {
       return;
     }
     if (flagged) {
-      S.addFlag({ kind: 'listing', refId: rec.id, risk: 'high', item: rec.title,
+      await S.addFlag({ kind: 'classified', refId: rec.id, risk: 'high', item: rec.title,
         reason: { ar: 'لغة تجارية في إعلان شخصي', en: 'Business language in a personal listing' } });
       toast(t('businessDetected'), 'err');
     } else {
@@ -841,7 +853,7 @@ export function MessagesScreen(root, params) {
   const paint = () => {
     const list = S.messagesFor(listingId);
     $('#msgList').innerHTML = list.length
-      ? list.map(m => `<div class="msg ${m.from === 'me' ? 'me' : 'them'}">${esc(m.text)}
+      ? list.map(m => `<div class="msg ${m.mine ? 'me' : 'them'}">${esc(m.text)}
           <div class="msg-when">${esc(L(m.when))}</div></div>`).join('')
       : `<div class="hint" style="text-align:center">${t('emptyMsgSub')}</div>`;
     const box = $('#msgList');
@@ -849,11 +861,15 @@ export function MessagesScreen(root, params) {
   };
   paint();
 
-  $('#msgSend').addEventListener('click', () => {
+  $('#msgSend').addEventListener('click', async () => {
     const input = $('#msgIn');
     const text = input.value.trim();
     if (!text) { toast(t('required'), 'err'); return; }
-    const res = S.sendMessage(listingId, text, getLang());
+    /* ⚠️ THE MESSAGE REALLY LEAVES THE DEVICE NOW (655 §2), so a refusal
+       is said and the box KEEPS what was typed — clearing it over a write
+       that did not take loses the words and tells the sender it was sent. */
+    const res = await S.sendMessage(listingId, text, getLang());
+    if (res.error) { toast(t('somethingWrong'), 'err'); return; }
     input.value = '';
     paint();
     // Tell the sender exactly what was removed and why.

@@ -158,7 +158,20 @@ const pwned = p => p.evaluate(() => ({
   }));
   ok('4.4 the order is refused', after.status === 'rejected', after.status);
   ok('4.5 …the reason is kept', after.reason === 'الصورة غير واضحة', after.reason);
-  ok('4.6 …and it reaches its owner verbatim', after.notif);
+  /* ⚠️ REVERSED IN `655` §6ب, and named rather than softened — it is the
+     batch's own headline example. An advertisement order has NO TABLE at
+     all: `addAdOrder` writes into `state.myAds`, a list on the buyer's own
+     phone, so there is no account to address. The notification this line
+     measured therefore rang on the ADMIN's OWN phone about somebody else's
+     $149 order — and he then read «the advertiser was told» and believed a
+     warning had been given.
+     ⚠️ So the misdirected copy is deleted and the SENTENCE changes rather
+     than the fault being swallowed: «تم رفض الطلب», never «and the buyer was
+     told», until the buyer can be told. What is asserted is the two things
+     that are true — the reason is kept on the order (4.5), and NOTHING is
+     raised on the phone of whoever refused it. */
+  ok('4.6 …and no notification is raised on the phone of whoever refused it',
+     after.notif === false, String(after.notif));
   await ctx.close();
 }
 

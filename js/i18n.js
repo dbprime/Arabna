@@ -312,6 +312,7 @@ export const STRINGS = {
     evEndBeforeStart: 'تاريخ النهاية بعد تاريخ البداية.',
     pendingReview: 'بانتظار الموافقة', approve: 'موافقة', reject: 'رفض',
     itemApproved: 'تم اعتماد الإعلان ونشره', itemRejected: 'تم رفض الإعلان وإبلاغ صاحبه',
+    adRejected: 'تم رفض الطلب',
     ownerNotified: 'تم إبلاغ صاحب الإعلان',
     noPending: 'لا شيء بانتظار الموافقة', noPendingSub: 'كل الإعلانات والبلاغات مراجَعة',
     rejectedNotifTitle: 'إعلانك لم يُعتمد',
@@ -581,6 +582,7 @@ export const STRINGS = {
     offerQueue: 'العروض',
     offerAll: 'كل العروض',
     somethingWrong: 'حدث خطأ — حاول مرّة أخرى',
+    reviewOwnBiz: 'لا يمكن تقييم نشاطك التجاريّ.',
     // --- the admin's own trace (V.03.3)
     adminLogTitle: 'آخر ما عُدِّل',
     adminLogSub: 'تعديلات أُجريت من اللوحة — لا من شاشة المالك',
@@ -2094,6 +2096,7 @@ export const STRINGS = {
     evEndBeforeStart: 'The end date comes after the start date.',
     pendingReview: 'Pending review', approve: 'Approve', reject: 'Reject',
     itemApproved: 'Listing approved and published', itemRejected: 'Listing rejected, owner notified',
+    adRejected: 'Order rejected',
     ownerNotified: 'Owner notified',
     noPending: 'Nothing waiting for review', noPendingSub: 'All listings and reports are handled',
     rejectedNotifTitle: 'Your listing was not approved',
@@ -2339,6 +2342,7 @@ export const STRINGS = {
     offerQueue: 'Offers',
     offerAll: 'All offers',
     somethingWrong: 'Something went wrong — try again',
+    reviewOwnBiz: 'You cannot review your own business.',
     // --- the admin's own trace (V.03.3)
     adminLogTitle: 'Last edits',
     adminLogSub: 'Changes made from the panel — not from an owner\u2019s screen',

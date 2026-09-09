@@ -903,7 +903,11 @@ export function MyReviewsScreen(root) {
     openReviewSheet(b.dataset.edit, () => go('#/my-reviews'))));
   $$('[data-del]').forEach(b => b.addEventListener('click', () => confirmSheet({
     title: t('delete'), sub: t('myReviews'), confirmText: t('delete'), danger: true,
-    onConfirm: () => { S.deleteReview(b.dataset.del); toast(t('reviewDeleted'), 'ok'); go('#/my-reviews'); }
+    onConfirm: async () => {
+      const r = await S.deleteReview(b.dataset.del);
+      if (r && r.error) { toast(t('somethingWrong'), 'err'); return; }
+      toast(t('reviewDeleted'), 'ok'); go('#/my-reviews');
+    }
   })));
   wireRoutes(root);
 }
@@ -1190,11 +1194,14 @@ export function SettingsScreen(root) {
     });
   }));
 
-  $$('.switch').forEach(s => s.addEventListener('click', () => {
-    const k = s.dataset.k;
-    S.state.notifPrefs[k] = !S.state.notifPrefs[k];
-    S.save();
-    s.classList.toggle('on', S.state.notifPrefs[k]);
+  /* ⚠️ the preference belongs to the ACCOUNT and not to this phone (655):
+     whoever turned message alerts off here found them burning on their
+     laptop. The switch moves only when the write really took. */
+  $$('.switch').forEach(sw => sw.addEventListener('click', async () => {
+    const k = sw.dataset.k;
+    const want = !S.state.notifPrefs[k];
+    if (!await S.setNotifPref(k, want)) { toast(t('somethingWrong'), 'err'); return; }
+    sw.classList.toggle('on', S.state.notifPrefs[k]);
   }));
   $('#langBtn').addEventListener('click', () => import('../ui.js').then(m => m.toggleLang()));
   /* ⚠️ THE ACCOUNT BLOCK IS NOT DRAWN FOR A VISITOR, so nothing may reach

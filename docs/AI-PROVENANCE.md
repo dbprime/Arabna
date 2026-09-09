@@ -1,7 +1,7 @@
 # سجلُّ مصدر التطوير بالذكاء الاصطناعيّ — مولَّدٌ من المستودع
 
 يُولَّد بـ `tools/audit/provenance.mjs` عند كلّ إغلاق. لا يُحرَّر بيد.
-آخرُ توليد: 2026-09-09 · على `9f8c577` (HEAD) · آخرُ كومِتٍ فيه 2026-09-09 · 343 كومِتاً
+آخرُ توليد: 2026-09-09 · على `55cd330` (HEAD) · آخرُ كومِتٍ فيه 2026-09-09 · 352 كومِتاً
 كومِتُ الإغلاق الأخير يدخل السجلَّ في الإغلاق الذي يليه.
 
 كيف يُقرأ: كلُّ دفعةٍ تبدأ بملفّ مواصفةٍ يكتبه مالكُ البرنامج ويقرّره
@@ -14,6 +14,15 @@ git لا يدخل الجدول. والخانةُ التي لا مصدرَ لها
 
 | التاريخ | الرقم | النوع | الكومِت | المواصفة | الجلسة | الشبكة | قبولُ المالك |
 |---|---|---|---|---|---|---|---|
+| 2026-09-09 | 655 | وثائق | `55cd330` | 655 | [جلسة](https://claude.ai/code/session_01FQktTvq1yNPmo67XBoW8hs) | — | owner ✓ |
+| 2026-09-09 | 655 | وثائق | `839493e` | 655 | [جلسة](https://claude.ai/code/session_01FQktTvq1yNPmo67XBoW8hs) | — | owner ✓ |
+| 2026-09-09 | 655 | وثائق | `d94c376` | 655 | [جلسة](https://claude.ai/code/session_01FQktTvq1yNPmo67XBoW8hs) | — | owner ✓ |
+| 2026-09-09 | 655 | وثائق | `34038e7` | 655 | [جلسة](https://claude.ai/code/session_01FQktTvq1yNPmo67XBoW8hs) | — | owner ✓ |
+| 2026-09-09 | 655 | وثائق | `520c74c` | 655 | [جلسة](https://claude.ai/code/session_01FQktTvq1yNPmo67XBoW8hs) | — | owner ✓ |
+| 2026-09-09 | 655 | وثائق | `f5ab89c` | 655 | [جلسة](https://claude.ai/code/session_01FQktTvq1yNPmo67XBoW8hs) | — | owner ✓ |
+| 2026-09-09 | 655 | وثائق | `073d62f` | 655 | [جلسة](https://claude.ai/code/session_01FQktTvq1yNPmo67XBoW8hs) | — | owner ✓ |
+| 2026-09-09 | — | وثائق | `74062f5` | — | — | — | — |
+| 2026-09-09 | 652 | وثائق | `33680d5` | 652 | [جلسة](https://claude.ai/code/session_01FQktTvq1yNPmo67XBoW8hs) | 168 · 84 · 8,056 | owner ✓ |
 | 2026-09-09 | — | وثائق | `9f8c577` | — | — | — | — |
 | 2026-09-09 | 652 | وثائق | `e29c3c4` | 652 | [جلسة](https://claude.ai/code/session_01FQktTvq1yNPmo67XBoW8hs) | — | owner ✓ |
 | 2026-09-09 | 652 | وثائق | `5c618fa` | 652 | [جلسة](https://claude.ai/code/session_01FQktTvq1yNPmo67XBoW8hs) | — | owner ✓ |
