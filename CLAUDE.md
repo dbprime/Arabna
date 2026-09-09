@@ -12556,6 +12556,24 @@ DELETE — which it had never handled at all**, because nothing in the app
 deleted a row until now. Without that, «the review really goes» would have
 been green while nothing was removed.
 
+### And the group closes — the net, run on segments over one frozen tree
+```
+170 runs · 85 suites · 8,232 assertions · zero red · zero crash
+```
+Seventeen segments over `55cd330`, `HEAD` re-checked at the head of each —
+the runner exits 2 on a moved character or a dirty tree — **85 present and
+85 run, each on both builds, and no result borrowed.** The verdict is READ
+from the index and never summed: `NET COMPLETE — every derived suite ran on
+both builds in this index`. Measured suite time: **6,987s on the single-file
+build and 6,653s on the module one.**
+
+⚠️ **The arithmetic closes itself: 8,056 + 174 (`v87` × 2) + 2 (`v83 · 1.5b`
+× 2) = 8,232**, and **not one other suite moved by a single assertion** —
+`v3`, `v14`, `v29`, `v33`, `v43`, `v45` and `v66` each carry a reversal that
+REPLACED an assertion rather than adding or dropping one, which is what a
+reversal should look like: it changes what a check measures, never how many
+checks there are.
+
 ## Known open items
 - **The header image is still far larger than its box.** V.04.7 replaced
   the 831/837 KB lockups with the cropped marks at **333/338 KB** — 60% off
