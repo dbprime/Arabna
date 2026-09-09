@@ -12174,6 +12174,37 @@ answer about the ledger, and an empty folder listing is refused. **The one
 `|| true` left in the file is inside the comment forbidding it**, and
 `v86 · 6.5` reads the code with comments stripped.
 
+### ⚠️ AND THE THIRD INSTANCE TAUGHT THE LESSON THE FIRST TWO HAD NOT
+Sweeping the class was right and was **not enough**: the fix to
+`migrations()` was written and **its consumer was not followed**.
+
+```
+for f in $(migrations)      a command substitution in a FOR-LIST has its
+                            exit code swallowed — `set -e` never sees it
+```
+So the folder guard printed its warning to stderr and the run said
+**«لا هجرةَ جديدة.» and exited 0** — the swallowed failure surviving one
+level further out than its own repair.
+
+⚠️ **And assigning it was still not enough, which is the real finding.**
+`list="$(migrations)" || …` was written, measured, **and still exited 0** —
+because **bash disables `set -e` inside any command whose result is
+tested**, and `pending` is always called `P="$(pending)" || { … }`. So `-e`
+was off for every line inside it.
+
+> **`set -e` is a convenience at the top level and a guarantee nowhere.
+> What is tested explicitly is what holds.**
+
+Both reads inside `pending` now carry `|| return 1`, and
+`v86 · 6.6b` and `6.7a` assert the SHAPE — no substitution left in a
+for-list, and neither read left to `set -e`.
+
+⚠️ **Three instances of one class in one batch, and the second and third
+were found by re-reading the finished code rather than by any test.** The
+sweep rule (`570`, `572`, `645`) says to sweep the class; **this adds that
+a fix is followed to the value's consumer, and that a shell guarantee is
+measured before it is relied on.**
+
 ### ⚠️ And the batch's own table walked through a blind spot in three suites
 Measured while writing it, and it is bigger than this batch: the rules that
 ask **«what tables exist»** were written

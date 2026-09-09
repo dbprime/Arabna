@@ -126,10 +126,23 @@ apply_one() {
 }
 
 pending() {
-  local done_list
-  done_list="$(ran)"
-  local f
-  for f in $(migrations); do
+  local done_list list f
+  # ⚠️ EXPLICIT `|| return 1`, NEVER A RELIANCE ON `set -e` — and this was
+  # measured, not reasoned about. Bash DISABLES `set -e` inside any command
+  # whose result is tested, and `pending` is always called as
+  # `P="$(pending)" || { … }`, so `-e` is off for everything inside it: the
+  # folder guard printed its warning and the run still exited 0. `set -e` is
+  # a convenience at the top level and a guarantee nowhere. What is tested
+  # is what holds.
+  done_list="$(ran)" || return 1
+  # ⚠️ ASSIGNED, NEVER `for f in $(migrations)`. A command substitution in a
+  # for-list has its exit code SWALLOWED — `set -e` does not see it — so the
+  # folder guard printed its warning to stderr and the run went on to say
+  # «لا هجرةَ جديدة.» and exit 0. That is the swallowed failure surviving one
+  # level further out than the fix for it, and it is the third instance of
+  # this one class in this batch. An assignment is checked; a for-list is not.
+  list="$(migrations)" || return 1
+  for f in $list; do
     printf '%s\n' "$done_list" | grep -qxF "$f" || printf '%s\n' "$f"
   done
 }

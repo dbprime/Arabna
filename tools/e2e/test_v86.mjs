@@ -227,6 +227,22 @@ console.log('--- 6: the ledger is asked, not assumed ---');
      '`|| true` in the code: ' + /\|\| true/.test(sh));
   ok('6.6 an empty or unreadable folder is never «nothing to run»',
      /migrations\(\)\s*\{[\s\S]*?\[ -n "\$out" \] \|\|/.test(sh));
+  /* ⚠️ AND THE GUARD IS FOLLOWED TO ITS CONSUMER, which is where the third
+     instance of this class was hiding: a command substitution in a FOR-LIST
+     has its exit code swallowed — `set -e` never sees it — so `migrations`
+     could fail loudly on stderr and the run still say «لا هجرةَ جديدة.» and
+     exit 0. Every substitution in the runner must be assigned or explicitly
+     tested, and this asserts the shape rather than the one line. */
+  ok('6.6b …and no command substitution is left in a for-list, where its failure is swallowed',
+     !/for\s+\w+\s+in\s+\$\(/.test(sh));
+  /* ⚠️ AND NOTHING INSIDE `pending` LEANS ON `set -e`, which was MEASURED
+     and not reasoned about: bash disables `-e` inside any command whose
+     result is tested, and `pending` is always called `P="$(pending)" || {…}`
+     — so `-e` was off for every line in it and the run exited 0 over a
+     folder it could not read. What is tested is what holds. */
+  ok('6.7a both reads inside `pending` are tested explicitly, never left to set -e',
+     (/pending\(\)\s*\{[\s\S]*?done_list="\$\(ran\)" \|\| return 1/.test(sh)) &&
+     (/pending\(\)\s*\{[\s\S]*?list="\$\(migrations\)" \|\| return 1/.test(sh)));
   /* only «t» or «f» is an answer; an error, an empty string or a refused
      permission is a failure and is announced */
   ok('6.7 …and only a real answer about the ledger counts as one',
