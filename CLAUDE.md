@@ -12387,12 +12387,21 @@ approved → `businesses.owner_id`») cannot pass without it.
 > alone leaves the button visible on 499 pages and working on none of them —
 > a button that lies is worse than a button that is missing».
 
-- ⚠️ **AND THE PRICE IS SAID AND NOT HIDDEN:** `reviews` and `claims` lose
-  the foreign key and its `on delete cascade`. That cost is real, unlike
-  `flags`'s, where the key could never have existed (`ref_id` points at four
-  tables by `kind`). `deleteBusiness` already takes the reviews with it in
-  the app. **It is ONE item the owner can overturn without the batch being
-  rebuilt** — the `330` precedent.
+- ⚠️ **AND THE PRICE WAS SAID, AND THEN IT WAS NOT PAID.** The conversion
+  drops the foreign key to `businesses` **and the `on delete cascade` that
+  came with it**, and that half was flagged as the one item the owner could
+  overturn without the batch being rebuilt. **He overturned it the same day:
+  «القرار قائم — on delete cascade يبقى» — the text column stands and the
+  cascade comes back.** `0014` restores it as a `before delete` trigger on
+  `public.businesses` that removes the matching `reviews` and `claims`: a
+  foreign key's behaviour where a foreign key cannot reach, since the values
+  are text and half of them (`b30` … `b515`) name a seed with no row in
+  `businesses` at all. ⚠️ **And it reaches a seed through `seed_id`, which
+  the old key never could** — the key compared `businesses.id`, so the
+  children of every seed business were beyond its reach even while it
+  existed. `flags` stays out of it: it never had a key to lose (`ref_id`
+  points at four tables by `kind`), and the decision is that the cascade
+  **stays**, not that a new one is invented.
 - ⚠️ **AND THE SWEEP IS NOT «CONVERT EVERY ID COLUMN».** `messages.listing_id`
   keeps its uuid and its key, and the line is precise: **a column that holds
   an id the app really passes for REAL records.** Every seed classified is
@@ -12532,7 +12541,98 @@ is `652`'s lesson in a second costume, and the answer is the same: **sweep
 the class and pre-check the untouched range BEFORE restarting**, which is
 what made the last run the last one.
 
-### `test_v87` — 87 assertions, and eight teeth, each aimed at its own item
+### The cascade stays, and a real PostgreSQL found what reading had not
+
+⚠️ **THE MIGRATION WAS MEASURED AGAINST A REAL POSTGRESQL 16 AND NOT READ,
+AND THE FIRST THING IT SAID WAS THAT `0013` ABORTS.** A cluster was started
+in the container, `auth.users` and the three Supabase roles were shimmed,
+and every migration was applied in order:
+
+```
+0013_655_live_rows.sql   ERROR: cannot alter type of a column used in a
+                         policy definition
+```
+
+**PostgreSQL refuses to alter the type of a column a policy depends on, and
+`0013` dropped those policies AFTER the alter.** Two policies reach
+`reviews.biz_id` — its own «own: insert», and `review_replies`'s «biz owner:
+insert», which reaches it **through the join** and depends on it exactly as
+if it were its own. `claims.biz_id` and `flags.ref_id` are named in no
+policy at all, which is why only that one line raised.
+
+⚠️ **And the runner would have been loud about it, which is the design
+working and not a reason to relax.** `652` applies each file inside one
+transaction with `ON_ERROR_STOP=1`, so nothing would have been half-applied
+— **and the batch that had already declared itself finished, with a green
+net behind it, would have landed a server half that never ran.** A structural
+suite cannot see this: the file parses perfectly. Only the database can.
+
+> **A migration is not «read and correct». It is applied to a real
+> PostgreSQL, in order, from empty, before it is called finished.**
+
+**Fixed by moving the two drops above the alter, and `test_v87 · 9.10`
+asserts the ORDER** — the one assertion in the batch a database earned
+rather than a reading. Measured after: **0001…0014 apply to a clean database
+with zero failures**, and `0013` and `0014` both re-run cleanly, which is
+what their own heads promise.
+
+### And the reason I first wrote for `security definer` was not measured
+`0014`'s first draft said the grant «IS REQUIRED» because a trigger under
+the caller's rights meets RLS and `claims` has no delete policy. ⚠️ **Half
+of that is true and the conclusion was wrong for today, and measuring it is
+what showed the difference:** `public.businesses` carries **no delete policy
+whatsoever**, so the only roles that can delete a business are the table
+owner and `service_role`, and **both bypass RLS anyway** — so both forms of
+the function behave identically now. The app never deletes one at all:
+`deleteBusiness` writes `status = 'deleted'`, because deletion here is a
+mark and not a wipe.
+
+**So the reason was rewritten to the measurement, taken on two identical
+databases with the delete policy `businesses` does not have today added to
+both, and an admin performing the delete:**
+
+```
+security definer   businesses 2→1 · reviews 3→2 · claims 3→2
+caller's rights    businesses 2→1 · reviews 3→2 · claims 3→3
+```
+
+⚠️ **The claim survives, with nothing raised** — `reviews` carries
+`own+admin: delete` so the admin may remove one, and `claims` carries none.
+An orphan still saying somebody owns a business that no longer exists, and
+it looks exactly like a cascade that works. **The grant costs nothing to
+hold**: a `returns trigger` function has no direct-call surface — measured,
+calling it as an ordinary account answers «trigger functions can only be
+called as triggers».
+
+> **A reason written into a migration is measured or it is not written.**
+> The first draft read better than the truth, which is how it survived being
+> re-read twice.
+
+**And the cascade itself, measured on real rows** — a live business, a coat
+row over the seed `b30`, children keyed both ways, and a bystander on `b99`:
+
+```
+                 before   after
+reviews             3        1     the bystander alone
+review_replies      2        0     by their own untouched uuid key
+claims              3        1
+```
+
+⚠️ **`review_replies` needed nothing and was not touched**, which is asserted
+rather than assumed: its key is `review_id uuid references public.reviews(id)
+on delete cascade`, and `0013` never moved a review's own id because a review
+id is a uuid the server minted.
+
+⚠️ **And two faults of my own in the measuring are recorded rather than
+smoothed.** My harness printed `exit $?` after a `$(basename …)` — the
+command substitution runs first and resets `$?`, **so every migration
+reported «exit 0» while one of them was raising**. That is `652`'s own
+swallowed failure, committed inside the script written to check for it. And
+the first aim at the `security definer` tooth measured nothing: the *business*
+delete matched zero rows under RLS, so the trigger never fired — **prove the
+break landed where it was aimed, not merely that a red appeared.**
+
+### `test_v87` — 95 assertions, and ten teeth, each aimed at its own item
 ```
 the message never leaves the device   → 2.5 prints {"n":0}: the seller reads nothing
 «mine» read off a stored field        → 2.11 prints {"mine":false}: the sender
@@ -12545,6 +12645,9 @@ the notification loses its addressee  → 8.2 · 8.3 · 8.4, and it lands on the
 the report's kind goes back           → 4.2 prints «report»
 resolveFlag erases the row            → 4.6 · 4.7 · 4.8
 the id columns stay uuid              → 9.2 · 9.3 ALONE
+the cascade trigger removed           → 9.11 ALONE
+the policy drops moved back below     → 9.10 ALONE, and on a real cluster
+   the alter                            the file aborts outright
 ```
 ⚠️ **The last one is the two-layer point, measured rather than argued:** with
 the columns left `uuid` **every behavioural item stays green**, because the

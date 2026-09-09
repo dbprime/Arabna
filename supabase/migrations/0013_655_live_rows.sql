@@ -45,6 +45,22 @@ alter table public.flags   alter column ref_id type text;
 -- the conversion costs nothing and the reader takes either shape.
 alter table public.flags   alter column reason type jsonb using to_jsonb(reason);
 
+-- ⚠️ AND THE POLICIES COME DOWN BEFORE THE COLUMN MOVES, NEVER AFTER.
+-- Measured on a real PostgreSQL 16 rather than read: with them standing,
+-- the line below aborts with «cannot alter type of a column used in a
+-- policy definition» and the whole migration rolls back. Two policies
+-- reach `reviews.biz_id` — its own «own: insert», and `review_replies`'s
+-- «biz owner: insert», which reaches it through the join and depends on it
+-- exactly as if it were its own. `claims.biz_id` and `flags.ref_id` are
+-- named in no policy at all, which is why only this one raised.
+--
+-- ⚠️ AND THE ORDER IS NOT COSMETIC: the runner of `652` applies this
+-- file inside one transaction with `ON_ERROR_STOP=1`, so the abort is
+-- loud and nothing is half-applied — and the batch that declared itself
+-- finished would have landed a server half that never ran.
+drop policy if exists "own: insert" on public.reviews;
+drop policy if exists "biz owner: insert" on public.review_replies;
+
 alter table public.reviews drop constraint if exists reviews_biz_id_fkey;
 alter table public.reviews alter column biz_id type text;
 

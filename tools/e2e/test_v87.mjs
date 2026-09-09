@@ -588,6 +588,67 @@ console.log('--- 9: the id class ---');
   const mine = readFileSync(MIG + '0013_655_live_rows.sql', 'utf8').replace(/--[^\n]*/g, '');
   ok('9.9 the migration carries no `||` and no `*`',
      !/\|\||\*/.test(mine), 'clean');
+
+  /* ⚠️ THE ORDER, AND IT IS THE ONE ASSERTION HERE THAT A REAL POSTGRESQL
+     EARNED RATHER THAN A READING. PostgreSQL refuses to alter the type of a
+     column a policy depends on — «cannot alter type of a column used in a
+     policy definition» — and TWO policies reach `reviews.biz_id`: its own
+     «own: insert», and `review_replies`'s «biz owner: insert», which reaches
+     it through the join and depends on it exactly as if it were its own. So
+     they have to come DOWN before the column moves. Measured: with them
+     standing the whole file aborts, and `652`'s runner wraps it in one
+     transaction, so nothing is half-applied and the batch that declared
+     itself finished lands a server half that never ran. */
+  const cut = mine.search(/alter table public\.reviews\s+alter column biz_id type text/);
+  ok('9.10 the policies come down BEFORE the column moves, or the file aborts',
+     cut > 0
+     && mine.search(/drop policy if exists "own: insert" on public\.reviews/) < cut
+     && mine.search(/drop policy if exists "biz owner: insert" on public\.review_replies/) < cut,
+     'dropped first');
+
+  /* ⚠️ THE OWNER'S DECISION OF 9 SEPTEMBER: «القرار قائم — on delete cascade
+     يبقى». The text column stands and the BEHAVIOUR the foreign key carried
+     comes back — a business deleted for good takes its reviews and its
+     claims with it, or it leaves rows pointing at nothing and a claim still
+     saying somebody owns a business that does not exist. */
+  const casc = readFileSync(MIG + '0014_biz_cascade.sql', 'utf8').replace(/--[^\n]*/g, '');
+  ok('9.11 the cascade is restored as a `before delete` trigger on businesses',
+     /create trigger cascade_business_delete\s+before delete on public\.businesses/.test(casc),
+     'before delete');
+  /* ⚠️ AND IT REACHES A SEED THROUGH `seed_id`, WHICH THE OLD KEY NEVER
+     COULD: the key compared `businesses.id`, and a coat row for a seed
+     carries its own uuid there and `b30` in `seed_id`. */
+  for (const [t, n] of [['reviews', '9.12'], ['claims', '9.13']]) {
+    const re = new RegExp('delete from public\\.' + t +
+      '[\\s\\S]{0,120}old\\.id::text[\\s\\S]{0,120}biz_id = old\\.seed_id');
+    ok(n + ' …and it reaches `' + t + '` by the live id AND by the seed id', re.test(casc), 'both');
+  }
+  /* ⚠️ `security definer` with a pinned `search_path`. Measured on a real
+     PostgreSQL 16 on two identical databases, with the delete policy
+     `businesses` does not carry today added to both and an admin deleting:
+        security definer  claims 3 -> 2      caller's rights  claims 3 -> 3
+     `claims` has a read, an insert and an update policy and NO DELETE
+     POLICY AT ALL, so under the caller's rights the claim survives with
+     nothing raised — the swallowed failure, looking exactly like a cascade
+     that works. */
+  ok('9.14 …as `security definer`, with `search_path` pinned',
+     /create or replace function public\.cascade_business_delete\(\)[\s\S]{0,200}security definer[\s\S]{0,60}set search_path = public/.test(casc),
+     'definer + pinned');
+  /* ⚠️ `review_replies` NEEDS NOTHING: its own key is `review_id uuid
+     references public.reviews(id) on delete cascade`, untouched by `0013`
+     because a review's id is a uuid the server minted. Deleting the reviews
+     takes the replies by the key that is still there — asserted, never
+     assumed. */
+  ok('9.15 `review_replies` keeps the key that carries it, and is not touched',
+     /review_id\s+uuid not null unique references public\.reviews\(id\) on delete cascade/.test(sql)
+     && !/alter table public\.review_replies\s+alter column review_id/.test(sql), 'kept');
+  /* ⚠️ AND `flags` IS DELIBERATELY OUT OF IT. It never had a key to lose —
+     `ref_id` points at four tables by `kind` — and the decision is that the
+     cascade STAYS, not that a new one is invented. */
+  ok('9.16 `flags` is not swept into it',
+     !/delete from public\.flags/.test(casc), 'left alone');
+  ok('9.17 the cascade migration carries no `||` and no `*` either',
+     !/\|\||\*/.test(casc), 'clean');
 }
 
 /* ============================================================
