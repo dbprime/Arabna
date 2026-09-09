@@ -110,7 +110,19 @@ console.log('--- 1: a column that named itself «last updated» and never moved 
      knows when. */
   const jsAll = readdirSync(ROOT + 'js').filter(n => n.endsWith('.js'))
     .map(n => strip(read('js/' + n))).join('\n');
-  ok('1.5 the client never writes `updated_at`', !/updated_at/.test(jsAll));
+  /* ⚠️ REVERSED IN `655`, and the SUBJECT is unchanged — it is «the client
+     never WRITES it», and the old line was a blanket text search that could
+     not tell a write from a read. `655` opened the tables whose rows carry
+     an edited-at, and the app READS it: a review that was edited says so.
+     Reading a column the server owns is the point of the column. What is
+     asserted is what the rule always said: no `updated_at` in anything the
+     app SENDS — an insert, an update, or the reverse map. */
+  const writes = [...jsAll.matchAll(/\.(?:insert|update)\(\{[^}]{0,400}\}/g)]
+    .map(m => m[0]).filter(x => /updated_at/.test(x));
+  ok('1.5 the client never writes `updated_at`', writes.length === 0,
+     writes.length ? writes[0].slice(0, 60) : 'reads only');
+  ok('1.5b …and the reverse map does not carry it either',
+     !/put\('updated_at'/.test(jsAll), 'not in mapJsToLiveRow');
 
   const { ctx, p, db } = await fresh({ preConfirm: true });
   await open(p);
@@ -345,7 +357,7 @@ console.log('--- 3c: pulled for review and published · 14 or 30 · never expire
     const rec = await S.addClassified({ cat: 'free', title: { ar: 'كنبة', en: 'sofa' },
       desc: { ar: 'مجاني', en: 'free' }, price: S.FREE_PRICE, city: 'Houston' });
     await S.approveClassified(rec.id);
-    const r = S.updateClassified(rec.id, { price: '$50' });
+    const r = await S.updateClassified(rec.id, { price: '$50' });
     return { id: rec.id, flagged: r.flagged };
   });
   await p.waitForTimeout(500);

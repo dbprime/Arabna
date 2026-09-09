@@ -186,7 +186,9 @@ await go('#/post?edit=' + theirs);
 ok('3.3 #/post?edit=<not mine> does not open their listing',
    !(await page.locator('#pTitle').count()), await page.evaluate(() => location.hash));
 ok('3.4 …and rewriting it from the console is refused',
-   await S((id) => { const S = window.__m.S; return S.updateClassified(id, { city: 'X' }).rec === null; }, theirs));
+   /* awaited since `655`: the edit reaches the server, so the guard's
+      answer arrives a microtask later. What it guards is unchanged. */
+   await S(async (id) => { const S = window.__m.S; return (await S.updateClassified(id, { city: 'X' })).rec === null; }, theirs));
 
 /* `?admin=1` was a permission taken from the address bar: it opened the
    staff form, published LIVE to everybody, and offered `featured`, which

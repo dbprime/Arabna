@@ -26,6 +26,8 @@
 import { chromium } from '/opt/node22/lib/node_modules/playwright/index.mjs';
 import { mockSupabase } from './_supabase.mjs';
 import { withDemoData } from './_demo.mjs';
+import { unlockAdmin } from './_admin.mjs';
+import { MOCK_CODE } from './_supabase.mjs';
 
 const BASE = process.env.BASE || 'http://localhost:8099/index.html';
 let pass = 0, fail = 0;
@@ -107,11 +109,27 @@ const disk = p => p.evaluate(() => JSON.parse(localStorage.getItem('arabna.v1'))
      async. It passed un-awaited only because `myBusinessIds` is pushed BEFORE
      the await inside it — an accident of statement order, and the kind that
      turns red the day the order moves. The fixture measures the app as it is. */
+  /* ⚠️ REVERSED IN `655`, and the SUBJECT is untouched — «the approval ADDS»
+     is `240`'s rule and it is what this block measures. What moved is where
+     a claim lives: it was a record on the claimant's own phone, so
+     `approveClaim` could only ever fire on the device that raised it, and
+     `650` recorded that as the reason the whole path was unreachable. The
+     claim is a ROW now, so the fixture takes the real path — an account, a
+     request, and staff to judge it — rather than seeding around it. */
+  await p.evaluate(async ([c]) => {
+    const S = window.__S;
+    const err = await S.signUp({ name: 'أحمد', email: 'claims@arabna.test',
+                                 password: 'Qx7#mVzt2026', phone: '' });
+    if (err) throw new Error(err);
+    if (!S.state.user.emailVerified) await S.confirmEmail(c);
+  }, [MOCK_CODE]);
+  await unlockAdmin(p);
+  await mount(p);
   const r = await p.evaluate(async () => {
     const S = window.__S;
     const ids = S.allBusinesses().slice(0, 3).map(b => b.id);
     for (const id of ids) {
-      const c = S.requestClaim(id, { name: 'أحمد', role: 'مالك', phone: '7134669182' });
+      const c = await S.requestClaim(id, { name: 'أحمد', role: 'مالك', phone: '7134669182' });
       await S.approveClaim(c.id);
     }
     return { ids, owned: S.state.myBusinessIds.slice(),
@@ -132,7 +150,10 @@ const disk = p => p.evaluate(() => JSON.parse(localStorage.getItem('arabna.v1'))
   const again = await p.evaluate(async () => {
     const S = window.__S;
     const id = S.state.myBusinessIds[0];
-    const c = S.requestClaim(id, { name: 'أحمد', role: 'مالك', phone: '7134669182' });
+    const c = await S.requestClaim(id, { name: 'أحمد', role: 'مالك', phone: '7134669182' });
+    /* the row already exists and is approved, so `claimFor` hands back the
+       same one — which is `unique (biz_id, claimer_id)` in the schema doing
+       on the server what the screen used to do on the device */
     await S.approveClaim(c.id);
     return S.state.myBusinessIds.filter(x => x === id).length;
   });

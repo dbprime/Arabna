@@ -2697,7 +2697,7 @@ export async function approvePendingBusiness(id) {
      published» landed in the ADMIN's own list and its owner heard
      nothing — and the admin, reading it, believed they had been told. */
   await notifyUser(ownerOf(id), { icon: 'checkCircle', route: '#/directory/' + id,
-    title: strOf('bizOkTitle'), body: strOf('bizOkBody') });
+    title: pairOf('bizOkTitle'), body: pairOf('bizOkBody') });
   save();
   return true;
 }
@@ -2705,7 +2705,8 @@ export async function rejectPendingBusiness(id, reason) {
   if (!await applyBusinessEdit(id, { status: 'rejected' })) return false;
   logAdminAction(id, 'rejectBusiness', '', reason || '');
   await notifyUser(ownerOf(id), { icon: 'alert', route: '#/directory',
-    title: strOf('bizNoTitle'), body: (reason || '') || strOf('bizNoBody') });
+    title: pairOf('bizNoTitle'),
+    body: reason ? { ar: reason, en: reason } : pairOf('bizNoBody') });
   save();
   return true;
 }
@@ -3732,7 +3733,7 @@ export async function approveClaim(id) {
   /* ⚠️ the claimant is told on their own account, not on the admin's (655) */
   await notifyUser(c.claimerId, {
     icon: 'checkCircle', route: '#/directory/' + c.bizId,
-    title: strOf('claimOkTitle'), body: strOf('claimOkBody'),
+    title: pairOf('claimOkTitle'), body: pairOf('claimOkBody'),
   });
   save();
   return true;
@@ -3750,8 +3751,8 @@ export async function rejectClaim(id, reason) {
   if (local) { local.status = 'rejected'; local.reason = reason || ''; local.decided = Date.now(); }
   await notifyUser(c.claimerId, {
     icon: 'alert', route: '#/directory/' + c.bizId,
-    title: strOf('claimNoTitle'),
-    body: (reason || '') || strOf('claimNoBody'),
+    title: pairOf('claimNoTitle'),
+    body: reason ? { ar: reason, en: reason } : pairOf('claimNoBody'),
   });
   save();
   return true;
@@ -6128,6 +6129,17 @@ export async function adminNotify(id, text) {
 }
 
 /** one i18n string, in the reader's language, without importing i18n */
+/** ⚠️ A NOTIFICATION'S TITLE AND BODY ARE BILINGUAL, and `strOf` returns
+    ONE language: it is right for a value read once and printed at once, and
+    wrong for a row that is stored and read again after the reader flips the
+    language. `notifyKeys` built the pair and the sites `655` moved off it
+    build the same pair here — the shape did not change, only who receives
+    it. */
+function pairOf(key) {
+  const packs = i18nPacks();
+  const one = (lang) => (packs[lang] && packs[lang][key]) || key;
+  return { ar: one('ar'), en: one('en') };
+}
 function strOf(key) {
   const packs = i18nPacks();
   const lang = state.lang === 'en' ? 'en' : 'ar';
@@ -6199,7 +6211,16 @@ export function mapLiveMsgRowToJs(r) {
  */
 function withMine(m) {
   const me = (state.user && state.user.id) || null;
-  return Object.assign({}, m, { mine: m.senderId ? m.senderId === me : true });
+  /* ⚠️ AND A RECORD FROM BEFORE THE TABLE WAS OPENED IS ANSWERED BY ITS OWN
+     OLD FIELD, not by a guess. Every message this device holds from before
+     `655` was written BY it (`sendMessage` pushed only the sender's own, and
+     `data.js` seeds none — measured), so `true` is right for one that has
+     neither field; but where the old `from` is actually there it is the
+     record's own word and it is read. Reading a legacy field is not storing
+     one — the same shape as `isHidden`, which reads the column AND the
+     device's list beside it. */
+  const legacy = m.from === undefined ? true : m.from === 'me';
+  return Object.assign({}, m, { mine: m.senderId ? m.senderId === me : legacy });
 }
 
 /** This device's own messages with the server's merged in, oldest first.
