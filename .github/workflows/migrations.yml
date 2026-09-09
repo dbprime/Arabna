@@ -1,0 +1,65 @@
+name: migrations
+
+# ============================================================
+# 652 — the migration runs itself at merge.
+#
+# ⚠️ TWO STAGES, NOT ONE, and the first is the price of the decision. The
+# owner named the cost himself: «a wrong migration lands on production
+# without your ever seeing it». So a pull request SHOWS what has not run
+# and does not run it, and `main` runs it after the merge.
+#
+# ⚠️ AND NEVER FROM A BRANCH. A branch that could execute means everyone
+# who pushes a branch writes on the production database — «main is
+# production» unpicked from behind. It is guarded twice on purpose: the
+# trigger's own branch filter, and the `if` on the job. Either alone would
+# do; neither alone is what this is worth.
+#
+# ⚠️ The step is pinned to a commit, never to `latest` and never to a
+# moving major tag — and the hash was read from the remote at the moment
+# this was written, not recalled.
+#
+# The whole of the logic is in `tools/migrate.sh`, called by both doors,
+# because the same rule written twice in two YAML blocks has two versions
+# two batches later.
+# ============================================================
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+# ⚠️ Two merges a minute apart must not run migrations at the same time,
+# and a queued one must never be cancelled — a cancelled run is a
+# migration that did not happen and says nothing.
+concurrency:
+  group: arabna-migrations-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+
+  show:
+    name: what would run
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - run: bash tools/migrate.sh comment
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+          GH_TOKEN: ${{ github.token }}
+          PR: ${{ github.event.number }}
+
+  run:
+    name: apply on main
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - run: bash tools/migrate.sh apply
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+          COMMIT_SHA: ${{ github.sha }}
