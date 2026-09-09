@@ -1164,7 +1164,15 @@ export function ListingScreen(root, params) {
     openMaps(b.address);
   });
   $('#shareTop').addEventListener('click', () => shareItem(L(b.name), location.href));
-  $('#repBtn').addEventListener('click', () => { S.reportItem(b.id); toast(t('reported'), 'ok'); });
+  /* ⚠️ `kind` NAMES THE THING REPORTED (655 §4.2) — it passed `'report'`,
+     which is not a kind but a description of what happened, and the
+     schema's own comment lists what the column accepts. And the report
+     really reaches the panel now, so a refusal is said rather than
+     answered with «thank you». */
+  $('#repBtn').addEventListener('click', async () => {
+    if (await S.reportItem(b.id, 'business', b.name)) toast(t('reported'), 'ok');
+    else toast(t('somethingWrong'), 'err');
+  });
 
   const sb = $('#saveBtn');
   const paintSave = () => { sb.innerHTML = icon('heart', 22); sb.style.color = S.isSaved(b.id) ? 'var(--gold-bright)' : ''; };
@@ -1194,7 +1202,11 @@ export function ListingScreen(root, params) {
     openReplySheet(btn.dataset.reply, () => go('#/directory/' + b.id))));
   $$('[data-delreply]').forEach(btn => btn.addEventListener('click', () => confirmSheet({
     title: t('delete'), sub: t('ownerReply'), confirmText: t('delete'), danger: true,
-    onConfirm: () => { S.deleteReply(btn.dataset.delreply); toast(t('done'), 'ok'); go('#/directory/' + b.id); },
+    onConfirm: async () => {
+      const r = await S.deleteReply(btn.dataset.delreply);
+      if (r && r.error) { toast(t('somethingWrong'), 'err'); return; }
+      toast(t('done'), 'ok'); go('#/directory/' + b.id);
+    },
   })));
 
   /* ⚠️ AFTER the reviews are in the DOM, never before: the button is drawn
@@ -1207,7 +1219,11 @@ export function ListingScreen(root, params) {
   }));
   $$('[data-delrev]').forEach(btn => btn.addEventListener('click', () => confirmSheet({
     title: t('delete'), sub: t('myReviewOn') + ' ' + L(b.name), confirmText: t('delete'), danger: true,
-    onConfirm: () => { S.deleteReview(btn.dataset.delrev); toast(t('reviewDeleted'), 'ok'); go('#/directory/' + b.id); }
+    onConfirm: async () => {
+      const r = await S.deleteReview(btn.dataset.delrev);
+      if (r && r.error) { toast(t('somethingWrong'), 'err'); return; }
+      toast(t('reviewDeleted'), 'ok'); go('#/directory/' + b.id);
+    }
   })));
 
   $$('[data-timefix]').forEach(btn => btn.addEventListener('click', () => openTimeFix(btn.dataset.timefix)));
@@ -1312,10 +1328,11 @@ export function openReplySheet(reviewId, onSaved) {
     <div class="field"><textarea class="textarea" id="rpTxt">${esc(existing ? existing.text : '')}</textarea></div>
     <button class="btn btn-gold btn-block" id="rpSend">${t('send')}</button>
   `, (panel) => {
-    panel.querySelector('#rpSend').addEventListener('click', () => {
+    panel.querySelector('#rpSend').addEventListener('click', async () => {
       const txt = panel.querySelector('#rpTxt').value.trim();
       if (!txt) { toast(t('required'), 'err'); return; }
-      S.replyToReview(reviewId, txt);
+      const r = await S.replyToReview(reviewId, txt);
+      if (r && r.error) { toast(t('somethingWrong'), 'err'); return; }
       closeSheet();
       toast(t('done'), 'ok');
       if (onSaved) onSaved();
@@ -1479,10 +1496,20 @@ export function openReviewSheet(bizId, onSaved) {
     panel.querySelectorAll('#rateRow button').forEach(b =>
       b.addEventListener('click', () => { rating = +b.dataset.s; paint(); }));
 
-    panel.querySelector('#revSend').addEventListener('click', () => {
+    panel.querySelector('#revSend').addEventListener('click', async () => {
       const txt = panel.querySelector('#revTxt').value.trim();
       if (!txt) { toast(t('required'), 'err'); return; }
-      S.addReview(bizId, rating, txt);
+      /* ⚠️ THE GUARD IS THE DATABASE'S AND IS NOT REPEATED HERE (655 §3.2).
+         `0002` refuses a business owner reviewing their own business, and
+         its reason is the FTC rule of October 2024 on fabricated reviews.
+         This screen's whole duty is to say the reason in words a reader
+         understands — two guards part company one day, and the one in the
+         database is the one that cannot be walked around. */
+      const r = await S.addReview(bizId, rating, txt);
+      if (r && r.error) {
+        toast(r.error === 'ownBusiness' ? t('reviewOwnBiz') : t('somethingWrong'), 'err');
+        return;
+      }
       closeSheet();
       toast(existing ? t('reviewUpdated') : t('reviewThanks'), 'ok');
       if (onSaved) onSaved();
@@ -1955,7 +1982,7 @@ export function ClaimScreen(root, params) {
       <button class="btn btn-gold btn-block" id="cSend">${icon('send', 19)} ${t('claimSend')}</button>
     </div>`;
 
-  $('#cSend').addEventListener('click', () => {
+  $('#cSend').addEventListener('click', async () => {
     const name = $('#cName').value.trim();
     const phone = $('#cPhone').value.trim();
     if (!name || !phone) { toast(t('required'), 'err'); return; }
@@ -1966,7 +1993,10 @@ export function ClaimScreen(root, params) {
        note again every time they open another listing. Approval is the
        admin's decision; the mark describes what the reader did. */
     S.makeBusinessAccount();
-    S.requestClaim(bizId, { name, phone, role: $('#cRole').value, proof: $('#cProof').value.trim() });
+    /* the request really reaches the panel now, so a refusal is said
+       rather than answered with «we received it» (655 §5) */
+    const r = await S.requestClaim(bizId, { name, phone, role: $('#cRole').value, proof: $('#cProof').value.trim() });
+    if (r && r.error) { toast(t('somethingWrong'), 'err'); return; }
     toast(t('claimSent'), 'ok');
     go('#/directory/' + bizId);
   });

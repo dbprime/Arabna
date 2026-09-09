@@ -237,7 +237,7 @@ function openSuggestSheet(kind) {
          trust, and it is the same rule that governs the mosques. -->
     <button class="btn btn-gold btn-block mt-12" id="sgSend">${icon('send', 18)} ${t('send')}</button>
   `, (panel) => {
-    panel.querySelector('#sgSend').addEventListener('click', () => {
+    panel.querySelector('#sgSend').addEventListener('click', async () => {
       const name = panel.querySelector('#sgName').value.trim();
       const addr = panel.querySelector('#sgAddr').value.trim();
       const phone = panel.querySelector('#sgPhone').value.trim();
@@ -250,7 +250,16 @@ function openSuggestSheet(kind) {
       /* The category is set from the door the reader came through, so the
          sender never picks it and never gets it wrong — and `worship`
          makes it non-commercial by the rule in `isNonCommercial`. */
-      S.suggestWorship({ name, address: addr, phone, kind });
+      /* ⚠️ AND A FAILED WRITE DOES NOT SAY «THANK YOU» (655 appendix §1).
+         The thanks is a claim that the suggestion arrived somewhere, and
+         for as long as it landed on the sender's own phone it was not
+         true. It is said only when the row really exists. */
+      const rec = await S.suggestWorship({ name, address: addr, phone, kind });
+      if (!rec) {
+        panel.querySelector('#sgErr').innerHTML =
+          `<div class="err-msg">${icon('alert', 15)} ${t('somethingWrong')}</div>`;
+        return;
+      }
       closeSheet();
       toast(t('sgThanks'), 'ok');
     });
