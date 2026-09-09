@@ -12403,6 +12403,16 @@ approved → `businesses.owner_id`») cannot pass without it.
   which would have let the claimed owner of a seed review their own shop.
   That is the FTC line the policy exists to hold, so both halves are asked.
 
+### And a report asks for an account, for the same reason
+Swept as a CLASS after the suggestion was gated, not met one instance at a
+time. The report used to go to `state.flags` — the reporter's own phone —
+so it needed no server and no identity, and it reached the admin never. It
+is a row now, and **`flags.reporter_id` is the policy's whole hinge**: a
+report with nobody behind it is one nobody can weigh, and an
+unauthenticated write to a shared table is a spam channel. **Both report
+buttons keep their place** — on the business page and on a listing — and the
+gate is at the action, with the intent parked.
+
 ### The guard is the database's, and the screen says the reason
 `0002` refuses a business owner reviewing their own business, and its reason
 is a legal line: the FTC rule of October 2024. **The screen does not guard it

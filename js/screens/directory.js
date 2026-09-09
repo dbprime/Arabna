@@ -1170,6 +1170,14 @@ export function ListingScreen(root, params) {
      really reaches the panel now, so a refusal is said rather than
      answered with «thank you». */
   $('#repBtn').addEventListener('click', async () => {
+    /* ⚠️ AND IT ASKS FOR AN ACCOUNT (655 §4). The report used to go to
+       `state.flags` — the reporter's own phone — so it needed no server and
+       no identity, and it reached the admin never. It is a ROW now, and
+       `flags.reporter_id` is the policy's whole hinge: a report with nobody
+       behind it is a report nobody can weigh, and an unauthenticated write
+       to a shared table is a spam channel. The BUTTON stays where it is;
+       the gate is at the action, and the intent is parked. */
+    if (!S.requireTier(1, location.hash, go)) return;
     if (await S.reportItem(b.id, 'business', b.name)) toast(t('reported'), 'ok');
     else toast(t('somethingWrong'), 'err');
   });

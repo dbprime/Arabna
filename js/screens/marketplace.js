@@ -334,6 +334,10 @@ export function ListingDetailScreen(root, params) {
 
   const rp = $('#repBtn');
   if (rp) rp.addEventListener('click', async () => {
+    /* ⚠️ an account, for the reason written on the directory's own report
+       button: the report is a row now, and `reporter_id` is what lets it be
+       weighed at all (655 §4) */
+    if (!S.requireTier(1, location.hash, go)) return;
     /* the kind names the thing reported, and the report really reaches
        the panel now, so a refusal is said (655 §4.2) */
     if (await S.reportItem(c.id, 'classified', c.title)) toast(t('reported'), 'ok');
