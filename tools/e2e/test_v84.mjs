@@ -445,7 +445,7 @@ console.log('--- 7: the rule the third repetition earned ---');
   /* ⚠️ COUNTED FROM THE SCHEMA, never from a list written here — the same
      reason `run.sh` derives its suites. A table added tomorrow with no
      writer and no line turns this red the day it is created. */
-  const tables = [...sqlAll().matchAll(/create table public\.([a-z_]+)/g)].map(m => m[1]);
+  const tables = [...sqlAll().matchAll(/create table (?:if not exists )?public\.([a-z_]+)/g)].map(m => m[1]);
   ok('7.1 the schema’s tables are read, not listed', tables.length >= 17, String(tables.length));
 
   const js = ['js/store.js', 'js/app.js', 'js/ui.js']
@@ -468,8 +468,19 @@ console.log('--- 7: the rule the third repetition earned ---');
   const said = t => String(rows.get(t) || '');
   const claimsWritten = t => /مكتوبٌ اليوم/.test(said(t));
   const named = t => /`\d{3}`/.test(said(t)) || /لا دفعةَ مجدولة/.test(said(t));
-  const wrong = tables.filter(t => claimsWritten(t) ? !writes.has(t) : !named(t));
-  ok('7.3 …saying «written today» only where a writer exists, and naming a batch otherwise',
+  /* ⚠️ A THIRD CATEGORY, ADDED IN `652` AND NAMED HERE. The rule was
+     written when every writer was in `js/`, so it knew two answers: «the
+     app writes it today» and «a batch will wire it». `public.migration_log`
+     is neither — the migration RUNNER writes it and the app must never so
+     much as name it. Squeezing it into «a batch will wire it» would pass
+     this check and read, six months from now, as an invitation to wire it
+     from `js/` — which is precisely the harm. So the row says who writes
+     it, and the check asserts the app does NOT. */
+  const runnerWritten = t => /يكتبه المُشغِّل/.test(said(t));
+  const wrong = tables.filter(t => claimsWritten(t) ? !writes.has(t)
+                                 : runnerWritten(t) ? writes.has(t)
+                                 : !named(t));
+  ok('7.3 …saying «written today» only where a writer exists, naming a batch otherwise, and the runner\'s own table written by nobody in js/',
      wrong.length === 0, wrong.join(', '));
   /* the three that really are written, and the day a fourth is wired its
      line has to move with it */
@@ -575,7 +586,7 @@ console.log('--- 11: every field a screen reads has a source on the server ---')
   const sql = sqlCode();
   const colsOf = (table) => {
     const set = new Set();
-    const m = new RegExp('create table public\\.' + table + '\\s*\\(([\\s\\S]*?)\\n\\);').exec(sql);
+    const m = new RegExp('create table (?:if not exists )?public\\.' + table + '\\s*\\(([\\s\\S]*?)\\n\\);').exec(sql);
     if (m) for (const line of m[1].split('\n')) {
       const c = /^\s*([a-z_]+)\s+[a-z]/.exec(line);
       if (c) set.add(c[1]);
@@ -589,7 +600,7 @@ console.log('--- 11: every field a screen reads has a source on the server ---')
     return set;
   };
 
-  const tables = [...sql.matchAll(/create table public\.([a-z_]+)/g)].map(m => m[1]);
+  const tables = [...sql.matchAll(/create table (?:if not exists )?public\.([a-z_]+)/g)].map(m => m[1]);
   const D = await import(pathToFileURL(ROOT + 'js/data.js').href);
   /* the pairing is the table's own name in capitals — derived, not declared */
   const paired = tables.filter(t => Array.isArray(D[t.toUpperCase()]));

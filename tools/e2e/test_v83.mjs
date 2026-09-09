@@ -84,7 +84,7 @@ console.log('--- 1: a column that named itself «last updated» and never moved 
   /* ⚠️ DERIVED FROM THE SCHEMA, never from a written list of seventeen
      names: a table added tomorrow with the column and without the trigger
      has to turn this red on its own. */
-  const tables = [...sql.matchAll(/create table public\.(\w+) \(([\s\S]*?)\n\);/g)]
+  const tables = [...sql.matchAll(/create table (?:if not exists )?public\.(\w+) \(([\s\S]*?)\n\);/g)]
     .filter(m => /^\s*updated_at\s+timestamptz/m.test(m[2])).map(m => m[1]);
   ok('1.1 every table in the schema carries `updated_at`', tables.length === 17,
      tables.length + ' tables');

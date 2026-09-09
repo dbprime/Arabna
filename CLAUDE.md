@@ -11972,6 +11972,318 @@ no edit, so no reversal was left standing for the net to find at segment
 twenty.
 
 
+## The migration runs itself at merge (652)
+
+⚠️ **This file closes its own group, and its group is itself** — it adds a
+mechanism that executes SQL against the **production database**, which is
+a stronger reason than any of the three the 5 September decision names.
+
+⚠️ **No version raise, and it is measured rather than assumed:** the batch
+touches `.github/`, `supabase/`, `tools/` and `docs/` and **not one byte of
+`js/` or `styles/`** — `git status` says so — so no line reaches a reader.
+Rule `615`, and the precedent of `180`, `185`, `210`, `344` and `560`.
+
+### The fault is measured, and it has already cost twice
+`docs/الحالة.md` §1.ج records it: of the first seven migrations **two had
+silently never run**. `0005` answered
+«Could not find the function public.admin_find_users» and `0004` measured
+`tier2_by = 0` rows in `information_schema.columns` — found in `630` by
+checking the live host, weeks after both had been merged and marked done.
+
+**There is no deploy path that applies a migration.** A file is written into
+the repository, merged with its batch, and the owner runs what he is handed,
+letter for letter, in the SQL editor. **So the repository and the database
+could disagree for weeks with no signal anywhere** — and the rule this
+project already carries («a migration the closing line does not name by its
+file is a migration that did not happen») is a discipline on the WRITER, not
+a mechanism. This is the mechanism.
+
+### ⚠️ NOT the official `supabase` CLI, and the reason is measured
+It expects a fourteen-digit timestamp prefix — `20260908143000_name.sql` —
+where ours are `0001_schema.sql`, and it keeps a ledger of its own that
+knows nothing of the seven already executed by hand.
+
+> **So it drags two problems behind it that are not ours: a naming
+> convention against our own, and a ledger we do not own. What we need from
+> it is one line out of the hundred it does.**
+
+- **Not one file is renamed**, so every reference in `CLAUDE.md`, in `docs/`
+  and in the specification files stays true. ⚠️ **A migration number is a
+  key, the way a listing's id is** — the sentence `620`'s appendix already
+  wrote when it refused to renumber `0006`.
+- **The ledger is our table.** We seed it with what we know.
+- ⚠️ **And the price is said and not hidden: we maintain these lines now.**
+  It is accepted because `tools/migrate.sh` is one file and it is ours.
+- **Deferred, not refused** — the day our names carry a timestamp for some
+  other reason, it is looked at again.
+
+### The seed is typed out, and it is seven and not eleven
+⚠️ **The single most dangerous line in the batch**, and the spec says why:
+a seed derived from the folder at run time would mark a file «executed»
+that has never been executed, **and a migration skipped in silence is worse
+than one forgotten — a forgotten one is still waiting, a skipped one is
+closed for ever.** So the names are typed into `0012_migration_ledger.sql`
+and a file that is not in that list runs.
+
+⚠️ **AND THE COUNT CONTRADICTED THE SPECIFICATION, WHICH SAID ALL OF THEM
+HAD RUN.** Measured against the repository's own record instead: §1.ج marks
+`0001`–`0007` executed and `0008`–`0011` still «تُنفَّذ بيد مالك البرنامج
+بعد الدمج». **Only what is measured as run is seeded.**
+
+- **And the four outstanding ones are every one of them re-runnable with no
+  effect** — measured, not assumed: `add column if not exists` ×17,
+  `create or replace function` ×2, `drop trigger if exists` before each
+  `create trigger` ×18, and one `insert … on conflict do nothing`. So if
+  they HAVE been run by hand since, the runner repeats them and nothing
+  moves. ⚠️ **The asymmetry is the whole argument: a needless repeat costs
+  nothing, and a silent skip costs everything.**
+- ⚠️ **So the runner's first run pays the batch back at once**: it executes
+  `0008`, `0009`, `0010` and `0011` itself — the four debts that were
+  waiting on the owner's hand.
+- **The null `commit_sha` is the mark of «run by hand in the SQL editor»**,
+  which is what all seven were. No fourth column was added to say it.
+- ⚠️ **And the seed is held honest by a TWO-WAY agreement, not by care.**
+  `test_v86 · 3.5` matches the list in `0012` against the rows §1.ج marks
+  ✓ and does not mark «بالمُشغِّل». A row marked done and not seeded is
+  re-run needlessly; a name seeded that the record does not mark executed
+  is closed for ever. **Both are red.** From this batch the log has two
+  eras and the word in the cell is the difference.
+
+### Two stages, and the first is the price of the decision
+The owner named the cost himself: **«a wrong migration lands on production
+without your ever seeing it».**
+
+```
+on a pull request   READ what has not run, print it, and never run it
+on `main` after the merge   run it
+```
+
+- ⚠️ **Never from a branch, and guarded twice on purpose**: the trigger's
+  own `branches: [main]`, and an `if` on the job. **A branch that could
+  execute means everyone who pushes a branch writes on the production
+  database — «`main` is production» unpicked from behind.**
+- ⚠️ **The file and its record are ONE transaction**, which is stronger than
+  recording afterwards: `psql` runs `-f` and `-c` in the order given and
+  `--single-transaction` wraps both. **A file that succeeded and failed to
+  be recorded runs again next time; a file recorded without succeeding is
+  closed for ever.**
+- ⚠️ **`ON_ERROR_STOP=1` is not decoration**: without it psql walks past a
+  failed statement and exits 0 — a migration failing in silence, which is
+  the one outcome worse than a migration forgotten, **because it looks
+  done.**
+- **And there is no rollback, said plainly rather than implied.** No `down`
+  is written for any migration we have. **The protection is the display
+  before execution, never a reversal after it.**
+
+### One script, called by both doors
+The whole of the logic is in `tools/migrate.sh` and the workflow is two
+jobs of six lines each. ⚠️ **The same rule written twice in two YAML blocks
+has two versions two batches later, and the one nobody edits is the one
+that runs on production** — the `esc()` fault, in a new costume.
+
+### ⚠️ And the runner was measured against a real PostgreSQL, not only read
+A structural suite cannot say whether a runner runs. A cluster was started
+in the container and every property was measured on it:
+
+```
+0012 applies                     8 rows · RLS armed · 0 policies · acl: owner only
+anon reads the ledger            ERROR: permission denied for table migration_log
+anon marks a migration executed  ERROR: permission denied
+authenticated, the same          ERROR: permission denied
+0012 re-run                      8 rows before · 8 after · the sha unchanged
+first run, no ledger             creates it, seeds 7, records itself, runs the rest
+second run, nothing new          «لا هجرةَ جديدة.»
+a migration that fails halfway   exit 3 · the half-written table: 0 rows created
+                                 · not recorded · STILL pending on the next run
+the secret in a SUCCESSFUL log   0
+the secret in a FAILED log       0
+a missing key                    list/comment exit 0 · apply exits 1
+```
+
+⚠️ **The last pair is a decision, not an accident.** A pull request from a
+fork carries no secret and that is not a failure; **a migration that does
+not run on `main` must never look done.**
+
+### ⚠️ And running it found a fault that reading it had not
+The very first invocation printed «جدولُ السجلّ غير موجود بعد» and **exited
+0** — because the database was unreachable and `ledger_exists` read the
+connection failure as «the table is not there».
+
+> **So the pull request would have commented «لا هجرةَ معلَّقة» and gone
+> green, having never asked the server at all.**
+
+**A failure read as an answer is the swallowed failure this whole batch
+exists to forbid**, and it was in the batch's own runner. The connection is
+proven with `select 1` before anything is concluded from its silence, and
+all three verbs now fail loudly on an unreachable server. `test_v86 · 6.4`
+is what keeps it there.
+
+### The key, and what may never enter the repository
+- **`SUPABASE_DB_URL`, read from the GitHub secret by its name alone.**
+- ⚠️ **No shell trace anywhere in the runner**, and that is a security line
+  and not a style one: **the run log of a public repository is readable by
+  anyone who opens the page**, and a trace prints the command with the
+  password in it. Measured clean after a successful run and after a failed
+  one.
+- ⚠️ **The wide sweep is DERIVED FROM `git ls-files`, never from a list** —
+  this batch's own argument applied to its own check. It is a **different
+  subject** from `v75 · 3.1`, which asks what reaches the BROWSER over five
+  named files; this asks what is in the **repository** at all, because a
+  database credential never goes near a browser and must never enter here
+  either. The two generated builds are excluded with the reason written:
+  they are built FROM the sources, so a secret can only reach them through
+  one — and their base64 module payloads carry `eyJ`-shaped runs by
+  arithmetic.
+- ⚠️ **The ready-made step is pinned to a 40-character commit**, and the
+  hash was **read from the remote at the moment it was written**, never
+  recalled: `actions/checkout@3d3c42e5…` (v7.0.1). A moving major tag is
+  re-pointed by its author and the change arrives without anybody here
+  seeing it.
+- ⚠️ **And a queued run is never cancelled.** `cancel-in-progress: false`,
+  because a cancelled run is a migration that did not happen and says
+  nothing about it.
+
+### The ledger table is the one table in the schema that opens no door
+⚠️ **Armed with row level security and carrying no policy at all — which is
+the point, not an oversight.** Every other table opens a door for somebody;
+this one opens none. **The publishable key ships on every phone, and a
+reader who could write this table could mark a migration «executed» and
+close it for ever.** The grants are withdrawn from `anon` and
+`authenticated` as well, so those two do not merely get an empty answer —
+they do not reach the table. **And `test_v86 · 4.5` asserts the app never
+so much as names it**: the runner is its only writer, for ever.
+
+### ⚠️ And the same class had a SECOND instance, found by sweeping and not by waiting
+`6.4` closed the first — an unreachable server read as «the table is not
+there». **The rule this project already carries is that a class is swept,
+never met one instance at a time** (`570`, `572`, `645`), so the runner was
+read again for the SHAPE rather than for that example. Three more places
+could read a failure as an answer:
+
+```
+P="$(pending || true)"    ×2   a failed read of the ledger → «no pending migrations»
+ledger_exists()                anything but «t» → «the table is not there»
+migrations()                   an empty or unreadable folder → «nothing to run»
+```
+
+⚠️ **Every one of them ends in the same sentence on a pull request — «لا
+هجرةَ معلَّقة» over a server that was never asked — in the runner whose
+whole subject is that a failure is announced and never swallowed.** All
+three are closed: `pending` fails loudly, only `t` or `f` counts as an
+answer about the ledger, and an empty folder listing is refused. **The one
+`|| true` left in the file is inside the comment forbidding it**, and
+`v86 · 6.5` reads the code with comments stripped.
+
+### ⚠️ AND THE THIRD INSTANCE TAUGHT THE LESSON THE FIRST TWO HAD NOT
+Sweeping the class was right and was **not enough**: the fix to
+`migrations()` was written and **its consumer was not followed**.
+
+```
+for f in $(migrations)      a command substitution in a FOR-LIST has its
+                            exit code swallowed — `set -e` never sees it
+```
+So the folder guard printed its warning to stderr and the run said
+**«لا هجرةَ جديدة.» and exited 0** — the swallowed failure surviving one
+level further out than its own repair.
+
+⚠️ **And assigning it was still not enough, which is the real finding.**
+`list="$(migrations)" || …` was written, measured, **and still exited 0** —
+because **bash disables `set -e` inside any command whose result is
+tested**, and `pending` is always called `P="$(pending)" || { … }`. So `-e`
+was off for every line inside it.
+
+> **`set -e` is a convenience at the top level and a guarantee nowhere.
+> What is tested explicitly is what holds.**
+
+Both reads inside `pending` now carry `|| return 1`, and
+`v86 · 6.6b` and `6.7a` assert the SHAPE — no substitution left in a
+for-list, and neither read left to `set -e`.
+
+⚠️ **Three instances of one class in one batch, and the second and third
+were found by re-reading the finished code rather than by any test.** The
+sweep rule (`570`, `572`, `645`) says to sweep the class; **this adds that
+a fix is followed to the value's consumer, and that a shell guarantee is
+measured before it is relied on.**
+
+### ⚠️ And the batch's own table walked through a blind spot in three suites
+Measured while writing it, and it is bigger than this batch: the rules that
+ask **«what tables exist»** were written
+`/create table public\.([a-z_]+)/g` — and `public.migration_log` is created
+`create table if not exists public.migration_log`.
+
+```
+narrow pattern  → []
+widened         → ["migration_log"]
+```
+
+> **So a table created with three extra words was invisible to «every table
+> has row level security» (`v73`), to the column reader (`v83`), and to
+> «every table has a writer or a named line» (`v84 · 7`).** A rule any
+> future migration escapes by writing `if not exists` is not a rule.
+
+**Widened at all five sites, each keeping its own subject.** Proven in the
+direction that matters: a second `if not exists` table added with no line
+anywhere turns `v84 · 7.2` and `7.3` red — **and with the narrow pattern
+restored the same table produces `0 FAIL`, green over a table nobody
+declared.**
+
+### ⚠️ And the rule could not say the truth about it, so it gained a third category
+`v84 · 7` knew two answers, both written when every writer was in `js/`:
+«the app writes it today», and «a batch will wire it». **`migration_log` is
+neither** — the runner writes it, and the app must never so much as name
+it. Squeezing it into «a batch will wire it» would have passed the check
+and read, six months from now, **as an invitation to wire it from `js/`**,
+which is exactly the harm. So the row says who writes it and the check
+asserts **the app does not** — and putting a `sb.from('migration_log')`
+into `js/store.js` while the row stands turns `7.3` and `7.4` red.
+
+### What the owner does — once, and it is not programming
+```
+1) Supabase → Project Settings → Database → Connection string → URI
+2) GitHub → Settings → Secrets and variables → Actions → New repository secret
+3) Name: SUPABASE_DB_URL     Value: the URI from step 1
+4) Say «حطّيته» — and never the value
+```
+⚠️ **And nothing else. No reconciling, no renaming, no command typed.**
+
+### Out of scope, explicitly
+```
+rolling a migration back      no `down` exists; the protection is the display before
+deploying the app             Vercel does it and is untouched
+a staging database            a known gap: production is the only place today
+the official supabase CLI     deferred, not refused
+```
+
+### And the group closes — the net, run on segments over one frozen tree
+```
+168 runs · 84 suites · 8,056 assertions · zero red · zero crash
+```
+Twenty-eight segments over `e29c3c4`, `HEAD` re-checked at the head of each —
+the runner exits 2 on a moved character or a dirty tree, and none did —
+**84 present and 84 run, each exactly twice, and no result borrowed.** The
+verdict is READ from the index and never summed:
+`NET COMPLETE — every derived suite ran on both builds in this index`.
+
+⚠️ **The arithmetic closes itself: 7,964 + 92 (`v86` × 2) = 8,056**, and it
+was written down BEFORE the run rather than after it. **Not one older suite
+moved by a single assertion** — `v73` 25, `v83` 56 and `v84` 58 before and
+after — which is what widening a pattern should look like: it changes what a
+check can SEE, never how many checks there are.
+
+⚠️ **AND THE NET WAS RESTARTED FROM THE TOP THREE TIMES, ALL THREE MY OWN
+DOING.** Once because I edited the state file **while the net was running** —
+a fix makes a new tree, and a suite not run on THIS tree is a suite not run —
+and twice more for the second and third instances of the swallowed-failure
+class. **Every restart was cheap because it was caught early; the one that
+would have been expensive is the one that ships.**
+
+⚠️ **And a fault in my own driver is recorded rather than smoothed:** a
+follow-on segment runner waited on `pgrep -f drive.sh` to clear — and its own
+command line contains `drive.sh`, so it waited on itself for ever. Found by
+measuring the process table rather than by trusting that it had started. **A
+pattern that matches the watcher as well as the watched is not a wait, it is
+a deadlock.**
+
 ## Known open items
 - **The header image is still far larger than its box.** V.04.7 replaced
   the 831/837 KB lockups with the cropped marks at **333/338 KB** — 60% off
