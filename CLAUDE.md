@@ -12465,6 +12465,15 @@ suggester's own phone — **and the screen said «شكراً».**
   for either, and `mintId('u')` is struck — **five kinds struck in one batch**,
   which is what `v83`'s two-way registry is for.
 - ⚠️ **And a failed write does not say «thank you».**
+- ⚠️ **AND IT ASKS FOR AN ACCOUNT, which the net found and is a real change.**
+  Before this batch the suggestion went to `state.extraBusinesses` — that
+  is, NOWHERE — so «the door is open to a visitor» was true and meant
+  nothing. It opens onto a SHARED TABLE now, and an unauthenticated write to
+  one is a spam channel with nobody behind it. The appendix's own acceptance
+  test says «AN ACCOUNT suggests a masjid», which is what this is. **The
+  DOOR is untouched and still stands for a visitor**, exactly as
+  `#/advertise` does: the gate is at the action, and `requireTier` parks the
+  intent so they land back on `#/prayer` after signing up.
 
 ### THE RULE THE APPENDIX LEAVES BEHIND
 `648`'s log carried the signal and nobody read it — «the prefixes `u` and

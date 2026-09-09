@@ -250,6 +250,17 @@ function openSuggestSheet(kind) {
       /* The category is set from the door the reader came through, so the
          sender never picks it and never gets it wrong — and `worship`
          makes it non-commercial by the rule in `isNonCommercial`. */
+      /* ⚠️ AND IT ASKS FOR AN ACCOUNT (655 appendix §1). Before this batch
+         the suggestion went to `state.extraBusinesses` — that is, NOWHERE —
+         so «the door was open to a visitor» was true and meant nothing. It
+         opens onto a SHARED TABLE now, and an unauthenticated write to one
+         is a spam channel with nobody behind it. The appendix's own
+         acceptance test says «AN ACCOUNT suggests a masjid», which is what
+         this is.
+         ⚠️ And the door itself stays visible to a visitor, exactly as
+         `#/advertise` does: the gate is at the action, and `requireTier`
+         parks the intent so they land back here after signing up. */
+      if (!S.requireTier(1, '#/prayer', go)) { closeSheet(); return; }
       /* ⚠️ AND A FAILED WRITE DOES NOT SAY «THANK YOU» (655 appendix §1).
          The thanks is a claim that the suggestion arrived somewhere, and
          for as long as it landed on the sender's own phone it was not
