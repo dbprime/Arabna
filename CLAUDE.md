@@ -12254,6 +12254,36 @@ a staging database            a known gap: production is the only place today
 the official supabase CLI     deferred, not refused
 ```
 
+### And the group closes — the net, run on segments over one frozen tree
+```
+168 runs · 84 suites · 8,056 assertions · zero red · zero crash
+```
+Twenty-eight segments over `e29c3c4`, `HEAD` re-checked at the head of each —
+the runner exits 2 on a moved character or a dirty tree, and none did —
+**84 present and 84 run, each exactly twice, and no result borrowed.** The
+verdict is READ from the index and never summed:
+`NET COMPLETE — every derived suite ran on both builds in this index`.
+
+⚠️ **The arithmetic closes itself: 7,964 + 92 (`v86` × 2) = 8,056**, and it
+was written down BEFORE the run rather than after it. **Not one older suite
+moved by a single assertion** — `v73` 25, `v83` 56 and `v84` 58 before and
+after — which is what widening a pattern should look like: it changes what a
+check can SEE, never how many checks there are.
+
+⚠️ **AND THE NET WAS RESTARTED FROM THE TOP THREE TIMES, ALL THREE MY OWN
+DOING.** Once because I edited the state file **while the net was running** —
+a fix makes a new tree, and a suite not run on THIS tree is a suite not run —
+and twice more for the second and third instances of the swallowed-failure
+class. **Every restart was cheap because it was caught early; the one that
+would have been expensive is the one that ships.**
+
+⚠️ **And a fault in my own driver is recorded rather than smoothed:** a
+follow-on segment runner waited on `pgrep -f drive.sh` to clear — and its own
+command line contains `drive.sh`, so it waited on itself for ever. Found by
+measuring the process table rather than by trusting that it had started. **A
+pattern that matches the watcher as well as the watched is not a wait, it is
+a deadlock.**
+
 ## Known open items
 - **The header image is still far larger than its box.** V.04.7 replaced
   the 831/837 KB lockups with the cropped marks at **333/338 KB** — 60% off
