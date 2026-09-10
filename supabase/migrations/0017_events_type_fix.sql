@@ -1,0 +1,51 @@
+-- 0017 — the type says what the source said, not what the venue suggests.
+--
+-- ⚠️ NO `||` AND NO `*` ANYWHERE IN THIS FILE, and that forbids the block
+-- comment as well as `count(*)`: the SQL editor's paste field drops both
+-- characters — measured twice — so every comment here is a line comment.
+--
+-- ============================================================
+-- WHY THIS FILE EXISTS AND `0016` WAS NOT EDITED
+-- ============================================================
+-- `0016` entered the Ismaili Center conversation with `type = 'lecture'`,
+-- which the app prints as «محاضرات ودروس دينيّة» — a religious lesson.
+--
+-- The report of 8 September says the opposite in its own words: the
+-- subject was NOT published, the two speakers are an artist and a curator,
+-- and «the seminar is Islamic in its VENUE, not in its SUBJECT, and that
+-- is written down rather than hidden». The record's own body text, in
+-- `0016` and unchanged, says the same: «موضوع الندوة لم ينشره المنظّم».
+--
+-- So the type claimed a religion nobody stated. `EVENT_TYPES` in
+-- `js/data.js` carries eleven, and `community` is the one that is true
+-- without claiming: it says a gathering and asserts no subject.
+--
+-- ⚠️ AND `0016` IS NOT EDITED, BECAUSE IT HAS ALREADY RUN. It was applied
+-- to production by the runner on `2ee59f8` and its row stands in
+-- `public.migration_log`. Editing it would not re-run it, and would leave
+-- the repository's text disagreeing with what the database received —
+-- which is worse than the fault, because the file would then lie to
+-- everyone who reads it.
+--
+--     AN EXECUTED MIGRATION IS NOT EDITED. WHAT COMES AFTER IT IS
+--     WRITTEN.
+--
+-- `0016` carries one added comment line pointing here, and not one of its
+-- statements moves.
+--
+-- ============================================================
+-- IDEMPOTENT, AND NARROW BY CONSTRUCTION
+-- ============================================================
+-- The `and type = 'lecture'` is not decoration. A re-run after the fix
+-- matches nothing and changes nothing, and — more to the point — if a
+-- human corrects the row by hand in the SQL editor before this lands, the
+-- file does not overwrite their work with a second opinion.
+--
+-- One row is expected to change. Measured on PostgreSQL 16 against
+-- `0001`…`0016` applied in order from empty, with the two events of
+-- `0016` present: 1 row, and the second event untouched.
+
+update public.events
+   set type = 'community'
+ where external_id = 'wk-2026-10-02-in-conversation-rana-begum'
+   and type = 'lecture';

@@ -142,6 +142,88 @@ console.log('--- 2: the shape of a weekly insert ---');
   const withFeatured = inserts.filter(i => /\bfeatured\b/.test(i.sql));
   ok('2.7 no weekly insert claims `featured` — that pin is sold, not editorial',
      withFeatured.length === 0, withFeatured.map(i => i.file).join(' '));
+
+  /* ⚠️ THE TYPE SAYS WHAT THE SOURCE SAID, NEVER WHAT THE VENUE SUGGESTS —
+     and the eleven are DERIVED from `js/data.js`, never written here. A
+     hand-written list would age the day a twelfth is defined, and would
+     also have to be edited to accept a type that is simply WRONG.
+
+     ⚠️ THE FAULT IS MEASURED AND WAS LIVE. `0016` entered the Ismaili
+     Center conversation as `lecture` — the app prints «محاضرات ودروس
+     دينيّة» — while the record's own body says «موضوع الندوة لم ينشره
+     المنظّم». The type claimed a religion nobody stated. `0017` sets it
+     to `community`, which is true without claiming.
+
+     ⚠️ AND IT READS EVERY WRITE, NOT ONLY THE INSERTS. `0017` is an
+     `update`, so a check that walked the inserts alone would pass over
+     the one file in the repository whose whole subject is this column. */
+  const TYPES = [...read('js/data.js')
+    .match(/export const EVENT_TYPES\s*=\s*\[[\s\S]*?\n\];/)[0]
+    .matchAll(/id:\s*["']([a-z]+)["']/g)].map(m => m[1]);
+  ok('2.8 the eleven types are derived from js/data.js, not written here',
+     TYPES.length >= 5 && TYPES.includes('community'), TYPES.length + ': ' + TYPES.join(' '));
+
+  /* positional: the column list in order, then the values split on
+     TOP-LEVEL commas with the same quote-awareness `statements` needs. */
+  const topSplit = (t) => {
+    const out = []; let d = 0, q = false, start = 0;
+    for (let i = 0; i < t.length; i++) {
+      const c = t[i];
+      if (q) { if (c === "'") { if (t[i + 1] === "'") i++; else q = false; } }
+      else if (c === "'") q = true;
+      else if (c === '(') d++;
+      else if (c === ')') d--;
+      else if (c === ',' && d === 0) { out.push(t.slice(start, i)); start = i + 1; }
+    }
+    out.push(t.slice(start));
+    return out.map(x => x.trim());
+  };
+  const written = [];
+  for (const i of inserts) {
+    const cols = topSplit((i.sql.match(/insert\s+into\s+public\.events\s*\(([\s\S]*?)\)\s*values/i) || [0, ''])[1]);
+    const at = cols.indexOf('type');
+    if (at < 0) continue;
+    const vals = topSplit((i.sql.match(/values\s*\(([\s\S]*)\)\s*(on\s+conflict|;)/i) || [0, ''])[1]);
+    const v = (vals[at] || '').match(/^'([^']*)'$/);
+    if (v) written.push({ file: i.file, type: v[1] });
+  }
+  for (const f of files) {
+    const code = sqlCode(read(MIG + f));
+    for (const st of statements(code)) {
+      if (!/^update\s+public\.events\b/i.test(st.trim())) continue;
+      const m = st.match(/set\s+type\s*=\s*'([^']*)'/i);
+      if (m) written.push({ file: f, type: m[1] });
+    }
+  }
+  ok('2.9 there is at least one type written to measure', written.length > 0,
+     written.map(w => w.file + '=' + w.type).join(' '));
+  const strayType = written.filter(w => !TYPES.includes(w.type));
+  ok('2.10 no migration writes a type outside EVENT_TYPES — a type the app cannot draw',
+     strayType.length === 0, strayType.map(w => w.file + '=' + w.type).join(' '));
+
+  /* ⚠️ AND THE CORRECTION ITSELF IS NARROW, or it is a second opinion
+     written over somebody's hand: `and type = 'lecture'` means a re-run
+     matches nothing, and a row already corrected by hand is left alone.
+     Measured on PostgreSQL 16 over `0001`…`0016` from empty: UPDATE 1,
+     then UPDATE 0, with the second event's `festival` untouched. */
+  const FIX = '0017_events_type_fix.sql';
+  if (files.includes(FIX)) {
+    const code = sqlCode(read(MIG + FIX));
+    ok('2.11 the type fix is narrowed by the value it replaces, so a re-run changes nothing',
+       /and\s+type\s*=\s*'lecture'/i.test(code));
+    ok('2.12 …and it names one event by its external id, never a whole table',
+       /where\s+external_id\s*=\s*'wk-/i.test(code));
+  }
+
+  /* ⚠️ AN EXECUTED MIGRATION IS NOT EDITED — WHAT COMES AFTER IT IS
+     WRITTEN. `0016` ran on production on `2ee59f8` and its row stands in
+     `public.migration_log`; editing it would not re-run it and would
+     leave the repository disagreeing with the database. So the reader of
+     `0016` alone is told a correction follows, in a COMMENT. */
+  ok('2.13 `0016` still writes the type it really applied — the correction is a later file, not an edit',
+     /'lecture'/.test(sqlCode(read(MIG + '0016_events_2026_09_10.sql'))));
+  ok('2.14 …and `0016` points its reader at the file that corrects it',
+     /0017/.test(read(MIG + '0016_events_2026_09_10.sql')));
 }
 
 /* ============================================================

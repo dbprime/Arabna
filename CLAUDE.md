@@ -1024,6 +1024,39 @@ as it stands in the repository was not run to the letter but as a
 `concat` copy; the difference changes no meaning, and it is written in the
 log so nobody reads the server as disagreeing with the repository.
 
+### An executed migration is not edited — what comes after it is written
+The rule every migration ledger in the world earns, and `CLAUDE.md` earns
+it here in words after `0016` shipped a wrong event type (`670`'s
+appendix). `0016` had already been applied to production by the runner on
+`2ee59f8` and its row stood in `public.migration_log`.
+
+> **A migration that has run is not edited. The correction is a NEW file.**
+> Editing it does not re-run it, and it leaves the repository's text
+> disagreeing with what the database received — **which is worse than the
+> fault, because the file then lies to everyone who reads it.**
+>
+> **And the edited file gains ONE comment line pointing at its
+> correction** — not one statement moves. Whoever reads `0016` alone has
+> to know a correction follows it.
+
+`test_v88 · 2.13` and `2.14` are the guard: the old file still writes what
+it really applied, and it names the file that corrects it.
+
+### Absence of evidence is not evidence of absence
+⚠️ **And no inference is ever written in a column whose name is
+«measured».** Measured in `670`'s appendix: `docs/الحالة.md` said of
+`0009` «⚠️ **and not one NOTICE**, so it is the only one of the four that
+had never been executed». The premise was true and the conclusion was
+invented — **the file is all `create or replace function` and
+`drop trigger if exists`, so it contains no statement that could print a
+NOTICE at all**, executed before or not. The silence measured nothing.
+
+**It had in fact been executed by hand on 8 September and its output was
+measured — `17 · 1 · 2`.** So the record carried, for two batches, a
+confident sentence that was false, in the one document a fresh session
+reads first. **A measurement and an inference do not go in one cell**, and
+where they must stand together the inference says it is one.
+
 ### Never wait on a file with a loop
 No `until grep … do sleep`, and no waiting for a marker to appear in a
 file. **Run the command in the foreground and read its output**, or run it
@@ -12962,8 +12995,13 @@ time: **7,158s on the single-file build and 6,704s on the module one.**
 ⚠️ **This file closes its own group, and its group is itself** — it touches
 `js/store.js`, one of the three the 5 September decision names. **It adds a
 suite, so the count in `docs/الحالة.md` moves with it. The version is
-raised — §ب is behaviour that reaches the browser. And there is no
-migration.**
+raised — §ب is behaviour that reaches the browser.**
+
+⚠️ **AND IT CARRIES ONE MIGRATION AFTER ALL, WHICH ITS OWN HEAD FIRST
+DENIED.** The batch was written with none and its appendix brought one:
+**executed by the runner after the merge: `0017_events_type_fix.sql`.** The
+head is corrected rather than left standing, because a head that says «no
+migration» is exactly what stops a reader looking for one.
 
 ### Why the batch exists, in the owner's own words
 > **«Every time I ask you for a check you come back with new problems. Why
@@ -13181,6 +13219,134 @@ BEFORE the net rather than met at segment twenty: the suites reading
 of the two changed functions. That pre-run found `v76 · 2.2` and cost eight
 suites instead of a whole net. **`645`, `650` and `652` each paid for that
 lesson; this is the first batch in the run of them that paid nothing.**
+
+### The appendix — three corrections in the record, and one in a row that had shipped
+
+⚠️ **It runs inside `670`, carries no queue number of its own, and it is
+what put a migration on a batch whose head said it had none.**
+
+#### The type claimed a religion nobody stated
+`0016` entered `wk-2026-10-02-in-conversation-rana-begum` as
+`type = 'lecture'`, which the app prints as **«محاضرات ودروس دينيّة»** — a
+religious lesson.
+
+⚠️ **And the report of 8 September says the opposite in its own words**: the
+subject was **not published**, the two speakers are an artist and a curator,
+and «**the seminar is Islamic in its VENUE, not Arab in its SUBJECT, and
+that is written down rather than hidden**». The record's own body text,
+inside `0016` and unchanged, says the same: «موضوع الندوة لم ينشره
+المنظّم». **So the type asserted the very thing the report had refused to
+assert — and that distinction is what the whole report was built on.**
+
+`EVENT_TYPES` carries eleven, and **`community` is the one that is true
+without claiming**: it says a gathering and asserts no subject.
+
+> **THE RULE, and its place is the weekly task's own text — which lives
+> outside the repository, so it is written in `docs/تقارير/اقرأني.md` as
+> well:** the type is derived from **what the source said**, never from what
+> the venue suggests. ⚠️ **An art talk in an Islamic centre is not a
+> religious lesson, and a food festival in a church is not a mass. And when
+> the source names no subject, the type is `community`.**
+
+⚠️ **`0016` IS NOT EDITED, and that is the larger half.** It had already run
+on production and its row stands in the ledger; editing it would not re-run
+it and would leave the repository disagreeing with the database. It gains
+**one comment block pointing at `0017` and not one moved statement** —
+measured, `7 insertions(+), 0 deletions(-)`. The rule is now written in this
+file above.
+
+**The migration was applied to a real PostgreSQL 16 before it was called
+finished** (`655`'s rule): `0001`…`0017` from empty, in order, zero
+failures — and the tooth the appendix asks for, measured rather than
+intended:
+
+```
+before 0017   rana-begum = lecture   ·  festival-of-faiths = festival
+apply         UPDATE 1
+after         rana-begum = community ·  festival-of-faiths = festival
+re-run        UPDATE 0
+```
+
+⚠️ **One row, not two — and the `and type = 'lecture'` is what makes that
+true twice over**: a re-run matches nothing, and a row somebody corrected by
+hand before this lands is left alone rather than overwritten with a second
+opinion.
+
+#### `0015` and `0016` were written «pending» while they were executed
+The migration table said «⏳ **تُنفَّذ بالمُشغِّل** بعد الدمج» of two
+migrations that had run. Verified from the run itself rather than taken:
+run **`#9`** (`34458386082`), head `2ee59f8`, branch `main`, **success** —
+and the job log **names both files**, which a green tick does not:
+
+```
+تنفيذ:
+  → 0015_events_external_key.sql
+  → 0016_events_2026_09_10.sql
+تمّ 2
+```
+
+⚠️ **This is the THIRD time that column has aged** — after `652`, after
+`655`, and now after `656` — **and the cause is structural, not
+carelessness: a human writes it BEFORE the run and nobody returns to it
+after.** So the state file now says which is the source: **the live record
+is `public.migration_log` on the server, and that column is narration
+following it.** Where the two disagree, the ledger is right.
+
+⚠️ **And no static check can guard that half, which is said rather than
+pretended.** The ledger is on the server and the net does not reach the
+server, so nothing here can know a row was marked executed there. What IS
+guarded is the internal agreement — `v86 · 3.4` a row per file, `3.5` and
+`3.6` the seed against the marks, and the new **`3.7`: the sentence naming
+the source must stay written**, because deleting it makes the next reader
+take the table for the record itself.
+
+#### And `v86 · 3.5` caught my own rewording, one edit after it was written
+The corrected `0009` row first said «executed **by hand**», which is true —
+**and `3.5` classifies a by-hand row as one that must appear in `0012`'s
+seed, and `0009` deliberately is not in it.** The row went red at once.
+
+⚠️ **Both facts are true and the row has to carry both, in its siblings'
+own shape**: the runner applied it (which is what put its row in the
+ledger), **and** the owner had applied it by hand the day before. `0008`
+was already written exactly that way. **The check was right and my sentence
+was wrong; not a character of `v86` was softened for it.**
+
+#### An inference was standing in a column named «measured»
+`376` §6.2 asked for this and only §6.1 landed. The line read: «`0009` …
+⚠️ **and not one NOTICE**, so it is the only one of the four that had never
+been executed.»
+
+⚠️ **The premise is true and the conclusion is invented.**
+`0009_updated_at_and_listing_limit.sql` is entirely
+`create or replace function` and `drop trigger if exists` then
+`create trigger` — **there is no statement in it that could print a NOTICE
+at all**, executed before or not. The silence measured nothing. **And it
+had been executed by hand on 8 September, with its output measured:
+`17 · 1 · 2`** — seventeen triggers, one function, and the two listing-limit
+rows.
+
+The rule it earns is written above: **absence of evidence is not evidence of
+absence, and no inference goes in a column named «measured».**
+
+#### `test_v88` — widened, and the teeth
+The appendix asks for **one** derived item; what landed is one subject in
+several assertions, and the extra ones guard the appendix's own other
+demands (the untouched `0016`, and the narrowness of the row change that a
+real database measured once and a static check keeps from rotting).
+
+⚠️ **The eleven types are read out of `js/data.js`, never listed here** — a
+hand-written list ages the day a twelfth is defined, **and would also have
+to be edited to accept a type that is simply wrong.** And `2.9` reads every
+write to the column, `update` as well as `insert`: a check that walked the
+inserts alone would have passed straight over `0017`, the one file in the
+repository whose entire subject is that column.
+
+```
+a type outside EVENT_TYPES        → 2.10, naming the file and the value
+the narrowing dropped from 0017   → 2.11 — a re-run would then rewrite a hand correction
+0016 edited instead of corrected  → 2.13
+the comment pointing at 0017 gone → 2.14
+```
 
 ## Known open items
 - **The header image is still far larger than its box.** V.04.7 replaced
