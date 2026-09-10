@@ -156,6 +156,18 @@ export async function mockSupabase(ctx, opts = {}) {
      that, and would have kept the original fault green. */
   const db = opts.db || freshDb();
   MOCK_DBS.set(ctx, db);
+  /* ⚠️ THE TABLES ARE SHARED AND THE SESSION IS NOT (671). `db.session`
+     was one field inside the memory two browser contexts share, so the
+     session belonged to whichever of them signed in LAST and the first
+     one's requests were answered as the second one's account. Measured:
+     `updateReview` from account A was refused because the mock had it as
+     account B — silently, because nothing counted the rows the update
+     touched until this batch did.
+     ⚠️ And it is not a small thing to leave: every «two real accounts»
+     item in the net stands on this, and `671`'s own teeth are written
+     with two on purpose — «measured with two real accounts, never with
+     one account reading itself». A shared session makes them one. */
+  const local = { session: null };
   const preConfirm = !!opts.preConfirm;
   for (const email of (opts.users || [])) {
     const id = 'mock-uuid-' + (++db.seq);
@@ -194,7 +206,7 @@ export async function mockSupabase(ctx, opts = {}) {
         phone: null,
         created_at: new Date().toISOString(),
       });
-      if (preConfirm) db.session = sessionFor(u);
+      if (preConfirm) local.session = sessionFor(u);
       return route.fulfill(json(preConfirm ? sessionFor(u) : { user: sessionFor(u).user, session: null }));
     }
 
@@ -207,14 +219,14 @@ export async function mockSupabase(ctx, opts = {}) {
       if (!u || u.password !== body.password) {
         return route.fulfill(json({ error: 'invalid_grant', error_description: 'Invalid login credentials' }, 400));
       }
-      db.session = sessionFor(u);
-      return route.fulfill(json(db.session));
+      local.session = sessionFor(u);
+      return route.fulfill(json(local.session));
     }
 
     if (path === '/auth/v1/verify' || path === '/auth/v1/otp/verify') {
       const email = String(body.email || '').toLowerCase();
       const u = db.users.get(email) ||
-        (db.session && db.users.get(String(db.session.user.email).toLowerCase()));
+        (local.session && db.users.get(String(local.session.user.email).toLowerCase()));
       if (!u || String(body.token || '') !== MOCK_CODE) {
         return route.fulfill(json({ error: 'invalid_grant', error_description: 'Token has expired or is invalid' }, 400));
       }
@@ -225,8 +237,8 @@ export async function mockSupabase(ctx, opts = {}) {
          them with a session, and the recovery session is the ONLY thing
          that lets the next screen set a new password at all — a mock that
          returned nothing there would make the whole road untestable. */
-      db.session = sessionFor(u);
-      return route.fulfill(json(db.session));
+      local.session = sessionFor(u);
+      return route.fulfill(json(local.session));
     }
 
     /* ⚠️ `resend` is what `620` made real, and the mock refuses exactly
@@ -267,27 +279,27 @@ export async function mockSupabase(ctx, opts = {}) {
     }
 
     if (path === '/auth/v1/logout') {
-      db.session = null;
+      local.session = null;
       return route.fulfill({ status: 204, body: '' });
     }
 
     if (path === '/auth/v1/user') {
-      if (!db.session) return route.fulfill(json({ error: 'not_authenticated' }, 401));
+      if (!local.session) return route.fulfill(json({ error: 'not_authenticated' }, 401));
       if (req.method() === 'PUT') {
         /* ⚠️ A PASSWORD CHANGE REALLY MOVES IT HERE. Without this the suite
            for `620`'s first item could not tell a server that accepted the
            change from one that ignored it — and «the old password still
            works» is the whole fault being closed. */
         if (body.password) {
-          const cur = db.users.get(String(db.session.user.email).toLowerCase());
+          const cur = db.users.get(String(local.session.user.email).toLowerCase());
           if (cur) cur.password = body.password;
-          return route.fulfill(json(db.session.user));
+          return route.fulfill(json(local.session.user));
         }
         /* an email change: parked here exactly as Supabase parks it —
            the address does not move until a code confirms it */
-        return route.fulfill(json({ ...db.session.user, new_email: body.email || null }));
+        return route.fulfill(json({ ...local.session.user, new_email: body.email || null }));
       }
-      return route.fulfill(json(db.session.user));
+      return route.fulfill(json(local.session.user));
     }
 
     /* ---------------- PostgREST ---------------- */
@@ -296,7 +308,7 @@ export async function mockSupabase(ctx, opts = {}) {
        that answered anyway would make both assertions green on a database
        that had lost them. */
     if (path === '/rest/v1/rpc/admin_find_users') {
-      const me = db.session && db.profiles.get(db.session.user.id);
+      const me = local.session && db.profiles.get(local.session.user.id);
       if (!me || !me.is_admin) {
         return route.fulfill(json({ code: 'P0001', message: 'not authorized' }, 400));
       }
@@ -315,11 +327,29 @@ export async function mockSupabase(ctx, opts = {}) {
       return route.fulfill(json(rows.slice(0, 50)));
     }
 
+    /* ⚠️ `0018`'s narrow name lookup, with ITS guards and not without
+       them: it answers a party of an EXISTING conversation and nobody
+       else. A mock that answered anybody would make «a stranger reads
+       nothing» green on a function that had lost its `where`. */
+    if (path === '/rest/v1/rpc/thread_party_name') {
+      const uid = local.session ? local.session.user.id : null;
+      const lid = body.p_listing, bid = body.p_buyer;
+      const c = (db.classifieds || []).find(x => x.id === lid);
+      const exists = (db.messages || []).some(m => m.listing_id === lid && m.buyer_id === bid);
+      let who = null;
+      if (uid && exists) {
+        if (uid === bid) who = c && c.owner_id;
+        else if (c && c.owner_id === uid) who = bid;
+      }
+      const pr = who ? db.profiles.get(who) : null;
+      return route.fulfill(json((pr && pr.display_name) || null));
+    }
+
     if (path.startsWith('/rest/v1/')) {
       const table = path.slice('/rest/v1/'.length);
-      const me = db.session && db.profiles.get(db.session.user.id);
+      const me = local.session && db.profiles.get(local.session.user.id);
       const isAdmin = !!(me && me.is_admin);
-      const uid = db.session ? db.session.user.id : null;
+      const uid = local.session ? local.session.user.id : null;
       /* ⚠️ THE QUERY STRING IS APPLIED, NOT IGNORED. `?status=eq.live` is
          how supabase-js sends `.eq('status', 'live')`, and the whole point
          of 630's second item is that no reader writes that filter: a mock
@@ -361,7 +391,13 @@ export async function mockSupabase(ctx, opts = {}) {
            everything to everybody, which is the permissive mock this
            file's head warns about. */
         if (table === 'messages') {
-          if (isAdmin || row.sender_id === uid) return true;
+          /* ⚠️ `buyer_id` IS THE BRANCH THE BUYER LIVES ON (671, `0018`).
+             Without it the seller's reply is not the buyer's own row and
+             the buyer is not the listing's owner, so both other branches
+             fall and the reply never reaches them — with 200 and a shorter
+             list, never an error. That is the whole fault this batch
+             fixes, and a mock missing this line would keep it green. */
+          if (isAdmin || row.sender_id === uid || (row.buyer_id && row.buyer_id === uid)) return true;
           const c = (db.classifieds || []).find(x => x.id === row.listing_id);
           return !!(c && uid && c.owner_id === uid);
         }
@@ -377,7 +413,7 @@ export async function mockSupabase(ctx, opts = {}) {
       const wantsOne = /pgrst\.object/.test(req.headers()['accept'] || '');
       if (req.method() === 'GET') {
         if (table === 'profiles') {
-          const rows = db.session ? [db.profiles.get(db.session.user.id)].filter(Boolean).filter(matches) : [];
+          const rows = local.session ? [db.profiles.get(local.session.user.id)].filter(Boolean).filter(matches) : [];
           if (wantsOne) {
             return rows.length
               ? route.fulfill(json(rows[0]))
@@ -424,9 +460,9 @@ export async function mockSupabase(ctx, opts = {}) {
          an empty list, never an error — so a non-staff «approval» leaves
          the row pending, which is what 630's third item measures. */
       if (req.method() === 'PATCH') {
-        if (!db.session) return route.fulfill(json({ message: 'row-level security' }, 401));
+        if (!local.session) return route.fulfill(json({ message: 'row-level security' }, 401));
         if (table.startsWith('profiles')) {
-          const pr = db.profiles.get(db.session.user.id);
+          const pr = db.profiles.get(local.session.user.id);
           if (pr) Object.assign(pr, body);
           return route.fulfill(json(pr ? [pr] : []));
         }
@@ -462,7 +498,7 @@ export async function mockSupabase(ctx, opts = {}) {
          its author and to staff, `review_replies` the same by `0013`, and
          `messages`, `flags` and `claims` grant it to nobody. */
       if (req.method() === 'DELETE') {
-        if (!db.session) return route.fulfill(json({ message: 'row-level security' }, 401));
+        if (!local.session) return route.fulfill(json({ message: 'row-level security' }, 401));
         const mayDelete = (row) => {
           if (table === 'reviews' || table === 'review_replies') {
             return isAdmin || row.author_id === uid;
@@ -476,7 +512,7 @@ export async function mockSupabase(ctx, opts = {}) {
         return route.fulfill(json(hit));
       }
       if (req.method() === 'POST') {
-        if (!db.session) return route.fulfill(json({ message: 'new row violates row-level security policy' }, 401));
+        if (!local.session) return route.fulfill(json({ message: 'new row violates row-level security policy' }, 401));
         /* ⚠️ THE COLUMN IS `numeric`, AND THE DATABASE REFUSES A STRING IN
            IT. `addClassified` used to send the display price — «⁦$1,250⁩»,
            a dollar sign and two bidi isolates — and a mock that swallowed
@@ -537,7 +573,23 @@ export async function mockSupabase(ctx, opts = {}) {
            database that refuses them. */
         const deny = (t) => route.fulfill(json({ code: '42501',
           message: 'new row violates row-level security policy for table "' + t + '"' }, 403));
-        if (table === 'messages'  && body.sender_id  !== uid) return deny('messages');
+        if (table === 'messages') {
+          if (body.sender_id !== uid) return deny('messages');
+          /* ⚠️ AND THE TWO BRANCHES OF `0018`'s insert policy, mirrored:
+             the buyer may only key a conversation on themselves, and the
+             listing's owner may only reply IN ONE THAT EXISTS. Without the
+             second, the column that delivers the reply is also a spam
+             channel — the owner writes any account's id into `buyer_id`
+             and the row lands in the inbox of somebody who never wrote to
+             them. A mock that said yes would keep that item green on a
+             database that had lost the guard. */
+          const lc = (db.classifieds || []).find(x => x.id === body.listing_id);
+          const iOwn = !!(lc && lc.owner_id && lc.owner_id === uid);
+          const asBuyer = body.buyer_id === uid && !iOwn;
+          const asOwner = iOwn && (db.messages || [])
+            .some(m => m.listing_id === body.listing_id && m.buyer_id === body.buyer_id);
+          if (!asBuyer && !asOwner) return deny('messages');
+        }
         if (table === 'flags'     && body.reporter_id !== uid) return deny('flags');
         if (table === 'claims'    && body.claimer_id !== uid) return deny('claims');
         /* ⚠️ AND THE FTC LINE: `0002` refuses a business owner reviewing

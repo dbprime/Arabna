@@ -86,7 +86,15 @@ const ALL_ROUTES = [
   { re: /^#\/post$/,              screen: PostScreen,        nav: 'classifieds' },
   { re: /^#\/boost\/(.+)$/,       screen: BoostScreen,       nav: 'classifieds' },
   { re: /^#\/messages$/,          screen: MessagesScreen,    nav: 'classifieds' },
-  { re: /^#\/messages\/(.+)$/,    screen: MessagesScreen,    nav: 'classifieds' },
+  /* ⚠️ ONE LISTING HAS AS MANY CONVERSATIONS AS IT HAS ASKERS (671), so
+     the conversation is (listing, party) and the route says both. And the
+     one-segment route STAYS and keeps its meaning — the reader's own
+     conversation on that listing — so a link already sent on WhatsApp
+     opens what it always opened. The two-segment pattern is written
+     first, because `(.+)` would otherwise swallow the slash and hand the
+     screen one parameter shaped like two. */
+  { re: /^#\/messages\/([^/]+)\/([^/]+)$/, screen: MessagesScreen, nav: 'classifieds' },
+  { re: /^#\/messages\/([^/]+)$/, screen: MessagesScreen,    nav: 'classifieds' },
   { re: /^#\/profile$/,           screen: ProfileScreen,     nav: 'profile' },
   { re: /^#\/profile\/edit$/,     screen: EditProfileScreen, nav: 'profile' },
   { re: /^#\/profile\/password$/, screen: ChangePasswordScreen, nav: 'profile' },

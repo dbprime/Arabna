@@ -68,14 +68,70 @@ const codeOf = Object.fromEntries(jsFiles.map(f => [f, nocmt(src[f])]));
 const allCode = jsFiles.map(f => codeOf[f]).join('\n');
 const sqlCode = nocmt(sql);
 
-/** the nearest function name above an index — the caller, named honestly */
-const FN = /(?:export\s+)?(?:async\s+)?function\s+([A-Za-z_$][\w$]*)|(?:const|let)\s+([A-Za-z_$][\w$]*)\s*=\s*(?:async\s*)?(?:\(|function)/g;
+/** the nearest function name above an index — the caller, named honestly
+    ⚠️ A DEFINITION, NOT AN ASSIGNMENT (671). The old pattern took
+    `const X = (` for a function, so `const me = (state.user && …) || null`
+    named the enclosing block `me()` — seven rows in «الكتابات» were named
+    after a variable, and a key carries its name, so the rows were filed
+    under something that is not a function at all. A `const` is a function
+    here only when it is `function`, or an arrow. */
+const FN = /(?:export\s+)?(?:async\s+)?function\s+([A-Za-z_$][\w$]*)|(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=\s*(?:async\s+)?(?:function\b|\([^()]*\)\s*=>|[A-Za-z_$][\w$]*\s*=>)/g;
 function enclosing(text, at) {
   let name = '—';
   FN.lastIndex = 0;
   let m;
   while ((m = FN.exec(text)) && m.index < at) name = m[1] || m[2] || name;
   return name;
+}
+
+/** what a handler does first: a store call, a navigation, or nothing we
+    can name. One reader, so a button and a row hook cannot be answered by
+    two different rules. */
+function firstCall(body) {
+  const s1 = body.match(/(?:S|await\s+S)\.([A-Za-z_$][\w$]*)\s*\(/);
+  if (s1) return s1[1] + '()';
+  const g = body.match(/\bgo\(\s*[`']([^`']+)[`']/);
+  if (g) return 'go ' + g[1];
+  const sh = body.match(/\b(confirmSheet|openSheet|openFilterSheet|openDropdown|toast|share|openMaps|openExternal)\s*\(/);
+  if (sh) return sh[1] + '()';
+  return '?';
+}
+
+/** store function -> the table it writes, derived in class 3 and read by
+    classes 5 and 6. It is what turns «a promise» and «a box» into a
+    question with an answer: which table did this reach. */
+const WRITERS = {};
+
+/** the enclosing function's own text — from its definition to the next
+    one. Used where «what does this call» has to stay inside the handler
+    it belongs to, rather than borrowing a line from the screen above. */
+/** the innermost handler around an index: bounded by the enclosing
+    function AND by the nearest `addEventListener` / sheet callback on
+    either side, because one screen function holds many handlers. */
+function handlerSpan(text, at) {
+  FN.lastIndex = 0;
+  let start = 0, end = text.length, m;
+  while ((m = FN.exec(text))) {
+    if (m.index <= at) start = m.index;
+    else { end = m.index; break; }
+  }
+  for (const mark of ['addEventListener(', 'onConfirm:', 'onSaved:']) {
+    const b = text.lastIndexOf(mark, at);
+    if (b > start) start = b;
+    const a2 = text.indexOf(mark, at);
+    if (a2 >= 0 && a2 < end) end = a2;
+  }
+  return text.slice(start, end);
+}
+
+function spanOf(text, at) {
+  FN.lastIndex = 0;
+  let start = 0, end = text.length, m;
+  while ((m = FN.exec(text))) {
+    if (m.index <= at) start = m.index;
+    else { end = m.index; break; }
+  }
+  return text.slice(start, end);
 }
 
 const rows = {};                       // class -> [{key, cells}]
@@ -99,17 +155,31 @@ const add = (cls, key, cells) => (rows[cls] ||= []).push({ key, cells });
     const c = codeOf[f];
     // every id bound to a click, and the first call its handler makes
     for (const m of c.matchAll(/\$\(\s*'#([\w-]+)'\s*\)\s*(?:\.[\w$]+)*\s*\.addEventListener\(\s*'click'/g)) {
-      const body = c.slice(m.index, m.index + 900);
-      const call = (body.match(/(?:S|await\s+S)\.([A-Za-z_$][\w$]*)\s*\(/) || [])[1]
-        || (body.match(/\bgo\(\s*'([^']+)'/) || []).slice(1).map(x => 'go ' + x)[0]
-        || '?';
+      const call = firstCall(c.slice(m.index, m.index + 900));
       add('actions', 'action/' + f + '/#' + m[1], [f.replace('js/screens/', ''), '#' + m[1], call]);
     }
-    // every data-* hook a template writes, which is how rows are wired
+    /* every data-* hook a template writes, which is how rows are wired.
+       ⚠️ AND WHAT IT CALLS IS DERIVED, NOT `?` (671). Eighty-five of the
+       eighty-five hook rows said `?`, and «a button nobody knows the
+       destination of is a button nobody checks»: the column existed and
+       answered nothing. The hook is read either through the selector or
+       through `dataset.<camelCase>`, so both are looked for and the first
+       call after the read is the answer. */
     const hooks = new Set();
     for (const m of c.matchAll(/\[data-([a-z][\w-]*)\]/g)) hooks.add(m[1]);
-    for (const h of [...hooks].sort())
-      add('actions', 'hook/' + f + '/' + h, [f.replace('js/screens/', ''), 'data-' + h, '?']);
+    for (const h of [...hooks].sort()) {
+      const camel = h.replace(/-([a-z])/g, (_, x) => x.toUpperCase());
+      const at = [
+        c.indexOf('[data-' + h + ']'),
+        c.indexOf('dataset.' + camel),
+      ].filter(i => i >= 0);
+      let call = '?';
+      for (const i of at.sort((x, y) => x - y)) {
+        call = firstCall(c.slice(i, i + 900));
+        if (call !== '?') break;
+      }
+      add('actions', 'hook/' + f + '/' + h, [f.replace('js/screens/', ''), 'data-' + h, call]);
+    }
   }
 }
 
@@ -119,8 +189,20 @@ const add = (cls, key, cells) => (rows[cls] ||= []).push({ key, cells });
     const c = codeOf[f];
     for (const m of c.matchAll(/sb\s*\.\s*from\(\s*'([a-z_]+)'\s*\)\s*\.\s*(insert|update|upsert|delete)\b/g)) {
       const chain = c.slice(m.index, c.indexOf(';', m.index) + 1);
-      const readsBack = /\.select\(/.test(chain) ? 'نعم' : 'لا';
+      /* ⚠️ THE QUESTION IS «IS A ROW COUNTED», NOT «IS `.select()` THERE»
+         (671). PostgREST answers a row the policy hides with 200 and an
+         EMPTY LIST, never an error — so `.select()` alone measures
+         nothing, and this column stamped `updateReview` sound while it
+         wrote `const { error } = … .select();` and threw the rows away.
+         The answer is read from the statement AND what follows it in the
+         same block, because the count is the line after the call. */
+      const after = c.slice(m.index, m.index + 700);
+      const counted = /\.single\(\)/.test(chain)
+        || /\bdata\b[\s\S]{0,80}?\.length/.test(after)
+        || /!\s*data\b/.test(after);
+      const readsBack = counted ? 'نعم' : (/\.select\(/.test(chain) ? 'تُطلَب ولا تُعَدّ' : 'لا');
       const fn = enclosing(c, m.index);
+      WRITERS[fn] = WRITERS[fn] ? (WRITERS[fn].includes(m[1]) ? WRITERS[fn] : WRITERS[fn] + ' · ' + m[1]) : m[1];
       add('writes', 'write/' + m[1] + '/' + m[2] + '/' + fn, [m[1], m[2], fn + '()', readsBack]);
     }
   }
@@ -161,36 +243,146 @@ const add = (cls, key, cells) => (rows[cls] ||= []).push({ key, cells });
 {
   for (const f of jsFiles) {
     const c = codeOf[f];
+    /* ⚠️ THE KEY IS A PLACE, NOT A TRANSLATION KEY (671). File plus key
+       collapsed everything that says the same words into one row:
+       `admin.js/done` was ONE row standing for FIFTEEN promises and
+       `admin.js/itemRejected` for eight — and the three faults the sweep
+       of 10 September found (`adminDeleteListing`, `mergeBusinesses`,
+       `resolveFlag`) all lived inside those two rows, under a date that
+       said «checked». The class as it stood could not have found one of
+       them. Ninety-seven promises, sixty-four rows.
+       ⚠️ And the call is read BACKWARD INSIDE THE ENCLOSING BLOCK, not by
+       the nearest line before it: sixty-two of sixty-four rows said «no
+       call found», because a promise sits at the end of a handler and the
+       `await` that earned it is many lines up. */
+    const seenFn = {};
     for (const m of c.matchAll(/toast\(\s*t\(\s*'([A-Za-z][\w]*)'\s*\)\s*,\s*'ok'/g)) {
-      const before = c.slice(Math.max(0, m.index - 700), m.index);
-      const call = (before.match(/await\s+(?:S\.)?([A-Za-z_$][\w$]*)\s*\([^;]*\)[^;]*$/) || [])[1] || '—';
-      add('promises', 'promise/' + f + '/' + m[1],
-        [f.replace('js/screens/', '').replace('js/', ''), m[1], call === '—' ? '—' : call + '()', call === '—' ? 'لا نداء' : '?']);
+      const fn = enclosing(c, m.index);
+      const n = (seenFn[fn] = (seenFn[fn] || 0) + 1);
+      /* the block this promise stands in: back to the enclosing function's
+         own opening, so a call two screens up is not borrowed */
+      const span = spanOf(c, m.index);
+      const before = span.slice(0, span.indexOf(m[0]) < 0 ? span.length : span.indexOf(m[0]));
+      const calls = [...before.matchAll(/await\s+(?:S\.)?([A-Za-z_$][\w$]*)\s*\(/g)].map(x => x[1]);
+      const call = calls.length ? calls[calls.length - 1] : '';
+      add('promises', 'promise/' + f + '/' + fn + '/' + n,
+        [f.replace('js/screens/', '').replace('js/', ''), m[1] + ' · ' + fn + '()',
+         call ? call + '()' : '—', call ? (WRITERS[call] || '?') : 'لا نداء']);
     }
   }
 }
 
 /* ---------------- 6) every box a human fills -------------------------- */
 {
-  for (const f of screens) {
+  /* ⚠️ ALL OF `js/`, NOT `js/screens/` (671). The range was recorded as
+     «correct now, and it ages the day a box is written in `ui.js`» — and
+     measured, `js/ui.js` ALREADY HELD FOUR: the two ends of the price
+     filter, «always open in», and the share fallback. So it was not
+     correct now; it had already aged, and the widening is overdue rather
+     than a precaution. */
+  for (const f of jsFiles) {
     const c = src[f];                  // the markup lives in template strings
-    for (const m of c.matchAll(/<(input|select|textarea)\b[^>]*\bid="([\w-]+)"/g))
-      add('fields', 'field/' + f + '/' + m[2], [f.replace('js/screens/', ''), m[1], '#' + m[2], '?']);
+    const code = codeOf[f];
+    for (const m of c.matchAll(/<(input|select|textarea)\b[^>]*\bid="([\w-]+)"/g)) {
+      /* ⚠️ AND «DOES IT REACH A COLUMN» IS DERIVED (671). It was `?` on
+         129 rows out of 129 — the whole class answering nothing, while
+         the question is the one that found «sixty-three boxes a human
+         fills and no column for any of them» on 7 September. The chain
+         is: the box is READ somewhere, that read sits in a handler, the
+         handler calls a store function, and the store function writes a
+         table — or writes none, which is an answer too. */
+      const id = m[2];
+      let at = -1;
+      for (const q of ["'#" + id + "'", '"#' + id + '"', '`#' + id + '`']) {
+        const i = code.indexOf(q);
+        if (i >= 0 && (at < 0 || i < at)) at = i;
+      }
+      /* ⚠️ AND «DOES IT REACH A COLUMN» IS NOT DERIVED, WITH THE
+         MEASUREMENT OF WHY (671). It is the question the class was built
+         for — «sixty-three boxes a human fills and no column for any of
+         them» was among the heaviest finds of 7 September — and three
+         derivations were built and measured, and every one of them lies
+         or is silent:
+           the enclosing function   `admin.js` is ONE function holding
+                                    every tab, so the magazine editor's
+                                    boxes came out as `flags` and the cash
+                                    order's as `claims` — confident and
+                                    wrong
+           the innermost handler    loses `#pTitle`, whose read and whose
+                                    writer are a hundred lines apart in
+                                    one submit handler
+           the value's own path     `?` on 100 rows of 133 — the payload
+                                    is assembled through shapes two hops
+                                    do not follow
+         ⚠️ A COLUMN THAT ANSWERS WRONGLY IS WORSE THAN ONE THAT ANSWERS
+         `?`, and this file's own head says what `?` is: the tool does not
+         decide this, a person does, and writes the date. So it stays `?`
+         until it can be answered by reading the code rather than by
+         guessing at the distance between two lines — and the three
+         attempts are written here so the fourth does not repeat them. */
+      const dest = '?';
+      add('fields', 'field/' + f + '/' + id,
+          [f.replace('js/screens/', '').replace('js/', ''), m[1], '#' + id, dest]);
+    }
   }
 }
 
 /* ---------------- 7) every path money travels ------------------------- */
 {
-  const d = codeOf['js/data.js'];
-  for (const m of d.matchAll(/export const ([A-Z][A-Z0-9_]*)\s*=/g)) {
-    const start = m.index;
-    const chunk = d.slice(start, start + 2600);
-    if (!/\b(price|prices|week1|month1|monthly|yearly|PRICE)\b/.test(chunk.split('\nexport ')[0])
-        && !/PRICE/.test(m[1])) continue;
-    const readers = jsFiles
-      .filter(f => f !== 'js/data.js' && new RegExp('\\b' + m[1] + '\\b').test(codeOf[f]))
-      .map(f => f.replace('js/screens/', '').replace('js/', ''));
-    add('money', 'money/' + m[1], [m[1], String(readers.length), readers.slice(0, 4).join(' · ') || 'لا قارئ']);
+  /* ⚠️ ONE ROW PER PRICE, NOT PER CONSTANT (671). `AD_PRODUCTS` was a
+     SINGLE row covering eight products times three durations — twenty-four
+     prices under one date — which is the same fault the promises class had
+     and for the same reason: the grain was wrong, so a row could be
+     stamped «checked» while most of what it stands for had never been
+     looked at.
+     ⚠️ AND TWO OF THE SEVEN ROWS WERE NOT MONEY AT ALL. `BUSINESSES` and
+     `CLASSIFIEDS` were caught by the word `price` inside seeded records —
+     a $14,500 car is CONTENT, not our pricing, which this project states
+     in as many words. The rule that tells them apart is derived and not a
+     list: a constant carrying a bilingual `{ar, en}` object is content,
+     because that pair is exactly how this file marks something written
+     for a reader.
+     ⚠️ And it is read by IMPORTING `js/data.js`, which imports nothing
+     and fetches nothing — so the prices are the real values rather than a
+     regular expression's guess at them. */
+  const mod = await import(pathToFileURL(path.join(R, 'js/data.js')).href);
+  const isContent = (v) => JSON.stringify(v || null).includes('"ar":');
+  const PRICEY = /^(price|prices|week\d|month\d|monthly|yearly|amount|fee)$/i;
+  const readersOf = (name) => jsFiles
+    .filter(f => f !== 'js/data.js' && new RegExp('\\b' + name + '\\b').test(codeOf[f]))
+    .map(f => f.replace('js/screens/', '').replace('js/', ''));
+
+  const walk = (node, trail, out) => {
+    if (node == null) return;
+    if (typeof node === 'number' || typeof node === 'string') {
+      const last = trail[trail.length - 1];
+      if (PRICEY.test(String(last))) out.push([trail.join('.'), node]);
+      return;
+    }
+    if (typeof node !== 'object') return;
+    for (const [k, v] of Object.entries(node)) {
+      if (Array.isArray(node)) { walk(v, trail.concat([node[k] && node[k].id ? node[k].id : k]), out); continue; }
+      walk(v, trail.concat([k]), out);
+    }
+  };
+
+  for (const [name, val] of Object.entries(mod)) {
+    if (!/^[A-Z][A-Z0-9_]*$/.test(name)) continue;
+    const scalar = (typeof val === 'number' || typeof val === 'string') && /PRICE/.test(name);
+    if (!scalar && (typeof val !== 'object' || val === null || isContent(val))) continue;
+    const readers = readersOf(name);
+    if (scalar) {
+      add('money', 'money/' + name, [name, String(val), String(readers.length),
+                                     readers.slice(0, 4).join(' · ') || 'لا قارئ']);
+      continue;
+    }
+    const found = [];
+    walk(val, [], found);
+    if (!found.length) continue;
+    for (const [where, v] of found)
+      add('money', 'money/' + name + '/' + where,
+          [name + '.' + where, String(v), String(readers.length),
+           readers.slice(0, 4).join(' · ') || 'لا قارئ']);
   }
 }
 
@@ -225,19 +417,27 @@ const CLASSES = [
   ['columns',  '٤) الجداول والأعمدة',   ['الجدول', 'العمود', 'مذكور في js/', 'سياسات']],
   ['promises', '٥) الوعود',             ['الملفّ', 'الجملة', 'فوقها', 'تُقرأ إجابته']],
   ['fields',   '٦) الخانات',            ['الشاشة', 'النوع', 'المعرّف', 'يصل عموداً']],
-  ['money',    '٧) مسارات المال',        ['الثابت', 'عدد القرّاء', 'من يقرؤها']],
+  ['money',    '٧) مسارات المال',        ['الموضع', 'القيمة', 'عدد القرّاء', 'من يقرؤها']],
   ['worship',  '٨) الأوقات الدينيّة',    ['الملفّ', 'الدالّة', 'الشاشات']],
 ];
 
-let total = 0, dated = 0;
+/* ⚠️ TWO NUMBERS, NOT ONE (671). «363 checked» promised more than it
+   carried: 150 of those 363 — 41% — were rows still holding a `?` or a
+   `—` in a derived cell, so the tool had not answered the row's own
+   question and the date said it had been checked anyway. The cure is not
+   to erase the dates: it is to print the second number beside the first,
+   read from the table and not written by hand. */
+const blind = (r) => r.cells.some(c => c === '?' || c === '—');
+let total = 0, dated = 0, datedBlind = 0;
 const body = [];
 for (const [cls, title, head] of CLASSES) {
   const list = (rows[cls] || []).sort((a, b) => a.key < b.key ? -1 : a.key > b.key ? 1 : 0);
   const seen = new Set();
   const uniq = list.filter(r => !seen.has(r.key) && seen.add(r.key));
   const withDate = uniq.filter(r => prior.has(r.key)).length;
-  total += uniq.length; dated += withDate;
-  body.push(`## ${title} — ${uniq.length} بنداً · ${withDate} مفحوصاً · ${uniq.length - withDate} بلا فحص\n`);
+  const blindDated = uniq.filter(r => prior.has(r.key) && blind(r)).length;
+  total += uniq.length; dated += withDate; datedBlind += blindDated;
+  body.push(`## ${title} — ${uniq.length} بنداً · ${withDate} مفحوصاً · ${uniq.length - withDate} بلا فحص · ${blindDated} منها بلا جوابٍ مشتقّ\n`);
   body.push('| المفتاح | ' + head.join(' | ') + ' | آخر فحص |');
   body.push('|' + '---|'.repeat(head.length + 2));
   for (const r of uniq)
@@ -269,10 +469,15 @@ const HEAD = `# جردُ عربنا — ما يمكن أن ينكسر
 const SUM = `## المجموع
 
 \`\`\`
-البنود        ${total}
-مفحوصة        ${dated}
-بلا فحص       ${total - dated}
+البنود                    ${total}
+مفحوصة                    ${dated}
+بلا فحص                   ${total - dated}
+مفحوصة بلا جوابٍ مشتقّ     ${datedBlind}
 \`\`\`
+
+⚠️ **والرقمُ الرابعُ هو الذي يمنع الأوّلَ من أن يَعِد بأكثرَ ممّا يحمل**:
+صفٌّ مختومٌ «مفحوص» وفيه خليّةٌ «?» أو «—» يعني أنّ الأداةَ لم تُجب عن
+سؤال البند، وأنّ ما فُحص فُحص بالعين وحدَها.
 
 `;
 
@@ -285,5 +490,5 @@ if (CHECK) {
 }
 fs.mkdirSync(path.dirname(OUT), { recursive: true });
 fs.writeFileSync(OUT, text);
-console.log(`docs/الجرد.md: ${total} بنداً · ${dated} مفحوصاً · ${total - dated} بلا فحص`);
+console.log(`docs/الجرد.md: ${total} بنداً · ${dated} مفحوصاً · ${total - dated} بلا فحص · ${datedBlind} مفحوصاً بلا جوابٍ مشتقّ`);
 for (const [cls, title] of CLASSES) console.log('  ' + title + ': ' + (rows[cls] || []).length);

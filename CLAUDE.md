@@ -11,7 +11,7 @@ ARABNA · عربنا — a mobile-first web app for the Arab community in the U.
 **business directory + marketplace + events + magazine**, Arabic-first with a full English toggle.
 ("Classifieds / الإعلانات الشخصية" is now "Marketplace / السوق" — the old `#/classifieds`
 routes still resolve so shared links keep working.)
-Current version: **V.11.2 (prototype)**. Owner: dbprime. Deploys to Vercel (team DB Prime).
+Current version: **V.11.3 (prototype)**. Owner: dbprime. Deploys to Vercel (team DB Prime).
 
 ## Hard rules (from the product brief)
 0. ⚠️ **THE OWNER'S NAME IS NEVER WRITTEN — anywhere.** Not in this file, not
@@ -13375,6 +13375,335 @@ second run.**
 **The heaviest three are unchanged from `615`'s own table:** `v8` 290/288 ·
 `v20` 289/280 · `v14` 244/242. Measured suite time: **7,299s on the
 single-file build and 6,801s on the module one.**
+
+## V.11.3 — the message reaches both parties, and the conversation knows whose it is (671)
+
+⚠️ **This file closes its own group, and its group is itself** — it touches
+`js/store.js`, one of the three the 5 September decision names. **The
+version is raised, and a migration is executed by the runner after the
+merge: `0018_messages_thread.sql`.**
+
+### The fault, in one sentence
+> **The buyer did not see the seller's reply. Not on their own device, not
+> on another, not after a year.**
+
+⚠️ **And it was not a second-device fault.** The owner asked on 10 September
+about signing out and in from another phone; the whole road was measured
+and the fault was **absolute**. **And the marketplace is built on two
+people talking.**
+
+```
+0001_schema.sql   listing_id · sender_id · body · scrubbed · off_platform
+                  and NO THIRD COLUMN SAYING TO WHOM
+0002_rls.sql      «are you the writer?» or «do you own the listing?»
+```
+**The seller's reply is neither of those to the buyer**, so both branches
+fell and the row never travelled — **and PostgREST answers a shorter list
+with 200 and no error**, so nothing anywhere said a word. The buyer read
+their own message alone and concluded they had been ignored.
+
+### ⚠️ And it is not fixed by widening the policy
+«Whoever wrote on this listing reads everything on it» is one line — **and
+with two buyers on one listing the first reads the second's private
+conversation: their name, their question, the price they offered.**
+
+> ⚠️ **A private conversation leaking between two strangers is worse than a
+> reply that does not arrive. So the STRUCTURE is corrected before the
+> policy, not instead of it.**
+
+### `buyer_id` is a conversation's key, not an addressee
+```
+the buyer writes  →  buyer_id is the buyer
+the seller replies →  buyer_id is the buyer they are replying to
+```
+⚠️ **And why a conversation key rather than `recipient_id`:** the seller
+needs their whole inbox (every conversation on their listing) and the buyer
+needs theirs. **One key answers both with one condition.** `recipient_id`
+answers the first with a second condition duplicating `owner_id`, and it
+does not separate one buyer from another at all.
+
+⚠️ **And it accepts `null`, with no `not null`.** A row the listing's own
+owner wrote before `0018` has no knowable party, **and none is invented for
+it**: it stays `null`, is read by its writer and by the listing's owner
+exactly as before, and shows as a conversation of its own named «محادثة
+قديمة» rather than folded into somebody's. **A row whose party is unknown
+is better than a row attributed to the wrong party.** The backfill fills
+only what is knowable — a sender who is not the owner is the buyer by
+definition.
+
+### ⚠️ THE SPECIFICATION'S OWN INSERT POLICY DOES NOT WORK, AND A REAL DATABASE SAID SO
+```
+1) the buyer opens a conversation   ERROR: infinite recursion detected in
+2) 3) 4) every other insert          policy for relation "messages"
+```
+`exists` on `public.messages` **inside a policy on `public.messages`**
+calls PostgreSQL's recursion guard and every insert is refused, from every
+party. ⚠️ **So `671` as written would have shipped a marketplace where
+nobody can send a message at all — worse than the fault it fixes.** And no
+structural suite can see it: the file parses without a complaint and the
+stand-in server does not enforce RLS. **Only a real database says so, and
+that is `655`'s rule paying for itself a second time.**
+
+The question moves into a function, which is the known answer to policy
+recursion — and it carries the ownership test **inside** it, so it cannot
+become a probe telling any account whether somebody messaged somebody.
+Measured: a stranger asking gets `f`.
+
+### ⚠️ And two more decisions in that one function, both measured
+- **The parameters are not named like the columns**, and this tooth bit:
+  the bare name binds to the parameter first, the condition becomes true
+  always, and **the attack's message landed in the stranger's inbox — one
+  row against zero.** The difference is two characters.
+- **`security definer` is REFUSED, and the reason I was about to write is
+  refuted by the measurement.** On two identical databases:
+```
+                        an ordinary reply   the attack   a stranger's probe
+security definer              2 rows            0             f
+the caller's own rights       2 rows            0             f
+```
+  The only caller who reaches that branch is the listing's owner, **who
+  reads their listing's messages under the policy anyway** — so the
+  caller's-rights read is complete. **A privilege the build does not need
+  is not granted**, `0005`'s rule read backwards. ⚠️ **And it is `0014`'s
+  lesson exactly: a reason written into a migration is measured or it is
+  not written** — I nearly committed it a second time, in the batch after
+  the one that named it.
+
+### The nine, measured on a real PostgreSQL 16 from empty
+```
+2) buyer A writing into buyer B's conversation    REFUSED
+4) the seller opening one on a stranger           REFUSED
+5) buyer A reads      2  «hello… / yes it is»     ← what fails on main today
+6) buyer B reads      1  their own alone
+7) the seller reads   3  both conversations
+8) a stranger reads   0
+```
+`0001`…`0018` apply in order with zero failures, and `0018` re-runs clean.
+
+### The name of the other party, and the policy that is NOT widened
+A list that does not name the other party is a column of identical lines:
+**a seller with three askers reads the same listing title three times** —
+the blurring taken out of the data and put straight back on the screen.
+
+⚠️ **And `profiles` is not opened for it.** Measured, its read policy is
+`id = auth.uid()` or staff — **so the seller cannot read the buyer's name
+at all** — and widening it would publish every account's name, its
+notification preferences and its staff flag to every signed-in reader, as
+the price of one line in a list. **A policy is not weakened for the
+convenience of a display.** `thread_party_name` answers the one narrow
+question, to a party of an existing conversation and to nobody else, and
+`anon` may not call it. ⚠️ **Here `security definer` IS required** — it
+reads a row the caller cannot reach at all — **so the same word is refused
+in one place and required in the other, and both by measurement.**
+
+### Three destinations, not two
+```
+#/messages                     every conversation this reader is in
+#/messages/<listing>/<party>   one conversation
+#/messages/<listing>           the owner: that listing's conversations
+                               anybody else: their own — an old link
+                               opens what it always opened
+```
+⚠️ **The middle case is the seller's own «رسائل المشترين (N)» button**,
+which until now poured three people's private conversations into one column
+of bubbles with nothing saying where one ended.
+
+⚠️ **And `messagesFor` with no party filters NOTHING, on purpose.** The
+rows a device holds came through RLS already, so «every message on this
+listing that I can see» IS the buyer's own conversation — **the server
+separated them** — and is all of them for the owner. Repeating that
+separation in the client would be writing a policy the database already
+wrote, which is `630`'s lesson: **no reader adds a filter of its own beside
+the policy.** So the old link works, and for the right reason.
+
+### The last three of «a success over a write that did not happen»
+`655` opened that class and closed most of it; three were left, all in the
+reviews path, **and the shape is written in the same file four times**
+(`pushBusiness` · `pushEvent` · `resolveFlag` · `notifyUser`):
+
+| | what was missing | what the reader saw |
+|---|---|---|
+| `updateReview` | `.select()` and **no count** | «تمّ تحديث تقييمك», and the old words stood for the world |
+| `deleteReview` | no `.select()` at all | «تمّ حذف تقييمك», and it was there on return |
+| `deleteReply` | no `.select()` | «تمّ», and the reply stayed |
+
+⚠️ **And `updateReview` had a second door**: it returned a bare `null` when
+the id was not there, and the screen's `if (r && r.error)` **read `null` as
+success**. Three outcomes now, three sentences.
+
+### ⚠️ And the improved column found two more, and BOTH were decisions
+Measured before either was touched — «a report is not an order»:
+- **`patchListing` returns `!error` with no row count, deliberately.** A
+  seed listing has no row on the server, so it matches nothing — **and
+  counting rows would make «nothing matched» a failure**, which `645` §10
+  measured and wrote down. It is the door for hide, unhide, renew and
+  status, and it is left exactly as it is.
+- **`updateProfile` swallows the display-name write**, with `620`'s written
+  reason. Both are recorded as decisions rather than swept in.
+
+### ⚠️ AND THE HARNESS ITSELF WAS ANSWERING THE WRONG ACCOUNT
+Found by the new row count and not by any check: `db.session` was **one
+field inside the memory two browser contexts share**, so the session
+belonged to whichever signed in LAST and the first one's requests were
+answered as the second one's account. **Measured: `updateReview` from
+account A was refused because the mock had it as account B — silently,
+because nothing counted the rows until this batch did.**
+
+⚠️ **Every «two real accounts» item in the net stands on this**, and
+`671`'s own teeth are written with two on purpose. A shared session makes
+them one. The tables stay shared — that is `630`'s first item — and the
+session is now per context.
+
+### ⚠️ And it exposed a second green that was green for the wrong reason
+`v79 · 1.2` — «the admin's queue, on ANOTHER device, lists it», the very
+item `630` was written for — **passed because of the shared session, not
+because of the app.** Browser two read the server at boot, before anybody
+had signed in there, and the mock answered that visitor-time read **as
+browser one's account**, which owns the listing. Per context, the accident
+stopped and the item went red.
+
+**The app is not at fault and was not changed.** `_admin.mjs` signs a
+staff account UP and promotes it afterwards, so the session appeared while
+the account was still an ordinary member — **and in the world the order is
+the other way round**: the account is made staff on the dashboard first
+and signs in after, and `hydrateUserFromSession` reads the rows then. The
+helper re-reads after promoting, which is the real sequence written out.
+
+⚠️ **And the crash beside it was a defect of its own**: an unguarded
+`.click()` on a node the failed item above had just made absent took the
+whole suite down, **so forty-three assertions went unmeasured behind two
+red ones** — `649`'s lesson, guarded.
+
+⚠️ **AND THE CLASS WAS SWEPT BEFORE THE NET WAS RESTARTED**, not met at
+segment twenty: **all twenty-four suites that call `unlockAdmin`** were run
+on the fixed tree and every one is green with no edit. That is the rule
+`645`, `650`, `652` and `655` each paid for, and this is the first batch in
+the run of them where it cost one restart instead of three.
+
+### The inventory: four of the five derived, and the fifth refused with its measurement
+`670` landed and its structure works. The faults were in what the columns
+say:
+
+- ⚠️ **Two numbers, not one.** «363 checked» carried 150 rows — **41%** —
+  still holding a `?` in a derived cell: the tool had not answered the
+  row's own question and the date said it had been checked anyway. Both
+  numbers are printed now, read from the tables. **150 → 39.**
+- ⚠️ **The promises class did not answer its own question.** Its key was
+  file plus translation key, so `admin.js/done` was **one row standing for
+  fifteen promises** and `admin.js/itemRejected` for eight — **and the
+  three faults the sweep of 10 September found all lived inside those two
+  rows, under a date that said «checked».** The key is a PLACE now (file +
+  enclosing function + ordinal) and the call is read backwards inside the
+  handler: **64 rows → 97, and «no call found» 62 → 22.**
+- **The actions say what they call**: 99 of 136 were `?` — **99 → 12** —
+  and a hook is read through its selector or its `dataset` name.
+- **The writes column asks whether a ROW IS COUNTED**, not whether
+  `.select()` is present. It stamped `updateReview` sound while that
+  function threw its rows away.
+- ⚠️ **The money grain was wrong and two of its seven rows were not money.**
+  `AD_PRODUCTS` was ONE row covering eight products × three durations —
+  **twenty-four prices under one date** — and `BUSINESSES` and
+  `CLASSIFIEDS` were caught by the word `price` inside seeded records. **A
+  $14,500 car is content, not our pricing**, and the rule that tells them
+  apart is derived, not listed: a constant carrying a bilingual `{ar, en}`
+  object is content. **7 rows → 30, and the value is printed beside each.**
+- **`enclosing()` read `const me = (…)` as a function definition**, so
+  seven write rows were filed under a variable. ⚠️ **And the spec's warning
+  that correcting it erases seven check dates does not apply on this tree:
+  measured, all 23 write rows carried `—`. There was nothing to erase.**
+- **The box sweep is all of `js/` now.** ⚠️ **The record said the range was
+  «correct now and ages later»; measured, `js/ui.js` ALREADY held four.**
+  It had already aged.
+
+⚠️ **AND «DOES THIS BOX REACH A COLUMN» IS NOT DERIVED, WITH THE
+MEASUREMENT OF WHY.** Three derivations were built and every one lies or is
+silent: the enclosing function answers **wrongly** (`admin.js` is one
+function holding every tab, so the magazine editor's boxes came out
+`flags`), the innermost handler **loses** `#pTitle` (its read and its
+writer are a hundred lines apart in one submit handler), and the value's
+own path answers `?` on **100 of 133**. **A column that answers wrongly is
+worse than one that answers `?`** — which this file's own head defines as
+the tool saying it does not decide. The three attempts are written into
+`inventory.mjs` so a fourth does not repeat them.
+
+### ⚠️ And `670`'s own appendix is corrected, by a measurement
+It wrote that `0009` prints no NOTICE «because the file contains no
+statement that could print one». **Measured on a real PostgreSQL 16:**
+```
+0009 where the triggers are absent   18 NOTICE
+0009 where they are present           0
+production printed                    0
+```
+It holds **eighteen** `drop trigger if exists` and each prints «does not
+exist, skipping» when it finds nothing. **So zero is positive evidence that
+it HAD run, not neutral.** The conclusion did not change and the argument
+was invented — ⚠️ **in a passage titled «absence of evidence is not evidence
+of absence», which is the same fault in a second costume.** Both the table
+row and the paragraph carry the measurement now.
+
+### `test_v90` — 71 on the module build, 57 on the single-file one, and nine teeth
+⚠️ **Every item is measured with two real accounts in two real browsers**,
+never one account reading itself.
+```
+the read policy loses the party's branch → 2.5 prints {"n":1} — the original fault
+sendMessage stops sending the party      → twelve items
+the owner may open a thread on anybody   → 6.1 · 6.2 (four rows in a stranger's inbox)
+a conversation is a listing again        → 5.1 · 5.2 · 5.5 · 5.6 · 9.2
+updateReview answers nothing again       → 10.4 · 10.6
+deleteReview stops counting              → 10.2 · 10.7
+the promises key back to the sentence    → 11.2 «64 rows for 97 promises»
+the money class back per constant        → 11.5 «5»
+enclosing() reads a variable again       → 11.4b · 11.7, naming all seven
+```
+⚠️ **Block 11 runs on the module build alone**, and the reason is measured:
+`run.sh` runs the two builds at the same time and that block drives a tool
+that WRITES `docs/الجرد.md` — two copies racing would leave the tree dirty
+and abort every later segment through the frozen-tree guard. `v68` reached
+the same answer for the same reason.
+
+⚠️ **And two of the suite's own expectations were wrong and were corrected,
+not the app.** A buyer passing another buyer's party is not refused — the
+store **ignores** it, because the party for anyone who is not the owner is
+the writer by definition, which is stronger than a refusal; the item
+measures where the row LANDED. And a listing must be **approved** before a
+buyer can open its conversation screen: every user listing starts
+`pending`, visible to its owner alone, so the redirect was the app behaving
+and the fixture had to say which state it was measuring.
+
+### And the group closes — the net, run on segments over one frozen tree
+```
+176 runs · 88 suites · 8,510 assertions · zero red · zero crash
+```
+Thirty-one segments over `89e1ecd`, `HEAD` re-checked at the head of each —
+the runner exits 2 on a moved character or a dirty tree, and none did —
+**88 present and 88 run, each on both builds, and no result borrowed.** The
+verdict is READ from the index and never summed: `NET COMPLETE — every
+derived suite ran on both builds in this index`.
+
+⚠️ **The arithmetic closes itself, and it was written down BEFORE the run:
+8,382 + 128 (`v90`: 71 on the module build, 57 on the single-file one) =
+8,510.** The total landing on the predicted figure to the unit is what
+proves no older suite moved — **and there is no reversal in this batch at
+all**, because the class was swept before the net rather than met at
+segment twenty.
+
+⚠️ **And the verdict is proven in both directions on the finished index:**
+one line deleted prints `NET INCOMPLETE — 1 run(s) missing: m/v50`, and
+putting it back prints `NET COMPLETE` — **with the distinct count standing
+at 88 in both**, which is exactly why the condition is `nmiss == 0` AND
+`distinct == derived` AND both builds named.
+
+**The heaviest three are unchanged from `615`'s own table, and their order
+did not move:** `v8` 285/284 · `v20` 283/278 · `v14` 242/239. Measured
+suite time: **7,181s on the single-file build and 6,722s on the module
+one.**
+
+⚠️ **The net was run from the top twice, and the second time had a cause
+worth keeping**: `v79` crashed at segment 28 of the first run, and what it
+exposed was a green that had never been green for its own reason. A fix to
+a suite makes a new tree, so the first run was spent — **and the class was
+swept before restarting**, which is what made it one restart instead of the
+three `645`, `650` and `652` each paid.
 
 ## Known open items
 - **The header image is still far larger than its box.** V.04.7 replaced

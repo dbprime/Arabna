@@ -1515,7 +1515,14 @@ export function openReviewSheet(bizId, onSaved) {
          database is the one that cannot be walked around. */
       const r = await S.addReview(bizId, rating, txt);
       if (r && r.error) {
-        toast(r.error === 'ownBusiness' ? t('reviewOwnBiz') : t('somethingWrong'), 'err');
+        /* ⚠️ AND «NOT HERE» IS ITS OWN SENTENCE (671). An edit whose review
+           has gone is not a server failure and is not a success either —
+           and it used to be neither: `updateReview` answered a bare `null`,
+           this guard read it as success, and the sheet closed over «تمّ
+           تحديث تقييمك». Three outcomes, three sentences. */
+        toast(r.error === 'ownBusiness' ? t('reviewOwnBiz')
+            : r.error === 'notFound'   ? t('gone')
+            : t('somethingWrong'), 'err');
         return;
       }
       closeSheet();

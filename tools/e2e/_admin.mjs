@@ -65,6 +65,26 @@ export async function unlockAdmin(page, opts = {}) {
   if (!pr) throw new Error('_admin: the stand-in server has no profile for ' + email);
   pr.is_admin = true;
 
+  /* ⚠️ AND THE ROWS ARE RE-READ AFTER THE PROMOTION, because the order
+     here is not the order in the world. The app reads the live rows when
+     the SESSION changes (`635`), and this helper's sequence is sign up →
+     promote → open: the session appeared while the account was still an
+     ordinary member, so even a read at that moment saw what an ordinary
+     member sees. In the world the account is made staff on the dashboard
+     FIRST and signs in after, and `hydrateUserFromSession` reads then.
+     ⚠️ This is not papering over an app fault — it was hidden by one in
+     the HARNESS: `db.session` used to be a single field shared by two
+     browser contexts, so a second browser's visitor-time read was
+     answered as the FIRST browser's account, and `v79 · 1.2` passed on
+     rows it should never have been given. `671` made the session
+     per-context and the accident stopped. */
+  await page.evaluate(async () => {
+    const S = (window.__m && window.__m.S)
+      || await import('arabna/js/store.js').catch(() => import('./js/store.js'));
+    await Promise.all([S.loadLiveClassifieds(), S.loadLiveBusinesses(), S.loadLiveEvents(),
+                       S.loadLiveFlags(), S.loadLiveClaims(), S.loadLiveNotifs()]);
+  });
+
   /* setting a hash the page already has fires no `hashchange` and paints
      nothing — so a page standing on `#/admin` is walked off it first */
   await page.evaluate(() => { if ((location.hash || '').split('?')[0] === '#/admin') location.hash = '#/home'; });
