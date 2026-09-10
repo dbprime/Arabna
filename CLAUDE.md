@@ -12663,19 +12663,189 @@ been green while nothing was removed.
 ```
 170 runs · 85 suites · 8,232 assertions · zero red · zero crash
 ```
-Seventeen segments over `55cd330`, `HEAD` re-checked at the head of each —
+Twenty-nine segments over `4aaef60`, `HEAD` re-checked at the head of each —
 the runner exits 2 on a moved character or a dirty tree — **85 present and
 85 run, each on both builds, and no result borrowed.** The verdict is READ
 from the index and never summed: `NET COMPLETE — every derived suite ran on
-both builds in this index`. Measured suite time: **6,987s on the single-file
-build and 6,653s on the module one.**
+both builds in this index`. Measured suite time: **6,963s on the single-file
+build and 6,644s on the module one**, and the three heaviest are unchanged
+from `615`'s own table: `v8` 285/283 · `v20` 282/275 · `v14` 236/235.
 
-⚠️ **The arithmetic closes itself: 8,056 + 174 (`v87` × 2) + 2 (`v83 · 1.5b`
-× 2) = 8,232**, and **not one other suite moved by a single assertion** —
-`v3`, `v14`, `v29`, `v33`, `v43`, `v45` and `v66` each carry a reversal that
-REPLACED an assertion rather than adding or dropping one, which is what a
-reversal should look like: it changes what a check measures, never how many
-checks there are.
+⚠️ **The arithmetic closes itself, and it was written down BEFORE the run
+rather than read off it: 8,232 + 16 (`v87`'s eight new assertions × 2
+builds) = 8,248**, and `v87` reads **95 passed, 0 failed** on both builds.
+**The total landing on the predicted figure to the unit is what proves no
+other suite moved** — the only alternative is a pair of changes cancelling
+each other, and none was made.
+
+⚠️ **AND 8,232 IS THE SAME NET'S FIRST CLOSE, BEFORE THE CASCADE.** It is
+named rather than quietly overwritten, because **the net was paid for TWICE
+here**: once when `655` closed, and again when the owner's decision reopened
+its migration. A figure simply replaced hides the second run.
+
+**In that first run** `v3`, `v14`, `v29`, `v33`, `v43`, `v45` and `v66` each
+carried a reversal that REPLACED an assertion rather than adding or dropping
+one, which is what a reversal should look like: it changes what a check
+measures, never how many checks there are. **The second run moved none of
+them** — the cascade is a migration and one suite block, and it touched no
+older subject.
+
+## Events enter weekly — no batch, no version raise (656)
+
+⚠️ **This file closes its own group, and its group is itself** — it adds a
+suite, so the count in `docs/الحالة.md` has to move with it. **And the
+weekly entry after it needs no net at all.**
+
+### The owner's decision of 9 September 2026
+> **Events are gathered into ONE weekly report, and what enters them is
+> code and not the owner. And the panel's own «add event» button stays an
+> option for whatever cannot wait a week.**
+
+⚠️ **And what makes it a batch rather than a line is measured:** the only
+road for entering an event from outside the browser was editing
+`js/data.js` — **which touches `js/`, so it closes its group and costs a
+version raise and a full net EVERY WEEK.** `642` put four events in and
+cost 664 added lines, a new suite, a version raise, a net of 160 runs, a
+pull request and the owner's own hand. **One event cost a whole day, and
+that is exactly what the decision says must stop.** So a second road is
+opened: rows on the server, written by `652`'s runner, touching no line of
+the app.
+
+### The road, written down
+> **The weekly entry = one SQL file + its lines in
+> `docs/الفعاليّات-المدرجة.md`, in one commit. لا شيءَ في `js/`, so no
+> version raise and no full net — `wiring.mjs` and the events guard suite
+> alone.**
+>
+> ⚠️ **And a batch that enters an event by editing `js/data.js` is against
+> this decision** — the four standing seeds are left where they are, and no
+> fifth is added to them.
+
+### The log is the first item, not the last
+Since `649` the events live on the server, **and the session that checks
+them weekly does not reach the server and never sees its rows.** So it has
+no way at all to know what really entered the app — **it either re-reports
+what was entered, or stays silent about what was not, and both are a
+fault.** `docs/الفعاليّات-المدرجة.md` is the source of truth for what is
+«in ARABNA», one line per event, **written in the same commit that enters
+it.** `test_v88 · 4.3` and `4.4` hold it in both directions: an
+`external_id` in a migration with no line is red, and a `wk-` line with no
+migration behind it is red too.
+
+### Two faults in the specification, both found by a real PostgreSQL
+⚠️ **Neither is visible by reading, and the first breaks a button the file
+itself says must not be touched.**
+
+- **The index as specified takes in every panel row.** `eventRowFrom` in
+  `js/store.js` writes `external_id: ev.externalId || ''` — **an empty
+  string, never NULL** — so `where external_id is not null` alone covers
+  them all. Measured:
+
+```
+the second event added from the panel
+  ERROR: duplicate key value · DETAIL: Key (external_id)=() already exists
+and on a database that already holds two of them, 0015 itself
+  ERROR: could not create unique index · Key (external_id)=() is duplicated
+```
+
+  **That is the panel's own «add event» button broken from the second
+  event onwards, and the migration aborting outright.** The predicate
+  excludes the empty string — `external_id <> ''` — and **nothing in
+  `js/` is changed for it**, which is the batch's own condition.
+
+- **`on conflict (external_id) do nothing` — the specification's own §3
+  template — fails.** PostgreSQL infers a **partial** unique index only
+  when the statement repeats its predicate:
+  `ERROR: there is no unique or exclusion constraint matching the ON
+  CONFLICT specification`. ⚠️ **And it fails with the narrow predicate
+  too**, so correcting the index alone would not have rescued it. Proven
+  idempotent afterwards: the same file run three times leaves two rows.
+
+### The clock, because SQL does not pass through `addEvent`
+`addEvent` is what pins an all-day event to noon and reads the
+`America/Chicago` offset, and an insert by SQL does not go through it. So
+every weekly file **names the zone and lets the engine read the offset for
+that date** — never a hand-written one:
+
+```
+2026-10-04 12:00 America/Chicago  ->  17:00Z   CDT, UTC-5
+2026-11-15 12:00 America/Chicago  ->  18:00Z   CST, UTC-6
+```
+
+⚠️ **And an event with no announced hour is `all_day = true` at 12:00 city
+time, never midnight.** Measured through the app's own `eventFromInstant`:
+midnight UTC on 2026-10-17 reads back as **2026-10-16 — the day before the
+festival** — while noon in the city zone reads back as 2026-10-17. Noon
+crosses no day boundary in any zone; midnight crosses one in every zone
+east or west.
+
+### Two corrections to the specification's own insert list
+- **`place` is not written.** It is one column for two languages,
+  `venue_ar`/`venue_en` replaced it, `mapLiveEventRowToJs` does not read it
+  and `eventRowFrom` deliberately does not write it. Writing it would fill
+  a column nothing reads and make the weekly road disagree with the app's
+  own writer.
+- **`featured` is not written either**, and defaults to false. It is the
+  paid $99 weekly pin (`AD_PRODUCTS.event`): ticking it on an editorial
+  item crowds out whoever paid for it.
+
+### The first load: the two events of 8 September
+`0016_events_2026_09_10.sql` carries them, and three boxes are empty on
+purpose. ⚠️ **The price in both — «interfaith festivals are usually free,
+and «usually» is not a source»** — and the description says so in words
+rather than leaving a reader to guess. **The ticket link, by the owner's
+decision: no source, no link** — and `js/screens/events.js:224` draws the
+button only when the field is filled, so an empty one draws nothing at all,
+which is the directory's own rule for a shop with no phone. **And
+`featured`, above.**
+
+⚠️ **And the Latin runs carry their own isolates inside the text** —
+U+2066 … U+2069, exactly what `ltrRun` writes — because an address inside
+an Arabic line reaches the page through `esc()` and there is no element to
+hang `unicode-bidi` on.
+
+### `test_v88` — 27 assertions, and two faults of my own inside it
+```
+the empty string back in the predicate  → 1.4, and the panel breaks on its second event
+`seed_id` written into an insert        → 2.2, and the row is invisible on every screen
+the short conflict target               → 2.5, and the insert is refused outright
+midnight instead of noon                → 3.3, and the festival shows a day early
+an id with no line in the log           → 4.3, naming it
+```
+
+⚠️ **And the two the suite itself committed are recorded rather than
+smoothed.** Its statement splitter cut on the first `;` it met — and an
+event's own English description reads «…from the centre calendar;
+Interfaith Ministries…», so the statement was truncated mid-string and the
+checks reading its tail reported a fault in a file that had none. **A
+parser that stops inside a string literal measures the parser, not the
+file.** And `4.6` («the three invented seeds are not in the log») read the
+whole log, which has to NAME `e1`–`e3` in order to say why they are absent
+— **the fault it exists to prevent, inside the suite that states the
+rule.** It reads the table rows now, never the prose.
+
+### And the group closes — the net, run on segments over one frozen tree
+```
+172 runs · 86 suites · 8,302 assertions · zero red · zero crash
+```
+Nineteen segments over `02fc746`, `HEAD` re-checked at the head of each —
+the runner exits 2 on a moved character or a dirty tree, and none did —
+**86 present and 86 run, each on both builds, and no result borrowed.** The
+verdict is READ from the index and never summed: `NET COMPLETE — every
+derived suite ran on both builds in this index`.
+
+⚠️ **The arithmetic closes itself, and it was written down BEFORE the run:
+8,248 + 54 (`v88` × two builds) = 8,302.** The total landing on the
+predicted figure to the unit is what proves no other suite moved — the only
+alternative is a pair of changes cancelling each other, and none was made.
+**And there is no reversal in this batch at all**: not one character in
+`js/` or `styles/`, so no older suite had a subject that could change.
+
+⚠️ **And a fault of my own in driving it is recorded rather than smoothed.**
+A `pkill -f drive.sh` matched the very shell that ran it, so the command
+killed itself — **a pattern that matches the watcher as well as the watched
+is not a stop, it is a suicide**, and it is `652`'s own deadlock lesson in
+a second costume.
 
 ## Known open items
 - **The header image is still far larger than its box.** V.04.7 replaced
@@ -12702,6 +12872,14 @@ checks there are.
   `(713) 555-0199` — a reserved fictional exchange — so every legal page
   published a `tel:` link that rang nowhere. ⚠️ **The value is not copied
   here**, which would be the entry above's own fault in a second costume.
+- **The four real events are still seeds in `js/data.js`.** They display
+  correctly and no reader loses anything today — **what it costs is the
+  next correction to one of them**: a postponed festival, a changed hall or
+  an hour finally announced means editing `js/`, which closes its group and
+  pays a version raise and a full net for one date. Since `656` a new event
+  is a row on the server and costs neither. **They are moved in a batch that
+  touches `js/` for its own reasons, never in a batch of their own** — and
+  no fifth seed is added beside them.
 - Legal pages are first drafts — a lawyer must review before public launch.
 - Push notifications: triggers are defined in Settings but not wired to a real service.
   The prayer settings name a pre-adhan alert as coming later, for the same reason.

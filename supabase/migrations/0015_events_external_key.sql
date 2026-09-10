@@ -1,0 +1,86 @@
+-- 0015 — the weekly key: one fixed id per event, so a report that repeats
+-- does not make a second row.
+--
+-- ⚠️ NO `||` AND NO `*` ANYWHERE IN THIS FILE, and that forbids the block
+-- comment as well as `count(*)`: the SQL editor's paste field drops both
+-- characters — measured twice — so every comment here is a line comment.
+-- Since `652` the runner applies this file itself, and the rule is kept
+-- anyway: a migration that cannot be pasted by hand is one with a single
+-- way in.
+--
+-- Every statement is idempotent, so a re-run moves nothing.
+
+-- ============================================================
+-- THE OWNER'S DECISION OF 9 SEPTEMBER 2026
+-- ============================================================
+-- «Events are gathered into ONE weekly report, and what enters them is
+--  code and not the owner. And the panel's own «add event» button stays
+--  an option for whatever cannot wait a week.»
+--
+-- The only road today for entering an event from outside the browser is
+-- editing `js/data.js` — which touches `js/`, so it closes its group and
+-- costs a version raise and a full net EVERY WEEK. One event cost a whole
+-- day. So a second road is opened: rows on the server, written by the
+-- migration runner, touching no line of the app.
+
+-- ============================================================
+-- 1) THE FIXED KEY
+-- ============================================================
+-- `external_id` has stood on `public.events` since `0010` with no writer
+-- at all. It becomes the key of the weekly entry, and its shape is
+-- derived from the EVENT and never from the day it was entered:
+--
+--     wk-<start date>-<short english name in dashes>
+--     wk-2026-10-04-festival-of-faiths
+--
+-- So a report that shows the same festival in two consecutive weeks does
+-- not create two rows, and re-running the file inserts nothing a second
+-- time. THAT is what makes «a repeat in the report is cheaper than an
+-- event that is missed» safe: the report repeats and the server does not.
+
+-- ⚠️ THE PREDICATE EXCLUDES THE EMPTY STRING, AND THAT IS NOT TIDINESS.
+-- MEASURED ON A REAL POSTGRESQL 16 BEFORE THIS FILE WAS WRITTEN:
+-- `eventRowFrom` in `js/store.js` writes `external_id: ev.externalId || ''`
+-- — an EMPTY STRING, never NULL — for every event entered from the admin
+-- panel. So a predicate of `where external_id is not null` alone takes in
+-- every panel row, and:
+--
+--   the second panel event   ERROR: duplicate key value violates unique
+--                            constraint · DETAIL: Key (external_id)=()
+--                            already exists
+--   and on a database that ALREADY holds two of them, this very file
+--                            ERROR: could not create unique index
+--                            DETAIL: Key (external_id)=() is duplicated
+--
+-- That is the panel's own «add event» button broken from the second event
+-- onwards — the one thing this batch says must not be touched — and the
+-- migration aborting outright. The empty string is not a key, so it is
+-- not indexed. Nothing in `js/` is changed for it, which is the batch's
+-- own condition.
+--
+-- ⚠️ And the index is partial for the reason the file was written: rows
+-- entered from the panel carry no external id, and without the predicate
+-- they would all collide on `null` after the first one.
+create unique index if not exists events_external_id_key
+  on public.events (external_id)
+  where external_id is not null and external_id <> '';
+
+-- ============================================================
+-- 2) AND THE CONFLICT TARGET CARRIES THE PREDICATE
+-- ============================================================
+-- MEASURED, and it fails with the narrow predicate too, so this is a
+-- separate fault from the one above:
+--
+--   insert ... on conflict (external_id) do nothing
+--   ERROR: there is no unique or exclusion constraint matching the
+--          ON CONFLICT specification
+--
+-- PostgreSQL infers a PARTIAL unique index only when the statement
+-- repeats its predicate. So every weekly file writes:
+--
+--   on conflict (external_id) where external_id is not null
+--     and external_id <> '' do nothing
+--
+-- Proven idempotent: the same insert run three times leaves one row.
+-- `test_v88` reads the weekly files and turns red on an insert that
+-- writes the short form.
