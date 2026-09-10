@@ -195,7 +195,7 @@ const DEFAULTS = {
      switch is a DEVICE preference, not an application setting. `DEFAULTS`
      is cloned into `state` and `writeState` saves the whole of `state`
      into this phone's own store, so turning it off on the owner's phone hid the
-     invented data ON RAI'S PHONE — and every new visitor started from the
+     invented data ON THE OWNER'S PHONE — and every new visitor started from the
      default and saw all of it. There is no server to correct that, so
      while the default was `true` there was NO WAY AT ALL to hide the
      invented listings from people. The comment here used to read «until

@@ -1465,7 +1465,7 @@ export function AboutScreen(root) {
   root.innerHTML = `
     <div class="pad mt-20 center-col">
       <img data-logo="stacked" src="${logoSrc('stacked')}" style="max-width:230px" alt="ARABNA عربنا" />
-      ${/* ⚠️ RAI'S OWN WORDS, put into plain MSA and approved by him — the
+      ${/* ⚠️ THE OWNER'S OWN WORDS, put into plain MSA and approved by him — the
            same rule the newcomer guide's text lives under. Nothing here is
            invented: the need, the two kinds of reader, Houston as the
            start and every American city as the aim are all his.

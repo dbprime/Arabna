@@ -235,7 +235,7 @@ console.log('--- somebody who adds it for an alert that never arrives was sold a
   ok('8.5 the device trace survives a sign-out — it is not account property',
      /'geoGranted', 'area', 'mapsApp', 'install',/.test(read('js/store.js')));
 
-  /* ⚠️ RAI'S OWN MEASUREMENT, AND IT MOVES THE CONDITION. The spec said
+  /* ⚠️ THE OWNER'S OWN MEASUREMENT, AND IT MOVES THE CONDITION. The spec said
      the reason is added «the day the alerts land», which assumes what is
      missing is the PERMISSION. It is not: what is missing is the whole
      machine. There is not one call to a system notification anywhere in
