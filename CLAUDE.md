@@ -12919,6 +12919,44 @@ Latin name is `DeBlanc`, and its Arabic tag catches a substring match because
 **word boundaries do not apply to Arabic letters**. It is not a name.
 `js/data.js` is not in the diff.
 
+⚠️ **AND A RAW SUBSTRING SWEEP OF THE FINISHED TREE RETURNS FOUR, EVERY ONE
+OF THEM AN ORDINARY ENGLISH WORD.** The first name is three letters, so it
+falls inside `RAISED` twice (`test_v53`, `test_v59`), inside `STRAIGHT`
+(`test_v83`), and once inside a base64 run in the generated build — the same
+arithmetic that makes `652`'s own key sweep exclude that file. Measured with
+word boundaries instead, which is the question that was ever being asked:
+
+```
+the name as a standalone word, whole tree   0
+the possessive form, this batch's subject   0
+```
+
+**It is written down because a later sweep written the fast way returns four
+on a clean tree**, concludes the name is still here, and either re-edits four
+innocent words or — worse — decides the rule is unenforceable. **A three-letter
+token is measured on its boundaries or it is not measured at all.**
+
+### And the group closes — the net, run on segments over one frozen tree
+```
+172 runs · 86 suites · 8,302 assertions · zero red · zero crash
+```
+Twenty-four segments over `9075d12`, `HEAD` re-checked at the head of each —
+the runner exits 2 on a moved character or a dirty tree, and none did —
+**86 present and 86 run, each on both builds, and no result borrowed.** The
+verdict is READ from the index and never summed: `NET COMPLETE — every
+derived suite ran on both builds in this index`.
+
+⚠️ **AND THE FIGURE IS `656`'S OWN, TO THE UNIT — WHICH IS THE PROOF, NOT A
+COINCIDENCE.** The rule this batch set for itself is that all five sites are
+comments, **so any movement at all in the assertion count means the edit left
+the comments and reached the code.** It did not move: 8,302 before and 8,302
+after. **And there is no reversal in the batch**, because a comment has no
+subject a suite could be measuring.
+
+**The heaviest three are unchanged from `615`'s own table, and their order
+did not move:** `v8` 286/284 · `v20` 284/276 · `v14` 242/239. Measured suite
+time: **7,158s on the single-file build and 6,704s on the module one.**
+
 ## Known open items
 - **The header image is still far larger than its box.** V.04.7 replaced
   the 831/837 KB lockups with the cropped marks at **333/338 KB** — 60% off
