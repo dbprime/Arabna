@@ -13670,6 +13670,41 @@ buyer can open its conversation screen: every user listing starts
 `pending`, visible to its owner alone, so the redirect was the app behaving
 and the fixture had to say which state it was measuring.
 
+### And the group closes — the net, run on segments over one frozen tree
+```
+176 runs · 88 suites · 8,510 assertions · zero red · zero crash
+```
+Thirty-one segments over `89e1ecd`, `HEAD` re-checked at the head of each —
+the runner exits 2 on a moved character or a dirty tree, and none did —
+**88 present and 88 run, each on both builds, and no result borrowed.** The
+verdict is READ from the index and never summed: `NET COMPLETE — every
+derived suite ran on both builds in this index`.
+
+⚠️ **The arithmetic closes itself, and it was written down BEFORE the run:
+8,382 + 128 (`v90`: 71 on the module build, 57 on the single-file one) =
+8,510.** The total landing on the predicted figure to the unit is what
+proves no older suite moved — **and there is no reversal in this batch at
+all**, because the class was swept before the net rather than met at
+segment twenty.
+
+⚠️ **And the verdict is proven in both directions on the finished index:**
+one line deleted prints `NET INCOMPLETE — 1 run(s) missing: m/v50`, and
+putting it back prints `NET COMPLETE` — **with the distinct count standing
+at 88 in both**, which is exactly why the condition is `nmiss == 0` AND
+`distinct == derived` AND both builds named.
+
+**The heaviest three are unchanged from `615`'s own table, and their order
+did not move:** `v8` 285/284 · `v20` 283/278 · `v14` 242/239. Measured
+suite time: **7,181s on the single-file build and 6,722s on the module
+one.**
+
+⚠️ **The net was run from the top twice, and the second time had a cause
+worth keeping**: `v79` crashed at segment 28 of the first run, and what it
+exposed was a green that had never been green for its own reason. A fix to
+a suite makes a new tree, so the first run was spent — **and the class was
+swept before restarting**, which is what made it one restart instead of the
+three `645`, `650` and `652` each paid.
+
 ## Known open items
 - **The header image is still far larger than its box.** V.04.7 replaced
   the 831/837 KB lockups with the cropped marks at **333/338 KB** — 60% off
