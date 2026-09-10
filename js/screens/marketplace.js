@@ -807,8 +807,24 @@ export function PostScreen(root) {
 
 
 /* --------------------------- MESSAGES --------------------------- */
+/**
+ * ⚠️ THREE DESTINATIONS, NOT TWO (671). A listing has as many
+ * conversations as it has askers, so «the messages on this listing» is
+ * not a screen — it is a list of screens:
+ *
+ *   #/messages                       every conversation this reader is in
+ *   #/messages/<listing>/<party>     one conversation
+ *   #/messages/<listing>             the owner: that listing's conversations
+ *                                    anybody else: their own — so an old
+ *                                    link opens what it always opened
+ *
+ * ⚠️ And the middle case is the seller's own button, «رسائل المشترين (N)»,
+ * which until now poured three people's private conversations into one
+ * column of bubbles with nothing saying where one ended.
+ */
 export function MessagesScreen(root, params) {
   const listingId = params[0];
+  const buyerId = params[1] || null;
   // Messages belong to an account: a session that ended mid-thread resumes here.
   if (!S.requireTier(1, location.hash, go)) return;
 
@@ -816,6 +832,10 @@ export function MessagesScreen(root, params) {
 
   const c = S.classifiedById(listingId);
   if (!c) { toast(t('gone'), 'err'); go('#/marketplace'); return; }
+
+  /* the owner arriving with no party is asking for the list, not a thread */
+  if (!buyerId && S.ownsListing(listingId)) { threadListView(root, listingId); return; }
+
   renderHeader({ simple: true, title: t('messagesTitle') });
 
   if (!S.requireTier(2, location.hash, go)) return;
@@ -851,7 +871,7 @@ export function MessagesScreen(root, params) {
   }));
 
   const paint = () => {
-    const list = S.messagesFor(listingId);
+    const list = S.messagesFor(listingId, buyerId);
     $('#msgList').innerHTML = list.length
       ? list.map(m => `<div class="msg ${m.mine ? 'me' : 'them'}">${esc(m.text)}
           <div class="msg-when">${esc(L(m.when))}</div></div>`).join('')
@@ -868,7 +888,11 @@ export function MessagesScreen(root, params) {
     /* ⚠️ THE MESSAGE REALLY LEAVES THE DEVICE NOW (655 §2), so a refusal
        is said and the box KEEPS what was typed — clearing it over a write
        that did not take loses the words and tells the sender it was sent. */
-    const res = await S.sendMessage(listingId, text, getLang());
+    /* ⚠️ AND THE CONVERSATION'S PARTY TRAVELS WITH IT, never guessed in
+       the store: for the owner it is the thread they are looking at, and
+       with none the store refuses rather than putting the reply into
+       whichever conversation a default happened to land on. */
+    const res = await S.sendMessage(listingId, text, getLang(), buyerId);
     if (res.error) { toast(t('somethingWrong'), 'err'); return; }
     input.value = '';
     paint();
@@ -880,22 +904,51 @@ export function MessagesScreen(root, params) {
   wireRoutes(root);
 }
 
-function threadListView(root) {
-  renderHeader({ simple: true, title: t('myMessages') });
-  const threads = S.messageThreads();
-  root.innerHTML = threads.length
-    ? `<div class="pad mt-16">${threads.map(th => {
-        const c = S.classifiedById(th.listingId);
-        if (!c) return '';
-        return `<div class="list-row" data-route="#/messages/${th.listingId}">
-          <span class="row-ico">${icon(c.icon || 'image', 22)}</span>
-          <div class="row-main">
-            <div class="row-title">${esc(L(c.title))}</div>
-            <div class="row-sub">${th.count} · ${t('messagesTitle')}</div>
-          </div></div>`;
-      }).join('')}</div>`
-    : emptyState('message', t('emptyMsgTitle'), t('emptyMsgSub'), t('classifiedsTitle'), '#/marketplace');
-  wireRoutes(root);
+/**
+ * ⚠️ THE LIST NAMES THE OTHER PARTY (671), and without it a seller with
+ * three askers reads three identical lines: the same listing title, three
+ * times over. That is the blurring this batch removes from the data, put
+ * straight back on the screen.
+ * ⚠️ The name is fetched — `profiles` is readable only to its own owner,
+ * and it is NOT widened for a line in a list — so it arrives after the
+ * paint and the list repaints itself once when it does. A name that never
+ * comes is simply not printed; the conversation opens and works either
+ * way.
+ * @param {string} [listingId] one listing's conversations, for its owner
+ */
+function threadListView(root, listingId) {
+  const one = listingId ? S.classifiedById(listingId) : null;
+  renderHeader({ simple: true, title: one ? L(one.title) : t('myMessages') });
+  const threads = S.messageThreads().filter(th => !listingId || th.listingId === listingId);
+
+  const paint = () => {
+    root.innerHTML = threads.length
+      ? `<div class="pad mt-16">${threads.map(th => {
+          const c = S.classifiedById(th.listingId);
+          if (!c) return '';
+          /* ⚠️ A conversation with no party is a row from before `0018`,
+             and it is named for what it is rather than attributed to
+             somebody: «a row whose party is unknown is better than a row
+             attributed to the wrong party» is this column's own rule. */
+          const who = th.buyerId ? S.threadPartyName(th.listingId, th.buyerId) : t('threadLegacy');
+          const sub = [who, `${th.count} · ${t('messagesTitle')}`].filter(Boolean).join(' · ');
+          const to = th.buyerId ? `#/messages/${th.listingId}/${th.buyerId}` : `#/messages/${th.listingId}`;
+          return `<div class="list-row" data-route="${esc(to)}">
+            <span class="row-ico">${icon(c.icon || 'image', 22)}</span>
+            <div class="row-main">
+              <div class="row-title">${esc(L(c.title))}</div>
+              <div class="row-sub">${esc(sub)}</div>
+            </div></div>`;
+        }).join('')}</div>`
+      : emptyState('message', t('emptyMsgTitle'), t('emptyMsgSub'), t('classifiedsTitle'), '#/marketplace');
+    wireRoutes(root);
+  };
+  paint();
+
+  const here = location.hash;
+  S.loadThreadNames(threads).then(got => {
+    if (got && location.hash === here) paint();
+  });
 }
 
 /* ----------------------------- BOOST ----------------------------- */

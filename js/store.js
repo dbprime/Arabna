@@ -2832,6 +2832,9 @@ function forgetLiveRows() {
   flagReader.forget();
   claimReader.forget();
   notifReader.forget();
+  /* ⚠️ and the names with them: a display name was read for a party of a
+     conversation THIS account is in, so it leaves with the account. */
+  forgetThreadNames();
 }
 
 /** «قبل n يوم» in the four Arabic forms, without importing i18n */
@@ -3980,8 +3983,13 @@ export async function replyToReview(reviewId, text) {
 }
 export async function deleteReply(reviewId) {
   try {
-    const { error } = await sb.from('review_replies').delete().eq('review_id', reviewId);
+    /* ⚠️ the same as `deleteReview` above and for the same reason (671):
+       without the count a refused delete reads as a success and the reply
+       stays on the page under a «تمّ». */
+    const { data, error } = await sb.from('review_replies')
+      .delete().eq('review_id', reviewId).select();
     if (error) throw error;
+    if (!data || !data.length) throw new Error('no row');
   } catch (e) { return { error: 'server' }; }
   const next = Object.assign({}, state.reviewReplies);
   delete next[reviewId];
@@ -5617,11 +5625,23 @@ export async function addReview(bizId, rating, text) {
 }
 export async function updateReview(id, rating, text) {
   const r = mergedReviews().find(x => x.id === id);
-  if (!r) return null;
+  /* ⚠️ «NOT HERE» IS AN ANSWER, AND IT USED TO BE SILENCE (671). This
+     returned a bare `null`, and the screen's guard reads `if (r && r.error)`
+     — so `null` passed as success and the reader was told «your review was
+     updated» over a review that was not found at all. The two outcomes are
+     different and are both said. */
+  if (!r) return { error: 'notFound' };
   try {
-    const { error } = await sb.from('reviews')
+    const { data, error } = await sb.from('reviews')
       .update({ rating, body: text }).eq('id', id).select();
     if (error) throw error;
+    /* ⚠️ AND THE ROW IS ANSWERED AND THEN COUNTED. PostgREST answers a row
+       the policy hides with 200 and an EMPTY LIST, never an error — so
+       `.select()` alone measures nothing, and the caller reading «no error»
+       as «done» printed «تمّ تحديث تقييمك» while the old words stood for
+       the whole world. The shape is this file's own, written four times
+       already: `pushBusiness`, `pushEvent`, `resolveFlag`, `notifyUser`. */
+    if (!data || !data.length) throw new Error('no row');
   } catch (e) { return { error: 'server' }; }
   const local = (state.reviews || []).find(x => x.id === id);
   if (local) {
@@ -5635,8 +5655,12 @@ export async function updateReview(id, rating, text) {
 }
 export async function deleteReview(id) {
   try {
-    const { error } = await sb.from('reviews').delete().eq('id', id);
+    /* ⚠️ `.select()` AND THE COUNT, and there was neither (671): a delete
+       the policy refuses comes back 200 with an empty list, so the reader
+       was told «تمّ حذف تقييمك», moved on, and found it there on return. */
+    const { data, error } = await sb.from('reviews').delete().eq('id', id).select();
     if (error) throw error;
+    if (!data || !data.length) throw new Error('no row');
   } catch (e) { return { error: 'server' }; }
   state.reviews = (state.reviews || []).filter(x => x.id !== id);
   await loadLiveReviews();
@@ -6248,6 +6272,12 @@ export function mapLiveMsgRowToJs(r) {
   const created = r.created_at ? Date.parse(r.created_at) : now();
   return {
     id: r.id, listingId: r.listing_id, senderId: r.sender_id,
+    /* ⚠️ THE THREAD KEY, and `null` is a real answer (671). A row written
+       before `0018` by the listing's own owner has no knowable party, and
+       none is invented for it: it stays `null` and is read by its writer
+       and by the listing's owner exactly as it was. A row whose party is
+       unknown is better than a row attributed to the wrong party. */
+    buyerId: r.buyer_id || null,
     text: r.body || '',
     scrubbed: !!r.scrubbed, offPlatform: !!r.off_platform,
     created, when: agoLabel(created),
@@ -6291,18 +6321,105 @@ function mergedMessages() {
   return out;
 }
 
-export function messagesFor(listingId) {
-  return mergedMessages().filter(m => m.listingId === listingId);
+/**
+ * ⚠️ A CONVERSATION IS (LISTING, PARTY) AND NOT A LISTING (671). One
+ * listing has as many conversations as there are people who asked, and
+ * reading it as one stream did two things at once: the buyer never saw
+ * the seller's reply at all — the row could not reach them, because the
+ * policy had no column to ask about — and the seller's three askers ran
+ * into one another in a single column of bubbles.
+ * ⚠️ AND WITH NO PARTY IT FILTERS NOTHING, ON PURPOSE. The rows a device
+ * holds came through RLS already, so «every message on this listing that
+ * I can see» IS the buyer's own conversation — the server separated them
+ * — and it is all of them for the listing's owner, which is what the
+ * count on their own listing means. Repeating the separation here would
+ * be the client writing a policy the database already wrote, and that is
+ * `630`'s lesson: no reader adds a filter of its own beside the policy.
+ * So an old `#/messages/<listingId>` link opens exactly what it always
+ * opened, and it opens it for the right reason.
+ * ⚠️ A row with no party (`null`) is from before `0018` and belongs to no
+ * nameable conversation. It is shown wherever the whole listing is shown,
+ * and never folded into somebody's named thread.
+ */
+export function messagesFor(listingId, buyerId) {
+  const all = mergedMessages().filter(m => m.listingId === listingId);
+  if (buyerId === undefined || buyerId === null) return all;
+  return all.filter(m => m.buyerId === buyerId);
 }
 
-/** what the owner's button counts: messages from buyers, not their own */
-export function buyerMessageCount(listingId) {
-  return mergedMessages().filter(m => m.listingId === listingId && !m.mine).length;
+/** what the owner's button counts: messages from buyers, not their own.
+    ⚠️ In ONE conversation when a party is given, and across the listing
+    when it is not — the button on the listing counts everybody who
+    wrote, and the thread's own header counts that thread. */
+export function buyerMessageCount(listingId, buyerId) {
+  const all = mergedMessages().filter(m => m.listingId === listingId && !m.mine);
+  return (buyerId === undefined ? all : all.filter(m => m.buyerId === buyerId)).length;
 }
+
+/* ---------------- THE OTHER PARTY'S NAME (671) ----------------
+ * ⚠️ A conversation list that does not name the other party is a column
+ * of identical lines: a seller with three askers sees the same listing
+ * title three times, which is the very blurring this batch removes from
+ * the data and would then put back on the screen.
+ * ⚠️ AND `profiles` IS NOT OPENED FOR IT. Its read policy is
+ * `id = auth.uid()` or staff — measured — so the seller cannot read the
+ * buyer's name at all, and widening it would publish every account's
+ * name, its notification preferences and its staff flag to every signed-in
+ * reader, as the price of one line in a list. A policy is not weakened
+ * for the convenience of a display. `0018` answers the one narrow
+ * question instead, to a party of that conversation and to nobody else.
+ * ⚠️ The name is FETCHED, so it is cached and read synchronously: the
+ * screens that show it are drawn by `render()`, which is synchronous, and
+ * a name that has not arrived is simply not printed. */
+const _partyNames = new Map();
+
+/** the other party's name in this conversation, or '' — never a guess */
+export function threadPartyName(listingId, buyerId) {
+  return _partyNames.get(threadKey(listingId, buyerId)) || '';
+}
+/** forget them with the session: a name belongs to whoever was signed in */
+export function forgetThreadNames() { _partyNames.clear(); }
+
+/**
+ * Fetch the names for these conversations once each.
+ * ⚠️ A name that does not arrive is not an error the reader is shown: the
+ * conversation still opens and still works, and what is missing is a
+ * word. So a refusal is swallowed HERE and nowhere else in this file.
+ */
+export async function loadThreadNames(threads) {
+  const list = (threads || messageThreads())
+    .filter(t => t.buyerId && !_partyNames.has(threadKey(t.listingId, t.buyerId)));
+  if (!list.length) return false;
+  await Promise.all(list.map(async t => {
+    try {
+      const { data, error } = await sb.rpc('thread_party_name',
+        { p_listing: t.listingId, p_buyer: t.buyerId });
+      if (error) throw error;
+      _partyNames.set(threadKey(t.listingId, t.buyerId), data || null);
+    } catch (e) { /* no name is a missing word, never a failed screen */ }
+  }));
+  return true;
+}
+
+/** the key one conversation is grouped by — written once so the list and
+    the reader cannot disagree about what a conversation is */
+export function threadKey(listingId, buyerId) {
+  return String(listingId) + '|' + (buyerId == null ? '' : String(buyerId));
+}
+
+/** every conversation this reader is a party to, newest first.
+    `{ listingId, buyerId, count, last }` — `buyerId` is `null` for a row
+    from before `0018`, which is a conversation with no nameable party. */
 export function messageThreads() {
-  const seen = {};
-  mergedMessages().forEach(m => { seen[m.listingId] = (seen[m.listingId] || 0) + 1; });
-  return Object.keys(seen).map(id => ({ listingId: id, count: seen[id] }));
+  const seen = new Map();
+  mergedMessages().forEach(m => {
+    const k = threadKey(m.listingId, m.buyerId);
+    const t = seen.get(k) || { listingId: m.listingId, buyerId: m.buyerId || null, count: 0, last: 0 };
+    t.count += 1;
+    if ((m.created || 0) > t.last) t.last = m.created || 0;
+    seen.set(k, t);
+  });
+  return Array.from(seen.values()).sort((a, b) => b.last - a.last);
 }
 
 /**
@@ -6310,12 +6427,26 @@ export function messageThreads() {
  * is stored, and the text is run through the automated scan.
  * @returns {{ msg: object, removed: number, flagged: boolean }}
  */
-export async function sendMessage(listingId, text, lang = 'ar') {
+export async function sendMessage(listingId, text, lang = 'ar', buyerId) {
   const listing = classifiedById(listingId);
   const clean = scrubContact(text, lang);
   const scan = scanMessage(text, listing);
   const offPlatform = OFF_PLATFORM.test(asciiDigits(String(text || '')));
   const me = (state.user && state.user.id) || null;
+
+  /* ⚠️ THE CONVERSATION'S PARTY, AND IT IS NEVER GUESSED (671). The party
+     is whichever of the two is not the listing's owner, so for anybody
+     else it IS the writer; for the owner it can only come from the screen
+     they are looking at, because a listing has as many conversations as
+     it has askers and there is nothing in a reply that says which one.
+     ⚠️ And an owner with no party is REFUSED rather than defaulted. A
+     default here would put a reply into whichever conversation the guess
+     happened to land on — somebody else's — and the whole reason this
+     column exists is that a private conversation between two strangers
+     must not leak into a third. */
+  const iOwn = ownsListing(listingId);
+  const party = iOwn ? (buyerId || null) : me;
+  if (iOwn && !party) return { msg: null, removed: 0, flagged: false, error: 'noThread' };
 
   /* ⚠️ THE SERVER FIRST, AND THE DEVICE IS ONLY THE TRACE OF ITS YES —
      `620`'s order for the password and `630`'s for the moderation queue.
@@ -6329,7 +6460,7 @@ export async function sendMessage(listingId, text, lang = 'ar') {
   if (me) {
     try {
       const { data, error } = await sb.from('messages').insert({
-        listing_id: listingId, sender_id: me, body: clean.text,
+        listing_id: listingId, sender_id: me, buyer_id: party, body: clean.text,
         scrubbed: !!clean.removed, off_platform: offPlatform,
       }).select().single();
       if (error) throw error;
