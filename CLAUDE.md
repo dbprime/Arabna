@@ -12824,6 +12824,29 @@ whole log, which has to NAME `e1`–`e3` in order to say why they are absent
 — **the fault it exists to prevent, inside the suite that states the
 rule.** It reads the table rows now, never the prose.
 
+### And the group closes — the net, run on segments over one frozen tree
+```
+172 runs · 86 suites · 8,302 assertions · zero red · zero crash
+```
+Nineteen segments over `02fc746`, `HEAD` re-checked at the head of each —
+the runner exits 2 on a moved character or a dirty tree, and none did —
+**86 present and 86 run, each on both builds, and no result borrowed.** The
+verdict is READ from the index and never summed: `NET COMPLETE — every
+derived suite ran on both builds in this index`.
+
+⚠️ **The arithmetic closes itself, and it was written down BEFORE the run:
+8,248 + 54 (`v88` × two builds) = 8,302.** The total landing on the
+predicted figure to the unit is what proves no other suite moved — the only
+alternative is a pair of changes cancelling each other, and none was made.
+**And there is no reversal in this batch at all**: not one character in
+`js/` or `styles/`, so no older suite had a subject that could change.
+
+⚠️ **And a fault of my own in driving it is recorded rather than smoothed.**
+A `pkill -f drive.sh` matched the very shell that ran it, so the command
+killed itself — **a pattern that matches the watcher as well as the watched
+is not a stop, it is a suicide**, and it is `652`'s own deadlock lesson in
+a second costume.
+
 ## Known open items
 - **The header image is still far larger than its box.** V.04.7 replaced
   the 831/837 KB lockups with the cropped marks at **333/338 KB** — 60% off
