@@ -13153,6 +13153,35 @@ followed to the value's CONSUMER, and here a restore has to be followed to
 what the restored file MAKES. Both are the same failure to ask «and what
 else did that touch?»
 
+### And the group closes — the net, run on segments over one frozen tree
+```
+174 runs · 87 suites · 8,366 assertions · zero red · zero crash
+```
+Twenty-four segments over `447370e`, `HEAD` re-checked at the head of each —
+the runner exits 2 on a moved character or a dirty tree, and none did —
+**87 present and 87 run, each on both builds, and no result borrowed.** The
+verdict is READ from the index and never summed: `NET COMPLETE — every
+derived suite ran on both builds in this index`.
+
+⚠️ **The arithmetic closes itself, and it was written down BEFORE the run:
+8,302 + 64 (`v89`: 34 on the module build, 30 on the single-file one) =
+8,366.** The total landing on the predicted figure to the unit is what
+proves no other suite moved — **and `v76`'s reversal REPLACED an assertion
+rather than adding or dropping one**, which is what a reversal should look
+like: it changes what a check measures, never how many checks there are.
+
+**The heaviest three are unchanged from `615`'s own table:** `v8` 288/287 ·
+`v20` 286/277 · `v14` 244/241. Measured suite time: **7,261s on the
+single-file build and 6,779s on the module one.**
+
+⚠️ **And the sweep is what made this the only run.** `js/store.js` was
+touched, so the blast radius is every screen — and the class was swept
+BEFORE the net rather than met at segment twenty: the suites reading
+`pwHash`, the version carriers, `wiring.mjs`'s own output, and every caller
+of the two changed functions. That pre-run found `v76 · 2.2` and cost eight
+suites instead of a whole net. **`645`, `650` and `652` each paid for that
+lesson; this is the first batch in the run of them that paid nothing.**
+
 ## Known open items
 - **The header image is still far larger than its box.** V.04.7 replaced
   the 831/837 KB lockups with the cropped marks at **333/338 KB** — 60% off
