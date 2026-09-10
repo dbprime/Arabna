@@ -7008,7 +7008,7 @@ NOT said          «تنبيهات الأذان» — and NOT LATER EITHER, unti
 a promise nobody kept** — `337` and `415`'s rule. Measured: **21 invite
 strings, zero naming a notification.**
 
-⚠️ **AND RAI'S OWN MEASUREMENT MOVED THE CONDITION.** This file first wrote
+⚠️ **AND THE OWNER'S OWN MEASUREMENT MOVED THE CONDITION.** This file first wrote
 «the reason is added the day the alerts land», which assumes what is missing
 is the **permission**. It is not — what is missing is the whole machine:
 
@@ -12846,6 +12846,116 @@ A `pkill -f drive.sh` matched the very shell that ran it, so the command
 killed itself — **a pattern that matches the watcher as well as the watched
 is not a stop, it is a suicide**, and it is `652`'s own deadlock lesson in
 a second costume.
+
+## The name leaves the repository — the form `375` did not reach (376)
+
+⚠️ **This file closes its own group, and its group is itself** — it touches
+`js/`, so the full net runs with it. **And no version is raised**: all five
+sites are inside comments and not one character reaches a screen — the rule
+of `180`, `185`, `210`, `344`, and `375`, which is the nearest precedent.
+
+⚠️ **THE TOKEN IS NOT WRITTEN HERE, AND WAS NOT WRITTEN IN THE COMMIT.** Rule
+0 at the head of this file is the subject of the batch itself: **a fix that
+writes the name in one of its own lines reproduces the fault in the name of
+its cure.** Each site carried exactly one match, so naming the file and the
+line is enough.
+
+### It is not a decision broken — it is a gap in an earlier sweep's REACH
+`375` recorded the forms it hunted — the surname in Arabic across twelve
+fixture lines, the first name inside password fixtures, an address built on
+it in nine suites, the short display name on a seed review — **and the large
+Latin form was not among them.** That is `570` and `572`'s rule again:
+**sweep the CLASS, never the instance.**
+
+**Measured before the change, case-sensitively, on the whole tree:**
+
+```
+sites in the working tree                                   5
+   of them in js/  ← reaching every browser that opens it   2
+   of them in tools/e2e/                                    2
+   of them in CLAUDE.md                                     1
+inside index-single-file.html's inlined modules, base64 decoded   2
+a TEXT search of index-single-file.html itself                    0
+```
+
+⚠️ **The last two lines are the item.** The single-file build inlines every
+module as a base64 `data:` URI, **so a text search of it answers zero while
+the name is inside it** — the shape `560` and `645` already recorded. A build
+its reader believes clean is not clean, which is why the rebuild is part of
+the fix and not a tidy-up after it.
+
+### The diff is five lines, and that is asserted rather than intended
+⚠️ **`375` swept a capitalisation pass across lines that never carried the
+name and changed eight innocent comments.** So here the replacement is on the
+whole token, case-sensitively, and the diff was measured before anything else
+was touched: **five deletions and five additions, every deleted line carrying
+the token and every added line carrying `THE OWNER'S`, and no sixth line.**
+
+⚠️ **And two of the five line numbers had MOVED** — `CLAUDE.md` 6974 → 7011
+and `js/screens/profile.js` 1461 → 1468, because `655` and `656` landed
+between the specification's measurement and its execution. **A line that
+moved is edited in its place, never by its number**, which is what the file
+said and what the measurement then required.
+
+### The class was swept again afterwards, and what could not be derived is said
+```
+the large Latin form (this batch's subject)   5 → 0
+the first name in Latin                       0
+in the inlined modules, base64 decoded        2 → 0
+```
+
+⚠️ **The four remaining forms — the surname in Latin and in Arabic, the first
+name in Arabic, and the part that builds the address — are NOT re-derived
+here, and that is a decision.** Deriving them means writing them into a
+command in this repository's own session, which is the very thing rule 0
+forbids; `375` removed them and there is nothing left in the tree to derive
+them from. **What is measured instead is the question that belongs to this
+batch**: every form `375` deleted was swept against everything ADDED between
+the specification's measurement point and this commit — 3,724 added lines —
+and the three matches are ordinary words, read with the form masked.
+
+**And the false positive stays untouched**: `b183` is a law office whose
+Latin name is `DeBlanc`, and its Arabic tag catches a substring match because
+**word boundaries do not apply to Arabic letters**. It is not a name.
+`js/data.js` is not in the diff.
+
+⚠️ **AND A RAW SUBSTRING SWEEP OF THE FINISHED TREE RETURNS FOUR, EVERY ONE
+OF THEM AN ORDINARY ENGLISH WORD.** The first name is three letters, so it
+falls inside `RAISED` twice (`test_v53`, `test_v59`), inside `STRAIGHT`
+(`test_v83`), and once inside a base64 run in the generated build — the same
+arithmetic that makes `652`'s own key sweep exclude that file. Measured with
+word boundaries instead, which is the question that was ever being asked:
+
+```
+the name as a standalone word, whole tree   0
+the possessive form, this batch's subject   0
+```
+
+**It is written down because a later sweep written the fast way returns four
+on a clean tree**, concludes the name is still here, and either re-edits four
+innocent words or — worse — decides the rule is unenforceable. **A three-letter
+token is measured on its boundaries or it is not measured at all.**
+
+### And the group closes — the net, run on segments over one frozen tree
+```
+172 runs · 86 suites · 8,302 assertions · zero red · zero crash
+```
+Twenty-four segments over `9075d12`, `HEAD` re-checked at the head of each —
+the runner exits 2 on a moved character or a dirty tree, and none did —
+**86 present and 86 run, each on both builds, and no result borrowed.** The
+verdict is READ from the index and never summed: `NET COMPLETE — every
+derived suite ran on both builds in this index`.
+
+⚠️ **AND THE FIGURE IS `656`'S OWN, TO THE UNIT — WHICH IS THE PROOF, NOT A
+COINCIDENCE.** The rule this batch set for itself is that all five sites are
+comments, **so any movement at all in the assertion count means the edit left
+the comments and reached the code.** It did not move: 8,302 before and 8,302
+after. **And there is no reversal in the batch**, because a comment has no
+subject a suite could be measuring.
+
+**The heaviest three are unchanged from `615`'s own table, and their order
+did not move:** `v8` 286/284 · `v20` 284/276 · `v14` 242/239. Measured suite
+time: **7,158s on the single-file build and 6,704s on the module one.**
 
 ## Known open items
 - **The header image is still far larger than its box.** V.04.7 replaced

@@ -1,7 +1,7 @@
 /* V.08.4 — the house slide shows what can be sold, and does not vanish
    when it cannot.
 
-   ⚠️ RAI'S QUESTION IS WHAT OPENED THIS: «if they are all sold, how does
+   ⚠️ THE OWNER'S QUESTION IS WHAT OPENED THIS: «if they are all sold, how does
    somebody browsing learn they could advertise here in future?»
 
    Three behaviours of one rule, and each was in a different place:
