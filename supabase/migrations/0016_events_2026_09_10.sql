@@ -8,6 +8,13 @@
 -- Every statement is idempotent, so a re-run moves nothing: the conflict
 -- target repeats the predicate of the partial index `0015` creates.
 --
+-- ⚠️ CORRECTED AFTER THE FACT BY `0017_events_type_fix.sql`: the first
+-- event below entered with `type = 'lecture'` — «محاضرات ودروس دينيّة» —
+-- and its subject was never published, so the type claimed a religion
+-- nobody stated. `0017` sets it to `community`. THIS FILE IS NOT EDITED
+-- FOR IT: it has already been applied to production, and an executed
+-- migration is not edited — what comes after it is written.
+--
 -- ============================================================
 -- WHERE THESE TWO COME FROM
 -- ============================================================

@@ -107,8 +107,30 @@ const signUp = (p, email, password, confirm = true) => p.evaluate(async ([e, pw,
   ok("2.1 the two refusals are two reasons, not one",
      /reason: 'wrong'/.test(store) && /reason: 'server'/.test(store));
   const prof = code('js/screens/profile.js');
+  /* ⚠️ REVERSED BY 670, and the subject is unchanged: «a different sentence
+     for each» is exactly what it always said. What moved is the count —
+     620 wrote TWO refusals and 670 added the third, a dropped connection,
+     because telling somebody with no network to sign out and back in sends
+     them to a screen that cannot answer either.
+     ⚠️ And it is DERIVED now rather than frozen on the ternary's letters:
+     the reasons are read out of `changePassword`'s own body, so a FOURTH
+     one cannot be added without a sentence to go with it — which is what
+     froze this item in the first place. `615`'s rule, inside a check. */
+  /* ⚠️ AND THE DERIVATION FOLLOWS THE VALUE TO ITS PRODUCER. `changePassword`
+     FORWARDS `cur.reason` from `checkUserPassword`, so reading its body
+     alone finds two of the three and would have let «wrong» lose its
+     sentence with nothing going red — measured, it printed exactly that.
+     652's rule, read the other way round: a value is followed to where it
+     is made, not only to where it is used. */
+  const bodyOf = n => (store.match(new RegExp('export async function ' + n + '[\\s\\S]*?\\n\\}')) || [''])[0];
+  const fn = bodyOf('changePassword') + bodyOf('checkUserPassword');
+  const reasons = [...new Set([...fn.matchAll(/reason: '([a-z-]+)'/g)].map(m => m[1]))]
+    .filter(r => r !== 'no-user');          // unreachable: the screen is behind requireTier(1)
+  const SENTENCE = { wrong: 'wrongPassword', server: 'pwServerRefused', offline: 'pwOffline' };
+  const unsaid = reasons.filter(r => !SENTENCE[r] || !new RegExp("t\\('" + SENTENCE[r] + "'\\)").test(prof));
   ok('2.2 …and the screen prints a different sentence for each',
-     /res\.reason === 'server' \? t\('pwServerRefused'\) : t\('wrongPassword'\)/.test(prof));
+     reasons.length >= 3 && unsaid.length === 0,
+     reasons.join(' · ') + (unsaid.length ? ' | unsaid: ' + unsaid.join(' · ') : ''));
   const i18n = read('js/i18n.js');
   ok('2.3 …and neither sentence blames a password that was right',
      /pwServerRefused:/.test(i18n) && (i18n.match(/pwServerRefused:/g) || []).length === 2);

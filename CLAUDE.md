@@ -11,7 +11,7 @@ ARABNA · عربنا — a mobile-first web app for the Arab community in the U.
 **business directory + marketplace + events + magazine**, Arabic-first with a full English toggle.
 ("Classifieds / الإعلانات الشخصية" is now "Marketplace / السوق" — the old `#/classifieds`
 routes still resolve so shared links keep working.)
-Current version: **V.11.1 (prototype)**. Owner: dbprime. Deploys to Vercel (team DB Prime).
+Current version: **V.11.2 (prototype)**. Owner: dbprime. Deploys to Vercel (team DB Prime).
 
 ## Hard rules (from the product brief)
 0. ⚠️ **THE OWNER'S NAME IS NEVER WRITTEN — anywhere.** Not in this file, not
@@ -1023,6 +1023,39 @@ measured twice. `concat()` for `||`, `count(1)` for `count(*)`. So `0005`
 as it stands in the repository was not run to the letter but as a
 `concat` copy; the difference changes no meaning, and it is written in the
 log so nobody reads the server as disagreeing with the repository.
+
+### An executed migration is not edited — what comes after it is written
+The rule every migration ledger in the world earns, and `CLAUDE.md` earns
+it here in words after `0016` shipped a wrong event type (`670`'s
+appendix). `0016` had already been applied to production by the runner on
+`2ee59f8` and its row stood in `public.migration_log`.
+
+> **A migration that has run is not edited. The correction is a NEW file.**
+> Editing it does not re-run it, and it leaves the repository's text
+> disagreeing with what the database received — **which is worse than the
+> fault, because the file then lies to everyone who reads it.**
+>
+> **And the edited file gains ONE comment line pointing at its
+> correction** — not one statement moves. Whoever reads `0016` alone has
+> to know a correction follows it.
+
+`test_v88 · 2.13` and `2.14` are the guard: the old file still writes what
+it really applied, and it names the file that corrects it.
+
+### Absence of evidence is not evidence of absence
+⚠️ **And no inference is ever written in a column whose name is
+«measured».** Measured in `670`'s appendix: `docs/الحالة.md` said of
+`0009` «⚠️ **and not one NOTICE**, so it is the only one of the four that
+had never been executed». The premise was true and the conclusion was
+invented — **the file is all `create or replace function` and
+`drop trigger if exists`, so it contains no statement that could print a
+NOTICE at all**, executed before or not. The silence measured nothing.
+
+**It had in fact been executed by hand on 8 September and its output was
+measured — `17 · 1 · 2`.** So the record carried, for two batches, a
+confident sentence that was false, in the one document a fresh session
+reads first. **A measurement and an inference do not go in one cell**, and
+where they must stand together the inference says it is one.
 
 ### Never wait on a file with a loop
 No `until grep … do sleep`, and no waiting for a marker to appear in a
@@ -12956,6 +12989,392 @@ subject a suite could be measuring.
 **The heaviest three are unchanged from `615`'s own table, and their order
 did not move:** `v8` 286/284 · `v20` 284/276 · `v14` 242/239. Measured suite
 time: **7,158s on the single-file build and 6,704s on the module one.**
+
+## V.11.2 — the inventory is derived, and the account door asks the server (670)
+
+⚠️ **This file closes its own group, and its group is itself** — it touches
+`js/store.js`, one of the three the 5 September decision names. **It adds a
+suite, so the count in `docs/الحالة.md` moves with it. The version is
+raised — §ب is behaviour that reaches the browser.**
+
+⚠️ **AND IT CARRIES ONE MIGRATION AFTER ALL, WHICH ITS OWN HEAD FIRST
+DENIED.** The batch was written with none and its appendix brought one:
+**executed by the runner after the merge: `0017_events_type_fix.sql`.** The
+head is corrected rather than left standing, because a head that says «no
+migration» is exactly what stops a reader looking for one.
+
+### Why the batch exists, in the owner's own words
+> **«Every time I ask you for a check you come back with new problems. Why
+> does every check find something? Why not check once, properly, and produce
+> all the problems at once?»** — 10 September 2026
+
+⚠️ **The answer is measured, and the fault is not the depth of any check:
+THERE IS NO CLOSED LIST OF WHAT CAN BREAK.** So every checking session
+invents its own axes out of its own head, and the axes chosen are what
+decide what is found. **And the word «thorough» with no inventory behind it
+does not name anything measurable — it means «as far as I looked this
+time».**
+
+> **So the list is built once, DERIVED from the code rather than written by
+> hand, and each line carries the date it was last checked. After that a
+> check is COUNTING and not judgement: what has not been checked shows
+> itself, and does not wait for anybody to remember it.**
+
+### The inventory — `tools/audit/inventory.mjs` → `docs/الجرد.md`
+**Eight classes, each derived from its own site**, and not one line written
+by hand: the screens from `ROUTES`; the actions from every click binding and
+`data-*` hook in `js/screens/`; the writes from every `sb.from(…).insert |
+update | delete | upsert`, with whether the answer is read; the tables and
+columns from `supabase/migrations/*.sql`, with their policies; the promises
+from every `toast(…, 'ok')`; the boxes from every `<input>`, `<select>` and
+`<textarea>`; the money paths from the price constants and their readers;
+and the religious times from what `prayer.js`, `feasts.js` and `holidays.js`
+export.
+
+```
+622 items · 363 checked · 259 with no check date
+```
+
+- ⚠️ **THE ITEMS ARE DERIVED AND THE DATES ARE CARRIED, and that pair is the
+  whole property.** Written by hand it would age in the first batch — which
+  is `615`'s lesson word for word, where the suite list was a literal string
+  so a forgotten suite was never run while the net printed «complete». And
+  regenerated whole it would erase every check a human ever recorded. It is
+  derived AND carried: **the inventory cannot go stale, and the human record
+  cannot be lost.**
+- ⚠️ **The key is FILE + NAME, never a line number.** A line number moves
+  with every batch, and a key that moves erases the check date on every edit
+  — the one thing the file exists to keep. `v89 · 5.13` asserts no key
+  carries one.
+- **An item that left the tree is STRUCK**, not left to age; a new one enters
+  **with an empty date.** Both proven in `v89 · 5.10` and `5.11` by adding a
+  route to a copy of `js/app.js` and taking it away again.
+- ⚠️ **`?` in a derived cell means the tool does not decide this** — a person
+  does, and writes the date. **It is not a gap in the file; it is the file
+  saying what is not known**, which is what turns «how many are unchecked?»
+  into a question with a number.
+- **The counts in the head are read from the tables, never written** —
+  `615`'s rule, and `v89 · 5.5` and `5.6` compare them against the rows.
+
+### The first fill — and the emptiness is the output, not a shortfall
+Dates are written for **what the 10 September sweep actually covered, and
+nothing else**: the times and the calendar · money and receipts · the
+promises and the admin panel · security and the protection policies. **The
+mapping onto the eight classes is narrow on purpose and is written in the
+seeding commit**, so any part of it can be struck in one line: a line marked
+checked that nobody checked is far worse than one marked unchecked.
+
+⚠️ **Everything else stays empty**, and it includes what is known not to have
+been checked: **the interface and right-to-left · accessibility · search and
+filters · the notifications screen · the magazine · the newcomer guide ·
+behaviour with no internet · adding to the home screen · speed.**
+
+> **The empty column is the file's OUTPUT.** It is the first time the owner
+> can ask «how many items have never been checked?» and be handed a number.
+
+### The guard — in the static pass, never a browser suite
+`wiring.mjs` re-derives and compares, and reddens on any difference other
+than the dates. ⚠️ **So a new screen, a new write or a new column cannot land
+without appearing in the inventory** — which is what stops it becoming one
+more document that ages. Its place is the static pass by `376` §5's rule:
+guarding a written rule belongs where nothing has to be rendered to read it.
+**And «every item has been checked» is a NOTE and not a failure**, the same
+as checks 5, 6 and 7 beside it: an unchecked item is work waiting, not a
+fault standing, and a check that is red every morning is read as switched
+off.
+
+### ب) The account door — a missing value on the device was a yes
+```js
+if (!u || !u.pwHash) return true;        // ← any text at all passed
+```
+**And `pwHash` is written by `setUserPassword` alone**, which runs at
+**sign-up** and at a password change. **`hydrateUserFromSession` never writes
+it.**
+
+⚠️ **So on every device the account reached by SIGNING IN — the second
+phone, the laptop, a borrowed browser — there was no hash, the guard
+answered `true` to anything, and `sb.auth.updateUser({password})` below asks
+only for a live session. A minute with an open device was a new password and
+the owner shut out of their own account from anywhere.**
+
+⚠️ **And even on the device that created it the guard was a hash in the
+browser's own storage** — which is what this same file refuses twelve lines
+below, in `updateProfile`: «a check that is defeated by editing a field on
+the device is not a check — only the server knows». **The fix is that same
+pattern, deliberately identical rather than a second shape doing one job.**
+
+> **THE RULE: what guards the door of an account is asked of the server. And
+> a value missing on the device is not permission — it is a question with no
+> answer, and its answer is «no».**
+
+- **Three refusals, three sentences, and each names what happened rather
+  than guessing:** a wrong password · **a stale session** («sign out, sign in
+  again») · **a dropped connection**, which is `670`'s new one. ⚠️ Telling
+  somebody with no network to sign out and back in sends them to a screen
+  that cannot answer either, and telling them their password is wrong is the
+  same lie in a second costume.
+- ⚠️ **An unrecognised failure is read as «we did not reach the server»,
+  never as «your password is wrong»** — `AuthRetryableFetchError` by name,
+  no status, or a 5xx. **Only a 4xx is a refusal we may repeat to a reader.**
+- **A note rather than a claim:** the check now signs in, so by the time
+  `updateUser` runs the session is fresh and the staleness branch may be
+  hard to reach from that screen. **It is not deleted for that** — the
+  server refuses for its own reasons and that is the honest place to say so.
+
+### ب.٣ — and a password sitting in a browser as text
+`changePassword` accepted `u.password` — the plain field of an account made
+before the hash existed. **Once the question goes to the server that branch
+decides nothing**, and it was decoration over a dead path anyway: measured,
+such an account has no session, so the `updateUser` below refused it
+regardless. The branch is gone and **a boot migration deletes the field from
+every existing device** — most people reuse one password, so what sat there
+in the clear was probably the key to their email.
+
+### `test_v89` — 34 on the module build, 30 on the single-file one, and five teeth
+⚠️ **THE DECISIVE CASE IS BLOCK 2 — a device the account SIGNED IN to — and
+it is the one that fails on the tree before this batch.** Block 1 is the
+device that created the account, where the hash existed, and it **passed
+before and after**:
+
+```
+checkUserPassword back to «no local hash means yes»
+   → 2.3 prints {"ok":true} — a wrong password ACCEPTED — and 1.2 STAYS GREEN
+the plaintext branch restored     → 4.3 alone
+the boot migration removed        → 4.4 · 4.7 {"onDisk":true}
+the offline branch removed        → 3.1 reads «wrong» for a dropped connection
+the inventory regenerated whole   → 5.2 · 5.8, the dates lost
+```
+
+⚠️ **AND THE FOUR THAT RUN ON ONE BUILD ONLY ARE A COLLISION CLOSED BEFORE
+THE NET, NOT A GAP.** `run.sh` runs the two builds **at the same time**, and
+the inventory block writes to `js/app.js` and to the generated file on disk;
+two copies racing would have one restoring while the other had mutated, **and
+a tree left dirty aborts every later segment of the net through the
+frozen-tree guard.** `v68` reached the same answer for the same reason: a
+tool is a file on disk and belongs to neither build. The read-only items run
+on both.
+
+⚠️ **Read the first line twice: a suite built only from block 1 would have
+been GREEN over the whole fault.** That is `475`'s and V.07.9's lesson a
+third time — a structural check stands beside a behavioural one, never
+instead of it — and it is why `4.1`–`4.5` read the source as well.
+
+### And the sweep found the one red before the net, not at segment twenty
+`v76 · 2.2` froze the two-branch ternary letter for letter, and `620` wrote
+two refusals where there are now three. **Its subject — «a different
+sentence for each» — is unchanged and is asserted harder**: the reasons are
+**derived** from the code, so a FOURTH cannot be added without a sentence,
+which is exactly what freezing the letters allowed.
+
+⚠️ **And its first derivation found two of the three.** `changePassword`
+FORWARDS `cur.reason` from `checkUserPassword`, so reading its body alone
+printed `offline · server` and would have let «wrong» lose its sentence with
+nothing going red. **`652`'s rule read the other way round: a value is
+followed to where it is MADE, not only to where it is used.** Proven both
+ways — pointing `offline` at the wrong key prints `unsaid: offline`.
+
+### ⚠️ And a fault of my own in the teeth run, recorded because its rule is general
+Tooth 5 mutates **the inventory tool**, so the run's restore put the tool
+back — **and left on disk the dateless file that the mutated tool had
+produced.** The 363 seeded dates were gone, and the only thing that showed
+it was re-running `wiring.mjs` afterwards and reading `622 of 622 carry no
+check date`.
+
+> **A teeth run restores what its mutation PRODUCED, not only the files it
+> mutated.** The standing rule was already two sentences long — a teeth run
+> owns the working tree, and it restores from a copy rather than from `git`
+> (`648`). **This is the third: when the mutated file is a GENERATOR, its
+> output is part of the working tree too.**
+
+⚠️ **It is `652`'s own rule from the other side** — there a fix had to be
+followed to the value's CONSUMER, and here a restore has to be followed to
+what the restored file MAKES. Both are the same failure to ask «and what
+else did that touch?»
+
+### And the group closes — the net, run on segments over one frozen tree
+```
+174 runs · 87 suites · 8,366 assertions · zero red · zero crash
+```
+Twenty-four segments over `447370e`, `HEAD` re-checked at the head of each —
+the runner exits 2 on a moved character or a dirty tree, and none did —
+**87 present and 87 run, each on both builds, and no result borrowed.** The
+verdict is READ from the index and never summed: `NET COMPLETE — every
+derived suite ran on both builds in this index`.
+
+⚠️ **The arithmetic closes itself, and it was written down BEFORE the run:
+8,302 + 64 (`v89`: 34 on the module build, 30 on the single-file one) =
+8,366.** The total landing on the predicted figure to the unit is what
+proves no other suite moved — **and `v76`'s reversal REPLACED an assertion
+rather than adding or dropping one**, which is what a reversal should look
+like: it changes what a check measures, never how many checks there are.
+
+**The heaviest three are unchanged from `615`'s own table:** `v8` 288/287 ·
+`v20` 286/277 · `v14` 244/241. Measured suite time: **7,261s on the
+single-file build and 6,779s on the module one.**
+
+⚠️ **And the sweep is what made this the only run.** `js/store.js` was
+touched, so the blast radius is every screen — and the class was swept
+BEFORE the net rather than met at segment twenty: the suites reading
+`pwHash`, the version carriers, `wiring.mjs`'s own output, and every caller
+of the two changed functions. That pre-run found `v76 · 2.2` and cost eight
+suites instead of a whole net. **`645`, `650` and `652` each paid for that
+lesson; this is the first batch in the run of them that paid nothing.**
+
+### The appendix — three corrections in the record, and one in a row that had shipped
+
+⚠️ **It runs inside `670`, carries no queue number of its own, and it is
+what put a migration on a batch whose head said it had none.**
+
+#### The type claimed a religion nobody stated
+`0016` entered `wk-2026-10-02-in-conversation-rana-begum` as
+`type = 'lecture'`, which the app prints as **«محاضرات ودروس دينيّة»** — a
+religious lesson.
+
+⚠️ **And the report of 8 September says the opposite in its own words**: the
+subject was **not published**, the two speakers are an artist and a curator,
+and «**the seminar is Islamic in its VENUE, not Arab in its SUBJECT, and
+that is written down rather than hidden**». The record's own body text,
+inside `0016` and unchanged, says the same: «موضوع الندوة لم ينشره
+المنظّم». **So the type asserted the very thing the report had refused to
+assert — and that distinction is what the whole report was built on.**
+
+`EVENT_TYPES` carries eleven, and **`community` is the one that is true
+without claiming**: it says a gathering and asserts no subject.
+
+> **THE RULE, and its place is the weekly task's own text — which lives
+> outside the repository, so it is written in `docs/تقارير/اقرأني.md` as
+> well:** the type is derived from **what the source said**, never from what
+> the venue suggests. ⚠️ **An art talk in an Islamic centre is not a
+> religious lesson, and a food festival in a church is not a mass. And when
+> the source names no subject, the type is `community`.**
+
+⚠️ **`0016` IS NOT EDITED, and that is the larger half.** It had already run
+on production and its row stands in the ledger; editing it would not re-run
+it and would leave the repository disagreeing with the database. It gains
+**one comment block pointing at `0017` and not one moved statement** —
+measured, `7 insertions(+), 0 deletions(-)`. The rule is now written in this
+file above.
+
+**The migration was applied to a real PostgreSQL 16 before it was called
+finished** (`655`'s rule): `0001`…`0017` from empty, in order, zero
+failures — and the tooth the appendix asks for, measured rather than
+intended:
+
+```
+before 0017   rana-begum = lecture   ·  festival-of-faiths = festival
+apply         UPDATE 1
+after         rana-begum = community ·  festival-of-faiths = festival
+re-run        UPDATE 0
+```
+
+⚠️ **One row, not two — and the `and type = 'lecture'` is what makes that
+true twice over**: a re-run matches nothing, and a row somebody corrected by
+hand before this lands is left alone rather than overwritten with a second
+opinion.
+
+#### `0015` and `0016` were written «pending» while they were executed
+The migration table said «⏳ **تُنفَّذ بالمُشغِّل** بعد الدمج» of two
+migrations that had run. Verified from the run itself rather than taken:
+run **`#9`** (`34458386082`), head `2ee59f8`, branch `main`, **success** —
+and the job log **names both files**, which a green tick does not:
+
+```
+تنفيذ:
+  → 0015_events_external_key.sql
+  → 0016_events_2026_09_10.sql
+تمّ 2
+```
+
+⚠️ **This is the THIRD time that column has aged** — after `652`, after
+`655`, and now after `656` — **and the cause is structural, not
+carelessness: a human writes it BEFORE the run and nobody returns to it
+after.** So the state file now says which is the source: **the live record
+is `public.migration_log` on the server, and that column is narration
+following it.** Where the two disagree, the ledger is right.
+
+⚠️ **And no static check can guard that half, which is said rather than
+pretended.** The ledger is on the server and the net does not reach the
+server, so nothing here can know a row was marked executed there. What IS
+guarded is the internal agreement — `v86 · 3.4` a row per file, `3.5` and
+`3.6` the seed against the marks, and the new **`3.7`: the sentence naming
+the source must stay written**, because deleting it makes the next reader
+take the table for the record itself.
+
+#### And `v86 · 3.5` caught my own rewording, one edit after it was written
+The corrected `0009` row first said «executed **by hand**», which is true —
+**and `3.5` classifies a by-hand row as one that must appear in `0012`'s
+seed, and `0009` deliberately is not in it.** The row went red at once.
+
+⚠️ **Both facts are true and the row has to carry both, in its siblings'
+own shape**: the runner applied it (which is what put its row in the
+ledger), **and** the owner had applied it by hand the day before. `0008`
+was already written exactly that way. **The check was right and my sentence
+was wrong; not a character of `v86` was softened for it.**
+
+#### An inference was standing in a column named «measured»
+`376` §6.2 asked for this and only §6.1 landed. The line read: «`0009` …
+⚠️ **and not one NOTICE**, so it is the only one of the four that had never
+been executed.»
+
+⚠️ **The premise is true and the conclusion is invented.**
+`0009_updated_at_and_listing_limit.sql` is entirely
+`create or replace function` and `drop trigger if exists` then
+`create trigger` — **there is no statement in it that could print a NOTICE
+at all**, executed before or not. The silence measured nothing. **And it
+had been executed by hand on 8 September, with its output measured:
+`17 · 1 · 2`** — seventeen triggers, one function, and the two listing-limit
+rows.
+
+The rule it earns is written above: **absence of evidence is not evidence of
+absence, and no inference goes in a column named «measured».**
+
+#### `test_v88` — widened, and the teeth
+The appendix asks for **one** derived item; what landed is one subject in
+several assertions, and the extra ones guard the appendix's own other
+demands (the untouched `0016`, and the narrowness of the row change that a
+real database measured once and a static check keeps from rotting).
+
+⚠️ **The eleven types are read out of `js/data.js`, never listed here** — a
+hand-written list ages the day a twelfth is defined, **and would also have
+to be edited to accept a type that is simply wrong.** And `2.9` reads every
+write to the column, `update` as well as `insert`: a check that walked the
+inserts alone would have passed straight over `0017`, the one file in the
+repository whose entire subject is that column.
+
+```
+a type outside EVENT_TYPES        → 2.10, naming the file and the value
+the narrowing dropped from 0017   → 2.11 — a re-run would then rewrite a hand correction
+0016 edited instead of corrected  → 2.13
+the comment pointing at 0017 gone → 2.14
+```
+
+#### And the group closes again — the net, run a second time over a new tree
+```
+174 runs · 87 suites · 8,382 assertions · zero red · zero crash
+```
+Twenty-four segments over `f0c8c60`, `HEAD` re-checked at the head of each —
+the runner exits 2 on a moved character or a dirty tree, and none did —
+**87 present and 87 run, each on both builds, and no result borrowed.** The
+verdict is READ from the index and never summed: `NET COMPLETE — every
+derived suite ran on both builds in this index`.
+
+⚠️ **The arithmetic closes itself, and it was written down BEFORE the run:
+8,366 + 16 (`v88`'s seven new assertions × 2 builds, and `v86 · 3.7` × 2) =
+8,382.** The total landing on the predicted figure to the unit is what
+proves no other suite moved — **and there is no reversal in the appendix at
+all**, because a migration, three documents and two guards give no older
+suite a subject that could change.
+
+⚠️ **AND THE NET IS PAID TWICE HERE, WHICH IS NAMED RATHER THAN HIDDEN.**
+`670` closed on `447370e` at 8,366, and **the appendix changed the tree** —
+a proof is a proof about one tree, and `655`'s own precedent is exactly this:
+the net was run again the day the owner's decision reopened its migration,
+and both figures were written down. **A figure quietly replaced hides the
+second run.**
+
+**The heaviest three are unchanged from `615`'s own table:** `v8` 290/288 ·
+`v20` 289/280 · `v14` 244/242. Measured suite time: **7,299s on the
+single-file build and 6,801s on the module one.**
 
 ## Known open items
 - **The header image is still far larger than its box.** V.04.7 replaced

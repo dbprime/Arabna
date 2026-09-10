@@ -128,6 +128,18 @@ console.log('--- 3: the seed is typed out, and it matches the state file ---');
   ok('3.6 …and nothing still outstanding is seeded as done',
      !pendingRows.some(f => seeded.includes(f)),
      pendingRows.filter(f => seeded.includes(f)).join(', ') || pendingRows.length + ' outstanding');
+
+  /* ⚠️ AND THE ONE HALF NO STATIC CHECK CAN REACH IS NAMED RATHER THAN
+     PRETENDED. The live record is `public.migration_log` ON THE SERVER,
+     and the net does not reach the server — so nothing here can know that
+     a row was marked executed there while this column still says ⏳. That
+     column has now aged three times (after `652`, after `655`, and after
+     `656`), and the cause is structural: a human writes it BEFORE the run
+     and nobody returns to it after. So what is guarded is that the
+     sentence saying WHICH IS THE SOURCE stays written — delete it and the
+     next reader takes this table for the record itself. */
+  ok('3.7 the state file says the live record is the ledger and this column follows it',
+     /`public\.migration_log`[\s\S]{0,200}سردٌ/.test(doc) || /السجلُّ الحيُّ `public\.migration_log`/.test(doc));
 }
 
 /* ============================================================
