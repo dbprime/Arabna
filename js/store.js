@@ -348,6 +348,20 @@ if (state.adminAuth !== undefined) {
   writeState();
 }
 
+/* 670: a password sitting in this browser's storage AS TYPED, on an account
+   made before the hash existed. `changePassword` used to accept it, and no
+   longer does — the question goes to the server, which holds the real one.
+   ⚠️ It is deleted rather than left because most people reuse one password,
+   so what sits here in the clear is probably the key to their email; that
+   is the reason `setUserPassword` already deleted it on any device that
+   ever changed its password, and this reaches the ones that never did.
+   Same shape as the two above: `!== undefined`, so an empty string goes
+   too, and it runs at most once per device. */
+if (state.user && state.user.password !== undefined) {
+  delete state.user.password;
+  writeState();
+}
+
 /** Last write result — false when the browser refused (quota full, private mode). */
 export let lastSaveOk = true;
 
@@ -4453,10 +4467,40 @@ export async function setUserPassword(pw) {
 }
 
 /** true when there is nothing to check against, as before */
+export function serverUnreachable(err) {
+  if (!err) return false;
+  /* ⚠️ THE SAFE DIRECTION IS «we did not reach the server», NEVER «your
+     password is wrong». supabase-js turns a failed fetch into an error
+     whose `name` is `AuthRetryableFetchError` (its own
+     `isAuthRetryableFetchError` tests exactly that), and carries no HTTP
+     status; a 5xx is the server answering badly rather than refusing the
+     credentials. Only a 4xx is a refusal we may repeat to the reader as
+     «that password is not right». */
+  return err.name === 'AuthRetryableFetchError' || !err.status || err.status >= 500;
+}
+
 export async function checkUserPassword(pw) {
   const u = state.user;
-  if (!u || !u.pwHash) return true;
-  return (await hashPassword(pw, u.pwSalt || '')) === u.pwHash;
+  if (!u || !u.email) return { ok: false, reason: 'wrong' };
+  /* ⚠️ THE SERVER IS ASKED, AND A MISSING VALUE ON THE DEVICE IS NOT A YES.
+     This function used to read `if (!u.pwHash) return true` — and `pwHash`
+     is written by `setUserPassword` alone, which runs at SIGN-UP and at a
+     password change. `hydrateUserFromSession` never writes it. So on every
+     device the account reached by SIGNING IN — the second phone, the
+     laptop, a borrowed browser — there was no hash at all and the function
+     answered `true` to ANY text: whoever held an open device for a minute
+     replaced the password without knowing the old one, then signed in from
+     anywhere and shut the owner out.
+     ⚠️ And even on the device that created the account the guard was a hash
+     in the browser's own storage, which is what this same file refuses
+     twelve lines below in `updateProfile`: «a check that is defeated by
+     editing a field on the device is not a check — only the server knows».
+     The pattern here is that one, deliberately identical rather than a
+     second shape doing the same job. */
+  const { error } = await sb.auth.signInWithPassword({ email: u.email, password: pw || '' });
+  if (!error) return { ok: true };
+  if (serverUnreachable(error)) return { ok: false, reason: 'offline', message: error.message || '' };
+  return { ok: false, reason: 'wrong', message: error.message || '' };
 }
 
 /** Create a real account on the server, then mirror the identity locally.
@@ -4923,14 +4967,17 @@ export function cancelEmailChange() {
 export async function changePassword(current, next) {
   const u = state.user;
   if (!u) return { ok: false, reason: 'no-user' };
-  /* An account made before the hash existed carries the old plain field.
-     Accept it once and replace it — nobody is locked out of their own
-     account by a change in how we store it, and the plain copy goes. */
-  if (u.password) {
-    if (current !== u.password) return { ok: false, reason: 'wrong' };
-  } else if (!(await checkUserPassword(current))) {
-    return { ok: false, reason: 'wrong' };
-  }
+  /* ⚠️ THE PLAIN FIELD IS GONE, AND ITS BRANCH WITH IT. It accepted
+     `u.password` — a password sitting in the browser's storage as typed —
+     for an account made before the hash existed. Once the question is put
+     to the server that branch decides nothing: the server holds the real
+     password whatever this device carries. And it was decoration over a
+     dead path anyway — measured, such an account has no session, so the
+     `updateUser` below refused it regardless. The field is deleted from
+     every existing device at boot; there is no reason for a password to
+     sit in a browser as text for one more day. */
+  const cur = await checkUserPassword(current);
+  if (!cur.ok) return { ok: false, reason: cur.reason, message: cur.message || '' };
   /* ⚠️ THE SERVER FIRST, AND THE LOCAL HASH IS ONLY THE TRACE OF ITS YES.
      Until this line `changePassword` never left the device: it compared a
      local hash and wrote a local hash, so the OLD password went on opening
@@ -4948,7 +4995,15 @@ export async function changePassword(current, next) {
        theirs correctly. `Secure password change` on the Supabase dashboard
        makes the server demand a recent session, so a long-open session is
        refused here with the password perfectly right, and the screen has
-       to say what to DO rather than what it guesses went wrong. */
+       to say what to DO rather than what it guesses went wrong.
+       ⚠️ And a dropped connection is a THIRD thing, not this one: telling
+       somebody to sign out and back in when the network is down sends them
+       to a sign-in screen that cannot answer either. It is named apart.
+       ⚠️ A note rather than a claim: the check above signs in, so by this
+       line the session is fresh and the staleness branch may now be hard
+       to reach from this screen. It is not deleted for that — the server
+       refuses for its own reasons and this is the honest place to say so. */
+    if (serverUnreachable(error)) return { ok: false, reason: 'offline', message: error.message || '' };
     return { ok: false, reason: 'server', message: error.message || '' };
   }
   await setUserPassword(next);

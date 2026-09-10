@@ -449,11 +449,19 @@ export function ChangePasswordScreen(root) {
     if (next !== conf) { err.innerHTML = errMsg(t('passwordsDontMatch')); return; }
 
     const res = await S.changePassword(cur, next);
-    /* ⚠️ TWO REFUSALS, TWO SENTENCES. `wrongPassword` for both told whoever
-       typed theirs correctly — and was refused because the server wanted a
-       fresher session — to go on doubting a password that was right. */
+    /* ⚠️ THREE REFUSALS, THREE SENTENCES — and each one names what happened
+       rather than guessing. `wrongPassword` for both told whoever typed
+       theirs correctly — and was refused because the server wanted a
+       fresher session — to go on doubting a password that was right; and
+       `670` added the third, because telling somebody with no connection to
+       sign out and back in sends them to a screen that cannot answer
+       either, and telling them their password is wrong is the same lie in
+       a second costume. */
     if (!res.ok) {
-      err.innerHTML = errMsg(res.reason === 'server' ? t('pwServerRefused') : t('wrongPassword'));
+      err.innerHTML = errMsg(
+        res.reason === 'server' ? t('pwServerRefused')
+        : res.reason === 'offline' ? t('pwOffline')
+        : t('wrongPassword'));
       return;
     }
     toast(t('passwordChanged'), 'ok');

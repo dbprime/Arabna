@@ -9,6 +9,7 @@
 import fs from 'fs';
 import path from 'path';
 import { pathToFileURL } from 'node:url';
+import { spawnSync } from 'node:child_process';
 
 const R = path.resolve(process.argv[2] || '.');
 const read = p => fs.readFileSync(path.join(R, p), 'utf8');
@@ -132,6 +133,40 @@ console.log(`\nDATA listings=${biz} withCoords=${geo}`);
 ok('7 every listing has coordinates',
    geo >= biz ? [] : [`${geo} of ${biz} carry lat/lng — the ${biz - geo} others wait on the data job`],
    false);
+
+/* 8 — THE INVENTORY IS NOT ALLOWED TO FALL BEHIND THE TREE.
+
+   ⚠️ Its whole value is that it is DERIVED, so a new screen, a new write
+   or a new column cannot land without appearing in it. Without this line
+   the file becomes one more document that ages — which is the thing it
+   was built to replace, and `615`'s own lesson: a list nothing compares
+   against is a list that lies.
+
+   ⚠️ AND ITS PLACE IS THE STATIC PASS, NOT A BROWSER SUITE — `376` §5:
+   guarding a written rule belongs where nothing has to be rendered to
+   read it. It runs in a second and it runs on every gate.
+
+   The tool re-derives and compares; `--check` exits 1 on any difference
+   other than the dates, which it carries. */
+const invOut = path.join(R, 'docs/الجرد.md');
+if (!fs.existsSync(invOut)) {
+  ok('8 the inventory is generated and current', ['docs/الجرد.md is missing — run tools/audit/inventory.mjs']);
+} else {
+  const r = spawnSync(process.execPath, [path.join(R, 'tools/audit/inventory.mjs'), R, '--check'],
+    { encoding: 'utf8' });
+  ok('8 the inventory is generated and current',
+     r.status === 0 ? []
+     : ['docs/الجرد.md is behind the tree — run `node tools/audit/inventory.mjs .` and commit it']);
+  const txt = fs.readFileSync(invOut, 'utf8');
+  const total = (txt.match(/^\| `/gm) || []).length;
+  const dated = (txt.match(/\| [0-9]{4}-[0-9]{2}-[0-9]{2} \|$/gm) || []).length;
+  console.log(`\nINVENTORY items=${total} checked=${dated} unchecked=${total - dated}`);
+  /* A NOTE and never a failure, the same as 5, 6 and 7 above: an unchecked
+     item is work waiting, not a fault standing. A check that is red every
+     morning on something known is read as though it were switched off. */
+  ok('8b every inventory item has been checked at least once',
+     total === dated ? [] : [`${total - dated} of ${total} carry no check date`], false);
+}
 
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

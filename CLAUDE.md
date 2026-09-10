@@ -11,7 +11,7 @@ ARABNA · عربنا — a mobile-first web app for the Arab community in the U.
 **business directory + marketplace + events + magazine**, Arabic-first with a full English toggle.
 ("Classifieds / الإعلانات الشخصية" is now "Marketplace / السوق" — the old `#/classifieds`
 routes still resolve so shared links keep working.)
-Current version: **V.11.1 (prototype)**. Owner: dbprime. Deploys to Vercel (team DB Prime).
+Current version: **V.11.2 (prototype)**. Owner: dbprime. Deploys to Vercel (team DB Prime).
 
 ## Hard rules (from the product brief)
 0. ⚠️ **THE OWNER'S NAME IS NEVER WRITTEN — anywhere.** Not in this file, not
@@ -12956,6 +12956,193 @@ subject a suite could be measuring.
 **The heaviest three are unchanged from `615`'s own table, and their order
 did not move:** `v8` 286/284 · `v20` 284/276 · `v14` 242/239. Measured suite
 time: **7,158s on the single-file build and 6,704s on the module one.**
+
+## V.11.2 — the inventory is derived, and the account door asks the server (670)
+
+⚠️ **This file closes its own group, and its group is itself** — it touches
+`js/store.js`, one of the three the 5 September decision names. **It adds a
+suite, so the count in `docs/الحالة.md` moves with it. The version is
+raised — §ب is behaviour that reaches the browser. And there is no
+migration.**
+
+### Why the batch exists, in the owner's own words
+> **«Every time I ask you for a check you come back with new problems. Why
+> does every check find something? Why not check once, properly, and produce
+> all the problems at once?»** — 10 September 2026
+
+⚠️ **The answer is measured, and the fault is not the depth of any check:
+THERE IS NO CLOSED LIST OF WHAT CAN BREAK.** So every checking session
+invents its own axes out of its own head, and the axes chosen are what
+decide what is found. **And the word «thorough» with no inventory behind it
+does not name anything measurable — it means «as far as I looked this
+time».**
+
+> **So the list is built once, DERIVED from the code rather than written by
+> hand, and each line carries the date it was last checked. After that a
+> check is COUNTING and not judgement: what has not been checked shows
+> itself, and does not wait for anybody to remember it.**
+
+### The inventory — `tools/audit/inventory.mjs` → `docs/الجرد.md`
+**Eight classes, each derived from its own site**, and not one line written
+by hand: the screens from `ROUTES`; the actions from every click binding and
+`data-*` hook in `js/screens/`; the writes from every `sb.from(…).insert |
+update | delete | upsert`, with whether the answer is read; the tables and
+columns from `supabase/migrations/*.sql`, with their policies; the promises
+from every `toast(…, 'ok')`; the boxes from every `<input>`, `<select>` and
+`<textarea>`; the money paths from the price constants and their readers;
+and the religious times from what `prayer.js`, `feasts.js` and `holidays.js`
+export.
+
+```
+622 items · 363 checked · 259 with no check date
+```
+
+- ⚠️ **THE ITEMS ARE DERIVED AND THE DATES ARE CARRIED, and that pair is the
+  whole property.** Written by hand it would age in the first batch — which
+  is `615`'s lesson word for word, where the suite list was a literal string
+  so a forgotten suite was never run while the net printed «complete». And
+  regenerated whole it would erase every check a human ever recorded. It is
+  derived AND carried: **the inventory cannot go stale, and the human record
+  cannot be lost.**
+- ⚠️ **The key is FILE + NAME, never a line number.** A line number moves
+  with every batch, and a key that moves erases the check date on every edit
+  — the one thing the file exists to keep. `v89 · 5.13` asserts no key
+  carries one.
+- **An item that left the tree is STRUCK**, not left to age; a new one enters
+  **with an empty date.** Both proven in `v89 · 5.10` and `5.11` by adding a
+  route to a copy of `js/app.js` and taking it away again.
+- ⚠️ **`?` in a derived cell means the tool does not decide this** — a person
+  does, and writes the date. **It is not a gap in the file; it is the file
+  saying what is not known**, which is what turns «how many are unchecked?»
+  into a question with a number.
+- **The counts in the head are read from the tables, never written** —
+  `615`'s rule, and `v89 · 5.5` and `5.6` compare them against the rows.
+
+### The first fill — and the emptiness is the output, not a shortfall
+Dates are written for **what the 10 September sweep actually covered, and
+nothing else**: the times and the calendar · money and receipts · the
+promises and the admin panel · security and the protection policies. **The
+mapping onto the eight classes is narrow on purpose and is written in the
+seeding commit**, so any part of it can be struck in one line: a line marked
+checked that nobody checked is far worse than one marked unchecked.
+
+⚠️ **Everything else stays empty**, and it includes what is known not to have
+been checked: **the interface and right-to-left · accessibility · search and
+filters · the notifications screen · the magazine · the newcomer guide ·
+behaviour with no internet · adding to the home screen · speed.**
+
+> **The empty column is the file's OUTPUT.** It is the first time the owner
+> can ask «how many items have never been checked?» and be handed a number.
+
+### The guard — in the static pass, never a browser suite
+`wiring.mjs` re-derives and compares, and reddens on any difference other
+than the dates. ⚠️ **So a new screen, a new write or a new column cannot land
+without appearing in the inventory** — which is what stops it becoming one
+more document that ages. Its place is the static pass by `376` §5's rule:
+guarding a written rule belongs where nothing has to be rendered to read it.
+**And «every item has been checked» is a NOTE and not a failure**, the same
+as checks 5, 6 and 7 beside it: an unchecked item is work waiting, not a
+fault standing, and a check that is red every morning is read as switched
+off.
+
+### ب) The account door — a missing value on the device was a yes
+```js
+if (!u || !u.pwHash) return true;        // ← any text at all passed
+```
+**And `pwHash` is written by `setUserPassword` alone**, which runs at
+**sign-up** and at a password change. **`hydrateUserFromSession` never writes
+it.**
+
+⚠️ **So on every device the account reached by SIGNING IN — the second
+phone, the laptop, a borrowed browser — there was no hash, the guard
+answered `true` to anything, and `sb.auth.updateUser({password})` below asks
+only for a live session. A minute with an open device was a new password and
+the owner shut out of their own account from anywhere.**
+
+⚠️ **And even on the device that created it the guard was a hash in the
+browser's own storage** — which is what this same file refuses twelve lines
+below, in `updateProfile`: «a check that is defeated by editing a field on
+the device is not a check — only the server knows». **The fix is that same
+pattern, deliberately identical rather than a second shape doing one job.**
+
+> **THE RULE: what guards the door of an account is asked of the server. And
+> a value missing on the device is not permission — it is a question with no
+> answer, and its answer is «no».**
+
+- **Three refusals, three sentences, and each names what happened rather
+  than guessing:** a wrong password · **a stale session** («sign out, sign in
+  again») · **a dropped connection**, which is `670`'s new one. ⚠️ Telling
+  somebody with no network to sign out and back in sends them to a screen
+  that cannot answer either, and telling them their password is wrong is the
+  same lie in a second costume.
+- ⚠️ **An unrecognised failure is read as «we did not reach the server»,
+  never as «your password is wrong»** — `AuthRetryableFetchError` by name,
+  no status, or a 5xx. **Only a 4xx is a refusal we may repeat to a reader.**
+- **A note rather than a claim:** the check now signs in, so by the time
+  `updateUser` runs the session is fresh and the staleness branch may be
+  hard to reach from that screen. **It is not deleted for that** — the
+  server refuses for its own reasons and that is the honest place to say so.
+
+### ب.٣ — and a password sitting in a browser as text
+`changePassword` accepted `u.password` — the plain field of an account made
+before the hash existed. **Once the question goes to the server that branch
+decides nothing**, and it was decoration over a dead path anyway: measured,
+such an account has no session, so the `updateUser` below refused it
+regardless. The branch is gone and **a boot migration deletes the field from
+every existing device** — most people reuse one password, so what sat there
+in the clear was probably the key to their email.
+
+### `test_v89` — 34 assertions, and five teeth
+⚠️ **THE DECISIVE CASE IS BLOCK 2 — a device the account SIGNED IN to — and
+it is the one that fails on the tree before this batch.** Block 1 is the
+device that created the account, where the hash existed, and it **passed
+before and after**:
+
+```
+checkUserPassword back to «no local hash means yes»
+   → 2.3 prints {"ok":true} — a wrong password ACCEPTED — and 1.2 STAYS GREEN
+the plaintext branch restored     → 4.3 alone
+the boot migration removed        → 4.4 · 4.7 {"onDisk":true}
+the offline branch removed        → 3.1 reads «wrong» for a dropped connection
+the inventory regenerated whole   → 5.2 · 5.8, the dates lost
+```
+
+⚠️ **Read the first line twice: a suite built only from block 1 would have
+been GREEN over the whole fault.** That is `475`'s and V.07.9's lesson a
+third time — a structural check stands beside a behavioural one, never
+instead of it — and it is why `4.1`–`4.5` read the source as well.
+
+### And the sweep found the one red before the net, not at segment twenty
+`v76 · 2.2` froze the two-branch ternary letter for letter, and `620` wrote
+two refusals where there are now three. **Its subject — «a different
+sentence for each» — is unchanged and is asserted harder**: the reasons are
+**derived** from the code, so a FOURTH cannot be added without a sentence,
+which is exactly what freezing the letters allowed.
+
+⚠️ **And its first derivation found two of the three.** `changePassword`
+FORWARDS `cur.reason` from `checkUserPassword`, so reading its body alone
+printed `offline · server` and would have let «wrong» lose its sentence with
+nothing going red. **`652`'s rule read the other way round: a value is
+followed to where it is MADE, not only to where it is used.** Proven both
+ways — pointing `offline` at the wrong key prints `unsaid: offline`.
+
+### ⚠️ And a fault of my own in the teeth run, recorded because its rule is general
+Tooth 5 mutates **the inventory tool**, so the run's restore put the tool
+back — **and left on disk the dateless file that the mutated tool had
+produced.** The 363 seeded dates were gone, and the only thing that showed
+it was re-running `wiring.mjs` afterwards and reading `622 of 622 carry no
+check date`.
+
+> **A teeth run restores what its mutation PRODUCED, not only the files it
+> mutated.** The standing rule was already two sentences long — a teeth run
+> owns the working tree, and it restores from a copy rather than from `git`
+> (`648`). **This is the third: when the mutated file is a GENERATOR, its
+> output is part of the working tree too.**
+
+⚠️ **It is `652`'s own rule from the other side** — there a fix had to be
+followed to the value's CONSUMER, and here a restore has to be followed to
+what the restored file MAKES. Both are the same failure to ask «and what
+else did that touch?»
 
 ## Known open items
 - **The header image is still far larger than its box.** V.04.7 replaced
