@@ -139,7 +139,11 @@ let shared, listingId;
   ok('3.3 …and the row on the server is still pending',
      shared.classifieds.find(r => r.id === listingId).status === 'pending');
 
-  await b.p.evaluate(id => document.querySelector(`[data-approve="${id}"]`).click(), listingId);
+  /* ⚠️ guarded: an unguarded `.click()` on a missing node CRASHES the
+     suite and every assertion after it goes unmeasured, which is how a
+     batch reports green while it is not (`649`). A missing button is a
+     failed item below, never a crash here. */
+  await b.p.evaluate(id => { const el = document.querySelector(`[data-approve="${id}"]`); if (el) el.click(); }, listingId);
   await b.p.waitForTimeout(900);
   const w = (shared.writes || []).filter(x => x.table === 'classifieds');
   ok('3.4 the panel\'s approve writes the status ON THE SERVER, by id',

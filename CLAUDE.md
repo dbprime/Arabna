@@ -13554,6 +13554,32 @@ because nothing counted the rows until this batch did.**
 them one. The tables stay shared — that is `630`'s first item — and the
 session is now per context.
 
+### ⚠️ And it exposed a second green that was green for the wrong reason
+`v79 · 1.2` — «the admin's queue, on ANOTHER device, lists it», the very
+item `630` was written for — **passed because of the shared session, not
+because of the app.** Browser two read the server at boot, before anybody
+had signed in there, and the mock answered that visitor-time read **as
+browser one's account**, which owns the listing. Per context, the accident
+stopped and the item went red.
+
+**The app is not at fault and was not changed.** `_admin.mjs` signs a
+staff account UP and promotes it afterwards, so the session appeared while
+the account was still an ordinary member — **and in the world the order is
+the other way round**: the account is made staff on the dashboard first
+and signs in after, and `hydrateUserFromSession` reads the rows then. The
+helper re-reads after promoting, which is the real sequence written out.
+
+⚠️ **And the crash beside it was a defect of its own**: an unguarded
+`.click()` on a node the failed item above had just made absent took the
+whole suite down, **so forty-three assertions went unmeasured behind two
+red ones** — `649`'s lesson, guarded.
+
+⚠️ **AND THE CLASS WAS SWEPT BEFORE THE NET WAS RESTARTED**, not met at
+segment twenty: **all twenty-four suites that call `unlockAdmin`** were run
+on the fixed tree and every one is green with no edit. That is the rule
+`645`, `650`, `652` and `655` each paid for, and this is the first batch in
+the run of them where it cost one restart instead of three.
+
 ### The inventory: four of the five derived, and the fifth refused with its measurement
 `670` landed and its structure works. The faults were in what the columns
 say:
