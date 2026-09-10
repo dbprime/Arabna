@@ -13348,6 +13348,34 @@ the narrowing dropped from 0017   → 2.11 — a re-run would then rewrite a han
 the comment pointing at 0017 gone → 2.14
 ```
 
+#### And the group closes again — the net, run a second time over a new tree
+```
+174 runs · 87 suites · 8,382 assertions · zero red · zero crash
+```
+Twenty-four segments over `f0c8c60`, `HEAD` re-checked at the head of each —
+the runner exits 2 on a moved character or a dirty tree, and none did —
+**87 present and 87 run, each on both builds, and no result borrowed.** The
+verdict is READ from the index and never summed: `NET COMPLETE — every
+derived suite ran on both builds in this index`.
+
+⚠️ **The arithmetic closes itself, and it was written down BEFORE the run:
+8,366 + 16 (`v88`'s seven new assertions × 2 builds, and `v86 · 3.7` × 2) =
+8,382.** The total landing on the predicted figure to the unit is what
+proves no other suite moved — **and there is no reversal in the appendix at
+all**, because a migration, three documents and two guards give no older
+suite a subject that could change.
+
+⚠️ **AND THE NET IS PAID TWICE HERE, WHICH IS NAMED RATHER THAN HIDDEN.**
+`670` closed on `447370e` at 8,366, and **the appendix changed the tree** —
+a proof is a proof about one tree, and `655`'s own precedent is exactly this:
+the net was run again the day the owner's decision reopened its migration,
+and both figures were written down. **A figure quietly replaced hides the
+second run.**
+
+**The heaviest three are unchanged from `615`'s own table:** `v8` 290/288 ·
+`v20` 289/280 · `v14` 244/242. Measured suite time: **7,299s on the
+single-file build and 6,801s on the module one.**
+
 ## Known open items
 - **The header image is still far larger than its box.** V.04.7 replaced
   the 831/837 KB lockups with the cropped marks at **333/338 KB** — 60% off
