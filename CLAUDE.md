@@ -13092,7 +13092,7 @@ regardless. The branch is gone and **a boot migration deletes the field from
 every existing device** — most people reuse one password, so what sat there
 in the clear was probably the key to their email.
 
-### `test_v89` — 34 assertions, and five teeth
+### `test_v89` — 34 on the module build, 30 on the single-file one, and five teeth
 ⚠️ **THE DECISIVE CASE IS BLOCK 2 — a device the account SIGNED IN to — and
 it is the one that fails on the tree before this batch.** Block 1 is the
 device that created the account, where the hash existed, and it **passed
@@ -13106,6 +13106,15 @@ the boot migration removed        → 4.4 · 4.7 {"onDisk":true}
 the offline branch removed        → 3.1 reads «wrong» for a dropped connection
 the inventory regenerated whole   → 5.2 · 5.8, the dates lost
 ```
+
+⚠️ **AND THE FOUR THAT RUN ON ONE BUILD ONLY ARE A COLLISION CLOSED BEFORE
+THE NET, NOT A GAP.** `run.sh` runs the two builds **at the same time**, and
+the inventory block writes to `js/app.js` and to the generated file on disk;
+two copies racing would have one restoring while the other had mutated, **and
+a tree left dirty aborts every later segment of the net through the
+frozen-tree guard.** `v68` reached the same answer for the same reason: a
+tool is a file on disk and belongs to neither build. The read-only items run
+on both.
 
 ⚠️ **Read the first line twice: a suite built only from block 1 would have
 been GREEN over the whole fault.** That is `475`'s and V.07.9's lesson a

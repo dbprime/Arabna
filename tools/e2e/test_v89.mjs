@@ -24,6 +24,7 @@ import { spawnSync } from 'node:child_process';
 import { mockSupabase, MOCK_CODE } from './_supabase.mjs';
 
 const BASE = process.env.BASE || 'http://localhost:8099/index.html';
+const SINGLE = /single-file/.test(BASE);
 const ROOT = new URL('../../', import.meta.url).pathname;
 let pass = 0, fail = 0;
 const ok = (n, c, extra = '') => { if (c) { pass++; console.log('PASS ' + n + (extra ? ' -> ' + extra : '')); }
@@ -224,9 +225,20 @@ const run = (...a) => spawnSync(process.execPath, [ROOT + 'tools/audit/inventory
   ok('5.7 the first fill is partial, which is the whole point',
      dated > 0 && dated < items, dated + ' of ' + items);
 }
-{
+/* ⚠️ MODULE BUILD ONLY, AND THIS IS NOT TIDINESS — `run.sh` RUNS THE TWO
+   BUILDS AT THE SAME TIME. This block writes to `js/app.js` and to the
+   inventory on disk, so two copies racing each other would have one
+   restoring while the other had mutated, and the tree would be left dirty
+   — which aborts every later segment of the net through the frozen-tree
+   guard. `v68` reached the same answer for the same reason: a tool is a
+   file on disk and belongs to neither build. The read-only items above run
+   on both. */
+if (!SINGLE) {
   /* ⚠️ A COPY, never `git checkout` — a teeth run happens on an uncommitted
-     tree by definition, and `648` paid for that rule with a whole batch. */
+     tree by definition, and `648` paid for that rule with a whole batch.
+     ⚠️ And the inventory is copied too, because the tool WRITES it: a
+     restore that puts back only the file it mutated leaves the artefact
+     that file makes still corrupted. */
   const APP = ROOT + 'js/app.js';
   copyFileSync(INV, INV + '.bak'); copyFileSync(APP, APP + '.bak');
   try {
