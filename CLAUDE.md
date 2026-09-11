@@ -14428,6 +14428,14 @@ was measured against it still measures the same.
 and `chk_i18n` **425 derived keys · 1930 strings · 350 attributes** — all three
 unchanged, because `680` adds no string and no key.
 
+⚠️ **AND THE CLOSING COMMIT IS DOCUMENTS, WHICH IS ITSELF A TREE THAT HAS TO
+BE MEASURED.** Nineteen suites read `CLAUDE.md` or a file under `docs/` —
+derived, not listed — and the full net's own two reds were both of that
+family (`v84 · 11.3` reads the §1.هـ table). So they were re-run on the
+closing tree rather than assumed: **38 runs · 19 suites · 2,184 assertions ·
+zero red · zero crash**, plus `wiring.mjs` 16/16. *A document is a file the
+net reads, so editing one is a change that gets measured like any other.*
+
 ## Known open items
 - **The header image is still far larger than its box.** V.04.7 replaced
   the 831/837 KB lockups with the cropped marks at **333/338 KB** — 60% off
