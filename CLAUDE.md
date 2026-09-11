@@ -13962,6 +13962,35 @@ where the API answers **`signedURL`**, so every link came back null with no
 error at all: a refusal that looks like a permission refusal and is a
 spelling mistake.
 
+### And the group closes — the net, run on segments over one frozen tree
+```
+178 runs · 89 suites · 8,642 assertions · zero red · zero crash
+```
+Eighteen segments over `0c45bec`, `HEAD` re-checked at the head of each —
+the runner exits 2 on a moved character or a dirty tree — **89 present and
+89 run, each on both builds, and no result borrowed.** The verdict is READ
+from the index and never summed: `NET COMPLETE — every derived suite ran on
+both builds in this index`.
+
+⚠️ **The arithmetic closes itself: 8,510 + 126 (`v91` × 2) + 4 (`v44`, two
+new assertions × 2) + 2 (`v87`, whose per-table loop gained `biz_photos`) =
+8,642.** The total landing on the predicted figure to the unit is what
+proves no other suite moved.
+
+⚠️ **And the net was restarted from the top ONCE, with the reason said.**
+`v53 · 6.4` went red at segment eleven — the first-visit weight ceiling —
+**and it was a correct red**: the batch adds 39.3 KB, every byte of it
+`js/` and `styles/` and none of it `assets/`, so the ceiling moved with a
+decision and its measurement went in beside it. ⚠️ **And the class was
+swept before restarting** — 54→91 were run one by one and turned up
+`v83 · 3c.1`, whose anchor took the FIRST `patchListing` in the file while
+this batch added an earlier one — **so it cost one restart and not three.**
+
+**The heaviest three are unchanged from `615`'s own table, and their order
+did not move:** `v8` 285/283 · `v20` 282/274 · `v14` 241/239. Measured
+suite time: **7,191s on the single-file build and 6,725s on the module
+one.**
+
 ## Known open items
 - **The header image is still far larger than its box.** V.04.7 replaced
   the 831/837 KB lockups with the cropped marks at **333/338 KB** — 60% off
