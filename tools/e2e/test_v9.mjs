@@ -252,13 +252,22 @@ ok('the free plan states its 3-photo limit', (await txt()).includes('حتى 3 ص
 const png = await fakePhoto('SHOP');
 await uploadTo(png, 'shop.png');
 await page.click('#phSave'); await page.waitForTimeout(900);
-st = await ls();
-ok('the photo was stored against the business',
-   ((st.bizPhotos || {}).b2 || []).length === 1, JSON.stringify(Object.keys(st.bizPhotos || {})));
-ok('…and is waiting on review', ((st.bizPhotos || {}).b2 || [])[0].status === 'pending');
-ok('…stored as a compressed data URL, not the raw file',
-   /^data:image\/jpe?g/.test(((st.bizPhotos || {}).b2 || [])[0].url),
-   ((st.bizPhotos || {}).b2 || [])[0].url.slice(0, 22));
+/* ⚠️ REVERSED IN `660`, AND THE SUBJECT IS UNCHANGED: the photo is stored
+   against the business and waits on review. What moved is WHERE — it was an
+   object in this device's own `localStorage`, seen by nobody and reaching no
+   admin, and it is a row in `biz_photos` now with the picture in a private
+   bucket. So it is read from the store rather than off the disk, and the
+   third item asks for a PATH where it used to ask for the picture itself. */
+const shots = await page.evaluate(async () => {
+  const S = await import('arabna/js/store.js').catch(() => import('./js/store.js'));
+  await S.loadLiveBizPhotos();
+  return S.bizPhotos('b2').map(x => ({ status: x.status, path: x.path }));
+});
+ok('the photo was stored against the business', shots.length === 1, JSON.stringify(shots));
+ok('…and is waiting on review', shots[0] && shots[0].status === 'pending', String(shots[0] && shots[0].status));
+ok('…stored as a path in the bucket, never as the picture itself',
+   !!(shots[0] && /^[^/]+\/[0-9a-f]{32}\.jpg$/.test(shots[0].path)),
+   (shots[0] && shots[0].path) || 'none');
 
 await go('#/directory/b2');
 ok('the owner sees their own pending photo', await page.locator('.photo-tile.shot').count() === 1);
@@ -270,9 +279,14 @@ ok('the photo is in the admin queue', (await page.textContent('#aBody')).include
 await page.click('#aBody [data-bpok]'); await page.waitForTimeout(700);
 await go('#/directory/b2');
 ok('once approved it becomes the hero image', await page.locator('.hero-img').count() === 1);
+/* ⚠️ AND THE WAIT IS FOR WHAT IS MEASURED, NEVER FOR A NUMBER (`235`).
+   Since `660` the hero is a SIGNED LINK: after a reload the row has to be
+   fetched, the link asked for and the screen repainted, so a flat pause is
+   a race that would pass here and collapse on a slower machine. */
 ok('…and survives a reload', await (async () => {
   await page.reload(); await page.waitForTimeout(800);
   await go('#/directory/b2');
+  try { await page.waitForSelector('.hero-img', { timeout: 15000 }); } catch (e) { /* reported below */ }
   return await page.locator('.hero-img').count() === 1;
 })());
 

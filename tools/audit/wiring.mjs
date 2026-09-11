@@ -168,5 +168,75 @@ if (!fs.existsSync(invOut)) {
      total === dated ? [] : [`${total - dated} of ${total} carry no check date`], false);
 }
 
+/* 9 — 660: EVERY PICTURE PICKER SAYS ITS SIZE, AND THE ROW CARRIES ITS PATH.
+
+   ⚠️ THE COUNT IS DERIVED FROM THE SOURCE AND NOT WRITTEN HERE. That is
+   the whole guard: a sixth picker added in a month drops the net until it
+   is given a size, and nothing else would have said it was forgotten.
+
+   ⚠️ AND IT IS ASKED IN BOTH DIRECTIONS — a `sizeKey` with no entry in the
+   packs prints nothing under the box, and an entry nobody passes is debt
+   that reads as approved copy. */
+const pickerFiles = ['js/screens/marketplace.js', 'js/screens/directory.js',
+                     'js/screens/profile.js', 'js/screens/events.js', 'js/screens/advertise.js'];
+const calls = [];
+for (const f of pickerFiles) {
+  const txt = read(f);
+  /* ⚠️ the DEFINITION is not a call, and a matcher that cannot tell them
+     apart reports the one place that has nothing to pass */
+  for (const m of txt.matchAll(/(?<!function\s)mountPhotoPicker\s*\(/g)) {
+    /* the call's own arguments, balanced — a regex to the closing bracket
+       would stop at the first `)` inside a nested call */
+    let i = m.index + m[0].length, depth = 1;
+    while (i < txt.length && depth > 0) {
+      if (txt[i] === '(') depth++;
+      else if (txt[i] === ')') depth--;
+      i++;
+    }
+    const args = txt.slice(m.index + m[0].length, i - 1);
+    const key = /sizeKey\s*:\s*'([A-Za-z0-9_]+)'/.exec(args);
+    calls.push({ file: f, line: txt.slice(0, m.index).split('\n').length, key: key ? key[1] : null });
+  }
+}
+ok('9.1 every mountPhotoPicker call passes a sizeKey',
+   calls.filter(c => !c.key).map(c => `${c.file}:${c.line} has none`));
+const passed = new Set(calls.map(c => c.key).filter(Boolean));
+ok('9.2 …and every sizeKey passed is defined in BOTH packs',
+   [...passed].filter(k => !(A.has(k) && E.has(k))).map(k => k + ' is not in both packs'));
+ok('9.3 …and no size string is defined that nobody passes',
+   [...A].filter(k => /^size[A-Z]/.test(k) && !passed.has(k)).map(k => k + ' is defined and never used'));
+
+/* ⚠️ AND THE FIELD WHOSE ABSENCE WAS THE FAULT. `eventRowFrom` built the
+   row out of nineteen fields and carried no picture at all, so the form
+   collected one, the row reached the server without it, and the picture
+   sat in `state.eventEdits` on one phone. */
+ok('9.4 the event row carries its picture’s path',
+   /photo_path:/.test(src['js/store.js'].slice(
+     src['js/store.js'].indexOf('function eventRowFrom'),
+     src['js/store.js'].indexOf('function eventRowFrom') + 2400)) ? [] : ['eventRowFrom writes no photo_path']);
+
+/* ⚠️ AND THE CSP HOST IS THE ONE THING THAT MAKES ANY OF IT VISIBLE. With
+   `img-src 'self' data: blob:` the whole batch lands green and not one
+   picture appears: the browser refuses a signed link as a POLICY refusal,
+   with no failed request and no 404 — and `660`'s own designed cover makes
+   that absence look BETTER than it did, so the failure is harder to see,
+   not easier. The two files are identical today and part company at the
+   first edit to one of them. */
+/* ⚠️ THE WHOLE POLICY AND NOT UP TO THE FIRST QUOTE. The policy contains
+   `'self'`, so a pattern stopping at a quote reads two words of it and
+   compares one truncation with another — the trap `610`'s own suite fell
+   into and measured nothing at all. */
+const cspOf = (txt) => {
+  const m = /default-src [^;]*;[^"]*?(?=["']\s*[\/}])/.exec(txt);
+  return m ? m[0].trim() : '';
+};
+const cspHtml = cspOf(read('index.html'));
+const cspJson = cspOf(read('vercel.json'));
+ok('9.5 the two content-security policies are identical, letter for letter',
+   cspHtml && cspHtml === cspJson ? [] : ['index.html and vercel.json disagree']);
+const imgSrc = /img-src ([^;]*)/.exec(cspHtml);
+ok('9.6 …and img-src admits the file store, or no picture is ever drawn',
+   imgSrc && /supabase\.co/.test(imgSrc[1]) ? [] : ['img-src does not admit the storage host']);
+
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

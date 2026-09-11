@@ -73,8 +73,16 @@ function panelView(root) {
   const paint = () => {
     root.innerHTML = paintTabs() + '<div id="aBody"></div>';
     const body = $('#aBody');
-    if (tab === 'queue') body.innerHTML = claimsHtml() + verifyHtml() + bizPhotoHtml()
-      + offersHtml() + queueHtml();
+    if (tab === 'queue') {
+      body.innerHTML = claimsHtml() + verifyHtml() + bizPhotoHtml()
+        + offersHtml() + queueHtml();
+      /* ⚠️ A QUEUE OF FACES WITH NO NAMES IS A QUEUE NOBODY CAN JUDGE. The
+         admin may already read every profile row by `0002`'s own policy, so
+         this needs no function and no new permission — only one read, and a
+         repaint when the names land. */
+      const av = S.pendingAvatars();
+      if (av.length) S.loadAvatarOwners(av).then(got => { if (got && tab === 'queue') paint(); });
+    }
     else if (tab === 'mag') body.innerHTML = magHtml();
     else if (tab === 'ads') body.innerHTML = adsHtml();
     else if (tab === 'events') body.innerHTML = repeatsHtml() + eventsHtml();
@@ -211,15 +219,28 @@ function panelView(root) {
       if (ok) paint(); else b.disabled = false;
     }));
     // --- profile photos + verification badges ---
-    $$('#aBody [data-avok]').forEach(b => b.addEventListener('click', () => {
-      S.approveAvatar(); toast(t('done'), 'ok'); paint();
+    /* ⚠️ AND THE PICTURE NAMES ITS ACCOUNT NOW. `approveAvatar()` took no
+       arguments and acted on `state.user` — this device's own — so the
+       queue was the reviewer looking at himself, and nobody else's picture
+       could ever be judged at all. */
+    $$('#aBody [data-avok]').forEach(b => b.addEventListener('click', async () => {
+      const [uid, path] = b.dataset.avok.split('|');
+      b.disabled = true;
+      const ok = await S.approveAvatar(uid, path);
+      toast(ok ? t('done') : t('somethingWrong'), ok ? 'ok' : 'err');
+      if (ok) paint(); else b.disabled = false;
     }));
     $$('#aBody [data-avno]').forEach(b => b.addEventListener('click', () => {
       /* The photo queue stands in the SAME screen as the ownership requests,
          which have carried a reason box all along. */
+      const [uid, path] = b.dataset.avno.split('|');
       askReason({
         title: t('rejectReason'), sub: t('rejectReasonPlaceholder'), confirmText: t('reject'), danger: true,
-        onGo: (why) => { S.rejectAvatar(why); toast(t('itemRejected'), 'ok'); paint(); },
+        onGo: async (why) => {
+          const ok = await S.rejectAvatar(uid, path, why);
+          toast(ok ? t('itemRejected') : t('somethingWrong'), ok ? 'ok' : 'err');
+          if (ok) paint();
+        },
       });
     }));
     $$('#aBody [data-bgok]').forEach(b => b.addEventListener('click', () => {
@@ -302,15 +323,25 @@ function panelView(root) {
       toast(t('claimRejected'), 'ok'); paint();
     }));
     // --- business photos ---
-    $$('#aBody [data-bpok]').forEach(b => b.addEventListener('click', () => {
-      const [id, url] = b.dataset.bpok.split('|');
-      S.approveBizPhoto(id, url); toast(t('done'), 'ok'); paint();
+    /* ⚠️ THE PATH AND NOT THE LINK. A signed link expires and changes every
+       hour, so a button carrying one would stop matching its own row — and
+       the decision is the ROW's now, not an object on this device. */
+    $$('#aBody [data-bpok]').forEach(b => b.addEventListener('click', async () => {
+      const [id, path] = b.dataset.bpok.split('|');
+      b.disabled = true;
+      const ok = await S.approveBizPhoto(id, path);
+      toast(ok ? t('done') : t('somethingWrong'), ok ? 'ok' : 'err');
+      if (ok) paint(); else b.disabled = false;
     }));
     $$('#aBody [data-bpno]').forEach(b => b.addEventListener('click', () => {
-      const [id, url] = b.dataset.bpno.split('|');
+      const [id, path] = b.dataset.bpno.split('|');
       askReason({
         title: t('rejectReason'), sub: t('rejectReasonPlaceholder'), confirmText: t('reject'), danger: true,
-        onGo: (why) => { S.rejectBizPhoto(id, url, why); toast(t('itemRejected'), 'ok'); paint(); },
+        onGo: async (why) => {
+          const ok = await S.rejectBizPhoto(id, path, why);
+          toast(ok ? t('itemRejected') : t('somethingWrong'), ok ? 'ok' : 'err');
+          if (ok) paint();
+        },
       });
     }));
     // --- business verification ---
@@ -690,9 +721,9 @@ function queueHtml() {
   /* the merged, still-open reports — a report resolved elsewhere is
      resolved here, and one raised elsewhere finally arrives (655) */
   const flags = S.flags();
-  const avatar = S.pendingAvatar();
+  const avatars = S.pendingAvatars();
   const badge = S.pendingBadge();
-  const total = pending.length + events.length + flags.length + (avatar ? 1 : 0) + (badge ? 1 : 0);
+  const total = pending.length + events.length + flags.length + avatars.length + (badge ? 1 : 0);
 
   if (!total) {
     return `<div class="pad mt-16">${emptyState('checkCircle', t('noPending'), t('noPendingSub'))}</div>`;
@@ -754,19 +785,19 @@ function queueHtml() {
         </div>
       </div>`).join('')}
 
-    ${avatar ? `<div class="dr-group-label">${t('queueAvatars')}</div>
-      <div class="list-row">
-        <span class="row-ico" style="overflow:hidden;padding:0"><img src="${esc(avatar.url)}" style="width:100%;height:100%;object-fit:cover" alt="" /></span>
+    ${avatars.length ? `<div class="dr-group-label">${t('queueAvatars')} (${avatars.length})</div>
+      ${avatars.map(a => `<div class="list-row">
+        <span class="row-ico" style="overflow:hidden;padding:0"><img src="${esc(S.imageUrl('avatars', a.path))}" style="width:100%;height:100%;object-fit:cover" alt="" /></span>
         <div class="row-main">
-          <div class="row-title">${esc((S.state.user && S.state.user.name) || '')}
+          <div class="row-title">${esc(S.avatarOwnerName(a.userId) || a.userId)}
             <span class="badge badge-pending">${t('statusPending')}</span></div>
           <div class="row-sub">${t('profilePhoto')}</div>
           <div class="row-actions">
-            <button class="mini-btn gold" data-avok="1">${icon('check', 15)} ${t('approve')}</button>
-            <button class="mini-btn" data-avno="1">${icon('x', 15)} ${t('reject')}</button>
+            <button class="mini-btn gold" data-avok="${esc(a.userId)}|${esc(a.path)}">${icon('check', 15)} ${t('approve')}</button>
+            <button class="mini-btn" data-avno="${esc(a.userId)}|${esc(a.path)}">${icon('x', 15)} ${t('reject')}</button>
           </div>
         </div>
-      </div>` : ''}
+      </div>`).join('')}` : ''}
 
     ${badge ? `<div class="dr-group-label">${t('queueBadges')}</div>
       <div class="list-row">
@@ -1352,8 +1383,8 @@ function bizPhotoHtml() {
         <div class="row-main">
           <div class="row-title">${esc(b ? L(b.name) : p.bizId)}</div>
           <div class="row-actions">
-            <button class="mini-btn gold" data-bpok="${p.bizId}|${esc(p.url)}">${icon('check', 15)} ${t('approve')}</button>
-            <button class="mini-btn" data-bpno="${p.bizId}|${esc(p.url)}">${icon('x', 15)} ${t('reject')}</button>
+            <button class="mini-btn gold" data-bpok="${esc(p.bizId)}|${esc(p.path || '')}">${icon('check', 15)} ${t('approve')}</button>
+            <button class="mini-btn" data-bpno="${esc(p.bizId)}|${esc(p.path || '')}">${icon('x', 15)} ${t('reject')}</button>
           </div>
         </div>
       </div>`;

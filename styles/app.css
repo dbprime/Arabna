@@ -1423,6 +1423,60 @@ input[inputmode="tel"], input[type="email"], input[inputmode="decimal"], #zipIn 
 }
 .ev-hero img { width: 100%; height: 100%; object-fit: cover; }
 
+/* ---------- the cover when there is no photo (660 §7) ----------
+   ⚠️ «شكلُ الفعاليّات بدون صورة رخيص» — and what was read was not «an event
+   with no picture» but «an empty place nobody filled». Eleven types wore
+   one grey box with a 30px mark in the middle of it, and two of them share
+   the same mark (`users`, for `kids` and `community`).
+   ⚠️ AND NOT ONE IMAGE FILE IS LOADED, from this repository or anywhere
+   else. The cover is the theme's own gradient, a geometry drawn in CSS and
+   the icon that already exists, so it weighs nothing and no licence is
+   asked about it. A picture or a logo taken from an organiser's own site
+   was asked about and refused: copyright on the photograph, a trademark on
+   the mark, and the real pictures come with permission or from the
+   organiser themselves.
+   ⚠️ AND ONE HUE PER TYPE, NOT TWO PER THEME: the wash is laid at a low
+   alpha, and a low alpha reads over the dark ground and the light one
+   alike. */
+.ev-fallback {
+  position: absolute; inset: 0;
+  display: grid; place-items: center;
+  color: var(--ev-hue, var(--gold-bright));
+  background:
+    radial-gradient(circle at 50% 45%,
+      color-mix(in srgb, var(--ev-hue, var(--gold-bright)) 22%, transparent), transparent 62%),
+    repeating-linear-gradient(45deg,
+      color-mix(in srgb, var(--ev-hue, var(--gold-bright)) 9%, transparent) 0 1px,
+      transparent 1px 14px),
+    repeating-linear-gradient(-45deg,
+      color-mix(in srgb, var(--ev-hue, var(--gold-bright)) 9%, transparent) 0 1px,
+      transparent 1px 14px);
+}
+/* ⚠️ A BROWSER WITHOUT `color-mix` KEEPS A COVER, never a blank box: the
+   ground is the theme's own gradient underneath, and only the wash is lost. */
+@supports not (color: color-mix(in srgb, red 10%, transparent)) {
+  .ev-fallback { background: none; }
+}
+.ev-fallback[data-evtype="concert"]   { --ev-hue: #8E7CC3; }
+.ev-fallback[data-evtype="festival"]  { --ev-hue: #E4C77E; }
+.ev-fallback[data-evtype="lecture"]   { --ev-hue: #6FA8DC; }
+.ev-fallback[data-evtype="iftar"]     { --ev-hue: #6FBFB0; }
+.ev-fallback[data-evtype="bazaar"]    { --ev-hue: #D08A62; }
+.ev-fallback[data-evtype="sports"]    { --ev-hue: #8FD0AE; }
+.ev-fallback[data-evtype="kids"]      { --ev-hue: #E08A9B; }
+.ev-fallback[data-evtype="charity"]   { --ev-hue: #D2757F; }
+.ev-fallback[data-evtype="community"] { --ev-hue: #C6B08B; }
+.ev-fallback[data-evtype="national"]  { --ev-hue: #7A9CE0; }
+.ev-fallback[data-evtype="conference"]{ --ev-hue: #9AA8C4; }
+
+/* the admin's own line under a photo picker (660 §8) */
+.hint-admin {
+  margin-top: 6px; padding: 6px 9px; border-radius: 9px;
+  color: var(--text-2);
+  background: var(--gold-wash-1);
+  border: 1px solid var(--gold-wash-2);
+}
+
 /* ---------- password show / hide ---------- */
 .pass-wrap { position: relative; }
 .pass-wrap .input { padding-inline-end: 52px; }

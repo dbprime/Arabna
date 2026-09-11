@@ -142,17 +142,36 @@ const go = async (p, h) => { await p.evaluate(x => { location.hash = x; }, h); a
   await ctx.close();
 }
 
-/* ---- 4. the uploaded photograph is the one that still waits ---- */
+/* ---- 4. the uploaded photograph is the one that still waits ----
+   ⚠️ REVERSED IN `660`, AND THE SUBJECT IS UNCHANGED: what this block is
+   about is that OUR OWN drawing never waits and a person's own photograph
+   always does. What moved is where the photograph goes — it was a `data:`
+   string inside `state.user` with no column for it anywhere, and it is an
+   object in a private bucket now, waiting in `flags` with `kind = 'avatar'`.
+   ⚠️ So it needs a REAL account: the storage path begins with the account
+   id and the policy demands it, and an account-less picture has nowhere to
+   go. The seeded `state.user` of this suite carries no id. */
 {
   const { ctx, p } = await open();
-  const r = await p.evaluate(() => {
+  const r = await p.evaluate(async () => {
     const S = window.__S;
-    S.setAvatar('data:image/png;base64,iVBORw0KGgo=');
-    return JSON.parse(localStorage.getItem('arabna.v1')).user.avatar;
+    const err = await S.signUp({ name: 'Reader', email: 'av44@a.app', password: 'Qx7#mVzt2026', phone: '' });
+    if (err) return { err };
+    if (!S.state.user.emailVerified) await S.confirmEmail('123456');
+    const cv = document.createElement('canvas'); cv.width = 4; cv.height = 4;
+    cv.getContext('2d').fillRect(0, 0, 4, 4);
+    const saved = await S.setAvatar(cv.toDataURL('image/jpeg', 0.72));
+    return { saved, view: S.avatarView(), disk: JSON.parse(localStorage.getItem('arabna.v1')).user.avatar };
   });
-  ok('4.1 an uploaded picture is stored as an upload', r && r.kind !== 'preset' && r.kind !== 'emoji',
-     JSON.stringify(r));
-  ok('4.2 …and it DOES wait for the admin', r && r.status === 'pending', String(r && r.status));
+  ok('4.1 an uploaded picture is stored as an upload — a PATH now, never the picture',
+     !!(r.saved && r.saved.path && !r.saved.kind && /^[^/]+\/[0-9a-f]{32}\.jpg$/.test(r.saved.path)),
+     JSON.stringify(r.saved || r.err));
+  ok('4.2 …and it DOES wait for the admin', r.saved && r.saved.status === 'pending',
+     String(r.saved && r.saved.status));
+  /* the other half of the same sentence: waiting means nobody sees it */
+  ok('4.3 …so nothing is drawn for it until the admin says yes', r.view === null, JSON.stringify(r.view));
+  ok('4.4 …and the device keeps the path, not the picture',
+     !!(r.disk && r.disk.path && !r.disk.url), JSON.stringify(r.disk));
   await ctx.close();
 }
 

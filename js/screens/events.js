@@ -152,10 +152,23 @@ function typeLabel(id) {
   return x ? t(x.key) : t('catAll');
 }
 
+/**
+ * The cover an event wears when it has no photograph — 660 §7.
+ * ⚠️ THE TYPE AND NOT THE ICON DECIDES THE COLOUR, so `kids` and
+ * `community`, which share the `users` mark, are still told apart.
+ * ⚠️ AND AN UNKNOWN OR EMPTY TYPE FALLS TO `community` — exactly what
+ * `eventRowFrom` does with `type: ev.type || 'community'`, so no event can
+ * ever be drawn with no cover at all.
+ */
+function coverHtml(e, px) {
+  const type = EVENT_TYPES.some(x => x.id === e.type) ? e.type : 'community';
+  return `<div class="ev-fallback" data-evtype="${esc(type)}">${icon(e.icon || eventTypeIcon(type) || 'calendar', px)}</div>`;
+}
+
 function cardHtml(e) {
   return `<div class="card ev-card ${e.featured ? 'featured' : ''}" data-route="#/events/${e.id}">
     <div class="ev-cover">
-      ${e.photo ? `<img src="${esc(e.photo)}" alt="${esc(L(e.title))}" loading="lazy" />` : icon(e.icon || 'calendar', 30)}
+      ${e.photo ? `<img src="${esc(e.photo)}" alt="${esc(L(e.title))}" loading="lazy" />` : coverHtml(e, 56)}
       ${e.featured ? `<span class="badge badge-boost" style="position:absolute;inset-block-start:8px;inset-inline-start:8px">${icon('bolt', 12)}${t('featuredEvent')}</span>` : ''}
     </div>
     <div class="ev-body">
@@ -199,7 +212,7 @@ export function EventScreen(root, params) {
 
   root.innerHTML = `
     <div class="ev-hero">
-      ${e.photo ? `<img src="${esc(e.photo)}" alt="${esc(L(e.title))}" />` : icon(e.icon || 'calendar', 56)}
+      ${e.photo ? `<img src="${esc(e.photo)}" alt="${esc(L(e.title))}" />` : coverHtml(e, 92)}
       ${e.featured ? `<span class="badge badge-boost" style="position:absolute;inset-block-end:12px;inset-inline-start:14px">${icon('bolt', 13)}${t('featuredEvent')}</span>` : ''}
       ${past ? `<span class="badge badge-free" style="position:absolute;inset-block-end:12px;inset-inline-end:14px">${t('eventPast')}</span>` : ''}
     </div>
@@ -347,7 +360,12 @@ export function EventFormScreen(root, params) {
         ${icon('send', 19)} ${editing ? t('saveChanges') : (isAdmin ? t('addEvent') : t('proposeEvent'))}</button>
     </div>`;
 
-  const pic = mountPhotoPicker($('#evPh'), e.photo ? [e.photo] : [], 0, 1);
+  /* ⚠️ FED FROM THE PATH WHEN THERE IS ONE, and the way back is kept — the
+     same reason as the marketplace's and the directory's: a signed link is
+     not something `uploadImage` can upload, so saving an event whose
+     picture was not touched would drop it. */
+  const seedPics = S.pickerPhotos('event-photos', e.photoPath ? [e.photoPath] : (e.photo ? [e.photo] : []));
+  const pic = mountPhotoPicker($('#evPh'), seedPics.urls, 0, 1, { sizeKey: 'sizeEvent' });
 
   // the artist block belongs to concerts and nothing else
   const typeSel = $('#evType'), concertBox = $('#evConcert');
@@ -419,6 +437,7 @@ export function EventFormScreen(root, params) {
       ticketUrl: $('#evUrl').value.trim(),
       desc: { ar: $('#evDesc').value.trim(), en: $('#evDesc').value.trim() },
       photo: pic.photos[0] || '',
+      knownPhotos: seedPics.known,
       featured: isAdmin ? $('#evFeat').checked : false,
       /* ⚠️ DERIVED FROM THE TYPE, not frozen onto the record (649): a live
          row read back on a second device has no icon column to read, so a

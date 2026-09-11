@@ -276,6 +276,15 @@ export const STRINGS = {
     notAnImage: 'الملف المختار ليس صورة',
     fileTooLarge: 'حجم الصورة كبير جداً (الحد 10 ميجابايت)',
     photoFailed: 'لم نستطع قراءة الصورة — جرّب صورة أخرى',
+    photoUploadFailed: 'لم نستطع رفع الصورة — يمكنك إضافتها من التعديل',
+    /* the sizes, shown to the admin alone under the picker (660 §8). The
+       numbers are measured from `styles/app.css`; the safe area is computed
+       from the two ratios, because `object-fit: cover` crops. */
+    sizeEvent: '1200 × 500 · JPG — والمهمّ في الوسط 1200 × 360، فالبطاقةُ تقصّ الأعلى والأسفل.',
+    sizeBiz: '1200 × 720 · JPG — والمهمّ في الوسط 720 × 430، فالواجهةُ تقصّ الأعلى والأسفل والمربّعُ يقصّ الجانبين.',
+    sizeClassified: '1200 × 720 · JPG — والمهمّ في الوسط 720 عرضاً، فالمربّعُ الصغير يقصّ الجانبين.',
+    sizeAd: '800 × 800 · JPG — مربّعةٌ تماماً، ولا تُقصّ.',
+    sizeAvatar: '600 × 600 · JPG — تُعرَض دائريّة، فاترك 90 بكسلاً خاليةً عن كلّ حافّة.',
     storageFull: 'ذاكرة الجهاز ممتلئة — احذف إعلاناً قديماً أو قلّل عدد الصور',
     compressing: 'جاري تجهيز الصور...',
     // --- privacy / safety
@@ -2065,6 +2074,12 @@ export const STRINGS = {
     notAnImage: 'That file is not an image',
     fileTooLarge: 'That image is too large (10 MB limit)',
     photoFailed: "Couldn't read that image — try another one",
+    photoUploadFailed: "Couldn't upload the photo — you can add it from the edit screen",
+    sizeEvent: '1200 × 500 · JPG — keep the subject in the middle 1200 × 360; the card crops top and bottom.',
+    sizeBiz: '1200 × 720 · JPG — keep the subject in the middle 720 × 430; the header crops top and bottom, the thumbnail crops the sides.',
+    sizeClassified: '1200 × 720 · JPG — keep the subject in the middle 720 of the width; the small square crops the sides.',
+    sizeAd: '800 × 800 · JPG — square, shown uncropped.',
+    sizeAvatar: '600 × 600 · JPG — shown as a circle, so leave 90px clear on every edge.',
     storageFull: 'Device storage is full — delete an old listing or use fewer photos',
     compressing: 'Preparing photos...',
     phoneRemoved: '[number removed]',
