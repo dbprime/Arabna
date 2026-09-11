@@ -1192,7 +1192,7 @@ function magHtml() {
       <select class="select" id="artMedia"><option value="image">${t('photos')}</option><option value="video">${t('videos')}</option></select></div>
     <div class="field"><label class="label">${S.state.lang === 'en' ? 'Excerpt' : 'المقتطف'}</label><input class="input" id="artEx" /></div>
     <div class="field"><label class="label">${S.state.lang === 'en' ? 'Body' : 'نص المقال'}</label><textarea class="textarea" id="artBody"></textarea></div>
-    <label class="setting-row" style="padding:8px 0;border:none">
+    <label class="check-row">
       <input type="checkbox" id="artSpon" class="check-gold" />
       <span class="s-txt"><b style="font-weight:500;font-size:.78125rem">${t('sponsoredStory')}</b></span></label>
     <div class="field"><label class="label">${S.state.lang === 'en' ? 'Advertiser' : 'المعلن'} <span class="muted">(${t('optional')})</span></label><input class="input" id="artAdv" /></div>

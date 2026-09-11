@@ -1310,6 +1310,24 @@ html[dir="rtl"] .switch.on::after { transform: translateX(-18px); }
 .setting-row .s-txt b { display: block; font-size: .9375rem; font-weight: 600; }
 .setting-row .s-txt span { font-size: .78125rem; color: var(--muted); }
 
+/* 680: A LABEL THAT IS ITSELF THE CONTROL, and its hit area is the box and
+   its words — nothing more. `.setting-row` is `display:flex`, which makes
+   the label a block the full width of the form, and `.s-txt` is `flex:1`,
+   which stretches the words across the rest. Five labels used it, and a
+   finger that scrolls past one of them lands a tap: measured on 11
+   September, an event went out «featured» — the $99 pin — with nobody
+   having touched the box. Measured here before the fix: the age-18 consent
+   was 362px wide over 166px of glyphs, so 166px of it — 46% of the row —
+   answered a tap with nothing under it. Two of the five are the signup
+   consents, where an accidental tick is a legal claim its owner never made.
+   ⚠️ `.setting-row` is NOT touched: thirty-one of its thirty-six uses are
+   not labels and want the full width honestly, so changing the rule would
+   repair five and break thirty-one. */
+.check-row { display: inline-flex; align-items: center; gap: 12px; max-width: 100%; margin-block: 8px; cursor: pointer; }
+/* ⚠️ explicitly undoing `flex: 1`: the class may be used inside a context
+   that inherits that rule, and the stretch IS the fault */
+.check-row .s-txt { flex: 0 1 auto; }
+
 .legal-body { padding: 16px 16px 30px; }
 .legal-body h2 { font-size: 1.03125rem; margin: 18px 0 6px; color: var(--gold-bright); }
 .legal-body p, .legal-body li { font-size: .90625rem; color: var(--text-2); line-height: 1.95; }
