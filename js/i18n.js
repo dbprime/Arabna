@@ -298,7 +298,7 @@ export const STRINGS = {
     figHcAnaheim: 'Anaheim تخصّص Little Arabia',
     figHoTitle: 'كلفةُ السكن مقارنةً بمتوسّط كبرى المدن = 100',
     figHoBig: 'متوسّطُ كبرى المدن الأمريكيّة',
-    figHoHou: 'هيوستن',
+    figHoHou: 'Houston',
     figHoCheaper: 'أرخصُ بـ52.4%',
     figUnTitle: 'عربُ مقاطعة Harris — من يُعَدّ ومن لا يُعَدّ',
     figUnCensus: 'تعدادُ 2020 الرسميّ',

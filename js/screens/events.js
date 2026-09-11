@@ -314,7 +314,7 @@ export function EventFormScreen(root, params) {
           <input class="input ltr" id="cnPrice" inputmode="decimal" placeholder="35" value="${esc((e.concert || {}).priceFrom || '')}" /></div>
         <div class="field"><label class="label">${t('evAgeLimit')} <span class="muted">(${t('optional')})</span></label>
           <input class="input" id="cnAge" placeholder="${t('evAgeHint')}" value="${esc((e.concert || {}).ageLimit || '')}" /></div>
-        <label class="setting-row" style="padding:8px 0;border:none">
+        <label class="check-row">
           <input type="checkbox" id="cnFamily" ${(e.concert || {}).familySeating ? 'checked' : ''} class="check-gold" />
           <span class="s-txt"><b style="font-weight:500;font-size:.78125rem">${t('evFamilySeating')}</b></span></label>
         <div class="list-note" style="margin-inline:0">${icon('info', 18)}<span>${t('evTicketNote')}</span></div>
@@ -343,7 +343,7 @@ export function EventFormScreen(root, params) {
         <div id="evPh"></div></div>
 
       ${isAdmin ? `
-        <label class="setting-row" style="padding:8px 0;border:none">
+        <label class="check-row">
           <input type="checkbox" id="evFeat" ${e.featured ? 'checked' : ''} class="check-gold" />
           <span class="s-txt"><b style="font-weight:500;font-size:.78125rem">${t('featuredEvent')}</b></span></label>
 

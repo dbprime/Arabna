@@ -11,7 +11,7 @@ ARABNA · عربنا — a mobile-first web app for the Arab community in the U.
 **business directory + marketplace + events + magazine**, Arabic-first with a full English toggle.
 ("Classifieds / الإعلانات الشخصية" is now "Marketplace / السوق" — the old `#/classifieds`
 routes still resolve so shared links keep working.)
-Current version: **V.11.5 (prototype)**. Owner: dbprime. Deploys to Vercel (team DB Prime).
+Current version: **V.11.6 (prototype)**. Owner: dbprime. Deploys to Vercel (team DB Prime).
 
 ## Hard rules (from the product brief)
 0. ⚠️ **THE OWNER'S NAME IS NEVER WRITTEN — anywhere.** Not in this file, not
@@ -14198,6 +14198,243 @@ the code: the stylesheet sweep matched this batch's own comments, which
 name `border-right` and `z-index` while explaining why neither is written.
 **The comments are stripped before any «does the code do X» check, in CSS
 as well as in JavaScript.**
+
+### ⚠️ And the full net found one red in it: an Arabic city name in `i18n.js`
+
+The gate the next file sets — the full net on `main` before a line of it is
+written — turned `test_v26 · 2.2` red on **both** builds, and the app was
+wrong:
+
+```
+ar.figHoHou: 'هيوستن'        the housing figure's own bar label
+en.figHoHou: 'Houston'
+```
+
+⚠️ **That is the V.03.3 rule, and `2.2` is the guard written for exactly
+it**: the city name is English even when the interface is Arabic. The rule
+already names the class it belongs to — `prOutside`, `ncSub` and
+`ncCardTitle` were three of our own strings that said «هيوستن» inside a
+sentence — **and this is a fourth, a chart label, added by the batch that
+had just read the rule.**
+
+- **Every other place name in the sixteen figure keys was already Latin** —
+  `Sharpstown` · `Droubi's` · `Jay Stores` · `Karat 22` · `Anaheim` — so it
+  is a single slip and not a decision, which is what makes it a fix rather
+  than a reversal. **Not one character of `v26` was softened: the check was
+  right and the app was not.**
+- **Measured after, in both languages: `Houston` at 313..355.6, identical,
+  no overflow**, above its own bar — so the label's own geometry is
+  unmoved. And a sweep of the whole pack for every Arabic city name the
+  check knows returns **zero**.
+- ⚠️ **The articles' own prose is NOT touched, and that is `675`'s own
+  recorded decision rather than an exception taken here**: it measured the
+  street name and wrote it down — the Arabic text says «هيلكروفت» while the
+  English says `Hillcroft`, and the address is written as it is on the
+  envelope. `2.1` sweeps business names and descriptions and `2.2` sweeps
+  `i18n.js`; **editorial prose is neither, and the tags stay Arabic by the
+  same rule's own exception.**
+
+### ⚠️ And a second red from the same run: a seed field with no line
+
+`test_v84 · 11.3` — **«every seed field is a column, or an exception with a
+written reason»** — red on both builds, naming `articles.blocks`. It is
+`650`'s guard doing exactly what it was built for, and the debt is `675`'s:
+that batch **did** write the gap into `docs/الحالة.md` §2, in the row that
+says the `articles` table is live and the app does not speak to it — and
+**§2 is not what `11.3` reads.** It reads the table in **§1.هـ**, field by
+field, and `blocks` had no row there.
+
+- ⚠️ **The two places are not duplicates, and this is why the check points
+  at one of them.** §2 says «this gap exists and here is when it opens»;
+  §1.هـ says «this FIELD has no column, and here is the reason» — **and it
+  is the one a batch writing the table reads to know what to add.** A gap
+  recorded only in §2 is a field `665` would not know to create a column
+  for.
+- **`cover` is written with it, deliberately before its time.** No seed
+  carries one today — `675` held the two values back with the photographs —
+  so `11.3` could not see it. **The day `assets/mag/` lands, `cover`
+  becomes a seed field, and without its row the guard would redden a batch
+  whose whole subject is pictures.**
+- **Nothing was softened**: `v84` is 58/58 on both builds with the two rows
+  written, and the reasons are measured, not asserted — `body` is two
+  independent arrays and `blocks` is one array carrying `{ar, en}` inside
+  each block, which is why a picture cannot drift away from its paragraph
+  between the languages.
+
+⚠️ **And the class was swept before the net restarted rather than after,
+which is the rule `645`, `650`, `652` and `655` each paid for**: every
+guard in the net that reads a file under `docs/` — `v15` · `v84` · `v85` ·
+`v86` · `v88` · `v89` · `v90` · `v92` — plus the unrun tail and the static
+pass, all green before a single segment was re-run.
+
+## V.11.6 — a checkbox that flips on a scroll-touch (680)
+
+⚠️ **This file does NOT close its group, and it says so at its own head.**
+It touches `styles/app.css`, `js/screens/auth.js`, `js/screens/events.js`
+and `js/screens/admin.js` — **and neither `js/store.js`, nor the boot path,
+nor authentication**, the three the 5 September decision names. **So it runs
+the suites it touches and nothing more.** **And no migration** — لا هجرة.
+
+### The fault happened; it was not reasoned about
+On 11 September the owner added an event from the panel, **never touched
+«فعالية مميزة» — and the event went out featured**, which is the $99 weekly
+pin. He opened the edit form afterwards, found the box ticked, cleared it,
+and the badge went.
+
+**Every path that writes `featured` writes `false`** — `blankEvent()`, the
+save (`isAdmin ? checked : false`), `eventRowFrom`, `mapLiveEventRowToJs`,
+and the column's own `not null default false` — **and not one line in the
+repository sets `.checked` programmatically.** So the box was ticked at the
+moment of saving, and nothing ticked it but a tap.
+
+### The hit area was the row, not the box
+```html
+<label class="setting-row" style="padding:8px 0;border:none">
+  <input type="checkbox" id="evFeat" class="check-gold" />
+  <span class="s-txt">…</span>
+</label>
+```
+`.setting-row` is `display:flex`, which makes the label a block **the full
+width of the form**, and `.s-txt` is `flex:1`, which stretches the words
+across the rest — **and a label activates its control wherever it is
+touched.** Measured on the tree before a line was changed:
+
+```
+the consent label            362px wide inside a 362px content box
+the age-18 consent           362px of hit area over 165.9px of glyphs
+                             → 166px, 46% of the row, answering a tap
+                               with nothing under it
+a tap 6px inside the row      false -> true   *** the fault ***
+```
+
+⚠️ **And its place is what makes it happen**: mid-way down a form longer
+than two screens, directly under the photo picker — **in the path of a
+finger on its way down** — and a swipe that starts and ends on the strip is
+read as a tap. **It is the only field in that form whose label IS its
+control**; every other is a `label` above and an `input` below.
+
+### Five places, and two of them are a legal claim
+| | | what a mistaken tap means |
+|---|---|---|
+| `auth.js:72` | the terms and privacy consent | ⚠️ **a legal claim its owner never made** |
+| `auth.js:78` | the age-18 consent | ⚠️ **the same** |
+| `events.js:317` | family seating (concert) | wrong information for the reader |
+| `events.js:346` | **featured event** | ⚠️ **the $99 pin, given away** |
+| `admin.js:1195` | sponsored story | content marked an advertisement with no advertiser |
+
+⚠️ **The first two are why the file was urgent.** A consent box that can be
+ticked by a passing finger is not a consent — and the app keeps those two
+boxes as its evidence that the person agreed and is of age.
+
+### `.setting-row` is NOT touched, and that is the whole design
+**Measured: `.setting-row` is used thirty-six times and thirty-one of them
+are not labels** — settings rows and the rest, which want the full width
+honestly. **Changing that rule repairs five and breaks thirty-one.** So a
+new class for the case where the label IS the control:
+
+```css
+.check-row { display: inline-flex; align-items: center; gap: 12px;
+             max-width: 100%; margin-block: 8px; cursor: pointer; }
+.check-row .s-txt { flex: 0 1 auto; }
+```
+
+- ⚠️ **`inline-flex` is the whole repair**: the label takes the width of
+  what is in it, not the width of the form.
+- ⚠️ **`flex: 0 1 auto` undoes `flex: 1` explicitly**, because the class may
+  be used inside a context that inherits that rule — **and the stretch IS
+  the fault.**
+- **`max-width: 100%`** so the long consent wraps instead of escaping.
+- **The inline `style=` is deleted at all five sites**, padding and border
+  and the two `cursor:pointer`s alike: **a property repeated five times is
+  the one that drifts.**
+- ⚠️ **`.check-gold` is not touched** — the box is still 18px — and **the
+  screen looks the same**: box beside the words, 12px between them, 8 above
+  and below. The reader sees no difference; they see that a tap now needs
+  intent.
+
+**Measured after, at 390px, both languages:**
+```
+the consent      362 → 308.7 (ar) · the age-18 consent 362 → 202.9
+featured         106.2 of 362   ·   sponsored 102.5   ·   family seating 113.3
+a tap at the far end of the row     does not flip
+a tap on the words                  flips
+```
+
+### ⚠️ And the spec's own check 2.1 is toothless as written
+It asks for `label.offsetWidth < parent.clientWidth`. **`clientWidth`
+INCLUDES padding**: the parent is 390 wide with 14px each side, so
+`clientWidth` is 390 and the full-width label is 362 — **362 < 390 is true
+before the fix and true after.** Measured on one page by toggling the class
+in the browser: old 362, new 309, **and the comparison says «narrower» in
+both.** A check that passes with the fault present is worse than no check,
+so what `test_v93` measures is the parent's **content** box.
+
+⚠️ **And the behavioural check cannot go red — it goes ABSENT**, which is
+the same family: with the label back at full width there is no point «at
+the far end and outside the label» to tap, so `2.2` is skipped rather than
+failed. **`2.5` is the vacuity guard**, and it was proven: putting the old
+class back on the two consents prints `filled the row: agree1(ar)
+agree2(ar) agree1(en) agree2(en)` and turns it red.
+
+### What was measured and found sound, and is written so it is not "fixed"
+**The «terms» and «privacy» buttons inside the consent label do not flip the
+box.** Label activation is skipped when the click lands on interactive
+content, and a `<button>` is that. **So no `stopPropagation` is added to
+cure what is not broken** — and `3.2` is what would notice if it ever broke.
+
+### `test_v93` — 47 assertions, and six teeth
+```
+the class back to `.setting-row` at all five sites  → 10 items, 1.1 naming every file
+`.check-row` back to plain `flex`                    → 9 items
+the explicit undo of `flex: 1` deleted               → 8 items
+`.setting-row` "fixed" instead of a new class        → 1.4 ALONE
+an inline style kept beside the class                → 1.6 · 1.7
+the featured box pre-ticked in the markup            → 4.0 · 4.1, printing the
+                                                        original fault in one line:
+                                                        {"featured":true}
+```
+⚠️ **And a fault of my own is recorded rather than smoothed:** the suite's
+first store helper compiled a callback with `new Function`, which
+`script-src 'self'` refuses — it worked in Node and was refused in the
+page. The module is **attached once** and read with ordinary evaluates.
+
+### And the suites this file touches — run on the frozen tree, not the full net
+```
+86 runs · 43 suites · 5,438 assertions · zero red · zero crash
+```
+Nine segments over `3a35266`, and **43 distinct suites × 2 builds** read from
+the index — which prints `NET INCOMPLETE` and names what it has not run, **and
+that is the guard working rather than a shortfall**: `680` is not its group's
+closer, so the full net is deliberately not run here and the PARTIAL line says
+so at both ends. §0's gate was paid separately and in full, on `main` before a
+line of this file was written.
+
+⚠️ **The 43 are DERIVED and then widened by hand, and both halves are
+written.** Grepping `tools/e2e/` for every changed thing — `setting-row` ·
+`check-gold` · `agree1` · `agree2` · `evFeat` · `artSpon` · `cnFamily` ·
+`app.css` · `APP_VERSION` · `الحالة.md` · `events/propose` · `#/auth/signup` ·
+`data-t="mag"` · `check-row` — returns **38**, and the five added on top
+(`v4` · `v22` · `v45` · `v89` · `v90`) are the admin and document-reading
+suites a grep for a class name cannot see. **Measured: derived-but-not-run is
+empty.**
+
+⚠️ **And there is no reversal in this batch at all**, which is what a change
+of this shape should look like: not one existing assertion had a subject that
+moved. A new class was added beside `.setting-row` rather than `.setting-row`
+being altered — **31 of its 36 uses are not labels** — so every screen that
+was measured against it still measures the same.
+
+**The static gates, on the same tree:** `wiring.mjs` **16 passed, 0 failed**,
+and `chk_i18n` **425 derived keys · 1930 strings · 350 attributes** — all three
+unchanged, because `680` adds no string and no key.
+
+⚠️ **AND THE CLOSING COMMIT IS DOCUMENTS, WHICH IS ITSELF A TREE THAT HAS TO
+BE MEASURED.** Nineteen suites read `CLAUDE.md` or a file under `docs/` —
+derived, not listed — and the full net's own two reds were both of that
+family (`v84 · 11.3` reads the §1.هـ table). So they were re-run on the
+closing tree rather than assumed: **38 runs · 19 suites · 2,184 assertions ·
+zero red · zero crash**, plus `wiring.mjs` 16/16. *A document is a file the
+net reads, so editing one is a change that gets measured like any other.*
 
 ## Known open items
 - **The header image is still far larger than its box.** V.04.7 replaced
