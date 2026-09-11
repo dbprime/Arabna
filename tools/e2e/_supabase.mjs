@@ -59,7 +59,10 @@ const SCHEMA = { classifieds: columnsOf('classifieds'), businesses: columnsOf('b
                     the notifications table `0013` adds */
                  messages: columnsOf('messages'), reviews: columnsOf('reviews'),
                  review_replies: columnsOf('review_replies'), flags: columnsOf('flags'),
-                 claims: columnsOf('claims'), notifications: columnsOf('notifications') };
+                 claims: columnsOf('claims'), notifications: columnsOf('notifications'),
+                 /* and the table `660` finally writes: its columns have stood
+                    since `0001` and nothing ever inserted one */
+                 biz_photos: columnsOf('biz_photos') };
 
 /* ⚠️ AND THE SEEDED SETTINGS ARE READ FROM THE MIGRATION TOO, for the same
    reason the columns are: the listing limit lives in `settings` from `0009`,
@@ -89,7 +92,10 @@ function freshDb() {
     classifieds: [],
     events: [],
     messages: [], reviews: [], review_replies: [], flags: [], claims: [],
-    notifications: [],
+    notifications: [], biz_photos: [],
+    /* the file store (660): one list of objects, and the bucket rules are
+       mirrored from `0019` below rather than waved through */
+    objects: [],
     settings: SETTINGS_SEED.map(r => Object.assign({}, r)),
     session: null,
     seq: 0,
@@ -345,6 +351,125 @@ export async function mockSupabase(ctx, opts = {}) {
       return route.fulfill(json((pr && pr.display_name) || null));
     }
 
+    /* ⚠️ `0019`'s `approve_avatar`, WITH ITS FIRST STATEMENT. The
+       authorisation is the function's own `raise`, never a condition in a
+       `where` that can be edited away — and the reason the function exists
+       at all is that `0002`'s «own row: update» on `profiles` has no
+       `is_admin()` branch, so a plain PATCH by the admin matches zero rows
+       and answers 200 with an empty body. A mock that let the PATCH
+       through would keep «the picture appears to everybody» green on a
+       database where it never could. */
+    if (path === '/rest/v1/rpc/approve_avatar') {
+      const me = local.session && db.profiles.get(local.session.user.id);
+      if (!(me && me.is_admin)) {
+        return route.fulfill(json({ code: 'P0001', message: 'not authorised' }, 400));
+      }
+      const pr = db.profiles.get(body.p_user);
+      if (!pr) return route.fulfill(json(false));
+      pr.avatar_path = body.p_path;
+      return route.fulfill(json(true));
+    }
+
+    /* ⚠️ `0019`'s `set_event_photo`, WITH ITS GUARD. `0002` gives an
+       organiser an insert policy and no update at all, so a plain PATCH of
+       `photo_path` by the proposer is refused — and a mock that let it
+       through would keep «the event's picture reaches the row» green on a
+       database where an organiser could never write it. */
+    if (path === '/rest/v1/rpc/set_event_photo') {
+      const me = local.session && db.profiles.get(local.session.user.id);
+      const isAdmin = !!(me && me.is_admin);
+      const uid = local.session ? local.session.user.id : null;
+      const ev = (db.events || []).find(e => e.id === body.p_event);
+      if (!ev || !(isAdmin || (uid && ev.proposer_id === uid))) {
+        return route.fulfill(json({ code: 'P0001', message: 'not authorised' }, 400));
+      }
+      ev.photo_path = body.p_path;
+      return route.fulfill(json(true));
+    }
+
+    /* ---------------- the file store (660) ----------------
+       ⚠️ THE BUCKET RULES OF `0019`, MIRRORED — not waved through. A mock
+       that accepted every upload and signed every path would make «a
+       stranger cannot upload under somebody else's folder» and «a pending
+       picture is not readable by a third account» green on a server that
+       had lost both. */
+    if (path.startsWith('/storage/v1/')) {
+      const me = local.session && db.profiles.get(local.session.user.id);
+      const isAdmin = !!(me && me.is_admin);
+      const uid = local.session ? local.session.user.id : null;
+      const folderOf = (name) => String(name).split('/')[0];
+
+      const mayUpload = (bucket, name) => {
+        if (!uid) return false;
+        const seg = folderOf(name);
+        if (bucket === 'avatars') return seg === uid;
+        if (bucket === 'biz-photos') {
+          return (db.businesses || []).some(b => (b.id === seg || b.seed_id === seg) && b.owner_id === uid);
+        }
+        if (bucket === 'listings') {
+          return (db.classifieds || []).some(c => c.id === seg && c.owner_id === uid);
+        }
+        if (bucket === 'event-photos') {
+          return isAdmin || (db.events || []).some(e => e.id === seg && e.proposer_id === uid);
+        }
+        return false;
+      };
+      const mayRead = (bucket, name) => {
+        const o = (db.objects || []).find(x => x.bucket === bucket && x.name === name);
+        if (isAdmin) return true;
+        if (o && uid && o.owner === uid) return true;
+        const seg = folderOf(name);
+        if (bucket === 'avatars') {
+          return Array.from(db.profiles.values()).some(p => p.avatar_path === name);
+        }
+        if (bucket === 'biz-photos') {
+          return (db.biz_photos || []).some(r => r.path === name && r.status === 'approved');
+        }
+        if (bucket === 'listings') {
+          return (db.classifieds || []).some(c => c.id === seg && c.status === 'live' && !c.hidden);
+        }
+        if (bucket === 'event-photos') {
+          return (db.events || []).some(e => e.id === seg && e.status === 'live');
+        }
+        return false;
+      };
+
+      /* createSignedUrls: one call, many paths, and each answers for itself */
+      const sign = /^\/storage\/v1\/object\/sign\/([^/]+)$/.exec(path);
+      if (sign && req.method() === 'POST' && Array.isArray(body.paths)) {
+        const bucket = sign[1];
+        /* ⚠️ `signedURL` AND NOT `signedUrl`, AND THE PATH IS RELATIVE.
+           Measured against the vendored client: it reads `datum.signedURL`
+           and prepends its own base. A mock answering the camel-case name
+           the CALLER uses hands back `signedUrl: null` with no error at
+           all — a refusal that looks like a permission refusal and is a
+           spelling mistake, which is precisely the near-enough mock this
+           file's own head warns about. */
+        return route.fulfill(json(body.paths.map(pth => mayRead(bucket, pth)
+          ? { path: pth, signedURL: `/object/sign/${bucket}/${pth}?token=mock`, error: null }
+          : { path: pth, signedURL: null, error: 'Object not found' })));
+      }
+      /* the signed link itself, so an `img` really loads: a 1x1 png */
+      const fetchSigned = /^\/storage\/v1\/object\/sign\/([^/]+)\/(.+)$/.exec(path);
+      if (fetchSigned && req.method() === 'GET') {
+        return route.fulfill({ status: 200, contentType: 'image/png',
+          body: Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==', 'base64') });
+      }
+      const up = /^\/storage\/v1\/object\/([^/]+)\/(.+)$/.exec(path);
+      if (up && req.method() === 'POST') {
+        const [, bucket, name] = up;
+        if (!mayUpload(bucket, name)) {
+          return route.fulfill(json({ statusCode: '403', error: 'Unauthorized',
+            message: 'new row violates row-level security policy' }, 403));
+        }
+        (db.objects = db.objects || []).push({ bucket, name, owner: uid,
+                                               size: (req.postDataBuffer() || { length: 0 }).length });
+        db.uploads = (db.uploads || []).concat([{ bucket, name }]);
+        return route.fulfill(json({ Key: bucket + '/' + name, path: name }, 200));
+      }
+      return route.fulfill(json({ error: 'mock_unhandled', path }, 501));
+    }
+
     if (path.startsWith('/rest/v1/')) {
       const table = path.slice('/rest/v1/'.length);
       const me = local.session && db.profiles.get(local.session.user.id);
@@ -358,11 +483,19 @@ export async function mockSupabase(ctx, opts = {}) {
       const wants = [];
       for (const [k, v] of url.searchParams) {
         if (['select', 'order', 'limit', 'offset', 'on_conflict', 'columns'].includes(k)) continue;
-        const m = /^(eq|neq|is)\.(.*)$/.exec(v);
+        const m = /^(eq|neq|is|in)\.(.*)$/.exec(v);
         if (m) wants.push({ k, op: m[1], v: m[2] });
       }
       const matches = (row) => wants.every(({ k, op, v }) => {
         const val = row[k];
+        /* ⚠️ `.in('id', […])` reaches PostgREST as `in.("a","b")`, and a
+           parser that knew only `eq` would answer every row — so the
+           admin's name lookup would look as though it worked while
+           measuring nothing. */
+        if (op === 'in') {
+          const set = v.replace(/^\(|\)$/g, '').split(',').map(x => x.replace(/^"|"$/g, ''));
+          return set.includes(String(val));
+        }
         const want = v === 'null' ? null : v === 'true' ? true : v === 'false' ? false : v;
         if (op === 'neq') return String(val) !== String(want);
         return val === want || String(val) === String(want);
@@ -403,6 +536,11 @@ export async function mockSupabase(ctx, opts = {}) {
         }
         /* reviews and their replies are «all: read using (true)» */
         if (table === 'reviews' || table === 'review_replies') return true;
+        /* `0002`: approved for everybody, pending for its uploader and
+           the admin — the rule a public bucket would undo from behind */
+        if (table === 'biz_photos') {
+          return row.status === 'approved' || row.uploader_id === uid || isAdmin;
+        }
         if (table === 'flags')  return isAdmin || row.reporter_id === uid;
         if (table === 'claims') return isAdmin || row.claimer_id === uid;
         /* a notification is its addressee's and nobody else's — not even
@@ -413,7 +551,13 @@ export async function mockSupabase(ctx, opts = {}) {
       const wantsOne = /pgrst\.object/.test(req.headers()['accept'] || '');
       if (req.method() === 'GET') {
         if (table === 'profiles') {
-          const rows = local.session ? [db.profiles.get(local.session.user.id)].filter(Boolean).filter(matches) : [];
+          /* ⚠️ `0002`: «own row: read using (id = auth.uid() or is_admin())».
+             The admin half is what lets the avatar queue name the account
+             beside the picture, and a mock that gave the admin only their
+             own row would make that item measure nothing. */
+          const pool = isAdmin ? Array.from(db.profiles.values())
+                    : local.session ? [db.profiles.get(local.session.user.id)].filter(Boolean) : [];
+          const rows = pool.filter(matches);
           if (wantsOne) {
             return rows.length
               ? route.fulfill(json(rows[0]))
@@ -484,6 +628,9 @@ export async function mockSupabase(ctx, opts = {}) {
           if (table === 'review_replies') return row.author_id === uid;
           if (table === 'notifications') return row.user_id === uid;
           if (table === 'messages') return false;   // no update policy, for anyone
+          /* `0002` gives `biz_photos` «admin: update» and nothing else:
+             the decision on a photo is the admin's, never the uploader's */
+          if (table === 'biz_photos') return false;
           return row.owner_id === uid;
         };
         const hit = (db[table] || []).filter(matches).filter(mayUpdate);
@@ -503,6 +650,9 @@ export async function mockSupabase(ctx, opts = {}) {
           if (table === 'reviews' || table === 'review_replies') {
             return isAdmin || row.author_id === uid;
           }
+          /* `0002`: «own or admin: delete» — the owner drops a photo from
+             their own set, which is what `setBizPhotos` does */
+          if (table === 'biz_photos') return isAdmin || row.uploader_id === uid;
           return false;
         };
         const hit = (db[table] || []).filter(matches).filter(mayDelete);
@@ -590,6 +740,7 @@ export async function mockSupabase(ctx, opts = {}) {
             .some(m => m.listing_id === body.listing_id && m.buyer_id === body.buyer_id);
           if (!asBuyer && !asOwner) return deny('messages');
         }
+        if (table === 'biz_photos' && body.uploader_id !== uid) return deny('biz_photos');
         if (table === 'flags'     && body.reporter_id !== uid) return deny('flags');
         if (table === 'claims'    && body.claimer_id !== uid) return deny('claims');
         /* ⚠️ AND THE FTC LINE: `0002` refuses a business owner reviewing

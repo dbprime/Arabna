@@ -254,7 +254,12 @@ export function EditProfileScreen(root) {
       </div>
     </div>`;
 
-  const pic = mountPhotoPicker($('#avHost'), (u.avatar && !u.avatar.kind) ? [u.avatar.url] : [], 0, 1);
+  /* ⚠️ THE PATH FIRST, and `u.avatar.url` behind it for a device carrying a
+     picture chosen before `660` — which has a `data:` string and no path at
+     all until the one-time upload reaches it. */
+  const seedPics = S.pickerPhotos('avatars',
+    (u.avatar && !u.avatar.kind) ? [u.avatar.path || u.avatar.url].filter(Boolean) : []);
+  const pic = mountPhotoPicker($('#avHost'), seedPics.urls, 0, 1, { sizeKey: 'sizeAvatar' });
 
   /* A pick takes effect at once and the three are exclusive: choosing one
      replaces the others, so the reader never has two marks half-chosen. */
@@ -331,9 +336,15 @@ export function EditProfileScreen(root) {
        reader had just chosen the moment they pressed «حفظ». */
     const newPhoto = pic.photos[0] || '';
     const cur = S.state.user.avatar;
-    const hadPhoto = cur && !cur.kind ? cur.url : '';
-    if (newPhoto && newPhoto !== hadPhoto) S.setAvatar(newPhoto);
-    else if (!newPhoto && hadPhoto) S.clearAvatar();
+    const hadPhoto = seedPics.urls[0] || '';
+    /* ⚠️ AND THE UPLOAD IS AWAITED. `setAvatar` reaches the bucket and then
+       the review queue now, so a screen that walked on without waiting
+       would leave the profile a moment ahead of the truth — and a refusal
+       would never be said at all. */
+    if (newPhoto && newPhoto !== hadPhoto) {
+      const saved = await S.setAvatar(newPhoto);
+      if (!saved) { toast(t('photoUploadFailed'), 'err'); return; }
+    } else if (!newPhoto && hadPhoto) S.clearAvatar();
 
     if (!S.lastSaveOk) { toast(t('storageFull'), 'err'); return; }
 

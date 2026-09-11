@@ -334,7 +334,15 @@ console.log('--- 3b: the form permitted what the server forbade ---');
 console.log('--- 3c: pulled for review and published · 14 or 30 · never expires ---');
 {
   const st = code('js/store.js');
-  const patch = /patchListing\(id, \{[\s\S]*?\}\);/.exec(st);
+  /* ⚠️ ANCHORED INSIDE THE FUNCTION, and `660` is why. The pattern took the
+     FIRST `patchListing(id, {…})` in the file, and `660` added an earlier
+     one — `addClassified` patching the photo paths onto the row it has just
+     created — so the check read a different call and went red on a build
+     where its own subject is untouched. The subject has not changed: the
+     status has to travel with the edit, or a free-section listing edited to
+     add a price tells its poster it was pulled for review AND STAYS LIVE. */
+  const body = st.slice(st.indexOf('export async function updateClassified'));
+  const patch = /patchListing\(id, \{[\s\S]*?\}\);/.exec(body);
   ok('3c.1 `status` is in the patch `updateClassified` sends',
      !!patch && /status: c\.status/.test(patch[0]));
 

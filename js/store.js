@@ -2782,6 +2782,9 @@ function refreshLiveRows() {
   loadLiveEvents().then(after);
   loadLiveReviews().then(after);
   loadLiveReplies().then(after);
+  /* an APPROVED business photo is public by `0002`'s own policy, so it is
+     read whoever is looking — the row is what says whether it is approved */
+  loadLiveBizPhotos().then(after);
   /* ⚠️ AND THE FOUR THAT BELONG TO AN ACCOUNT ARE READ ONLY WHEN THERE IS
      ONE. Their policies answer a visitor with an empty set by design —
      messages to their two parties, a report to its reporter, a claim to
@@ -2791,6 +2794,11 @@ function refreshLiveRows() {
      calling this is for; that is `630`'s lesson kept, not relaxed: the
      fault there was reading ONCE as a visitor and never again. */
   if (state.user && state.user.id) {
+    /* ⚠️ AND THE ONE-TIME UPLOAD OF WHAT IS ALREADY ON THIS DEVICE (§10).
+       It needs a session — the storage policies are written on `auth.uid()`
+       — and this is the one place that runs on both roads into one: the
+       cold open of a signed-in reader, and the moment a session appears. */
+    migrateLocalImages();
     loadLiveMessages().then(after);
     loadLiveFlags().then(after);
     loadLiveClaims().then(after);
@@ -2829,12 +2837,332 @@ function forgetLiveRows() {
   msgReader.forget();
   revReader.forget();
   replyReader.forget();
+  bizPhotoReader.forget();
   flagReader.forget();
   claimReader.forget();
   notifReader.forget();
   /* ⚠️ and the names with them: a display name was read for a party of a
      conversation THIS account is in, so it leaves with the account. */
   forgetThreadNames();
+  forgetImageUrls();
+}
+
+/* ============================================================
+   THE FILE STORE — 660
+   ------------------------------------------------------------
+   Four buckets, one way in and one way out. Before this batch the app
+   had none at all: every picture a reader chose was a `data:` string
+   inside `localStorage`, base64 — a third larger than the file it came
+   from — and five of them for one listing against a five-megabyte limit
+   FOR THE WHOLE SITE. So the damage was never the pictures alone: `save()`
+   fails when the store is full, and then NOTHING else is saved either —
+   the account, the favourites, the half-written draft.
+
+   ⚠️ ONE `uploadImage` FOR ALL FOUR, and one `imageUrl` facing it. Four
+   copies of an upload part company at the first change to the quality.
+   ============================================================ */
+
+/** the longest side the picker keeps, and the file it refuses outright */
+export const MAX_SIDE = 1200;
+export const MAX_BYTES = 10 * 1024 * 1024;
+/** an hour, and not one minute more: a long-lived link is a public bucket
+    with an extra step */
+const SIGNED_URL_SECS = 3600;
+
+/**
+ * Real device picker -> canvas downscale to `MAX_SIDE` -> data URL.
+ * ⚠️ MOVED HERE FROM `js/screens/marketplace.js` AND NOT COPIED. It was
+ * private to one screen while five import the picker that uses it, and
+ * four copies of a compressor disagree about quality the first time one is
+ * touched.
+ * ⚠️ AND IT KEEPS ITS CONTRACT — it still returns a `data:` string. The
+ * conversion to a `Blob` happens in `uploadImage` alone, because
+ * `js/screens/advertise.js` stores this result as TEXT and draws it
+ * directly: handing it a `Blob` would write «[object Blob]» into a saved
+ * value, so the one call site this batch does not move keeps working
+ * exactly as it does today.
+ */
+export function compressImage(file) {
+  return new Promise((resolve, reject) => {
+    if (!file.type || !file.type.startsWith('image/')) { reject('type'); return; }
+    if (file.size > MAX_BYTES) { reject('size'); return; }
+    const reader = new FileReader();
+    reader.onerror = () => reject('read');
+    reader.onload = () => {
+      const img = new Image();
+      img.onerror = () => reject('read');
+      img.onload = () => {
+        const scale = Math.min(1, MAX_SIDE / Math.max(img.width, img.height));
+        const w = Math.max(1, Math.round(img.width * scale));
+        const h = Math.max(1, Math.round(img.height * scale));
+        const cv = document.createElement('canvas');
+        cv.width = w; cv.height = h;
+        cv.getContext('2d').drawImage(img, 0, 0, w, h);
+        try { resolve(cv.toDataURL('image/jpeg', 0.72)); }
+        catch (e) { reject('read'); }
+      };
+      img.src = reader.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+/** `data:` in, binary out. ⚠️ The upload is BINARY and never the encoded
+    text: base64 is a third larger, and sending it would hand the server
+    the very weight that filled the device. */
+function dataUrlToBlob(d) {
+  try {
+    const str = String(d || '');
+    const comma = str.indexOf(',');
+    if (comma < 0 || !/^data:image\//.test(str)) return null;
+    const type = str.slice(5, comma).split(';')[0] || 'image/jpeg';
+    const bin = atob(str.slice(comma + 1));
+    const arr = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+    return new Blob([arr], { type });
+  } catch (e) { return null; }
+}
+
+/** a name nobody can guess, from the randomness this file already has */
+function fileName() { return randomSalt() + '.jpg'; }
+
+/**
+ * Compress if it is a file, convert, upload, and answer with the PATH.
+ * ⚠️ A PATH AND NEVER A LINK: signed links expire, so a stored link is
+ * text that opens nothing a week later. The link is derived at display.
+ * @returns {Promise<string>} the storage path, or '' when nothing was stored
+ */
+export async function uploadImage(bucket, dir, file) {
+  if (!bucket || !dir || !file) return '';
+  let dataUrl = null;
+  if (typeof file === 'string') {
+    if (!/^data:image\//.test(file)) return '';   // already a path, or nothing
+    dataUrl = file;
+  } else {
+    try { dataUrl = await compressImage(file); } catch (e) { return ''; }
+  }
+  const blob = dataUrlToBlob(dataUrl);
+  if (!blob) return '';
+  const path = String(dir) + '/' + fileName();
+  try {
+    const { error } = await sb.storage.from(bucket)
+      .upload(path, blob, { contentType: blob.type || 'image/jpeg', upsert: false });
+    if (error) throw error;
+  } catch (e) { return ''; }
+  return path;
+}
+
+/* ---- the way out: one signed link per path, held until just before it
+   expires. A screen with ten cards must not ask for ten signatures on
+   every repaint, and it must not ask again a second later. ---- */
+const _imgUrl  = new Map();   // 'bucket/path' -> { url, until }
+const _imgWant = new Set();
+let   _imgTimer = null;
+
+/**
+ * ⚠️ SYNCHRONOUS, because every reader of it is: `mapLiveEventRowToJs`,
+ * the row card, the gallery. It answers with the link it holds, and when
+ * it holds none it asks for one in the background and answers ''. A
+ * picture that has not arrived is drawn the way its absence is drawn —
+ * never as a broken frame — and the screen repaints when it does.
+ */
+export function imageUrl(bucket, path) {
+  if (!bucket || !path) return '';
+  const key = bucket + '/' + path;
+  const hit = _imgUrl.get(key);
+  if (hit && hit.until > Date.now()) return hit.url;
+  _imgWant.add(key);
+  if (!_imgTimer) _imgTimer = setTimeout(() => { flushImageUrls(); }, 0);
+  return '';
+}
+
+/** sign everything asked for since the last flush, in one call per bucket */
+export async function flushImageUrls() {
+  _imgTimer = null;
+  const want = Array.from(_imgWant);
+  _imgWant.clear();
+  if (!want.length) return false;
+  const byBucket = new Map();
+  want.forEach(k => {
+    const i = k.indexOf('/');
+    const b = k.slice(0, i), rest = k.slice(i + 1);
+    if (!byBucket.has(b)) byBucket.set(b, []);
+    byBucket.get(b).push(rest);
+  });
+  let got = false;
+  for (const [bucket, paths] of byBucket) {
+    try {
+      const { data, error } = await sb.storage.from(bucket)
+        .createSignedUrls(paths, SIGNED_URL_SECS);
+      if (error || !data) continue;
+      data.forEach(d => {
+        if (!d || !d.signedUrl) return;
+        _imgUrl.set(bucket + '/' + (d.path || ''),
+          { url: d.signedUrl, until: Date.now() + (SIGNED_URL_SECS - 60) * 1000 });
+        got = true;
+      });
+    } catch (e) { /* a link that did not arrive draws as its absence draws */ }
+  }
+  if (got && _liveRepaint) _liveRepaint();
+  return got;
+}
+
+/** ⚠️ and the links leave with the account: each was signed for the
+    session that asked for it, and one account's link is not another's */
+function forgetImageUrls() { _imgUrl.clear(); _imgWant.clear(); }
+
+/** the shape this batch writes and nothing else can look like: a folder
+    segment, then thirty-two hex characters, then `.jpg`. ⚠️ It is asked
+    rather than assumed, because the same field can still hold a `data:`
+    string a device saved before this batch and a seed's own asset path. */
+export function isStoragePath(v) {
+  return typeof v === 'string' && /^[^/\s]+\/[0-9a-f]{32}\.jpg$/.test(v);
+}
+
+/** paths in, drawable values out — a path becomes a signed link, anything
+    else is handed back untouched */
+export function photoUrls(bucket, list) {
+  return (list || [])
+    .map(v => isStoragePath(v) ? imageUrl(bucket, v) : v)
+    .filter(Boolean);
+}
+
+/**
+ * Upload whatever is new and keep whatever is already stored.
+ * ⚠️ `known` is what stops an EDIT erasing everything: the picker is fed
+ * signed links so it can draw them, and a signed link is not something
+ * `uploadImage` can upload — so without the map back to the path, saving
+ * an unchanged listing would drop every photo it had.
+ * @returns {Promise<{paths: string[], failed: number}>}
+ */
+export async function uploadPhotoList(bucket, dir, values, known) {
+  const out = [];
+  let failed = 0;
+  for (const v of (values || [])) {
+    const kept = known && known.get ? known.get(v) : null;
+    if (kept) { out.push(kept); continue; }
+    if (isStoragePath(v)) { out.push(v); continue; }
+    const path = await uploadImage(bucket, dir, v);
+    if (path) out.push(path); else failed++;
+  }
+  return { paths: out, failed };
+}
+
+/* ============================================================
+   WHAT WAS ALREADY ON THE DEVICES — 660 §10
+   ------------------------------------------------------------
+   Every picture anybody chose before this batch is a `data:` string in
+   their own `localStorage`, and there is no fetching it from the server
+   because it never went there. So the first time the app runs with a
+   session, it is uploaded in the background and the text is replaced by a
+   path.
+   ⚠️ ONCE, AND WITHOUT ASKING. A failure is not said either: the picture
+   stays local exactly as it is today and the next launch tries again.
+   ⚠️ AND THE LOCAL TEXT IS ERASED ONLY AFTER THE UPLOAD SUCCEEDS. The
+   other order loses the picture and gives nothing back.
+   ============================================================ */
+let _imgMigrated = false;
+export async function migrateLocalImages() {
+  const uid = state.user && state.user.id;
+  if (_imgMigrated || !uid) return false;
+  _imgMigrated = true;
+  let moved = 0;
+
+  /* --- the account's own picture --- */
+  try {
+    const a = state.user.avatar;
+    if (a && !a.kind && a.url && !a.path && /^data:image\//.test(a.url)) {
+      const wasLive = a.status === 'live';
+      const path = await uploadImage('avatars', uid, a.url);
+      if (path) {
+        state.user.avatar = { path, status: 'pending' };
+        /* ⚠️ IT GOES BACK INTO THE QUEUE, and that is honest rather than
+           tidy: nobody but this device ever saw it, so nobody has approved
+           it. The one exception is the reviewer themself, who may approve
+           their own the moment it lands rather than losing a picture that
+           was already standing on their profile. */
+        await addFlag({ kind: 'avatar', refId: path, risk: 'low',
+          reason: { ar: 'صورة حساب بانتظار الموافقة', en: 'A profile photo waiting for approval' } });
+        if (wasLive && isAccountAdmin()) await approveAvatar(uid, path);
+        moved++;
+      }
+    }
+  } catch (e) { /* the next launch tries again */ }
+
+  /* --- the listings this device published --- */
+  for (const c of (state.extraClassifieds || [])) {
+    try {
+      const local = (c.photos || []).filter(v => typeof v === 'string' && /^data:image\//.test(v));
+      if (!local.length) continue;
+      const up = await uploadPhotoList('listings', c.id, c.photos);
+      if (!up.paths.length) continue;
+      if (!await patchListing(c.id, { photos: up.paths })) continue;
+      c.photos = up.paths;
+      moved++;
+    } catch (e) { /* keep going: one listing's failure is not another's */ }
+  }
+
+  /* --- the events, including the ones put here by hand before this batch --- */
+  for (const e of (state.extraEvents || [])) {
+    try {
+      if (!e.photo || !/^data:image\//.test(e.photo)) continue;
+      const row = liveEventRow(e.id);
+      if (!row) continue;
+      const path = await uploadImage('event-photos', row.id, e.photo);
+      if (!path) continue;
+      if (!await pushEvent(e.id, { photo_path: path })) continue;
+      e.photoPath = path;
+      e.photo = '';
+      moved++;
+    } catch (e2) { /* keep going */ }
+  }
+  for (const [id, edit] of Object.entries(state.eventEdits || {})) {
+    try {
+      if (!edit || !edit.photo || !/^data:image\//.test(edit.photo)) continue;
+      const row = liveEventRow(id);
+      if (!row) continue;
+      const path = await uploadImage('event-photos', row.id, edit.photo);
+      if (!path) continue;
+      if (!await pushEvent(id, { photo_path: path })) continue;
+      edit.photoPath = path;
+      edit.photo = '';
+      moved++;
+    } catch (e2) { /* keep going */ }
+  }
+
+  /* --- the business photos --- */
+  for (const [bizId, list] of Object.entries(state.bizPhotos || {})) {
+    try {
+      const local = (list || []).filter(pp => pp && pp.url && /^data:image\//.test(pp.url));
+      if (!local.length) continue;
+      const kept = [];
+      for (const pp of local) {
+        const path = await uploadImage('biz-photos', bizId, pp.url);
+        if (!path) { kept.push(pp); continue; }
+        const { error } = await sb.from('biz_photos')
+          .insert({ biz_id: bizId, uploader_id: uid, path, status: pp.status === 'approved' ? 'approved' : 'pending' });
+        if (error) { kept.push(pp); continue; }
+        moved++;
+      }
+      state.bizPhotos[bizId] = kept;
+    } catch (e) { /* keep going */ }
+  }
+
+  if (moved) { await loadLiveBizPhotos(); save(); if (_liveRepaint) _liveRepaint(); }
+  return moved > 0;
+}
+
+/** what a picker is fed, and the way back from what it returns */
+export function pickerPhotos(bucket, paths) {
+  const known = new Map();
+  const urls = [];
+  (paths || []).forEach(pth => {
+    const v = isStoragePath(pth) ? imageUrl(bucket, pth) : pth;
+    if (!v) return;
+    known.set(v, pth);
+    urls.push(v);
+  });
+  return { urls, known };
 }
 
 /** «قبل n يوم» in the four Arabic forms, without importing i18n */
@@ -2861,7 +3189,12 @@ export function mapLiveClsRowToJs(r) {
     id: r.id, ownerId: r.owner_id || null, cat: r.cat,
     title: { ar: r.title || '', en: r.title || '' },
     desc: { ar: r.body || '', en: r.body || '' },
-    price, city: r.city || '', photos: [],
+    price, city: r.city || '',
+    /* ⚠️ THE LITERAL `photos: []` WAS THE FAULT, and it stood in this very
+       line beside the city `645` repaired: `0019` is the column, and a
+       listing published with two photos was read on a second device with
+       none while its publisher went on seeing them from their own copy. */
+    photos: r.photos || [],
     status: r.status || 'live', hidden: !!r.hidden,
     created, when: agoLabel(created),
     /* ⚠️ from the renewal when there is one, and from birth otherwise —
@@ -2932,7 +3265,18 @@ export function allClassifieds() {
        been deleted, and the renew button is what brings it back: the
        filter is for the public list and not for its owner's. */
     .filter(c => c.daysLeft !== 0 || mineListing(c))
+    /* ⚠️ ONE PLACE FOR BOTH, and that is the point: a record this device
+       wrote and a row the server sent both carry storage PATHS now, and
+       every screen that draws one expects something an `img` can load. A
+       conversion inside `mapLiveClsRowToJs` alone would leave the local
+       copy — the publisher's own — drawing nothing. */
     .map(c => Object.assign({ status: 'live', photos: [] }, c, {
+      /* ⚠️ AND THE RAW PATHS TRAVEL BESIDE THE LINKS. The edit screen has
+         to hand back what it was given, and a signed link cannot be
+         uploaded — so without this an unchanged listing would lose every
+         photo it had the moment its owner pressed «save». */
+      photoPaths: (c.photos || []).slice(),
+      photos: photoUrls('listings', c.photos),
       boosted: state.boosted.includes(c.id),
       status: isHidden(c) ? 'hidden' : (c.status || 'live'),
     }));
@@ -3491,8 +3835,42 @@ export function pendingBizVerify() {
    than the placeholder squares that used to stand in for a
    feature that did not exist.
    ============================================================ */
+/* ---------------- THE BUSINESS PHOTOS (660) ----------------
+   `biz_photos` has stood since `0001` with its four policies and a column
+   whose own comment reads «a storage path, never a public URL» — so the
+   person who drew the schema knew the picture went to a store, and the
+   store was never created. Until this batch the photos were an object on
+   one device.
+   ⚠️ AND ITS `biz_id` HAD TO MOVE FIRST: it was `uuid not null references
+   businesses(id)` against `b30`, which is the fourth instance of the class
+   `0013` swept and the one its own sweep did not reach. `0019` converts it. */
+const bizPhotoReader = makeLiveReader('biz_photos');
+
+/** when the live business photos last arrived, or 0 — read by the suite */
+export function liveBizPhotoLoadedAt() { return bizPhotoReader.loadedAt(); }
+/** Fetch the live business photos once. */
+export async function loadLiveBizPhotos() { return bizPhotoReader.load(); }
+
+/** one row -> the shape the screens have always read */
+function mapBizPhotoRow(r) {
+  return {
+    rowId: r.id, bizId: r.biz_id, path: r.path,
+    url: imageUrl('biz-photos', r.path),
+    status: r.status || 'pending',
+    when: r.created_at ? Date.parse(r.created_at) : now(),
+  };
+}
+
 export function bizPhotos(bizId) {
-  return ((state.bizPhotos && state.bizPhotos[bizId]) || []).slice();
+  const rows = (bizPhotoReader.get() || [])
+    .filter(r => r.biz_id === bizId)
+    .map(mapBizPhotoRow);
+  /* ⚠️ AND THE DEVICE'S OWN LIST STAYS BESIDE IT, never instead of it: a
+     phone that chose pictures before this batch holds `data:` strings and
+     no row anywhere, and dropping them would erase what somebody saved. */
+  const local = ((state.bizPhotos && state.bizPhotos[bizId]) || [])
+    .filter(p => p && p.url && !isStoragePath(p.url));
+  return rows.concat(local);
 }
 /** what a visitor sees; the owner also sees their own pending ones */
 export function visiblePhotos(b) {
@@ -3500,45 +3878,96 @@ export function visiblePhotos(b) {
   return bizPhotos(b.id).filter(p => p.status === 'approved' || (own && p.status === 'pending'));
 }
 export function heroPhoto(b) {
-  const list = visiblePhotos(b).filter(p => p.status === 'approved');
+  /* ⚠️ AND AN EMPTY LINK IS NOT A PHOTO. A stored picture answers '' until
+     its signed link arrives, and an `img` with an empty `src` is the broken
+     frame this batch refuses to draw — so the page shows no hero until
+     there is one, and repaints when the link lands. */
+  const list = visiblePhotos(b).filter(p => p.status === 'approved' && p.url);
   return list.length ? list[0].url : '';
 }
-export function setBizPhotos(bizId, urls) {
-  const before = bizPhotos(bizId);
-  const next = urls.map(url => {
-    const old = before.find(p => p.url === url);
-    return old || { url, status: 'pending', when: Date.now() };
-  });
-  state.bizPhotos = Object.assign({}, state.bizPhotos, { [bizId]: next });
+/**
+ * The owner's whole set, in one act: whatever is new is uploaded and gets
+ * a row, and whatever they dropped has its row removed.
+ * ⚠️ THE SERVER FIRST AND THE DEVICE THE TRACE OF ITS YES. A refusal
+ * changes nothing here — a screen that says «queued for review» over a row
+ * that did not move is the silent family this whole series closes.
+ * @returns {Promise<{ photos: array, failed: number }>}
+ */
+export async function setBizPhotos(bizId, values, known) {
+  const uid = state.user && state.user.id;
+  if (!bizId || !uid) return { photos: bizPhotos(bizId), failed: (values || []).length };
+  const before = (bizPhotoReader.get() || []).filter(r => r.biz_id === bizId);
+  const up = await uploadPhotoList('biz-photos', bizId, values, known);
+  const keep = new Set(up.paths);
+  /* gone from the set -> gone from the table. The OBJECT is left where it
+     is: removing a file is not this batch's, and an orphan costs storage
+     while a missing row costs the picture. */
+  for (const r of before) {
+    if (keep.has(r.path)) continue;
+    try { await sb.from('biz_photos').delete().eq('id', r.id); } catch (e) { /* keep going */ }
+  }
+  const have = new Set(before.map(r => r.path));
+  for (const path of up.paths) {
+    if (have.has(path)) continue;
+    try {
+      const { data, error } = await sb.from('biz_photos')
+        .insert({ biz_id: bizId, uploader_id: uid, path, status: 'pending' })
+        .select().single();
+      if (error) throw error;
+      const rows = bizPhotoReader.get();
+      if (rows) rows.push(data); else bizPhotoReader.set([data]);
+    } catch (e) { up.failed++; }
+  }
+  await loadLiveBizPhotos();
   save();
-  return next;
+  return { photos: bizPhotos(bizId), failed: up.failed };
 }
-export function approveBizPhoto(bizId, url) {
-  const list = bizPhotos(bizId).map(p => p.url === url ? Object.assign({}, p, { status: 'approved' }) : p);
-  state.bizPhotos = Object.assign({}, state.bizPhotos, { [bizId]: list });
+export async function approveBizPhoto(bizId, path) {
+  const row = (bizPhotoReader.get() || []).find(r => r.biz_id === bizId && r.path === path);
+  if (!row) return false;
+  try {
+    const { data, error } = await sb.from('biz_photos')
+      .update({ status: 'approved' }).eq('id', row.id).select();
+    if (error) throw error;
+    if (!data || !data.length) throw new Error('no row');
+    Object.assign(row, data[0]);
+  } catch (e) { return false; }
+  logAdminAction(bizId, 'approvePhoto', '', '');
   save();
+  return true;
 }
-export function rejectBizPhoto(bizId, url, reason) {
+/** ⚠️ MARKED, NEVER ERASED — the row goes to `rejected` and the file stays
+    in the bucket, so a report arriving two days later has something to
+    open. `visiblePhotos` shows approved and the owner's own pending, so a
+    refused one leaves the page the instant the admin presses. */
+export async function rejectBizPhoto(bizId, path, reason) {
+  const row = (bizPhotoReader.get() || []).find(r => r.biz_id === bizId && r.path === path);
+  if (!row) return false;
+  try {
+    const { data, error } = await sb.from('biz_photos')
+      .update({ status: 'rejected' }).eq('id', row.id).select();
+    if (error) throw error;
+    if (!data || !data.length) throw new Error('no row');
+    Object.assign(row, data[0]);
+  } catch (e) { return false; }
   logAdminAction(bizId, 'rejectPhoto', '', reason || '');
-  const list = bizPhotos(bizId).filter(p => p.url !== url);
-  state.bizPhotos = Object.assign({}, state.bizPhotos, { [bizId]: list });
   /* ⚠️ This one sent NOTHING at all — the photo simply vanished from the
      owner's page with no word. A silent removal reads as the app losing
      the picture, which is worse than a refusal. */
   const why = String(reason || '').trim();
-  pushNotif({ icon: 'alert', route: `#/directory/${bizId}`,
+  await notifyUser(row.uploader_id, { icon: 'alert', route: `#/directory/${bizId}`,
     title: { ar: 'صورة نشاطك لم تُعتمد', en: 'A photo on your listing was not approved' },
     body: why
       ? { ar: `سبب الرفض: ${why}`, en: `Reason: ${why}` }
-      : { ar: 'الصورة خالفت شروط المحتوى وتم حذفها. تقدر ترفع صورة ثانية.',
-          en: 'The photo broke the content rules and was removed. You can upload another.' } });
+      : { ar: 'الصورة خالفت شروط المحتوى. يمكنك رفع صورة ثانية.',
+          en: 'The photo broke the content rules. You can upload another.' } });
   save();
+  return true;
 }
 export function pendingBizPhotos() {
-  const out = [];
-  Object.entries(state.bizPhotos || {}).forEach(([bizId, list]) =>
-    list.filter(p => p.status === 'pending').forEach(p => out.push({ bizId, ...p })));
-  return out;
+  return (bizPhotoReader.get() || [])
+    .filter(r => (r.status || 'pending') === 'pending')
+    .map(r => Object.assign({ bizId: r.biz_id }, mapBizPhotoRow(r)));
 }
 
 /* ============================================================
@@ -4851,6 +5280,16 @@ export async function hydrateUserFromSession() {
        is, rather than by a fresh call every time the panel is opened. */
     isAdmin: !!(profile && profile.is_admin),
   });
+  /* ⚠️ AND THE PICTURE IS READ BACK, which is the half that makes the
+     column worth having. An approved photo that is only written is a
+     local field with an extra step (`610`'s own lesson in `tier2_by`):
+     whoever signs in on a second phone would meet their own initial.
+     ⚠️ The ready-made mark and the emoji are NOT overwritten — they are
+     the device's own by decision (`store.js`, the avatars block) and they
+     carry a `kind`, which is exactly what this asks. */
+  if (profile && profile.avatar_path && !(state.user.avatar && state.user.avatar.kind)) {
+    state.user.avatar = { path: profile.avatar_path, status: 'live' };
+  }
   /* ⚠️ `notif_prefs` HAS STOOD ON `profiles` SINCE `0001` AND NOTHING READ
      IT AND NOTHING WROTE IT — measured, zero mentions in `js/`. So the
      preferences lived in `state.notifPrefs`, a value on one device: whoever
@@ -5018,33 +5457,109 @@ export async function changePassword(current, next) {
   return { ok: true };
 }
 
-/* ---- profile photo (moderated) ---- */
-export function setAvatar(dataUrl) {
+/* ---- profile photo (moderated) — 660 ----
+   ⚠️ IT WAS A `data:` STRING INSIDE `state.user`, and no column existed
+   for it anywhere: the picture lived on the phone that chose it and was
+   seen by nobody, admin included. It goes to the `avatars` bucket now,
+   under a folder that IS the account id, and what waits for the admin
+   waits in `flags` with `kind = 'avatar'` — the table that already holds
+   what is waiting on a human decision, so no second queue and no second
+   status column carrying the same truth twice. */
+export async function setAvatar(file) {
   if (!state.user) return null;
-  state.user.avatar = { url: dataUrl, status: 'pending' };
+  const uid = state.user.id;
+  /* ⚠️ NO ACCOUNT, NO UPLOAD, and it is not a swallowed failure: the path
+     begins with the account id and the storage policy demands it, so there
+     is nowhere for an account-less picture to go. */
+  if (!uid) return null;
+  const path = await uploadImage('avatars', uid, file);
+  if (!path) return null;
+  /* one picture waiting at a time: a second upload replaces the first in
+     the queue rather than leaving the admin two rows for one person */
+  const open = mergedFlags().find(f => f.kind === 'avatar'
+    && String(f.refId || '').split('/')[0] === uid && (f.status || 'open') === 'open');
+  if (open) await resolveFlag(open.id);
+  const ok = await addFlag({ kind: 'avatar', refId: path, risk: 'low',
+    reason: { ar: 'صورة حساب بانتظار الموافقة', en: 'A profile photo waiting for approval' } });
+  if (!ok) return null;
+  state.user.avatar = { path, status: 'pending' };
   save();
   return state.user.avatar;
 }
-export function approveAvatar() {
-  if (state.user && state.user.avatar) { state.user.avatar.status = 'live'; save(); }
-  pushNotif({ icon: 'checkCircle', route: '#/profile',
+/** every profile photo waiting on the admin — this account's and everybody
+    else's, which is what a queue on one device could never be */
+export function pendingAvatars() {
+  return mergedFlags()
+    .filter(f => f.kind === 'avatar' && (f.status || 'open') === 'open')
+    .map(f => ({ flagId: f.id, userId: String(f.refId || '').split('/')[0],
+                 path: f.refId, created: f.created }));
+}
+/* the admin can already read every profile row by `0002`'s own policy, so
+   the name beside the picture needs no function and no new permission —
+   and a queue of faces with no names is a queue nobody can judge */
+const _avatarNames = new Map();
+export function avatarOwnerName(userId) { return _avatarNames.get(userId) || ''; }
+export async function loadAvatarOwners(list) {
+  const want = Array.from(new Set((list || []).map(a => a.userId)))
+    .filter(id => id && !_avatarNames.has(id));
+  if (!want.length) return false;
+  try {
+    const { data, error } = await sb.from('profiles')
+      .select('id, display_name').in('id', want);
+    if (error || !data) return false;
+    data.forEach(r => _avatarNames.set(r.id, r.display_name || ''));
+    return true;
+  } catch (e) { return false; }
+}
+/**
+ * ⚠️ THROUGH `approve_avatar`, NEVER A PLAIN UPDATE. `0002`'s
+ * «own row: update» on `profiles` has no `is_admin()` branch, so an admin
+ * writing another account's row matches zero rows and PostgREST answers
+ * 200 with an empty body: the reviewer reads «approved» and the picture
+ * never appears to anybody.
+ */
+export async function approveAvatar(userId, path) {
+  if (!userId || !path) return false;
+  try {
+    const { data, error } = await sb.rpc('approve_avatar', { p_user: userId, p_path: path });
+    if (error) throw error;
+    if (data === false) throw new Error('no row');
+  } catch (e) { return false; }
+  const f = mergedFlags().find(x => x.kind === 'avatar' && x.refId === path
+    && (x.status || 'open') === 'open');
+  if (f) await resolveFlag(f.id);
+  logAdminAction('—', 'approveAvatar', '', '');
+  if (state.user && state.user.id === userId) {
+    state.user.avatar = { path, status: 'live' };
+    save();
+  }
+  await notifyUser(userId, { icon: 'checkCircle', route: '#/profile',
     title: { ar: 'تم اعتماد صورتك', en: 'Your photo was approved' },
     body: { ar: 'صورة ملفك الشخصي صارت ظاهرة.', en: 'Your profile photo is now visible.' } });
+  return true;
 }
-export function rejectAvatar(reason) {
+/** ⚠️ AND THE FILE IS NOT DELETED WHEN IT IS REFUSED. Its row leaves the
+    queue and the object stays, so a report arriving two days later has
+    something to open. */
+export async function rejectAvatar(userId, path, reason) {
+  if (!userId || !path) return false;
+  const f = mergedFlags().find(x => x.kind === 'avatar' && x.refId === path
+    && (x.status || 'open') === 'open');
+  if (f && !await resolveFlag(f.id)) return false;
   logAdminAction('—', 'rejectAvatar', '', reason || '');
-  if (state.user) { state.user.avatar = null; save(); }
+  if (state.user && state.user.id === userId) { state.user.avatar = null; save(); }
   /* One report can be malicious, and the person on the other end is owed
      the sentence that explains it — the same rule the marketplace queue
      has followed since V.02.9. The written reason replaces the general
      line rather than sitting beside it. */
   const why = String(reason || '').trim();
-  pushNotif({ icon: 'alert', route: '#/profile',
+  await notifyUser(userId, { icon: 'alert', route: '#/profile',
     title: { ar: 'صورتك لم تُعتمد', en: 'Your photo was not approved' },
     body: why
       ? { ar: `سبب الرفض: ${why}`, en: `Reason: ${why}` }
-      : { ar: 'الصورة خالفت شروط المحتوى وتم حذفها. تقدر ترفع صورة ثانية.',
+      : { ar: 'الصورة خالفت شروط المحتوى وتم حذفها. يمكنك رفع صورة ثانية.',
           en: 'The photo broke the content rules and was removed. You can upload another.' } });
+  return true;
 }
 /* ---- the ready-made marks and the emoji ----
    the owner's decision, reversing my recommendation: the pictures live in
@@ -5095,14 +5610,24 @@ export function avatarView() {
   if (!a) return null;
   if (a.kind === 'preset') return avatarSvg(a.id) ? { kind: 'preset', id: a.id } : null;
   if (a.kind === 'emoji') return { kind: 'emoji', ch: a.ch };
-  return a.status === 'live' ? { kind: 'photo', url: a.url } : null;
+  if (a.status !== 'live') return null;
+  /* ⚠️ THE PATH FIRST AND THE OLD TEXT AFTER IT, and the second branch is
+     not decoration: a device carrying a picture chosen before this batch
+     holds a `data:` string and no path at all, and it goes on drawing
+     until the one-time upload replaces it. */
+  if (a.path) {
+    const url = imageUrl('avatars', a.path);
+    return url ? { kind: 'photo', url } : null;
+  }
+  return a.url ? { kind: 'photo', url: a.url } : null;
 }
 /** the avatar actually shown to other people — the photo half, unchanged.
     ⚠️ `!a.kind` is the line that matters: this is read from places that
     expect a URL, and the id of a drawing is not one. */
 export function visibleAvatar() {
   const a = state.user && state.user.avatar;
-  return a && !a.kind && a.status === 'live' ? a.url : null;
+  if (!a || a.kind || a.status !== 'live') return null;
+  return a.path ? (imageUrl('avatars', a.path) || null) : (a.url || null);
 }
 
 /* ---- paid verification badge ---- */
@@ -5184,10 +5709,19 @@ export async function addClassified(item) {
     return null;
   }
   if (!id) return null;
+  /* ⚠️ THE PHOTOS GO UP AFTER THE ROW AND NOT BEFORE IT, because the path
+     begins with the listing's id and the id is the server's. So the order
+     is: insert -> id -> upload -> patch the paths onto the row.
+     ⚠️ AND A PHOTO THAT WILL NOT UPLOAD DOES NOT CANCEL THE LISTING. A
+     listing with no picture is a listing; a listing that was never
+     published because a picture failed is nothing. It is published, the
+     poster is TOLD, and they can add it again from the edit screen. */
+  const up = await uploadPhotoList('listings', id, item.photos);
+  if (up.paths.length) await patchListing(id, { photos: up.paths });
   const rec = Object.assign({
-    id, daysLeft: rule.days, boosted: false, photos: [], owner: 'me',
+    id, daysLeft: rule.days, boosted: false, owner: 'me',
     status: 'pending', created: Date.now(), when: { ar: 'الآن', en: 'now' },
-  }, item);
+  }, item, { photos: up.paths, photosFailed: up.failed });
   state.extraClassifieds.unshift(rec);
   state.myListings.push(id);
   if (!save()) {
@@ -5239,11 +5773,24 @@ export async function updateClassified(id, patch) {
      is the fault above wearing a second costume. Its failure is swallowed:
      the record on this device is already right, and there is no half-done
      state to leave behind. */
+  /* ⚠️ AND THE PHOTOS TRAVEL WITH THE EDIT, or a poster correcting their
+     pictures corrects them on their own device alone — the city fault in a
+     second costume. Anything already stored is kept by its path and only
+     what is new is uploaded. */
+  const known = patch && patch.knownPhotos;
+  const up = await uploadPhotoList('listings', id, c.photos, known);
+  c.photos = up.paths;
+  /* ⚠️ the map back is a working value of the screen, never a field of the
+     record: left on it, it would be saved to the device and then written to
+     the row on the next edit */
+  delete c.knownPhotos;
+  if (patch) delete patch.knownPhotos;
   patchListing(id, {
     title: (c.title && (c.title.ar || c.title.en)) || '',
     body: (c.desc && (c.desc.ar || c.desc.en)) || '',
     city: (c.city || '').trim() || null,
     price: c.price === FREE_PRICE ? null : priceNumber(c.price),
+    photos: up.paths,
     cat: c.cat,
     /* ⚠️ `status` was written on the device and left out of the patch, so a
        free-section listing edited to add a price told its poster it had been
@@ -5733,11 +6280,14 @@ export function mapLiveEventRowToJs(r) {
     type: r.type || 'community',
     city: r.city || '',
     ticketUrl: r.ticket_url || '',
-    /* ⚠️ EMPTY ON PURPOSE, AND THE COLUMN WITH IT (§4.4): a `data:` image
-       in a row makes every read of the table carry it. The picker keeps
-       working and the photo stays on the device that chose it, until the
-       file store lands. */
-    photo: r.photo || '',
+    /* ⚠️ THE DEBT `649` §4.4 NAMED IS PAID HERE. It read «empty on purpose,
+       and the column with it: a `data:` image in a row makes every read of
+       the table carry it — the picker keeps working and the photo stays on
+       the device that chose it, until the file store lands». The file store
+       IS this batch, so the column is `photo_path` and what travels is a
+       path, never the picture. */
+    photoPath: r.photo_path || '',
+    photo: r.photo_path ? imageUrl('event-photos', r.photo_path) : '',
     featured: !!r.featured,
     concert: r.concert || null,
     repeat: r.repeat || null,
@@ -5774,6 +6324,14 @@ function eventRowFrom(ev, extra) {
     source: ev.source || 'manual',
     external_id: ev.externalId || '',
     source_url: ev.sourceUrl || '',
+    /* ⚠️ THE FIELD WHOSE ABSENCE WAS THE FAULT. This function built the row
+       out of nineteen fields and carried no picture at all, so the form
+       collected one, `updateEvent` passed it, the row reached the server
+       without it, and the picture sat in `state.eventEdits` on one phone.
+       ⚠️ A PATH AND NOT THE PICTURE — `undefined` rather than `null` when
+       there is none, so a patch that says nothing about the photo does not
+       erase one. */
+    photo_path: ev.photoPath || undefined,
   }, extra || {});
 }
 
@@ -5799,20 +6357,28 @@ function mergedEvents() {
   const own = new Map();
   for (const r of rows) (r.seed_id ? coats : own).set(r.seed_id || r.id, r);
 
+  /* ⚠️ THE SERVER'S PICTURE WINS, AND THE DEVICE'S STANDS ONLY WHILE THERE
+     IS NONE. `mergedEvents` used to put `{ photo: e.photo || '' }` over the
+     row unconditionally, which was right while no column existed and is the
+     opposite of right now — it would hide the stored picture behind a local
+     one. And dropping the fallback outright would blank a photo somebody
+     chose before this batch, until the one-time upload reaches it. */
+  const withPhoto = (base, mapped, local) =>
+    Object.assign({}, base, mapped, mapped.photo ? {} : { photo: (local && local.photo) || '' });
+
   const seeds = withoutDemo(EVENTS)
     .filter(e => !state.hiddenEvents.includes(e.id))
     .map(e => {
       const row = coats.get(e.id);
-      return row ? Object.assign({}, mergeEvent(e), mapLiveEventRowToJs(row)) : mergeEvent(e);
+      const base = mergeEvent(e);
+      return row ? withPhoto(base, mapLiveEventRowToJs(row), base) : base;
     });
 
   const local = state.extraEvents.map(e => {
     const row = own.get(e.id);
     if (!row) return mergeEvent(e);
     own.delete(e.id);
-    /* the device's copy first, the server's fields over it: the photo the
-       picker kept is the device's and the status is the server's */
-    return Object.assign({}, mergeEvent(e), mapLiveEventRowToJs(row), { photo: e.photo || '' });
+    return withPhoto(mergeEvent(e), mapLiveEventRowToJs(row), e);
   });
 
   const remote = Array.from(own.values())
@@ -5895,11 +6461,37 @@ export async function addEvent(ev, status = 'pending') {
     row = data;
   } catch (e) { return null; }
   if (!row || !row.id) return null;
+  /* ⚠️ THE PICTURE GOES UP AFTER THE ROW, because the storage path begins
+     with the event's id and the id is the server's — the same order
+     `addClassified` follows. A picture that will not upload does not
+     cancel the event. */
+  let photoPath = '';
+  if (ev && ev.photo) {
+    const up = await uploadPhotoList('event-photos', row.id, [ev.photo]);
+    photoPath = up.paths[0] || '';
+    if (photoPath) {
+      /* ⚠️ THROUGH `set_event_photo`, NEVER A PLAIN UPDATE. `0002` gives an
+         organiser «propose» — an INSERT policy — and no update of any kind,
+         so a follow-up write of their own is refused: the row would keep no
+         path and the picture would stay on the phone, which is the fault
+         this batch closes surviving in the one road an ordinary person
+         takes. The function writes ONE column and asks first; a wider
+         policy would let a proposal be rewritten after it was read. */
+      try {
+        const { data, error } = await sb.rpc('set_event_photo',
+          { p_event: row.id, p_path: photoPath });
+        if (error || data === false) throw error || new Error('no row');
+        row.photo_path = photoPath;
+      } catch (e) { photoPath = ''; }
+    }
+  }
   /* the local copy is kept as well, deliberately: whoever added it sees it
      the instant they press, without waiting for the next boot to fetch it
      back — the shape `addClassified` already uses */
   const rec = Object.assign({}, ev, {
     id: row.id,
+    photoPath,
+    photo: photoPath ? (imageUrl('event-photos', photoPath) || '') : '',
     status,
     source: ev.source || 'manual',
     externalId: ev.externalId || '',
@@ -5972,6 +6564,28 @@ export async function updateEvent(id, patch, admin = false) {
      queue. A refusal writes nothing at all: a screen that says «saved»
      over a row that did not move is the fault this batch closes. */
   if (!await pushEvent(id, eventRowFrom(merged, { status: merged.status || 'live' }))) return null;
+  /* ⚠️ AND THE PICTURE AFTER IT, NEVER BEFORE: a SEED's coat row is created
+     by `pushEvent` itself, so before that line there is no id to build a
+     path from. `knownPhotos` is what keeps an unchanged picture from being
+     re-uploaded — and, more to the point, from being LOST, since what the
+     picker was fed is a signed link and a signed link cannot be uploaded. */
+  if (patch && 'photo' in patch) {
+    const row = liveEventRow(id);
+    if (row) {
+      const up = await uploadPhotoList('event-photos', row.id,
+                                       [patch.photo].filter(Boolean), patch.knownPhotos);
+      const path = up.paths[0] || '';
+      if (path !== (row.photo_path || '')) {
+        try {
+          const { data, error } = await sb.rpc('set_event_photo',
+            { p_event: row.id, p_path: path || null });
+          if (!error && data !== false) row.photo_path = path;
+        } catch (e) { /* the row keeps the picture it had */ }
+      }
+      patch = Object.assign({}, patch, { photoPath: path, photo: path ? (imageUrl('event-photos', path) || '') : '' });
+      delete patch.knownPhotos;
+    }
+  }
   const own = state.extraEvents.find(e => e.id === id);
   if (own) Object.assign(own, patch);
   else state.eventEdits[id] = Object.assign({}, state.eventEdits[id], patch);
@@ -6083,7 +6697,13 @@ function mergedFlags() {
 
 /** every report still waiting on a human decision — what the panel shows
     and what `pendingCount` counts. A resolved one is kept, never deleted. */
-export function flags() { return mergedFlags().filter(f => (f.status || 'open') === 'open'); }
+/** ⚠️ AND THE AVATAR KIND IS NOT A REPORT. `flags` is the one table that
+    holds what waits on a human decision, so `660` files a profile photo
+    there rather than inventing a second queue — but the reports TAB shows
+    reports, and `pendingCount` would otherwise count one picture twice. */
+export function flags() {
+  return mergedFlags().filter(f => (f.status || 'open') === 'open' && f.kind !== 'avatar');
+}
 /** every report whatever its state, for a screen that wants the history */
 export function allFlags() { return mergedFlags(); }
 
@@ -6236,7 +6856,7 @@ export function pendingBadge() {
 }
 export function pendingCount() {
   return pendingListings().length + pendingEvents().length + flags().length
-       + (pendingAvatar() ? 1 : 0) + (pendingBadge() ? 1 : 0)
+       + pendingAvatars().length + (pendingBadge() ? 1 : 0)
        + pendingClaims().length + pendingBizPhotos().length + pendingBizVerify().length
        + pendingOffers().length + pendingWorshipFixes().length;
 }

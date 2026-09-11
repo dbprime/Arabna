@@ -2284,10 +2284,20 @@ export function BusinessPhotosScreen(root, params) {
       </div>` : ''}
     </div>`;
 
-  const pic = mountPhotoPicker($('#phHost'), current.map(p => p.url), 0, max);
-  $('#phSave').addEventListener('click', () => {
-    S.setBizPhotos(b.id, pic.photos);
-    if (!S.lastSaveOk) { toast(t('storageFull'), 'err'); return; }
+  /* ⚠️ THE PICKER IS FED LINKS AND THE WAY BACK IS KEPT — the same reason
+     as the marketplace's: a signed link cannot be uploaded, so without the
+     map an unchanged set would come back empty. A picture from before this
+     batch is a `data:` string and carries no path; it is handed through as
+     it is and the one-time upload reaches it. */
+  const seedPics = S.pickerPhotos('biz-photos', current.map(p => p.path || p.url));
+  const pic = mountPhotoPicker($('#phHost'), seedPics.urls, 0, max, { sizeKey: 'sizeBiz' });
+  $('#phSave').addEventListener('click', async (ev) => {
+    /* THE SERVER FIRST, and the button is dead while it answers: a second
+       press would upload the same pictures twice. */
+    ev.currentTarget.disabled = true;
+    const res = await S.setBizPhotos(b.id, pic.photos, seedPics.known);
+    if (!S.lastSaveOk) { toast(t('storageFull'), 'err'); ev.currentTarget.disabled = false; return; }
+    if (res.failed) { toast(t('photoUploadFailed'), 'err'); ev.currentTarget.disabled = false; return; }
     toast(t('photosQueued'), 'ok');
     go('#/directory/' + b.id);
   });

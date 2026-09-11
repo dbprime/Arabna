@@ -11,7 +11,7 @@ ARABNA · عربنا — a mobile-first web app for the Arab community in the U.
 **business directory + marketplace + events + magazine**, Arabic-first with a full English toggle.
 ("Classifieds / الإعلانات الشخصية" is now "Marketplace / السوق" — the old `#/classifieds`
 routes still resolve so shared links keep working.)
-Current version: **V.11.3 (prototype)**. Owner: dbprime. Deploys to Vercel (team DB Prime).
+Current version: **V.11.5 (prototype)**. Owner: dbprime. Deploys to Vercel (team DB Prime).
 
 ## Hard rules (from the product brief)
 0. ⚠️ **THE OWNER'S NAME IS NEVER WRITTEN — anywhere.** Not in this file, not
@@ -13704,6 +13704,500 @@ exposed was a green that had never been green for its own reason. A fix to
 a suite makes a new tree, so the first run was spent — **and the class was
 swept before restarting**, which is what made it one restart instead of the
 three `645`, `650` and `652` each paid.
+
+## V.11.4 — the file store, and the picture leaves the device (660)
+
+⚠️ **This file closes its own group, and its group is itself** — it touches
+`js/store.js` and the boot path, two of the three the 5 September decision
+names. **A migration is executed by the runner after the merge:
+`0019_storage.sql`.**
+
+### The fault had four faces and one cause: there was no file store at all
+Measured before a line was written, and it is the one batch in the series
+that needed structure that did not exist — `650`, `655` and `656` each found
+their tables and their policies already written:
+
+```
+grep -rn "sb.storage" js/                  ->  no line
+grep -rn "avatar"  supabase/migrations/    ->  no line
+grep -rn "photos"  supabase/migrations/    ->  no column on classifieds
+```
+
+So **every picture anybody chose was a base64 `data:` string inside
+`localStorage`** — a third larger than the file it came from — and five of
+them for one listing against a limit of about five megabytes **FOR THE WHOLE
+SITE**. ⚠️ **And the damage was never the pictures alone:** `save()` fails
+when the store is full, **and then nothing else is saved either** — the
+account, the favourites, the half-written draft.
+
+### ⚠️ The most dangerous item in the batch shows nothing at all
+```
+index.html:20 · vercel.json:19   img-src 'self' data: blob:;
+```
+The host stood in `connect-src` alone since `610`, so every
+`<img src="https://…supabase.co/storage/v1/object/sign/…">` is refused **as a
+POLICY refusal, not a network one: no failed request, no 404, no console
+error.** ⚠️ **The whole batch lands green and not one picture appears** —
+and §7's designed cover makes that absence look BETTER than it did, so the
+failure gets harder to see, not easier. The host is in `img-src` in **both
+files**, and `wiring.mjs · 9.5`/`9.6` compare the two strings, because they
+are identical today and part company at the first edit to one of them.
+
+### Four private buckets, and why four
+```
+avatars       <user_id>/<32 hex>.jpg
+biz-photos    <biz_id>/…
+listings      <listing_id>/…
+event-photos  <event_id>/…
+```
+⚠️ **Four and not one, because each has a different rule for who may READ
+it**, and one bucket carrying four rules in one policy parts company the
+first time one of them changes. ⚠️ **And every one of them is private:** a
+public bucket means a picture held for review can be opened by its link
+before the admin has seen it, which is the exact text of `biz_photos`'s own
+read policy undone from behind. Reading is a signed link, **an hour at most**
+— a long-lived link is a public bucket with an extra step — and the size
+limit is repeated in the bucket itself, because what only the client guards
+is not guarded.
+
+### One compressor, and the upload is binary
+⚠️ **`compressImage` MOVED to `js/store.js` and was not copied.** It was
+private to the marketplace while five screens import the picker that uses
+it, and four copies of a compressor disagree about quality the first time
+one is touched.
+
+⚠️ **And it keeps its `data:` contract; `uploadImage` makes the Blob.**
+Measured: `js/screens/advertise.js` stores the result as TEXT and draws it
+directly, so handing it a `Blob` would write «[object Blob]» into a saved
+value — **the one call site this batch does not move keeps working exactly
+as it does today, and nothing is broken for not being mentioned.**
+
+**`imageUrl(bucket, path)` is SYNCHRONOUS**, because every reader of it is:
+it answers the link it holds, asks for one in the background, and the screen
+repaints when it lands. ⚠️ **A picture that has not arrived is drawn the way
+its absence is drawn, never as a broken frame.**
+
+### Three things a real PostgreSQL found that the specification did not
+⚠️ **`655`'s rule paid for itself a third time: a migration is applied to a
+real PostgreSQL 16, in order, from empty, before it is called finished.**
+
+1. **The order of the file itself.** Written with the columns after the
+   policies it **aborts** with «column p.avatar_path does not exist»: a
+   policy is compiled when it is CREATED, not when it is evaluated. ⚠️ It is
+   `0013`'s lesson from the other side — there the policies had to come DOWN
+   before the column moved, here the column has to go UP before the policy
+   names it — and both were found by applying the file rather than reading it.
+2. **«Approved» has to be asked through a function.** `profiles` is the one
+   private table of the four, so a subquery written inside the storage policy
+   is itself governed by `profiles`'s own policy — and **an APPROVED avatar
+   stays invisible to everybody except its owner and the admin**, with
+   nothing raised. `avatar_is_approved` is `security definer` and is given
+   the narrowest question it can be given: one path in, a boolean out.
+   ⚠️ **And the other three buckets need no such function**, which is a
+   measurement and not an assumption: `biz_photos` hands an approved row to
+   everybody, `classifieds` a live one, and `events` is `all: read using
+   (true)`.
+3. **`biz_photos.biz_id` is the FOURTH of `0013`'s class** — `uuid not null
+   references businesses(id)` against `b30` — **and this batch's own
+   specification calls the table «ready with its columns and its policies».**
+   Three were swept in `0013` and this one was passed over; without it every
+   business photo here would have been a write that cannot happen. The
+   cascade the key carried is restored in a NEW definition of `0014`'s
+   function, because `0014` has run and is not edited.
+
+**And a fourth the suite found:** `0002` gives an organiser «propose» — an
+INSERT policy — **and no update of any kind**, so writing `photo_path` after
+the insert is refused and the row keeps no path. ⚠️ **`set_event_photo`
+writes ONE column and asks first**, rather than an update policy that would
+let a proposal be rewritten after the admin has read it.
+
+### The account's picture
+`setAvatar` wrote `{ url: dataUrl, status: 'pending' }` into `state.user`
+and there was **no column for it anywhere**. It goes to the bucket now,
+under a folder that IS the account id, and **what waits for the admin waits
+in `flags` with `kind = 'avatar'`** — the table that already holds what is
+waiting on a human decision, so no second queue and **no second status
+column carrying the same truth twice**: a path in `profiles.avatar_path` IS
+an approved picture.
+
+- ⚠️ **`approveAvatar()` TOOK NO ARGUMENTS and acted on `state.user`.** So
+  the queue was the reviewer looking at himself and nobody else's picture
+  could ever be judged. It names its account now, and the queue names the
+  account beside each face — **a queue of faces with no names is a queue
+  nobody can judge** — through `0002`'s own admin branch, with no new
+  permission.
+- ⚠️ **And the admin's write goes through `approve_avatar`**, because
+  `0002`'s «own row: update» on `profiles` has no `is_admin()` branch: a
+  plain PATCH matches zero rows and PostgREST answers 200 with an empty body
+  — the reviewer reads «approved» and the picture never appears to anybody.
+- ⚠️ **A refused file is NOT deleted.** Its row leaves the queue and the
+  object stays, so a report arriving two days later has something to open.
+- **The ready-made marks and the emoji are untouched** — they are the
+  device's own by decision, they carry a `kind`, and `avatarView()` keeps its
+  three branches.
+
+### The classified, the business, the event
+- ⚠️ **`photos: []` was a LITERAL in `mapLiveClsRowToJs`, in the very line
+  `645` repaired the city in.** So a listing published with two photos was
+  read on a second device with none — **and its publisher never saw it,
+  because their own device still held what they chose.**
+- ⚠️ **`photoPaths` travels beside the links, and it is not decoration:**
+  the picker is fed signed links so it can draw them, and a signed link
+  cannot be uploaded — **so without the map back, saving an untouched
+  listing would drop every photo it had.** `pickerPhotos` / `uploadPhotoList`
+  are the one door, used by all three screens.
+- **A photo that will not upload does not cancel the listing.** It is
+  published, the poster is TOLD, and they can add it again from the edit
+  screen. A listing with no picture is a listing; a listing never published
+  because a picture failed is nothing.
+- **`biz_photos` rows replace the local object**, and `status` in the row is
+  the truth. A refused photo is marked `rejected`, never erased.
+- **`eventRowFrom` gains `photo_path`** — the field whose absence WAS the
+  fault — and `mergedEvents` stops putting the device's picture over the
+  row. ⚠️ **The server's picture wins and the device's stands only while
+  there is none**, so a photo chosen before this batch still draws until the
+  one-time upload reaches it.
+
+### The cover, when there is no picture
+**«شكلُ الفعاليّات بدون صورة رخيص»** — and what was read was not «an event
+with no picture» but **«an empty place nobody filled»**: eleven types wore
+one grey box with a 30px mark, and two of them share the same mark.
+
+⚠️ **Not one image is loaded, from this repository or anywhere else**, and
+it is a legal line rather than a weight one: taking a photograph or a logo
+from an organiser's site was asked about and **refused** — copyright on the
+one, a trademark on the other. The cover is the theme's own gradient, a
+geometry drawn in CSS and the icon that already exists; the real pictures
+come with permission or from the organiser.
+
+- **One hue per type, laid at a low alpha** so it reads over the dark ground
+  and the light one alike — not two values per theme.
+- ⚠️ **The count is read from `EVENT_TYPES`, never written in the check**, so
+  a twelfth type defined tomorrow drops the net until it is given a colour.
+- **An unknown or empty type falls to `community`**, exactly what
+  `eventRowFrom` does, so no event is ever drawn with no cover.
+- **The 22px sponsored row keeps its plain mark, by decision:** a designed
+  cover in a square that size reads as noise, not as design.
+
+### The size line: the admin sees it and nobody else
+⚠️ **It is born in the picker and not in the five screens.** Written in the
+screens, a sixth picker added in a month would carry no hint **and nothing
+would say it had been forgotten.**
+
+- **`isAccountAdmin()` alone, never `verifyAccountAdmin()`:** this is a line
+  to be READ, not a door to be opened, and a trip to the server on every
+  form is a price with nothing bought.
+- ⚠️ **And it is not drawn at all for anybody else — not hidden with
+  `display:none`.** Hidden in the page is not absent from it, and what was
+  asked for was «a line I see and nobody else does».
+- **The five sizes are measured from `styles/app.css` and the safe area is
+  computed from the two ratios**, because `object-fit: cover` crops. **And
+  no weight in kilobytes is named** — the picker re-compresses at 0.72, so a
+  figure the uploader controls is not the figure that is stored.
+- **`wiring.mjs · 9.1`–`9.3` derive the call sites from the source** and ask
+  in both directions: a `sizeKey` with no entry prints nothing, and an entry
+  nobody passes is debt that reads as approved copy.
+
+### A ceiling that left with the foreign key
+`0013` dropped the foreign keys on `reviews.biz_id` and `claims.biz_id` by a
+correct decision. What went with them, undecided, was **the ceiling**: the
+inner query returns nothing for any invented `biz_id` and
+`auth.uid() is distinct from NULL` is TRUE, so **any signed-in account could
+write a review row with any text at all in `biz_id`.** No published fault
+comes of it today; the harm is unbounded writing into a table whose storage
+we pay for.
+
+⚠️ **And the guard is two branches and not one, for a measured reason:** a
+seed has no row, so `exists` alone would refuse a review on any of the 485
+real businesses in the directory. The shape `^b[0-9]+$` bounds the invented
+by the number of seeds, and the unique pair bounds each to one row per
+account. **Measured in both directions on a real database: `b30` succeeds,
+`zz-not-a-business` is refused.**
+
+### And the fault the suite found, which the batch itself had made
+⚠️ **`test_v9`'s «and survives a reload» went red, and the app was wrong.**
+`loadLiveBizPhotos` was put where the other account-shaped readers live —
+inside `refreshLiveRows`, **which is called on sign-in and sign-out and
+nowhere else** — while `boot()` names four readers one by one. So an
+APPROVED photo was read by nobody who had not just signed in, **and the
+hero on a shop's page was blank for every visitor.**
+
+It is `649`'s own sentence, and it had to be written a fourth time: *the
+visitor who never signs in reads them here; `refreshLiveRows` covers the
+session changing, and this covers the launch that has none.* **Not one
+assertion was softened — the check was right and the app was not.**
+
+⚠️ **And the sweep it forced found a gap of the same shape that is NOT
+this batch's:** `loadLiveReviews` and `loadLiveReplies` are inside
+`refreshLiveRows` alone, so **a visitor who never signs in reads no live
+review at all.** It is `655`'s, it is one line of the same shape, and it is
+recorded in `docs/الحالة.md` rather than swept in — the photos are repaired
+here because this batch is their reader.
+
+### `test_v91` — 63 assertions, and eight teeth
+```
+the literal photos: [] restored   → 5.1 · 5.4 (prints 0 — the second device
+                                     sees no photos at all) · 5.5
+setAvatar back to the local write → seven items, 3.8 prints `null`
+the size line drawn for everybody → 8.1 {"size":true,"src":true} · 8.2
+img-src without the host          → 9.1 'self' data: blob: · 9.3
+eventRowFrom loses photo_path     → 6.1 ALONE
+set_event_photo back to a PATCH   → 6.3 (nothing) · 6.5
+one type loses its hue            → 7.1, naming `bazaar`
+avatar_is_approved inlined        → 1.7 ALONE
+```
+⚠️ **AND THE LAST TOOTH IS THE TWO-LAYER POINT, MEASURED:** inlining the
+subquery turns **only the structural item** red and every behavioural item
+stays green, because the stand-in server does not mirror `profiles`'s RLS
+governing a subquery inside another policy. **The fault was found on a real
+PostgreSQL, not in a browser** — which is exactly why the structural
+assertions stand beside the behavioural ones and not instead of them.
+
+⚠️ **And two faults in the suite's own machinery are recorded rather than
+smoothed.** Its comment stripper matched `/`-star **anywhere**, so the
+picker's own `accept="image/`-star opened a comment that swallowed the call
+`2.2` exists to measure — **a stripper that eats code is the same family as
+a check that reads prose.** And the stand-in server answered `signedUrl`
+where the API answers **`signedURL`**, so every link came back null with no
+error at all: a refusal that looks like a permission refusal and is a
+spelling mistake.
+
+### And the group closes — the net, run on segments over one frozen tree
+```
+178 runs · 89 suites · 8,642 assertions · zero red · zero crash
+```
+Eighteen segments over `0c45bec`, `HEAD` re-checked at the head of each —
+the runner exits 2 on a moved character or a dirty tree — **89 present and
+89 run, each on both builds, and no result borrowed.** The verdict is READ
+from the index and never summed: `NET COMPLETE — every derived suite ran on
+both builds in this index`.
+
+⚠️ **The arithmetic closes itself: 8,510 + 126 (`v91` × 2) + 4 (`v44`, two
+new assertions × 2) + 2 (`v87`, whose per-table loop gained `biz_photos`) =
+8,642.** The total landing on the predicted figure to the unit is what
+proves no other suite moved.
+
+⚠️ **And the net was restarted from the top ONCE, with the reason said.**
+`v53 · 6.4` went red at segment eleven — the first-visit weight ceiling —
+**and it was a correct red**: the batch adds 39.3 KB, every byte of it
+`js/` and `styles/` and none of it `assets/`, so the ceiling moved with a
+decision and its measurement went in beside it. ⚠️ **And the class was
+swept before restarting** — 54→91 were run one by one and turned up
+`v83 · 3c.1`, whose anchor took the FIRST `patchListing` in the file while
+this batch added an earlier one — **so it cost one restart and not three.**
+
+**The heaviest three are unchanged from `615`'s own table, and their order
+did not move:** `v8` 285/283 · `v20` 282/274 · `v14` 241/239. Measured
+suite time: **7,191s on the single-file build and 6,725s on the module
+one.**
+
+## V.11.5 — the article becomes an article: blocks, figures and a real cover (675)
+
+⚠️ **This file does NOT close its group, and it says so at its own head.**
+It touches `js/data.js`, `js/screens/magazine.js`, `js/screens/home.js`,
+`js/i18n.js`, `styles/app.css` and one new module — **and it touches
+neither `js/store.js`, nor the boot path, nor authentication**, the three
+the 5 September decision names. **So it runs the suites it touches and
+nothing more**, and the group is closed by whatever file the owner sends
+saying of itself that it closes.
+
+### The magazine was empty for every visitor, and nothing said so
+Measured on the tree before a line was written:
+
+```
+ARTICLES                 5, and all five inside markDemo()
+showDemo (the default)   false, since 510
+state.extraArticles      [] on a device that added nothing
+withoutDemo(ARTICLES)    []
+```
+
+> **So whoever opened `arabna.app` and tapped the magazine found NOTHING
+> AT ALL** — and it was not a fault anybody would report, because an empty
+> section reads as a section nobody has written for yet.
+
+⚠️ **And it is the fourth time this shape has been found**: the factory
+running while the warehouse is locked. `642` put four real events into the
+app and `656` opened the road that makes a fifth cost nothing; here the
+five articles that exist are development data the app is right to hide,
+and there was no road for a real one at all. **This batch opens it by hand,
+once** — two articles outside `markDemo`, seen by everybody, with no
+migration, no bucket and no waiting.
+
+### The body was one line
+```js
+${(L(a.body) || []).map(p => `<p>${esc(p)}</p>`).join('')}
+```
+**Every element of `body` was a paragraph and there was nothing else** — no
+sub-heading, no pull-quote, no picture, no caption, no list, no side box.
+A long article was twenty equal paragraphs with not one rest in it.
+
+- **`blocks` is a NEW field and `body` is untouched**, so the five seeds and
+  every article already saved on a reader's own device go on working
+  character for character, and nothing had to be rewritten to ship this.
+  **The five are not converted**: they are development data swept away by a
+  button in the panel, and converting them is work thrown away.
+- ⚠️ **ONE array for both languages, with `{ar, en}` inside each block.**
+  `body` is two independent arrays, so writing the pictures into it would
+  put a photograph under a different paragraph in each language after the
+  first edit — and **what is not translated, a photograph and a figure, is
+  not written twice.**
+- **Seven types** — `p` · `h` · `q` · `ul` · `note` · `img` · `fig` — and
+  **an unknown `t` draws a paragraph while a bare string in the array is
+  read as one**: whoever writes this data by hand will forget `{t:'p'}`
+  once, and forgetting must not take a screen down.
+- **Every string goes through `esc()`**, in all seven places, caption and
+  credit included. That is the V.03.6 rule, and the line this replaces
+  already kept it.
+
+### ⚠️ A FIGURE IS NEVER WRITTEN IN THE DATA
+> **The drawing is defined in code under a key, and the data carries the
+> key alone.** `FIGURES[b.key]`, closed exactly as `P[name] || P.info` is
+> in `js/icons.js`, and an unknown key draws nothing.
+
+**Were an `svg` string a field it would be markup rendered without
+escaping** — a hole opened by our own hand in a table the admin writes into
+from the panel two files from now. `js/figures.js` is its own module and
+not a third of `magazine.js`, which is 235 lines and already carries the
+newcomer's guide.
+
+- ⚠️ **NO COLOUR LITERAL, and the check measures that rather than a list of
+  five tokens.** A written list would go red the day the file's own §3.3 is
+  followed and a sixth existing token is used; the rule is «no NEW colour»,
+  and its measurement is that no literal value appears at all.
+- ⚠️ **And every colour is `style="fill:var(--…)"`, never a presentation
+  attribute.** `var()` inside `fill="…"` is not carried by every engine, and
+  a colour that silently resolves to black is a figure nobody can read.
+- **No word lives inside the SVG** — every one comes from `t()`, or an
+  Arabic drawing is served to an English reader. Sixteen keys, both packs.
+- **The geometry does not mirror with the interface**, and that is a
+  property rather than an oversight: SVG coordinates are not touched by
+  `dir`, so one drawing serves both languages and the axis stays where the
+  Arabic reading starts, on the right.
+
+### ⚠️ `text-anchor` is derived from the direction, never from the language
+**The trap this batch fell into and measured its way out of.** `start` and
+`end` are the ends of the **inline direction**, not of the screen — so with
+`direction="rtl"` the START of a text is its RIGHT edge. Deriving the
+anchor from the interface language, which is the obvious way to write it,
+produced two faults **in Arabic alone**:
+
+```
+the value «47.6 — أرخصُ بـ52.4%»   pushed off the right edge of the drawing
+the year column                     laid across its own axis, overlapping the names
+```
+
+`txt()` takes an `edge` — *which side of the point the text occupies*, which
+is what a layout actually means — and works the anchor out from the
+direction it is really emitting. **A number forced `ltr` inside an Arabic
+interface takes the LTR anchors while the label beside it takes the RTL
+ones**, and the two sit in one drawing.
+
+### The three figures
+- **`hillcroftTimeline`** — eight rows on one axis, and **the whole article
+  is the GAP**: four years in which the street was Arab and nobody else's.
+  It is a band across the drawing rather than a note beside it, and the
+  1982 row sits INSIDE the band because the oil crash happened in the gap
+  and is its cause. **A reader understands it in a second, before reading a
+  line.**
+- **`houstonHousing`** and **`houstonUncounted`** — one shape, two messages.
+  ⚠️ **The census bar is 5.2 user units, and it is `260 × 4014 ÷ 200000`,
+  not a number chosen to look small.** It is filled with `--text-2` rather
+  than a surface tint, because a sliver that thin in a surface tint reads as
+  nothing at all — **and «invisible» is a fault even when the point is that
+  it is tiny.**
+
+### The cover, and the icon branch that survives it
+`cover` is one new field through the same `safeImgSrc()` as a picture
+block, drawn in all three places — the hero, the list card, the featured
+strip on Home. ⚠️ **An article with no cover is exactly what it was**: the
+icon branch is neither deleted nor replaced, because the five seeds and
+everything the admin publishes from the panel today carry none.
+
+- **The gradient under the back button is drawn ONLY when there is a
+  picture** (`.article-hero.has-img::before`): the button stands on a quiet
+  gradient today and could dissolve over a street in daylight.
+- ⚠️ **And no `z-index` is written for the button.** It already carries 5,
+  and writing a number here would LOWER it rather than raise it — the
+  gradient is at 1 and the picture at 0, so the order is right with no
+  extra line. **A line written to fix what is already right is the line
+  that breaks it.**
+- ⚠️ **The gradient's colour is a literal and does not follow the theme**,
+  which is `--ad-ink`'s own argument: it works over a photograph rather than
+  over a surface, and the photograph is the same in both themes.
+- ⚠️ **`.article-hero` is `display:grid; place-items:center`**, written to
+  centre an icon — so the picture is placed absolutely rather than laid in
+  the grid, where the centring rule and `object-fit` would fight.
+
+### ⚠️ THE SEVEN PHOTOGRAPHS ARE NOT IN THIS BATCH, AND THE RULE IS THE SPEC'S OWN
+> **No `img` block is written before its file is in the repository. A batch
+> closed with a `src` and no file is a batch that was not tested.**
+
+`assets/mag/` does not exist, and it cannot be created here: **a photograph
+of Droubi's storefront credited «تصوير: عربنا» that I generated would be a
+fabricated record**, which is the same line that forbids a seeded review
+and an invented jumuah time. So **the two articles land with their text
+blocks and their three figures, and the five picture blocks and the two
+`cover` values are held back** — named file by file with their sizes in
+`docs/الحالة.md`, and added in the commit that brings the files.
+
+**The machinery is complete and measured either way**: `blockHtml`'s `img`
+branch, `safeImgSrc`, the three cover sites and the gradient are all
+exercised by the suite against a file that really exists.
+
+### And a finding the suite made rather than the reading
+⚠️ **Home's featured strip reads `ARTICLES` directly and not
+`allArticles()`**, so nothing a device added ever reaches it — an article
+the admin publishes from the panel is invisible there even on his own
+phone. It is the sibling of `addArticle` being purely local, it is recorded
+as an open fault, and it is **not repaired here**: this batch's subject is
+the article's shape, not where articles come from.
+
+### The names, measured from the data rather than chosen
+```
+Hillcroft in Latin       101 — in every ENGLISH field: addresses, names, descriptions
+هيلكروفت in Arabic         31 — in the Arabic text alone
+هيلكرفت                     0 — it exists nowhere in the repository
+```
+> **The address is written as it is written on the envelope — in Latin.
+> And the Arabic text says «هيلكروفت» while the English says `Hillcroft`.**
+
+⚠️ **A correction to the spec's own table, and only to its «where» column**:
+it reports the Latin form as living in address fields alone, and measured,
+65 of the 101 are addresses while the rest are English names and English
+descriptions. **The rule it states is exactly right and holds to the
+letter**; the breakdown beside it was narrower than the truth.
+
+### `test_v92` — 64 assertions, and nine teeth
+```
+the body back to one line            → 22 red
+the two articles back inside markDemo → 8 red, and 3.1 prints the fault
+                                        in one line: «real articles now: 0»
+esc() dropped from a block            → 2.1 prints 4 surviving elements
+safeImgSrc made permissive            → 2.2 · 2.2b · 6.1, and a 404 for ../../etc/passwd
+the unknown-figure guard removed      → 2.3 · 5.1 · 5.3
+the anchor derived from the language  → 3.3 ar prints «4,014», in Arabic ALONE
+a colour literal in a drawing         → 5.4 prints #C6A15B
+the gradient laid over every hero     → 4.2b · 7.5
+the cover branch removed              → 4.1c · 4.1d prints «NO IMG»
+```
+
+⚠️ **And the ninth tooth CRASHED the suite before it was guarded**, which
+is worse than a red: an unguarded dereference took everything after 4.1c
+unmeasured, and that is how a batch reports green while it is not. Every
+dereference in the suite is guarded now, and re-run it prints **62 passed,
+2 failed** instead of dying.
+
+⚠️ **And four of the suite's own checks were wrong first and were
+corrected rather than the app.** A blanket count of `b` caught the note's
+OWN heading; a count of `a.icon || 'newspaper'` caught a third occurrence
+in the newcomer card that has nothing to do with a cover; a fixture article
+cannot reach Home's featured strip at all (the finding above), so the cover
+is put on a REAL article at run time and the real render path is measured;
+and — **for the sixth time in this project** — a check read the prose about
+the code: the stylesheet sweep matched this batch's own comments, which
+name `border-right` and `z-index` while explaining why neither is written.
+**The comments are stripped before any «does the code do X» check, in CSS
+as well as in JavaScript.**
 
 ## Known open items
 - **The header image is still far larger than its box.** V.04.7 replaced

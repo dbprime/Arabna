@@ -401,49 +401,37 @@ export function ListingDetailScreen(root, params) {
 }
 
 /* ======================= PHOTO PICKER =======================
-   Real device picker → canvas downscale to 1200px → data URL.
-   Kept here (not in store.js) because it is pure UI plumbing;
-   V.02 uploads the same blob to Cloudflare R2 instead. */
-
-const MAX_SIDE = 1200;
-const MAX_BYTES = 10 * 1024 * 1024;
-
-function compressImage(file) {
-  return new Promise((resolve, reject) => {
-    if (!file.type || !file.type.startsWith('image/')) { reject('type'); return; }
-    if (file.size > MAX_BYTES) { reject('size'); return; }
-    const reader = new FileReader();
-    reader.onerror = () => reject('read');
-    reader.onload = () => {
-      const img = new Image();
-      img.onerror = () => reject('read');
-      img.onload = () => {
-        const scale = Math.min(1, MAX_SIDE / Math.max(img.width, img.height));
-        const w = Math.max(1, Math.round(img.width * scale));
-        const h = Math.max(1, Math.round(img.height * scale));
-        const cv = document.createElement('canvas');
-        cv.width = w; cv.height = h;
-        cv.getContext('2d').drawImage(img, 0, 0, w, h);
-        try { resolve(cv.toDataURL('image/jpeg', 0.72)); }
-        catch (e) { reject('read'); }
-      };
-      img.src = reader.result;
-    };
-    reader.readAsDataURL(file);
-  });
-}
+   ⚠️ `compressImage`, `MAX_SIDE` and `MAX_BYTES` MOVED TO `js/store.js`
+   IN `660` AND ARE NOT COPIED BACK. They were private to this screen while
+   five screens import the picker that uses them, and four copies of a
+   compressor disagree about quality the first time one is touched. What
+   stayed here is the UI plumbing; what went is the thing every screen
+   needs. */
 
 /**
  * Mount the photo picker into `host`.
  * @returns {{ photos: string[], main: number }} live state object
  */
-export function mountPhotoPicker(host, initial = [], initialMain = 0, limit = S.MAX_PHOTOS) {
+export function mountPhotoPicker(host, initial = [], initialMain = 0, limit = S.MAX_PHOTOS, opts = {}) {
   const box = { photos: initial.slice(), main: initialMain };
+
+  /* ⚠️ THE SIZE LINE IS BORN HERE AND NOT IN THE FIVE SCREENS. Written in
+     the screens, a sixth picker added in a month would carry no hint and
+     nothing would say it had been forgotten — so the knowledge lives where
+     the box is drawn.
+     ⚠️ AND `isAccountAdmin()` ALONE, never `verifyAccountAdmin()`: this is
+     a line to be READ, not a door to be opened, and a trip to the server on
+     every form is a price with nothing bought.
+     ⚠️ AND IT IS NOT DRAWN AT ALL for anybody else — not hidden with
+     `display:none`. Hidden in the page is not absent from it, and what was
+     asked for was «a line I see and nobody else does». */
+  const showSize = !!(opts && opts.sizeKey) && S.isAccountAdmin();
 
   host.innerHTML = `
     <div class="photo-strip" id="phStrip"></div>
     <input type="file" id="phInput" accept="image/*" ${limit > 1 ? 'multiple' : ''} hidden />
-    <div class="hint" id="phHint">${t('maxPhotos')}</div>`;
+    <div class="hint" id="phHint">${t('maxPhotos')}</div>
+    ${showSize ? `<div class="hint hint-admin" id="phSize">${t(opts.sizeKey)}</div>` : ''}`;
 
   const strip = host.querySelector('#phStrip');
   const input = host.querySelector('#phInput');
@@ -487,7 +475,7 @@ export function mountPhotoPicker(host, initial = [], initialMain = 0, limit = S.
     hint.innerHTML = `<span class="spinner" style="display:inline-block;vertical-align:-3px"></span> ${t('compressing')}`;
     for (const f of files.slice(0, room)) {
       try {
-        box.photos.push(await compressImage(f));
+        box.photos.push(await S.compressImage(f));
       } catch (err) {
         toast(err === 'type' ? t('notAnImage') : err === 'size' ? t('fileTooLarge') : t('photoFailed'), 'err');
       }
@@ -604,9 +592,17 @@ export function PostScreen(root) {
   };
   if ($('#pPrice')) $('#pPrice').addEventListener('input', priceNote);
 
-  const pics = mountPhotoPicker($('#phHost'),
-    editing ? (editing.photos || []) : (draft && draft.photos) || [],
-    editing ? (editing.mainPhoto || 0) : (draft && draft.mainPhoto) || 0);
+  /* ⚠️ THE PICKER IS FED LINKS AND THE WAY BACK IS KEPT. `pickerPhotos`
+     returns both: what an `img` can draw, and the path each one came from.
+     Without the second half, saving an untouched listing would hand
+     `uploadImage` a signed link, which it cannot upload, and the listing
+     would come back with no photos at all. */
+  const seedPics = editing
+    ? S.pickerPhotos('listings', editing.photoPaths || [])
+    : { urls: (draft && draft.photos) || [], known: new Map() };
+  const pics = mountPhotoPicker($('#phHost'), seedPics.urls,
+    editing ? (editing.mainPhoto || 0) : (draft && draft.mainPhoto) || 0,
+    S.MAX_PHOTOS, { sizeKey: 'sizeClassified' });
   const catSel = $('#pCat');
   const priceIn = $('#pPrice');
   const priceField = $('#priceField');
@@ -757,6 +753,7 @@ export function PostScreen(root) {
       city: $('#pCity').value.trim(),
       desc: { ar: desc.text, en: desc.text },
       photos: pics.photos,
+      knownPhotos: seedPics.known,
       mainPhoto: pics.main,
       icon: (MARKET_CATS.find(c => c.id === cat) || {}).icon || 'image',
       flagged,
@@ -765,7 +762,11 @@ export function PostScreen(root) {
     if (editing) {
       const res = await S.updateClassified(editing.id, payload);
       if (!S.lastSaveOk) { toast(t('storageFull'), 'err'); return; }
-      toast(res.flagged ? t('freeFlagged') : t('listingUpdated'), res.flagged ? 'err' : 'ok');
+      /* ⚠️ A PICTURE THAT WOULD NOT UPLOAD IS SAID, and the edit still
+         stands. Saying nothing would leave the poster believing a photo
+         they can no longer see is there. */
+      if (res.photosFailed) toast(t('photoUploadFailed'), 'err');
+      else toast(res.flagged ? t('freeFlagged') : t('listingUpdated'), res.flagged ? 'err' : 'ok');
       goAfterDone('#/marketplace/' + editing.id);
       return;
     }
@@ -787,6 +788,11 @@ export function PostScreen(root) {
       await S.addFlag({ kind: 'classified', refId: rec.id, risk: 'high', item: rec.title,
         reason: { ar: 'لغة تجارية في إعلان شخصي', en: 'Business language in a personal listing' } });
       toast(t('businessDetected'), 'err');
+    } else if (rec.photosFailed) {
+      /* ⚠️ THE LISTING IS PUBLISHED AND THE PICTURE IS NOT, AND BOTH ARE
+         SAID. A listing with no picture is a listing; a listing that was
+         never published because a picture failed is nothing. */
+      toast(t('photoUploadFailed'), 'err');
     } else {
       toast(t('done'), 'ok');
     }

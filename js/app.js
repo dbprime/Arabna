@@ -5,7 +5,8 @@
 import { setLang, bothPacks } from './i18n.js';
 import { state, registerStrings, runReminders, runSubscriptionCycle,
          liveGreeting, markGreetingSeen, noteVisit, requestPersistence,
-         loadLiveBusinesses, loadLiveClassifieds, loadLiveEvents, onLiveRows } from './store.js';
+         loadLiveBusinesses, loadLiveClassifieds, loadLiveEvents, loadLiveBizPhotos,
+         onLiveRows } from './store.js';
 import { $, renderHeader, renderNav, hideNav, closeSheet, hideDrawer, drawerOwnsEntry, closeDropdown,
          mountScrollMemory, restoreScroll, historyKey, markShown, startClock, mountAdShare,
          applyTheme, applyFontScale, mountThemeWatch, openGreeting, sheetOpen,
@@ -335,6 +336,17 @@ async function boot() {
      exactly as they read the directory: `refreshLiveRows` covers the
      session changing, and this covers the launch that has no session. */
   loadLiveEvents().then(rows => {
+    if (!rows || !rows.length) return;
+    if (location.hash !== route) return;
+    render();
+  });
+  /* ⚠️ AND THE BUSINESS PHOTOS (660), FOR THE SAME REASON AND NO OTHER.
+     `refreshLiveRows` covers the session changing; this covers the launch
+     that has none — and without it an APPROVED photo is read by nobody who
+     has not just signed in, so the hero on a shop's page is blank for every
+     visitor. Measured: `test_v9`'s «and survives a reload» went red on
+     exactly that, and the row was approved the whole time. */
+  loadLiveBizPhotos().then(rows => {
     if (!rows || !rows.length) return;
     if (location.hash !== route) return;
     render();

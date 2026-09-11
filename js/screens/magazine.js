@@ -3,6 +3,8 @@ import { t, L, icon, $, $$, go, back, renderHeader, toast, wireRoutes, emptyStat
          query, sectionNote, sectionSlider, sponsoredRows, historyKey, esc,
          pickerBtn, setPickerValue, openDropdown } from '../ui.js';
 import { ARTICLES, MAG_CATS, MINI_ADS, AD_SLOTS, NEWCOMER_PARTS } from '../data.js';
+import { FIGURES } from '../figures.js';
+import { SUPABASE_URL } from '../supabase-config.js';
 import * as S from '../store.js';
 import { catKeyOf, startSlider } from './home.js';
 
@@ -178,9 +180,82 @@ export function MagazineScreen(root) {
   wireRoutes(root);
 }
 
+/* ------------------------------------------------------------
+   675: THE BODY IS BLOCKS, AND `body` IS UNTOUCHED.
+
+   An article carrying `blocks` is drawn here; one that does not is drawn
+   by the single line this stands beside, character for character. The
+   five seeds and every article already saved on a reader's own device go
+   on working, and nothing had to be rewritten to ship this.
+
+   ⚠️ `blocks` is ONE array for both languages, and each block carries
+   `{ar, en}` inside it. `body` is two independent arrays, so writing the
+   pictures into it would put a photograph under a different paragraph in
+   each language after the first edit — and what is not translated, a
+   photograph and a figure, is not written twice.
+
+   ⚠️ EVERY STRING GOES THROUGH `esc()` — in `p`, `h`, `q`, `ul`, `note`
+   and in the caption and the credit under a picture. That is what stops
+   a tag being injected rather than printed, and it is the rule the line
+   this replaces already kept.
+
+   An unknown `t` draws a paragraph and a bare string in the array is read
+   as one: whoever writes this data by hand will forget `{t:'p'}` once,
+   and forgetting must not take a screen down.
+   ------------------------------------------------------------ */
+
+/** ⚠️ TWO SOURCES AND NO THIRD: a file in the repository, or a file in
+    our own store. Escaping stops the attribute being broken; it does not
+    stop a path we do not want. Every `src` is ours today and the admin
+    writes them from the panel two files from now — so the guard is
+    written today, not then. */
+export function safeImgSrc(s) {
+  if (typeof s !== 'string' || !s) return '';
+  if (s.includes('..')) return '';
+  if (s.startsWith('assets/')) return s;
+  if (s.startsWith(SUPABASE_URL + '/')) return s;
+  return '';
+}
+
+export function blockHtml(b) {
+  if (typeof b === 'string') return `<p>${esc(b)}</p>`;
+  const x = () => esc(L(b.x));
+  switch (b && b.t) {
+    case 'h':  return `<h2 class="blk-h">${x()}</h2>`;
+    case 'q':  return `<blockquote class="blk-q"><p>${x()}</p></blockquote>`;
+    case 'ul': return `<ul class="blk-ul">${(b.x || []).map(i => `<li>${esc(L(i))}</li>`).join('')}</ul>`;
+    case 'note': return `<aside class="blk-note"><b>${esc(L(b.k))}</b><p>${x()}</p></aside>`;
+    case 'img': {
+      const src = safeImgSrc(b.src);
+      /* ⚠️ and the whole block goes, its caption with it: a caption under
+         nothing is worse than nothing. */
+      if (!src) return '';
+      const cap = esc(L(b.cap || ''));
+      const cr  = esc(L(b.credit || ''));
+      return `<figure class="blk-img">
+        <img src="${esc(src)}" alt="${cap}" loading="lazy" decoding="async" />
+        ${cap || cr ? `<figcaption class="cap">${cap}${cr ? `<span class="credit">${cr}</span>` : ''}</figcaption>` : ''}
+      </figure>`;
+    }
+    case 'fig': {
+      const draw = FIGURES[b.key];
+      if (!draw) return '';
+      const cap = esc(L(b.cap || ''));
+      return `<figure class="blk-fig"><div class="fig-box">${draw()}</div>${
+        cap ? `<figcaption class="cap">${cap}</figcaption>` : ''}</figure>`;
+    }
+    default:   return `<p>${x()}</p>`;
+  }
+}
+
+/** the cover, or '' — and '' is what keeps the icon branch alive */
+function coverSrc(a) { return safeImgSrc(a && a.cover); }
+
 function articleCard(a) {
   return `<div class="card mag-card" data-route="#/magazine/${a.id}">
-    <div class="mag-thumb">${icon(a.media === 'video' ? 'play' : (a.icon || 'newspaper'), 24)}</div>
+    <div class="mag-thumb">${coverSrc(a)
+      ? `<img src="${esc(coverSrc(a))}" alt="" loading="lazy" decoding="async" />`
+      : icon(a.media === 'video' ? 'play' : (a.icon || 'newspaper'), 24)}</div>
     <div style="flex:1;min-width:0">
       <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
         <span class="badge badge-cat">${t(catKeyOf(a.cat))}</span>
@@ -199,9 +274,10 @@ export function ArticleScreen(root, params) {
   renderHeader({ hidden: true });
 
   root.innerHTML = `
-    <div class="article-hero">
+    <div class="article-hero${coverSrc(a) ? ' has-img' : ''}">
+      ${coverSrc(a) ? `<img src="${esc(coverSrc(a))}" alt="" decoding="async" />` : ''}
       <button class="back-btn" id="bk">${icon(document.documentElement.dir === 'rtl' ? 'chevronR' : 'chevronL', 22)}</button>
-      ${icon(a.media === 'video' ? 'play' : (a.icon || 'newspaper'), 60)}
+      ${coverSrc(a) ? '' : icon(a.media === 'video' ? 'play' : (a.icon || 'newspaper'), 60)}
     </div>
     <div class="article-body">
       <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
@@ -212,7 +288,9 @@ export function ArticleScreen(root, params) {
       <div class="mag-meta" style="margin-bottom:16px">
         <span>${t('by')} ${esc(L(a.author))}</span><span>·</span><span>${esc(L(a.date))}</span><span>·</span><span>${a.read} ${t('readTime')}</span>
       </div>
-      ${(L(a.body) || []).map(p => `<p>${esc(p)}</p>`).join('')}
+      ${a.blocks
+        ? a.blocks.map(blockHtml).join('')
+        : (L(a.body) || []).map(p => `<p>${esc(p)}</p>`).join('')}
 
       <button class="mini-ad" style="margin:6px 0 0" data-route="#/advertise">
         <span class="m-ico">${icon('megaphone', 19)}</span>

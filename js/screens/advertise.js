@@ -302,7 +302,12 @@ export function AdvertiseScreen(root, params) {
           <button class="btn btn-gold btn-block mt-12" id="next3">${t('reviewOrder')}</button>
           <button class="btn btn-ghost btn-block mt-8" id="back3">${t('back')}</button>
         </div>`;
-      const pic = mountPhotoPicker($('#adPh'), content.image ? [content.image] : [], 0, 1);
+      /* ⚠️ THE SIZE LINE AND NOT THE STORE. A paid ad's ORDER has no table
+         and no `addAdOrder`, so a picture uploaded for it would have no row
+         to be written into — the picture follows the order, and the order is
+         another batch. The hint is true on the day this lands, and the debt
+         is named in `docs/الحالة.md`. */
+      const pic = mountPhotoPicker($('#adPh'), content.image ? [content.image] : [], 0, 1, { sizeKey: 'sizeAd' });
       /* one business → it is the destination already, and its name shows */
       if (!content.dest && S.myBusinesses().length === 1) { content.dest = 'biz:' + S.myBusinesses()[0].id; $('#aDest').value = content.dest; }
       $('#aDest').addEventListener('change', () => { content.dest = $('#aDest').value; $('#aPhone').hidden = content.dest !== 'phone'; });

@@ -8,7 +8,7 @@ import { CATEGORIES, HOME_CATS, MINI_ADS, ARTICLES, ZIPS, CITY_SUGGESTIONS, AD_S
 import * as S from '../store.js';
 import { prayerBarHtml, mountPrayerBar, mountPrayerAsk,
          ramadanBarHtml, mountRamadanBar } from './prayer.js';
-import { newcomerCardHtml } from './magazine.js';
+import { newcomerCardHtml, safeImgSrc } from './magazine.js';
 
 let sliderStop = null;
 let miniStop = null;
@@ -206,7 +206,9 @@ export function HomeScreen(root) {
       <div class="hscroll">
         ${stories.map(a => `
           <div class="card story-card" data-route="#/magazine/${a.id}">
-            <div class="story-cover">${icon(a.icon, 31)}
+            <div class="story-cover">${safeImgSrc(a.cover)
+              ? `<img src="${esc(safeImgSrc(a.cover))}" alt="" loading="lazy" decoding="async" />`
+              : icon(a.icon, 31)}
               ${a.sponsored ? `<span class="badge badge-sponsored" style="position:absolute;inset-block-start:8px;inset-inline-start:8px">${t('sponsoredStory')}</span>` : ''}
             </div>
             <div class="feat-body">

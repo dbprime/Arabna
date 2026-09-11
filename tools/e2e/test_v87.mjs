@@ -101,8 +101,14 @@ console.log('--- 1: the wires ---');
      own rule stands and hardens here: a live reader written by hand
      outside `makeLiveReader` turns this red whatever batch it belongs to. */
   const readers = [...st.matchAll(/makeLiveReader\('([a-z_]+)'/g)].map(m => m[1]);
-  ok('1.6 nine live readers, all from the one factory', readers.length === 9, readers.join(' '));
-  for (const t of ['messages', 'reviews', 'review_replies', 'flags', 'claims', 'notifications']) {
+  /* ⚠️ REVERSED IN `660`, AND THE NUMBER MOVES WITH A DECISION RATHER THAN
+     BEING DERIVED. `biz_photos` gains a live reader there — the table has
+     stood since `0001` with nothing reading or writing it — so the count is
+     TEN. It stays a literal for the reason `v16`'s category count does: a
+     count read off the thing it guards compares the file with itself and
+     guards nothing, and a reader added without a decision has to redden. */
+  ok('1.6 ten live readers, all from the one factory', readers.length === 10, readers.join(' '));
+  for (const t of ['messages', 'reviews', 'review_replies', 'flags', 'claims', 'notifications', 'biz_photos']) {
     ok('1.6.' + t + ' …including `' + t + '`', readers.includes(t), '');
   }
   /* ⚠️ `630`'S LESSON: the policy decides who sees what, and a filter in

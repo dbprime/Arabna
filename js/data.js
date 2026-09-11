@@ -111,7 +111,7 @@ export const CLASSIFIED_CATS = MARKET_CATS;
    hand-typed «0.1» while the project had reached V.03.6 — two literals,
    both stale, and a reader reporting a fault could not tell us which build
    they were on. Raise it here when CLAUDE.md's version line moves. */
-export const APP_VERSION = '0.11.3';
+export const APP_VERSION = '0.11.5';
 
 /* ⚠️ توثيق الجوال مؤجَّلٌ إلى ما بعد الإطلاق على App Store — قرار مالك
    البرنامج، وسببه الكلفة: مزوّد الرسائل حسابٌ مدفوعٌ بكلفةٍ لكلّ رسالة،
@@ -6476,6 +6476,207 @@ export const ARTICLES = markDemo([
       en: ['Order matters: start with a social security number because most other steps require it.',
            'Then a bank account, then a driver license, and finally school enrollment for children.'],
     },
+  },
+]).concat([
+  /* ---------------------------------------------------------------
+     TWO REAL ARTICLES, and they sit OUTSIDE `markDemo` on purpose: they
+     carry no `demo` flag, so `withoutDemo()` keeps them and they are what
+     a visitor sees with the invented data switched off — which it has
+     been by default since 510.
+
+     ⚠️ Before them the magazine was EMPTY FOR EVERY VISITOR. All five
+     seeds above are demo, and `extraArticles` is empty on a device that
+     added nothing, so whoever opened the magazine found nothing at all.
+
+     This is the same one-off opening by hand the four real events took
+     below, and the sentence written there holds here word for word:
+     nothing about these two makes a seed the way an article arrives from
+     now on. The permanent road is the `articles` table, and the file
+     after this one opens it.
+
+     ⚠️ AND NEITHER CARRIES `cover`, NOR ONE `img` BLOCK, AND THAT IS THE
+     RULE RATHER THAN AN OMISSION: a `src` whose file is not in the
+     repository draws a broken picture in three places, and a batch closed
+     with one is a batch that was not tested. The seven photographs of
+     `assets/mag/` are a photographer's job, not a program's — they are
+     named with their sizes in `docs/الحالة.md`, and the covers and the
+     five picture blocks are added in the commit that brings the files.
+     --------------------------------------------------------------- */
+  {
+    id: 'r1', cat: 'culture', sponsored: false, read: 8, media: 'image',
+    icon: 'mapPin',
+    author: { ar: 'فريق عربنا', en: 'ARABNA Team' },
+    date:   { ar: '10 سبتمبر 2026', en: 'Sep 10, 2026' },
+    title: {
+      ar: 'الشارعُ الذي فتحه العربُ وحمل اسمَ غيرهم — حكايةُ هيلكروفت',
+      en: 'The street Arabs opened, and someone else named — the story of Hillcroft',
+    },
+    excerpt: {
+      ar: 'أوّلُ محلٍّ عربيٍّ فتح سنة 1979. وأوّلُ محلٍّ هنديٍّ سنة 1983. والاسمُ الرسميُّ للشارع هنديّ.',
+      en: 'The first Arab shop opened in 1979. The first Indian one in 1983. The street’s official name is Indian.',
+    },
+    blocks: [
+      { t: 'p', x: {
+        ar: 'سنة 1979، أخوان لبنانيّان اسمُهما Abdo وFayez Droubi كانا يبحثان عن مكانٍ يفتحان فيه مخبزاً في هيوستن. ولم تكن هناك بياناتُ تعدادٍ تدلّهما، ولا خريطةٌ تقول أين يسكن العرب.',
+        en: 'In 1979 two Lebanese brothers, Abdo and Fayez Droubi, were looking for somewhere in Houston to open a bakery. There was no census data to guide them, and no map that said where Arabs lived.' } },
+
+      { t: 'q', x: {
+        ar: 'فأخذا دليلَ الهاتف، وصارا يقلّبان صفحاته بحثاً عن الأسماء العربيّة، ويرسمان على الورق أين تتجمّع.',
+        en: 'So they took the phone book, went through it page by page looking for Arabic surnames, and drew on paper where they clustered.' } },
+
+      { t: 'p', x: {
+        ar: 'دلّهما الدليلُ على جنوب غرب هيوستن. ففتحا Droubi’s على هيلكروفت، رقم 7333. وترك Abdo كلّيّةَ الطبّ في لبنان ليفعل ذلك.',
+        en: 'The book pointed them to southwest Houston. They opened Droubi’s at 7333 Hillcroft. Abdo had left medical school in Lebanon to do it.' } },
+
+      { t: 'h', x: { ar: 'كيف صار الشارعُ شارعاً', en: 'How the street became the street' } },
+
+      { t: 'p', x: {
+        ar: 'كان ذلك قبل أوّل محلٍّ هنديٍّ في الشارع بأربع سنوات. Jay Stores فتح سنة 1983، وKarat 22 للمجوهرات سنة 1984، وRaja Sweets في منتصف الثمانينات. والترتيبُ مسجَّلٌ في مجلّة Houston History الصادرة عن جامعة هيوستن، وفي أرشيف Houston Chronicle.',
+        en: 'That was four years before the first Indian shop on the street. Jay Stores opened in 1983, Karat 22 jewellers in 1984, Raja Sweets in the mid-eighties. The order is recorded in Houston History magazine, published by the University of Houston, and in the Houston Chronicle archive.' } },
+
+      { t: 'fig', key: 'hillcroftTimeline', cap: {
+        ar: 'أربعُ سنواتٍ بين أوّل محلٍّ عربيٍّ وأوّل محلٍّ هنديّ — وإحدى وثلاثون سنةً إلى اللافتة.',
+        en: 'Four years between the first Arab shop and the first Indian one — and thirty-one to the sign.' } },
+
+      { t: 'p', x: {
+        ar: 'ولم يكن الشارعُ شيئاً قبل ذلك. بُني أوّلُ مقاطعه في منتصف الخمسينات ضمن مشروع Sharpstown، الذي افتُتح في 13 مارس 1955، ومُدَّ بعدها. مراكزُ تجاريّةٌ ومجمّعاتُ شققٍ بُنيت في طفرة النفط.',
+        en: 'The street was nothing before that. Its first stretch was built in the mid-fifties as part of the Sharpstown development, which opened on 13 March 1955, and was extended afterwards. Strip malls and apartment complexes went up in the oil boom.' } },
+
+      { t: 'p', x: {
+        ar: 'ثمّ جاء الانهيار. في مارس 1982 بدأ سقوطُ أسعار النفط، وبحلول يناير 1986 كان قد فقد أكثر من نصف قيمته. وهذه أرقامُ ما جرى:',
+        en: 'Then came the crash. Oil prices began falling in March 1982, and by January 1986 had lost more than half their value. These are the numbers:' } },
+
+      { t: 'ul', x: [
+        { ar: 'مئتان وخمسةٌ وعشرون ألفَ وظيفةٍ ذهبت في هيوستن.', en: 'Two hundred and twenty-five thousand jobs gone in Houston.' },
+        { ar: 'ومئةٌ وثلاثون بنكاً في تكساس أفلست.',            en: 'A hundred and thirty Texas banks failed.' },
+        { ar: 'وثلاثون ألفَ بيتٍ في مقاطعة Harris حُجزت.',       en: 'Thirty thousand homes foreclosed in Harris County.' },
+        { ar: 'وأكثرُ من مئتَي ألفِ مسكنٍ بقيت فارغة.',          en: 'More than two hundred thousand dwellings stood empty.' } ] },
+
+      { t: 'p', x: {
+        ar: 'والفراغُ رخيص. والمهاجرُ يبحث عن الرخيص. فامتلأت شققُ جنوب غرب هيوستن بمن وصلوا حديثاً، وامتلأت المتاجرُ الفارغةُ بمن يبيع لهم. وهذه هي القصّةُ التي لا تُروى: هيلكروفت لم يصر شارعَ مهاجرين لأنّ أحداً خطّط له، بل لأنّ اقتصاداً انهار وترك أبوابَه مفتوحة.',
+        en: 'Empty is cheap. And an immigrant looks for cheap. The apartments of southwest Houston filled with people who had just arrived, and the empty storefronts filled with people selling to them. This is the part nobody tells: Hillcroft did not become an immigrant street because anyone planned it, but because an economy collapsed and left its doors open.' } },
+
+      { t: 'p', x: {
+        ar: 'واليوم يمشي فيه من يعرف: Jerusalem للّحم الحلال — يقول مصدرٌ منشورٌ إنّه فتح في التسعينات وكان أوّلَ من نوعه في المنطقة — وCedars Bakery، وMecca، وAlmadina، وAl-Nimer للمكسّرات، وCafé Layal، وLebanon Halal Meat الذي فتح سنة 2019، ومدرسةُ Al-Hadi ومركزُها التعليميّ.',
+        en: 'Today those who know walk it: Jerusalem halal meat — a published source says it opened in the nineties and was the first of its kind in the area — Cedars Bakery, Mecca, Almadina, Al-Nimer nuts, Café Layal, Lebanon Halal Meat which opened in 2019, and the Al-Hadi school and its education centre.' } },
+
+      { t: 'h', x: { ar: 'الاسمُ الذي جاء متأخّراً', en: 'The name that came late' } },
+
+      { t: 'p', x: {
+        ar: 'لكنّ اسمَ الشارع ليس عربيّاً. في 16 يناير 2010 خصّصت مدينةُ هيوستن هذا المقطعَ باسم «حيّ المهاتما غاندي»، وأعلنته العمدةُ Annise Parker بحضور القنصل الهنديّ العامّ. وحدودُه هيلكروفت بين الطريق 59 وWestpark، ومعه شارع Harwin.',
+        en: 'But the street’s name is not Arab. On 16 January 2010 the City of Houston designated this stretch the Mahatma Gandhi District, announced by Mayor Annise Parker with the Indian Consul General present. Its bounds are Hillcroft between Highway 59 and Westpark, together with Harwin Street.' } },
+
+      { t: 'p', x: {
+        ar: 'وكيف حصل ذلك يستحقّ أن يُقرأ بتمعّن، لأنّ فيه الدرسَ كلَّه. الجاليةُ الهنديّةُ لم تنل الاسمَ من أوّل محاولة. حوالي سنة 2002 طلبت تغييرَ اسم الشارع نفسِه إلى Mahatma Gandhi Avenue، فاصطدمت بقاعدةٍ تشترط موافقةَ 75% من ملّاك العقارات التجاريّة، واعترض تجّارٌ من غير الجالية، فسقط الطلب. فلم تنسحب: جمعت نحوَ عشرة آلاف دولار، وصنعت لافتاتِ «حيّ» بدل «شارع» — وهو طريقٌ لا يحتاج تلك النسبة — ونالته بعد ثماني سنوات.',
+        en: 'How that happened is worth reading closely, because the whole lesson is in it. The Indian community did not get the name on the first try. Around 2002 it petitioned to rename the street itself Mahatma Gandhi Avenue, and ran into a rule requiring the consent of 75% of commercial property owners; traders from outside the community objected, and the petition failed. It did not withdraw: it raised about ten thousand dollars and made “district” signs instead of a street name — a route that needs no such threshold — and got it eight years later.' } },
+
+      { t: 'p', x: {
+        ar: 'ثمانيةَ عشرَ عاماً من أوّل محلٍّ إلى أوّل محاولة، وثمانيةٌ أخرى إلى اللافتة. ونحن كنّا هناك قبلهم بأربع سنوات.',
+        en: 'Eighteen years from the first shop to the first attempt, and eight more to the sign. And we were there four years before them.' } },
+
+      { t: 'p', x: {
+        ar: 'وليس في هيوستن كلِّها حيٌّ عربيٌّ مسمّى. الاسمُ الوحيدُ المتداولُ هو Shawarma Alley — «زقاقُ الشاورما» — لمقطعٍ طولُه ميلان على شارع Almeda قرب المركز الطبّيّ، أطلقته مجلّةٌ محلّيّةٌ سنة 2019. اسمٌ من مجلّة، لا من مدينة.',
+        en: 'And in all of Houston there is no named Arab district. The only name in circulation is Shawarma Alley — a two-mile stretch of Almeda near the medical centre, coined by a local magazine in 2019. A name from a magazine, not from a city.' } },
+
+      { t: 'note',
+        k: { ar: 'للمقارنة', en: 'For comparison' },
+        x: { ar: 'في أغسطس 2022 خصّصت مدينةُ Anaheim في كاليفورنيا حيَّ «Little Arabia» رسميّاً — وهو أوّلُ حيٍّ عربيٍّ أمريكيٍّ معتمَدٍ في الولايات المتّحدة. وجاليةُ هيوستن العربيّةُ أكبرُ من جالية Anaheim بأضعاف.',
+             en: 'In August 2022 the City of Anaheim, California officially designated a Little Arabia district — the first recognised Arab American district in the United States. Houston’s Arab community is many times larger than Anaheim’s.' } },
+
+      { t: 'h', x: { ar: 'والسؤالُ الذي يبقى', en: 'And the question that stays' } },
+
+      { t: 'p', x: {
+        ar: 'فالسؤالُ الذي يتركه هذا المقال ليس عن الماضي: إن كنّا وصلنا أوّلاً، فلماذا ليس لنا اسمٌ على شيء؟ الجوابُ ليس في التاريخ. الجوابُ أنّ من نظّم نفسَه ودفع عشرةَ آلافٍ ووقّع الطلباتِ حصل على اسمٍ، ومن لم يفعل لم يحصل.',
+        en: 'So the question this article leaves is not about the past: if we arrived first, why is our name on nothing? The answer is not in the history. The answer is that whoever organised, paid ten thousand dollars and signed the petitions got a name, and whoever did not, did not.' } },
+
+      { t: 'note',
+        k: { ar: 'المصادر', en: 'Sources' },
+        x: { ar: 'houstonhistorymagazine.org — «Pass the Naan»، مجلّة Houston History، جامعة هيوستن، خريف 2015 · chron.com — «التنوّعُ يجعل شارع هيلكروفت فريداً»، 16 يوليو 2006 · magazine.texasarchitects.org — «A Home within a Home»، 9 يوليو 2024 · placesjournal.org — «Superneighborhood 27»، أبريل 2005 · chron.com — انهيارُ النفط في الثمانينات، 2016 · houstoniamag.com — «Shawarma Alley»، 31 يناير 2019 · ktla.com — Little Arabia، أغسطس 2022',
+             en: 'houstonhistorymagazine.org — “Pass the Naan”, Houston History magazine, University of Houston, Fall 2015 · chron.com — “Diversity makes Hillcroft unique”, 16 July 2006 · magazine.texasarchitects.org — “A Home within a Home”, 9 July 2024 · placesjournal.org — “Superneighborhood 27”, April 2005 · chron.com — the 1980s oil crash, 2016 · houstoniamag.com — “Shawarma Alley”, 31 January 2019 · ktla.com — Little Arabia, August 2022' } },
+    ],
+  },
+  {
+    id: 'r2', cat: 'community', sponsored: false, read: 7, media: 'image',
+    icon: 'building',
+    author: { ar: 'فريق عربنا', en: 'ARABNA Team' },
+    date:   { ar: '10 سبتمبر 2026', en: 'Sep 10, 2026' },
+    title: {
+      ar: 'ليش هيوستن؟ — الأرقامُ التي تشرح لماذا نأتي إلى هنا',
+      en: 'Why Houston? The numbers behind why we come here',
+    },
+    excerpt: {
+      ar: 'ولايةٌ بلا ضريبة دخل، وسكنٌ أرخصُ بالنصف من كبرى المدن، وأكبرُ مجمّعٍ طبّيٍّ في العالم.',
+      en: 'A state with no income tax, housing at half the big-metro average, and the largest medical complex on earth.',
+    },
+    blocks: [
+      { t: 'h', x: { ar: 'السببُ الأوّل مكتوبٌ في الدستور', en: 'The first reason is written into the constitution' } },
+
+      { t: 'p', x: {
+        ar: 'المادّة الثامنة، الفقرة 24-a من دستور تكساس: «لا يجوز للهيئة التشريعيّة فرضُ ضريبةٍ على الدخل الصافي للأفراد». لا ضريبةَ دخلٍ للولاية. ولا يستطيع مجلسٌ منتخَبٌ أن يفرضها، لأنّ المنعَ في الدستور لا في القانون.',
+        en: 'Article VIII, Section 24-a of the Texas Constitution: the legislature may not impose a tax on the net incomes of individuals. No state income tax. And no elected body can impose one, because the prohibition is constitutional, not statutory.' } },
+
+      { t: 'h', x: { ar: 'والثاني: الكلفة', en: 'Second: the cost' } },
+
+      { t: 'p', x: {
+        ar: 'حسب مؤشّر كلفة المعيشة الذي تنشره C2ER، وبقياس الربع الثاني من 2026: هيوستن أرخصُ من المتوسّط الحضريّ الأمريكيّ بـ6.3%، وأرخصُ من متوسّط كبرى المدن الأمريكيّة بـ24.2%.',
+        en: 'By the cost-of-living index published by C2ER, for the second quarter of 2026: Houston is 6.3% below the U.S. urban average, and 24.2% below the average of large U.S. metros.' } },
+
+      { t: 'q', x: {
+        ar: 'وأكبرُ الفرق في السكن — وهو الذي يهمّ عائلةً وصلت للتوّ. النصفُ تقريباً.',
+        en: 'The largest gap is in housing — which is what matters to a family that has just arrived. Nearly half.' } },
+
+      { t: 'fig', key: 'houstonHousing', cap: {
+        ar: 'السكنُ في هيوستن أرخصُ من متوسّط كبرى المدن الأمريكيّة بـ52.4% — الربعُ الثاني 2026.',
+        en: 'Housing in Houston is 52.4% below the large-metro average — Q2 2026.' } },
+
+      { t: 'h', x: { ar: 'والثالث: العمل', en: 'Third: work' } },
+
+      { t: 'p', x: {
+        ar: 'أكثرُ من مئتين وعشرين ألفَ عاملٍ في قطاع الطاقة وما يتّصل به (لجنة القوى العاملة في تكساس، 2024). والمركزُ الطبّيّ في تكساس (Texas Medical Center) يوظّف مئةً وستّةَ آلاف، على أكثرَ من ألفٍ وثلاثمئةٍ وخمسةٍ وأربعين فدّاناً، ويستقبل أكثرَ من مئةٍ وستّين ألفَ زائرٍ يوميّاً — ويصف نفسَه بأنّه أكبرُ مجمّعٍ طبّيٍّ في العالم. وميناءُ هيوستن خامسُ أكبر ميناءِ حاوياتٍ في البلاد.',
+        en: 'More than two hundred and twenty thousand workers in energy and related sectors (Texas Workforce Commission, 2024). The Texas Medical Center employs a hundred and six thousand across more than 1,345 acres and receives over a hundred and sixty thousand visitors a day — and describes itself as the largest medical complex in the world. The Port of Houston is the fifth largest container port in the country.' } },
+
+      { t: 'h', x: { ar: 'والرابع: أن تكون غريباً وسط غرباء', en: 'Fourth: being a stranger among strangers' } },
+
+      { t: 'p', x: {
+        ar: 'ربعُ سكّان منطقة هيوستن مولودون خارج الولايات المتّحدة — نحوُ مليونٍ وتسعمئةِ ألف، 24.8% من سكّان المنطقة (شراكةُ هيوستن الكبرى، بيانات 2023). وفي مدينة هيوستن نفسِها تُتكلَّم مئةٌ وخمسٌ وأربعون لغةً في البيوت.',
+        en: 'A quarter of the Houston region was born outside the United States — about 1.9 million people, 24.8% of the region (Greater Houston Partnership, 2023 data). In the city itself, a hundred and forty-five languages are spoken at home.' } },
+
+      { t: 'p', x: {
+        ar: 'ودراسةٌ من جامعة Rice صدرت في 5 مارس 2012 خلصت إلى أنّ منطقة هيوستن هي «أكثرُ المناطق الحضريّة الكبرى تنوّعاً عِرقيّاً في البلاد» — وأنّ تنوّعَها تجاوز نيويورك.',
+        en: 'A Rice University study released on 5 March 2012 concluded that the Houston region is the most ethnically diverse large metropolitan area in the country — and that its diversity had passed New York’s.' } },
+
+      { t: 'h', x: { ar: 'والخامس: تكساس تستقبل أكثرَ من أيّ ولاية', en: 'Fifth: Texas receives more than any state' } },
+
+      { t: 'p', x: {
+        ar: 'بين السنتين الماليّتين 2010 و2019 استقبلت تكساس ستّةً وخمسين ألفاً وثمانمئةٍ وواحداً وثمانين لاجئاً — أكثرَ من أيّ ولايةٍ أخرى. وفي السنة الماليّة 2024 استقبلت تسعةَ آلافٍ وسبعمئةٍ وأربعةً وستّين، وهي الأولى مرّةً أخرى. وهيوستن وحدَها استقبلت أكثرَ من خمسة آلاف سنة 2024، وفيها خمسُ وكالاتِ توطينٍ عاملة.',
+        en: 'Between fiscal 2010 and 2019 Texas received 56,881 refugees — more than any other state. In fiscal 2024 it received 9,764, first again. Houston alone received more than five thousand in 2024, and has five active resettlement agencies.' } },
+
+      { t: 'h', x: { ar: 'والسادس: ما يبنيه الناسُ لا الاقتصاد', en: 'Sixth: what people build, not the economy' } },
+
+      { t: 'p', x: {
+        ar: 'جمعيّةُ هيوستن الإسلاميّة الكبرى تأسّست سنة 1969 من عائلاتٍ كانت تصلّي في بيتٍ قرب المركز الطبّيّ، وتدير اليوم نحوَ عشرين مركزاً. والمركزُ الثقافيُّ العربيُّ الأمريكيّ (ACC) تأسّس سنة 1995، على نحو أربعةَ عشرَ فدّاناً قرب Alief، وفيه صفوفُ عربيّةٍ يومَ الأحد ومكتبةٌ ومتحفٌ صغير — ويديره متطوّعون، وفيه موظّفٌ واحدٌ متفرّغ. وللأقباط ثلاثُ كنائسَ في المنطقة، وللموارنة جماعةٌ تقارب خمسمئة عائلة.',
+        en: 'The Islamic Society of Greater Houston was founded in 1969 by families praying in a house near the medical centre, and today runs some twenty centres. The Arab American Cultural and Community Center was founded in 1995 on about fourteen acres near Alief, with Sunday Arabic classes, a library and a small museum — run by volunteers, with a single full-time member of staff. Copts have three churches in the region; Maronites a congregation of about five hundred families.' } },
+
+      { t: 'h', x: { ar: 'وأخيراً: رقمٌ لا نعرفه', en: 'And last: a number we do not know' } },
+
+      { t: 'p', x: {
+        ar: 'وشيءٌ واحدٌ لا نعرفه، وهو أهمُّ الأرقام: كم عربيٌّ في هيوستن. لا خانةَ في التعداد الأمريكيّ للعرب. في تعداد 2020 سجّل أربعةُ آلافٍ وأربعةَ عشرَ شخصاً في مقاطعة Harris انتماءً عربيّاً. وتقديراتُ الجالية تقول نحوَ مئتَي ألف.',
+        en: 'One thing we do not know, and it is the most important number: how many Arabs are in Houston. The U.S. census has no box for Arabs. In the 2020 census, 4,014 people in Harris County recorded Arab ancestry. The community’s own estimates say around two hundred thousand.' } },
+
+      { t: 'fig', key: 'houstonUncounted', cap: {
+        ar: 'الفرقُ خمسون ضعفاً — وسببُه أنّ الاستمارةَ لا تسأل.',
+        en: 'A fiftyfold gap — because the form does not ask.' } },
+
+      { t: 'note',
+        k: { ar: 'ما لم نتحقّق منه فلم نكتبه', en: 'What we could not verify, we did not write' },
+        x: { ar: 'ترتيبُ هيوستن بين مدن أمريكا بعددِ العرب. المصادرُ متضاربة، ولم نستطع التحقّقَ من جدول التعداد مباشرةً — فلم نكتب رتبة.',
+             en: 'Houston’s rank among U.S. cities by Arab population. Sources conflict, and we could not verify it against the census table directly — so we wrote no rank.' } },
+
+      { t: 'note',
+        k: { ar: 'المصادر', en: 'Sources' },
+        x: { ar: 'دستورُ تكساس، المادّة 8 فقرة 24-a · شراكةُ هيوستن الكبرى — Houston Facts 2025 ومقارناتُ كلفة المعيشة للربع الثاني 2026 · لجنةُ القوى العاملة في تكساس، 2024 · tmc.edu · porthouston.com · news2.rice.edu — تقريرُ التنوّع، 5 مارس 2012 · rcusa.org · isgh.org · acchouston.org · houstontx.gov/ispeakhouston · texastribune.org',
+             en: 'Texas Constitution, Art. 8 §24-a · Greater Houston Partnership — Houston Facts 2025 and Q2 2026 cost comparisons · Texas Workforce Commission, 2024 · tmc.edu · porthouston.com · news2.rice.edu — diversity report, 5 March 2012 · rcusa.org · isgh.org · acchouston.org · houstontx.gov/ispeakhouston · texastribune.org' } },
+    ],
   },
 ]);
 
