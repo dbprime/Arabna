@@ -170,8 +170,19 @@ console.log('--- online, nothing moved ---');
      Math.round(preBytes / 1024) + ' KB in ' + PRE.length + ' files');
   /* and the page weight is the multi-file build's own question */
   if (!BASE.includes('single-file')) {
+    /* ⚠️ THE CEILING MOVED IN `660`, AND IT MOVED WITH A DECISION RATHER
+       THAN TO MAKE A RED GO AWAY. The subject is «`assets/` did not walk
+       into the page», and the discriminator is where the weight came from:
+       measured file by file against `7d5f1c7`, the growth is **39.3 KB and
+       every byte of it is `js/` and `styles/`** — `store.js` +29.4,
+       `app.css` +2.8, `i18n.js` +1.7, and six screens the rest — with
+       **zero bytes from `assets/`**. That is a whole subsystem (the file
+       store, the covers, the size line), which is a decision; a picture
+       walking into the first load is not. So the ceiling is raised by one
+       hundred, and the measurement is written here so the NEXT raise is
+       judged against this one instead of against nothing. */
     ok('6.4 …and the first visit of the real build is unchanged, the vendored client apart',
-       bytes / 1024 < 2200, Math.round(bytes / 1024) + ' KB');
+       bytes / 1024 < 2300, Math.round(bytes / 1024) + ' KB');
     /* ⚠️ 615 NARROWED THIS. The range was 100–400 KB for a file of 211, so
        it caught the library DISAPPEARING and never caught it GROWING: it
        could have doubled to 399 KB and stayed green, which is the opposite
