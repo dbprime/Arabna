@@ -14234,6 +14234,39 @@ had just read the rule.**
   `i18n.js`; **editorial prose is neither, and the tags stay Arabic by the
   same rule's own exception.**
 
+### ⚠️ And a second red from the same run: a seed field with no line
+
+`test_v84 · 11.3` — **«every seed field is a column, or an exception with a
+written reason»** — red on both builds, naming `articles.blocks`. It is
+`650`'s guard doing exactly what it was built for, and the debt is `675`'s:
+that batch **did** write the gap into `docs/الحالة.md` §2, in the row that
+says the `articles` table is live and the app does not speak to it — and
+**§2 is not what `11.3` reads.** It reads the table in **§1.هـ**, field by
+field, and `blocks` had no row there.
+
+- ⚠️ **The two places are not duplicates, and this is why the check points
+  at one of them.** §2 says «this gap exists and here is when it opens»;
+  §1.هـ says «this FIELD has no column, and here is the reason» — **and it
+  is the one a batch writing the table reads to know what to add.** A gap
+  recorded only in §2 is a field `665` would not know to create a column
+  for.
+- **`cover` is written with it, deliberately before its time.** No seed
+  carries one today — `675` held the two values back with the photographs —
+  so `11.3` could not see it. **The day `assets/mag/` lands, `cover`
+  becomes a seed field, and without its row the guard would redden a batch
+  whose whole subject is pictures.**
+- **Nothing was softened**: `v84` is 58/58 on both builds with the two rows
+  written, and the reasons are measured, not asserted — `body` is two
+  independent arrays and `blocks` is one array carrying `{ar, en}` inside
+  each block, which is why a picture cannot drift away from its paragraph
+  between the languages.
+
+⚠️ **And the class was swept before the net restarted rather than after,
+which is the rule `645`, `650`, `652` and `655` each paid for**: every
+guard in the net that reads a file under `docs/` — `v15` · `v84` · `v85` ·
+`v86` · `v88` · `v89` · `v90` · `v92` — plus the unrun tail and the static
+pass, all green before a single segment was re-run.
+
 ## Known open items
 - **The header image is still far larger than its box.** V.04.7 replaced
   the 831/837 KB lockups with the cropped marks at **333/338 KB** — 60% off
