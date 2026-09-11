@@ -14199,6 +14199,41 @@ name `border-right` and `z-index` while explaining why neither is written.
 **The comments are stripped before any «does the code do X» check, in CSS
 as well as in JavaScript.**
 
+### ⚠️ And the full net found one red in it: an Arabic city name in `i18n.js`
+
+The gate the next file sets — the full net on `main` before a line of it is
+written — turned `test_v26 · 2.2` red on **both** builds, and the app was
+wrong:
+
+```
+ar.figHoHou: 'هيوستن'        the housing figure's own bar label
+en.figHoHou: 'Houston'
+```
+
+⚠️ **That is the V.03.3 rule, and `2.2` is the guard written for exactly
+it**: the city name is English even when the interface is Arabic. The rule
+already names the class it belongs to — `prOutside`, `ncSub` and
+`ncCardTitle` were three of our own strings that said «هيوستن» inside a
+sentence — **and this is a fourth, a chart label, added by the batch that
+had just read the rule.**
+
+- **Every other place name in the sixteen figure keys was already Latin** —
+  `Sharpstown` · `Droubi's` · `Jay Stores` · `Karat 22` · `Anaheim` — so it
+  is a single slip and not a decision, which is what makes it a fix rather
+  than a reversal. **Not one character of `v26` was softened: the check was
+  right and the app was not.**
+- **Measured after, in both languages: `Houston` at 313..355.6, identical,
+  no overflow**, above its own bar — so the label's own geometry is
+  unmoved. And a sweep of the whole pack for every Arabic city name the
+  check knows returns **zero**.
+- ⚠️ **The articles' own prose is NOT touched, and that is `675`'s own
+  recorded decision rather than an exception taken here**: it measured the
+  street name and wrote it down — the Arabic text says «هيلكروفت» while the
+  English says `Hillcroft`, and the address is written as it is on the
+  envelope. `2.1` sweeps business names and descriptions and `2.2` sweeps
+  `i18n.js`; **editorial prose is neither, and the tags stay Arabic by the
+  same rule's own exception.**
+
 ## Known open items
 - **The header image is still far larger than its box.** V.04.7 replaced
   the 831/837 KB lockups with the cropped marks at **333/338 KB** — 60% off
