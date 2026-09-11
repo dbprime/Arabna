@@ -14398,6 +14398,36 @@ first store helper compiled a callback with `new Function`, which
 `script-src 'self'` refuses — it worked in Node and was refused in the
 page. The module is **attached once** and read with ordinary evaluates.
 
+### And the suites this file touches — run on the frozen tree, not the full net
+```
+86 runs · 43 suites · 5,438 assertions · zero red · zero crash
+```
+Nine segments over `3a35266`, and **43 distinct suites × 2 builds** read from
+the index — which prints `NET INCOMPLETE` and names what it has not run, **and
+that is the guard working rather than a shortfall**: `680` is not its group's
+closer, so the full net is deliberately not run here and the PARTIAL line says
+so at both ends. §0's gate was paid separately and in full, on `main` before a
+line of this file was written.
+
+⚠️ **The 43 are DERIVED and then widened by hand, and both halves are
+written.** Grepping `tools/e2e/` for every changed thing — `setting-row` ·
+`check-gold` · `agree1` · `agree2` · `evFeat` · `artSpon` · `cnFamily` ·
+`app.css` · `APP_VERSION` · `الحالة.md` · `events/propose` · `#/auth/signup` ·
+`data-t="mag"` · `check-row` — returns **38**, and the five added on top
+(`v4` · `v22` · `v45` · `v89` · `v90`) are the admin and document-reading
+suites a grep for a class name cannot see. **Measured: derived-but-not-run is
+empty.**
+
+⚠️ **And there is no reversal in this batch at all**, which is what a change
+of this shape should look like: not one existing assertion had a subject that
+moved. A new class was added beside `.setting-row` rather than `.setting-row`
+being altered — **31 of its 36 uses are not labels** — so every screen that
+was measured against it still measures the same.
+
+**The static gates, on the same tree:** `wiring.mjs` **16 passed, 0 failed**,
+and `chk_i18n` **425 derived keys · 1930 strings · 350 attributes** — all three
+unchanged, because `680` adds no string and no key.
+
 ## Known open items
 - **The header image is still far larger than its box.** V.04.7 replaced
   the 831/837 KB lockups with the cropped marks at **333/338 KB** — 60% off
