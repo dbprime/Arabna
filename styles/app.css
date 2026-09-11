@@ -928,6 +928,69 @@ button.list-row { width: 100%; }
 .article-body h1 { font-size: 1.4375rem; line-height: 1.4; margin: 10px 0 6px; }
 .article-body p { font-size: .96875rem; line-height: 1.95; color: var(--text-2); margin: 0 0 15px; }
 
+
+/* ---------- 675: article blocks ----------
+   ⚠️ NO PX FONT SIZE HERE, and it is not a preference: the root is
+   106.25% — seventeen pixels — and a px number is 6.25% wrong on arrival
+   and then refuses to grow for the first reader who enlarges their type
+   from Settings. Every size below is a ratio. */
+.blk-h { font-family: var(--font-display); font-size: 1.1rem; font-weight: 700;
+         color: var(--text); line-height: 1.55; margin: 26px 0 10px; text-wrap: balance; }
+
+/* ⚠️ `border-inline-start`, never `border-right` — the screen mirrors with
+   the language, and a fixed right-hand rule lands on the wrong side of an
+   English pull-quote. */
+.blk-q { margin: 22px 0; padding-inline-start: 16px; border-inline-start: 3px solid var(--gold-bright); }
+.blk-q p { font-family: var(--font-display); font-size: 1.125rem; line-height: 1.75;
+           color: var(--gold-bright); margin: 0; font-weight: 600; }
+
+.blk-ul { margin: 0 0 15px; padding: 0; list-style: none; }
+.blk-ul li { font-size: .96875rem; line-height: 1.9; color: var(--text-2);
+             position: relative; padding-inline-end: 18px; margin-bottom: 6px; }
+/* ⚠️ `.85em` and not `50%`: an item runs to two lines often enough, and a
+   dot at the middle of a two-line item falls between its lines. */
+.blk-ul li::before { content: ''; position: absolute; inset-inline-end: 5px; top: .85em;
+                     width: 5px; height: 5px; border-radius: 50%; background: var(--gold-bright); }
+
+.blk-note { margin: 22px 0; background: var(--surface); border: 1px solid var(--line);
+            border-radius: var(--r-sm); padding: 12px 13px; }
+.blk-note b { display: block; font-size: .71875rem; font-weight: 700; letter-spacing: .4px;
+              color: var(--gold-bright); margin-bottom: 5px; }
+.blk-note p { font-size: .84375rem; line-height: 1.8; margin: 0; color: var(--text-2); }
+
+.blk-img { margin: 24px 0; }
+.blk-img img { width: 100%; border-radius: var(--r-sm); border: 1px solid var(--line-soft); }
+
+.blk-fig { margin: 24px 0; }
+.fig-box { background: var(--surface); border: 1px solid var(--line-soft);
+           border-radius: var(--r-sm); padding: 14px 12px; }
+.fig-box svg { width: 100%; height: auto; display: block; }
+
+figcaption.cap { font-size: .78125rem; line-height: 1.7; color: var(--muted); margin-top: 9px; }
+figcaption.cap .credit { display: block; font-size: .71875rem; opacity: .8; margin-top: 4px; }
+
+/* ---------- 675: a real cover ----------
+   ⚠️ `.article-hero` is `display:grid; place-items:center`, written to
+   centre an icon — so the picture is placed absolutely rather than laid in
+   the grid, where the centring rule and `object-fit` would fight. */
+.mag-thumb img, .story-cover img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.article-hero img { position: absolute; inset: 0; width: 100%; height: 100%;
+                    object-fit: cover; display: block; }
+/* ⚠️ ONLY WHEN THERE IS A PICTURE. `.back-btn` stands on a quiet gradient
+   today and could dissolve over a street in daylight. And no `z-index` is
+   written for the button: it already carries 5, and writing a number here
+   would LOWER it, not raise it — the gradient is at 1 and the picture at 0,
+   so the order is right with no extra line. A line written to fix what is
+   already right is the line that breaks it.
+   ⚠️ And the colour is a literal, not a token, and does not follow the
+   theme — it works over a photograph rather than over a surface, and the
+   photograph is the same in both themes. That is `--ad-ink`'s own argument. */
+.article-hero.has-img::before {
+  content: ''; position: absolute; inset-block-start: 0; inset-inline: 0; height: 84px;
+  background: linear-gradient(to bottom, rgba(9,14,26,.55), transparent);
+  pointer-events: none; z-index: 1;
+}
+
 /* ---------- detail page ---------- */
 .detail-hero {
   height: 168px; position: relative;

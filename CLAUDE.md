@@ -11,7 +11,7 @@ ARABNA · عربنا — a mobile-first web app for the Arab community in the U.
 **business directory + marketplace + events + magazine**, Arabic-first with a full English toggle.
 ("Classifieds / الإعلانات الشخصية" is now "Marketplace / السوق" — the old `#/classifieds`
 routes still resolve so shared links keep working.)
-Current version: **V.11.4 (prototype)**. Owner: dbprime. Deploys to Vercel (team DB Prime).
+Current version: **V.11.5 (prototype)**. Owner: dbprime. Deploys to Vercel (team DB Prime).
 
 ## Hard rules (from the product brief)
 0. ⚠️ **THE OWNER'S NAME IS NEVER WRITTEN — anywhere.** Not in this file, not
@@ -13990,6 +13990,214 @@ this batch added an earlier one — **so it cost one restart and not three.**
 did not move:** `v8` 285/283 · `v20` 282/274 · `v14` 241/239. Measured
 suite time: **7,191s on the single-file build and 6,725s on the module
 one.**
+
+## V.11.5 — the article becomes an article: blocks, figures and a real cover (675)
+
+⚠️ **This file does NOT close its group, and it says so at its own head.**
+It touches `js/data.js`, `js/screens/magazine.js`, `js/screens/home.js`,
+`js/i18n.js`, `styles/app.css` and one new module — **and it touches
+neither `js/store.js`, nor the boot path, nor authentication**, the three
+the 5 September decision names. **So it runs the suites it touches and
+nothing more**, and the group is closed by whatever file the owner sends
+saying of itself that it closes.
+
+### The magazine was empty for every visitor, and nothing said so
+Measured on the tree before a line was written:
+
+```
+ARTICLES                 5, and all five inside markDemo()
+showDemo (the default)   false, since 510
+state.extraArticles      [] on a device that added nothing
+withoutDemo(ARTICLES)    []
+```
+
+> **So whoever opened `arabna.app` and tapped the magazine found NOTHING
+> AT ALL** — and it was not a fault anybody would report, because an empty
+> section reads as a section nobody has written for yet.
+
+⚠️ **And it is the fourth time this shape has been found**: the factory
+running while the warehouse is locked. `642` put four real events into the
+app and `656` opened the road that makes a fifth cost nothing; here the
+five articles that exist are development data the app is right to hide,
+and there was no road for a real one at all. **This batch opens it by hand,
+once** — two articles outside `markDemo`, seen by everybody, with no
+migration, no bucket and no waiting.
+
+### The body was one line
+```js
+${(L(a.body) || []).map(p => `<p>${esc(p)}</p>`).join('')}
+```
+**Every element of `body` was a paragraph and there was nothing else** — no
+sub-heading, no pull-quote, no picture, no caption, no list, no side box.
+A long article was twenty equal paragraphs with not one rest in it.
+
+- **`blocks` is a NEW field and `body` is untouched**, so the five seeds and
+  every article already saved on a reader's own device go on working
+  character for character, and nothing had to be rewritten to ship this.
+  **The five are not converted**: they are development data swept away by a
+  button in the panel, and converting them is work thrown away.
+- ⚠️ **ONE array for both languages, with `{ar, en}` inside each block.**
+  `body` is two independent arrays, so writing the pictures into it would
+  put a photograph under a different paragraph in each language after the
+  first edit — and **what is not translated, a photograph and a figure, is
+  not written twice.**
+- **Seven types** — `p` · `h` · `q` · `ul` · `note` · `img` · `fig` — and
+  **an unknown `t` draws a paragraph while a bare string in the array is
+  read as one**: whoever writes this data by hand will forget `{t:'p'}`
+  once, and forgetting must not take a screen down.
+- **Every string goes through `esc()`**, in all seven places, caption and
+  credit included. That is the V.03.6 rule, and the line this replaces
+  already kept it.
+
+### ⚠️ A FIGURE IS NEVER WRITTEN IN THE DATA
+> **The drawing is defined in code under a key, and the data carries the
+> key alone.** `FIGURES[b.key]`, closed exactly as `P[name] || P.info` is
+> in `js/icons.js`, and an unknown key draws nothing.
+
+**Were an `svg` string a field it would be markup rendered without
+escaping** — a hole opened by our own hand in a table the admin writes into
+from the panel two files from now. `js/figures.js` is its own module and
+not a third of `magazine.js`, which is 235 lines and already carries the
+newcomer's guide.
+
+- ⚠️ **NO COLOUR LITERAL, and the check measures that rather than a list of
+  five tokens.** A written list would go red the day the file's own §3.3 is
+  followed and a sixth existing token is used; the rule is «no NEW colour»,
+  and its measurement is that no literal value appears at all.
+- ⚠️ **And every colour is `style="fill:var(--…)"`, never a presentation
+  attribute.** `var()` inside `fill="…"` is not carried by every engine, and
+  a colour that silently resolves to black is a figure nobody can read.
+- **No word lives inside the SVG** — every one comes from `t()`, or an
+  Arabic drawing is served to an English reader. Sixteen keys, both packs.
+- **The geometry does not mirror with the interface**, and that is a
+  property rather than an oversight: SVG coordinates are not touched by
+  `dir`, so one drawing serves both languages and the axis stays where the
+  Arabic reading starts, on the right.
+
+### ⚠️ `text-anchor` is derived from the direction, never from the language
+**The trap this batch fell into and measured its way out of.** `start` and
+`end` are the ends of the **inline direction**, not of the screen — so with
+`direction="rtl"` the START of a text is its RIGHT edge. Deriving the
+anchor from the interface language, which is the obvious way to write it,
+produced two faults **in Arabic alone**:
+
+```
+the value «47.6 — أرخصُ بـ52.4%»   pushed off the right edge of the drawing
+the year column                     laid across its own axis, overlapping the names
+```
+
+`txt()` takes an `edge` — *which side of the point the text occupies*, which
+is what a layout actually means — and works the anchor out from the
+direction it is really emitting. **A number forced `ltr` inside an Arabic
+interface takes the LTR anchors while the label beside it takes the RTL
+ones**, and the two sit in one drawing.
+
+### The three figures
+- **`hillcroftTimeline`** — eight rows on one axis, and **the whole article
+  is the GAP**: four years in which the street was Arab and nobody else's.
+  It is a band across the drawing rather than a note beside it, and the
+  1982 row sits INSIDE the band because the oil crash happened in the gap
+  and is its cause. **A reader understands it in a second, before reading a
+  line.**
+- **`houstonHousing`** and **`houstonUncounted`** — one shape, two messages.
+  ⚠️ **The census bar is 5.2 user units, and it is `260 × 4014 ÷ 200000`,
+  not a number chosen to look small.** It is filled with `--text-2` rather
+  than a surface tint, because a sliver that thin in a surface tint reads as
+  nothing at all — **and «invisible» is a fault even when the point is that
+  it is tiny.**
+
+### The cover, and the icon branch that survives it
+`cover` is one new field through the same `safeImgSrc()` as a picture
+block, drawn in all three places — the hero, the list card, the featured
+strip on Home. ⚠️ **An article with no cover is exactly what it was**: the
+icon branch is neither deleted nor replaced, because the five seeds and
+everything the admin publishes from the panel today carry none.
+
+- **The gradient under the back button is drawn ONLY when there is a
+  picture** (`.article-hero.has-img::before`): the button stands on a quiet
+  gradient today and could dissolve over a street in daylight.
+- ⚠️ **And no `z-index` is written for the button.** It already carries 5,
+  and writing a number here would LOWER it rather than raise it — the
+  gradient is at 1 and the picture at 0, so the order is right with no
+  extra line. **A line written to fix what is already right is the line
+  that breaks it.**
+- ⚠️ **The gradient's colour is a literal and does not follow the theme**,
+  which is `--ad-ink`'s own argument: it works over a photograph rather than
+  over a surface, and the photograph is the same in both themes.
+- ⚠️ **`.article-hero` is `display:grid; place-items:center`**, written to
+  centre an icon — so the picture is placed absolutely rather than laid in
+  the grid, where the centring rule and `object-fit` would fight.
+
+### ⚠️ THE SEVEN PHOTOGRAPHS ARE NOT IN THIS BATCH, AND THE RULE IS THE SPEC'S OWN
+> **No `img` block is written before its file is in the repository. A batch
+> closed with a `src` and no file is a batch that was not tested.**
+
+`assets/mag/` does not exist, and it cannot be created here: **a photograph
+of Droubi's storefront credited «تصوير: عربنا» that I generated would be a
+fabricated record**, which is the same line that forbids a seeded review
+and an invented jumuah time. So **the two articles land with their text
+blocks and their three figures, and the five picture blocks and the two
+`cover` values are held back** — named file by file with their sizes in
+`docs/الحالة.md`, and added in the commit that brings the files.
+
+**The machinery is complete and measured either way**: `blockHtml`'s `img`
+branch, `safeImgSrc`, the three cover sites and the gradient are all
+exercised by the suite against a file that really exists.
+
+### And a finding the suite made rather than the reading
+⚠️ **Home's featured strip reads `ARTICLES` directly and not
+`allArticles()`**, so nothing a device added ever reaches it — an article
+the admin publishes from the panel is invisible there even on his own
+phone. It is the sibling of `addArticle` being purely local, it is recorded
+as an open fault, and it is **not repaired here**: this batch's subject is
+the article's shape, not where articles come from.
+
+### The names, measured from the data rather than chosen
+```
+Hillcroft in Latin       101 — in every ENGLISH field: addresses, names, descriptions
+هيلكروفت in Arabic         31 — in the Arabic text alone
+هيلكرفت                     0 — it exists nowhere in the repository
+```
+> **The address is written as it is written on the envelope — in Latin.
+> And the Arabic text says «هيلكروفت» while the English says `Hillcroft`.**
+
+⚠️ **A correction to the spec's own table, and only to its «where» column**:
+it reports the Latin form as living in address fields alone, and measured,
+65 of the 101 are addresses while the rest are English names and English
+descriptions. **The rule it states is exactly right and holds to the
+letter**; the breakdown beside it was narrower than the truth.
+
+### `test_v92` — 64 assertions, and nine teeth
+```
+the body back to one line            → 22 red
+the two articles back inside markDemo → 8 red, and 3.1 prints the fault
+                                        in one line: «real articles now: 0»
+esc() dropped from a block            → 2.1 prints 4 surviving elements
+safeImgSrc made permissive            → 2.2 · 2.2b · 6.1, and a 404 for ../../etc/passwd
+the unknown-figure guard removed      → 2.3 · 5.1 · 5.3
+the anchor derived from the language  → 3.3 ar prints «4,014», in Arabic ALONE
+a colour literal in a drawing         → 5.4 prints #C6A15B
+the gradient laid over every hero     → 4.2b · 7.5
+the cover branch removed              → 4.1c · 4.1d prints «NO IMG»
+```
+
+⚠️ **And the ninth tooth CRASHED the suite before it was guarded**, which
+is worse than a red: an unguarded dereference took everything after 4.1c
+unmeasured, and that is how a batch reports green while it is not. Every
+dereference in the suite is guarded now, and re-run it prints **62 passed,
+2 failed** instead of dying.
+
+⚠️ **And four of the suite's own checks were wrong first and were
+corrected rather than the app.** A blanket count of `b` caught the note's
+OWN heading; a count of `a.icon || 'newspaper'` caught a third occurrence
+in the newcomer card that has nothing to do with a cover; a fixture article
+cannot reach Home's featured strip at all (the finding above), so the cover
+is put on a REAL article at run time and the real render path is measured;
+and — **for the sixth time in this project** — a check read the prose about
+the code: the stylesheet sweep matched this batch's own comments, which
+name `border-right` and `z-index` while explaining why neither is written.
+**The comments are stripped before any «does the code do X» check, in CSS
+as well as in JavaScript.**
 
 ## Known open items
 - **The header image is still far larger than its box.** V.04.7 replaced

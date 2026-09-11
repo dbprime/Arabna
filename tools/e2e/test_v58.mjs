@@ -13,6 +13,7 @@
    while the default was `true` there was no way at all to hide it. */
 import { chromium } from '/opt/node22/lib/node_modules/playwright/index.mjs';
 import { readFileSync, existsSync } from 'node:fs';
+import { ARTICLES } from '../../js/data.js';
 
 const BASE = process.env.BASE || 'http://localhost:8099/index.html';
 const ROOT = new URL('../../', import.meta.url).pathname;
@@ -73,8 +74,29 @@ let freshSeed;
   ok('1.5 …and says so rather than going blank', txt.length > 40, txt.trim().slice(0, 48));
   await m.ctx.close();
   const g = await open('#/magazine', freshSeed);
-  ok('1.6 the magazine too',
-     (await g.page.locator('[data-route^="#/magazine/"]').count()) === 0);
+  /* ⚠️ REVERSED BY `675`, AND MEASURED HARDER RATHER THAN SOFTER. This item
+     asserted the magazine shows NOTHING — and «no invented article» and
+     «nothing at all» are two different things that were one while every
+     article in the file was a seed. `675` put two real articles outside
+     `markDemo`, so the magazine is not empty any more and MUST NOT BE: it
+     was empty for every visitor of `arabna.app`, which is the fault that
+     file exists to close.
+
+     ⚠️ AND THE IDS ARE DERIVED FROM `js/data.js`, never written here — a
+     list typed into a check ages the day an article is added. `1.5` above
+     is this file's own precedent: the marketplace is asked to show nothing
+     invented AND to say so rather than go blank. The magazine had only the
+     first half, and now it has both. */
+  const demoIds = ARTICLES.filter(a => a.demo).map(a => a.id);
+  const realIds = ARTICLES.filter(a => !a.demo).map(a => a.id);
+  const shown = await g.page.$$eval('[data-route^="#/magazine/"]',
+    els => els.map(e => e.getAttribute('data-route').split('/').pop()));
+  ok('1.6 not one INVENTED article reaches the magazine',
+     demoIds.length > 0 && !demoIds.some(id => shown.includes(id)),
+     demoIds.filter(id => shown.includes(id)).join(',') || 'none of ' + demoIds.length);
+  ok('1.6b …and it is not empty either — the real ones are what a visitor meets',
+     realIds.length > 0 && realIds.every(id => shown.includes(id)),
+     'shown: ' + shown.join(',').slice(0, 60));
   await g.ctx.close();
   const b1 = await open('#/directory/b1', freshSeed);
   ok('1.7 an invented business does not open',
