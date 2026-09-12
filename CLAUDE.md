@@ -15323,6 +15323,20 @@ did not move:** `v8` 283/281 · `v20` 281/273 · `v14` 236/234. Measured
 suite time: **6,058s on the single-file build and 5,741s on the module
 one.**
 
+⚠️ **And the closing commit is documents, so its tree is measured too** —
+`680`'s rule, and it has now earned itself in four consecutive groups.
+The suites that read `CLAUDE.md` or a file under `docs/` are **derived,
+never listed**, and were run on the closing tree:
+
+```
+40 runs · 20 suites · 2,344 assertions · zero red · zero crash
+```
+Four segments over `5f59682`, `HEAD` re-checked at each, with
+`wiring.mjs` 19/19 and `chk_i18n` at 425 / 1948 / 350. ⚠️ **The one thing
+that run did not read is this paragraph**, and the recursion is stopped
+here on purpose, as in the groups before it: a measurement cannot contain
+its own result.
+
 ## Known open items
 - **The header image is still far larger than its box.** V.04.7 replaced
   the 831/837 KB lockups with the cropped marks at **333/338 KB** — 60% off
