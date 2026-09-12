@@ -365,16 +365,29 @@ function panelView(root) {
 
     const ramSave = $('#ramSave');
     if (ramSave) ramSave.addEventListener('click', () => {
-      S.setRamadanDates($('#ramFrom').value, $('#ramEid').value);
-      toast(t('done'), 'ok');
+      S.setRamadanDates($('#ramFrom').value, $('#ramEid').value).then(ok => {
+        toast(ok ? t('done') : t('greetErrServer'), ok ? 'ok' : 'err');
+      });
+    });
+
+    const hpSave = $('#hpSave');
+    if (hpSave) hpSave.addEventListener('click', () => {
+      S.setHousePrayer($('#hpMethod').value, Number($('#hpAsr').value)).then(ok => {
+        toast(ok ? t('done') : t('greetErrServer'), ok ? 'ok' : 'err');
+      });
     });
 
     const ram = $('#ramSw');
     if (ram) ram.addEventListener('click', () => {
       // one switch turns the whole Ramadan group on: attributes, chips, filters
-      S.setSeason('ramadan', !S.seasonOn('ramadan'));
-      ram.classList.toggle('on', S.seasonOn('ramadan'));
-      toast(t('done'), 'ok');
+      /* ⚠️ AND THE SWITCH MOVES ONLY WHEN THE WRITE TOOK. A season switched
+         on locally over a refused write is the fault this batch exists to
+         close, wearing the panel's own clothes. */
+      S.setSeason('ramadan', !S.seasonOn('ramadan')).then(ok => {
+        if (!ok) { toast(t('greetErrServer'), 'err'); return; }
+        ram.classList.toggle('on', S.seasonOn('ramadan'));
+        toast(t('done'), 'ok');
+      });
     });
 
     /* the two order switches, on the Ramadan switch's own pattern */
@@ -925,11 +938,40 @@ function greetingsHtml() {
 }
 
 /** the write form — one sheet, add and edit alike */
+/* ───────────────── the occasion templates (665أ) ─────────────────
+   ⚠️ AND NOT ONE OCCASION IS NAMED HERE. The warning at `store.js`'s own
+   `greetings` key says why, in its own words: «the moment one is named the
+   tool becomes the Eid card, and the next occasion needs a second one». So
+   this is a list of NUMBERS, the words live in `js/i18n.js`, and the form
+   is the only thing that reads it.
+
+   ⚠️ AND DELETING THIS ARRAY BREAKS NOT ONE LINE — the picker draws
+   nothing and every other part of the form is untouched. That is the test
+   of whether they are really texts and not types, and it is a check rather
+   than a claim (`test_v94 · 3.1`).
+
+   Two of the six are WARNINGS and not greetings, deliberately: a warning is
+   the heavier half of what this tool is for, and it is the half somebody
+   reaches for in a hurry. */
+const GREET_TPL = [1, 2, 3, 4, 5, 6];
+
+/** today, and today + n days — 'YYYY-MM-DD', the shape the fields take */
+function dayPlus(n) {
+  const d = new Date(S.now() + n * 86400000);
+  const p = (x) => String(x).padStart(2, '0');
+  return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate());
+}
+
 function openGreetingForm(g, done) {
   const v = g || { id: '', title: '', body: '', from: '', to: '', cta: null, off: false };
   openSheet(`
     <div class="sheet-title">${t('greetTitle')}</div>
     <div class="sheet-sub">${t('greetPreviewNote')}</div>
+    ${GREET_TPL.length ? `<div class="field"><label class="label" for="gTpl">${t('greetFTpl')}</label>
+      <select class="input" id="gTpl">
+        <option value="">${t('greetFTplNone')}</option>
+        ${GREET_TPL.map(n => `<option value="${n}">${esc(t('greetTpl' + n + 'Title'))}</option>`).join('')}
+      </select></div>` : ''}
     <div class="field"><label class="label" for="gTitle">${t('greetFTitle')}</label>
       <input class="input" id="gTitle" value="${esc(v.title)}" /></div>
     <div class="field-err" id="e_gTitle"></div>
@@ -943,6 +985,7 @@ function openGreetingForm(g, done) {
         <input class="input ltr" id="gTo" type="date" value="${esc(v.to)}" /></div>
     </div>
     <div class="field-err" id="e_gTo"></div>
+    <button class="btn btn-ghost btn-sm" id="gNow">${t('greetNow')}</button>
     <div class="label mt-12">${t('greetFCta')}</div>
     <div class="action-grid stack-narrow">
       <div class="field"><input class="input" id="gCtaL" placeholder="${t('greetFCtaLabel')}" value="${esc((v.cta && v.cta.label) || '')}" /></div>
@@ -965,6 +1008,27 @@ function openGreetingForm(g, done) {
     const setErr = (id, msg) => { panel.querySelector('#e_' + id).textContent = msg || ''; };
     const clearErrs = () => ['gTitle', 'gBody', 'gTo'].forEach(id => setErr(id, ''));
 
+    /* ⚠️ «الآن» FILLS BOTH DATES AND NEVER LEAVES THE END EMPTY. A warning
+       is written in a hurry and two date pickers are two chances to give
+       up — but a greeting with no end stays on the launch screen for ever,
+       and forgetting is commoner than intent. Seven days is the default and
+       the operator moves it. */
+    const nowBtn = panel.querySelector('#gNow');
+    if (nowBtn) nowBtn.addEventListener('click', () => {
+      panel.querySelector('#gFrom').value = dayPlus(0);
+      panel.querySelector('#gTo').value = dayPlus(7);
+    });
+
+    /* the templates fill the two boxes and nothing else — the operator
+       edits over them, or writes from nothing */
+    const tpl = panel.querySelector('#gTpl');
+    if (tpl) tpl.addEventListener('change', () => {
+      const n = tpl.value;
+      if (!n) return;
+      panel.querySelector('#gTitle').value = t('greetTpl' + n + 'Title');
+      panel.querySelector('#gBody').value = t('greetTpl' + n + 'Body');
+    });
+
     /* ⚠️ THE PREVIEW IS THE REAL CARD, not a sketch of it. This is the one
        screen in the app everybody sees exactly once, and there is no
        correcting it afterwards — so what is previewed is drawn by the same
@@ -975,10 +1039,13 @@ function openGreetingForm(g, done) {
                      cta: d.cta.label && d.cta.route ? d.cta : null }, null);
     });
 
-    panel.querySelector('#gSave').addEventListener('click', () => {
+    panel.querySelector('#gSave').addEventListener('click', async () => {
       clearErrs();
-      const r = S.saveGreeting(read());
+      const r = await S.saveGreeting(read());
       if (r.ok) { closeSheet(); done(); return; }
+      /* ⚠️ a refused SERVER is its own sentence and not «required»: the
+         fields were all filled and what failed is the write. */
+      if (r.err === 'server') return setErr('gTo', t('greetErrServer'));
       if (r.err === 'title') return setErr('gTitle', t('required'));
       if (r.err === 'body') return setErr('gBody', t('required'));
       if (r.err === 'from' || r.err === 'to') return setErr('gTo', t('required'));
@@ -1004,15 +1071,23 @@ function wireGreetings(paint) {
   $$('#aBody [data-goff]').forEach(b => b.addEventListener('click', () => {
     const g = S.greetingById(b.dataset.goff);
     if (!g) return;
-    S.setGreetingOff(g.id, !g.off);
-    paint();
+    /* ⚠️ awaited, and a refusal repaints nothing and says so — a switch
+       that flips on the screen over a write that did not happen tells the
+       operator a typo has stopped when it is still on everybody's launch. */
+    S.setGreetingOff(g.id, !g.off).then(ok => {
+      if (!ok) { toast(t('greetErrServer'), 'err'); return; }
+      paint();
+    });
   }));
   $$('#aBody [data-gdel]').forEach(b => b.addEventListener('click', () => {
     const g = S.greetingById(b.dataset.gdel);
     if (!g) return;
     confirmSheet({ title: t('greetDeleteAsk'), sub: g.title + ' — ' + t('greetDeleteSub'),
       confirmText: t('greetDelete'), danger: true,
-      onConfirm: () => { S.deleteGreeting(g.id); paint(); } });
+      onConfirm: () => S.deleteGreeting(g.id).then(ok => {
+        if (!ok) { toast(t('greetErrServer'), 'err'); return; }
+        paint();
+      }) });
   }));
 }
 
@@ -1108,6 +1183,29 @@ function setHtml() {
         <input class="input ltr" id="ramEid" type="date" value="${esc(S.ramadanDates().eid)}" /></div>
     </div>
     <button class="btn btn-ghost btn-sm" id="ramSave">${t('save')}</button>
+
+    ${/* ⚠️ THE HOUSE DEFAULT FOR THE PRAYER TIMES (665أ), and it is what
+          makes «the operator's setting» real rather than a phrase: before
+          this the method changed on the admin's own phone and everybody
+          else kept `isna`. ⚠️ AND IT IS THE DEFAULT AND NOT THE
+          COMPULSION — the line under it says so, and `prayerMethod()`
+          reads the reader's own choice ahead of this value. */''}
+    <div class="section-title mt-20">${t('admPrayerTitle')}</div>
+    <div class="hint" style="margin-bottom:10px">${t('admPrayerSub')}</div>
+    <div class="action-grid stack-narrow">
+      <div class="field"><label class="label" for="hpMethod">${t('prMethod')}</label>
+        <select class="input" id="hpMethod">
+          ${[['isna', 'prMethodIsna'], ['mwl', 'prMethodMwl'],
+             ['makkah', 'prMethodMakkah'], ['jafari', 'prMethodJafari']]
+            .map(([v2, k]) => `<option value="${v2}"${S.housePrayer().method === v2 ? ' selected' : ''}>${t(k)}</option>`).join('')}
+        </select></div>
+      <div class="field"><label class="label" for="hpAsr">${t('prAsrSchool')}</label>
+        <select class="input" id="hpAsr">
+          <option value="1"${S.housePrayer().asr === 1 ? ' selected' : ''}>${t('prAsrStandard')}</option>
+          <option value="2"${S.housePrayer().asr === 2 ? ' selected' : ''}>${t('prAsrHanafi')}</option>
+        </select></div>
+    </div>
+    <button class="btn btn-ghost btn-sm" id="hpSave">${t('save')}</button>
 
     ${/* TWO SWITCHES, NOT ONE, and the reason is that the two reasons are
           different: the mass times are the only ones that will change,

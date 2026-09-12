@@ -1006,6 +1006,16 @@ export function BoostScreen(root, params) {
     if (!S.ownsListing(c.id)) { go('#/marketplace/' + c.id); return; }
     e.target.innerHTML = `<span class="spinner"></span> ${t('paying')}`;
     await S.chargeCard(sel.price, 'Marketplace boost');
+    /* ⚠️ NOT AWAITED, and that is measured rather than left over: `665أ`
+       moved three of the four operator settings to `public.settings` and
+       deliberately left `boosted` where it is — `0002`'s policy on that
+       table is `admin: write`, and a boost is a paid action AN ORDINARY
+       MEMBER performs, so the write comes back refused. See the note at
+       `boostClassified` in `js/store.js`.
+       ⚠️ AND THE CHARGE STILL RUNS ABOVE THIS LINE, which is the standing
+       open item and is NOT this batch's: the comment four lines up states
+       the intended order and the code charges first. It is registered in
+       `docs/الحالة.md` and belongs with the payment gateway. */
     if (!S.boostClassified(c.id)) { go('#/marketplace/' + c.id); return; }
     S.addReceipt({ kind: 'boost', amount: sel.price, method: 'card',
                    refId: c.id, description: `${t('boost')} — ${esc(L(c.title))}` });

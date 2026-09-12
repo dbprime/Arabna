@@ -267,15 +267,23 @@ const member = async (p, email) => p.evaluate(async ([em, c]) => {
   /* ⚠️ Ramadan is settled by the SAME line and is not a fourth exception:
      the season's own general attribute stops forcing a car showroom, while
      a restaurant, which has two of its own, is still asked. */
-  const ram = await p.evaluate(() => {
+  /* ⚠️ AND THE OPERATOR IS WHO SWITCHES IT SINCE `665أ`. The season is a
+     row in `public.settings` with an admin-only write policy, so an
+     ordinary member's call is refused by the server and changes nothing —
+     which is correct, and is why the fixture takes the real path instead
+     of poking local state. */
+  await unlockAdmin(p);
+  await prime(p);
+  const ram = await p.evaluate(async () => {
     const S = window.__S;
-    S.setSeason('ramadan', true);
+    /* awaited too: the write lands a microtask later */
+    await S.setSeason('ramadan', true);
     const shape = (cat) => S.attrGroupsForCat(cat, { all: true })
       .filter(g => g.attrs.some(a => Array.isArray(a.cats) && a.cats.includes(cat)))
       .map(g => g.group.id);
     const out = { auto: shape('auto'), restaurants: shape('restaurants'),
       shownAuto: S.attrGroupsForCat('auto', { all: true }).map(g => g.group.id) };
-    S.setSeason('ramadan', false);
+    await S.setSeason('ramadan', false);
     return out;
   });
   ok('4.5 with Ramadan on, the group is shown to a car showroom', ram.shownAuto.includes('ramadan'), ram.shownAuto.join(' '));

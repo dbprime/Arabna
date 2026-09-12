@@ -175,12 +175,17 @@ await go('#/boost/' + theirs);
 ok('3.1 #/boost/<not mine> is refused at the door',
    (await page.evaluate(() => location.hash)) === '#/marketplace/' + theirs
    && !(await page.locator('#payBtn').count()), await page.evaluate(() => location.hash));
-/* `state.boosted` may already carry a seed listing, so the assertion is
-   that the CALL is refused and adds nothing — not that the list is bare. */
+/* `boosted` may already carry a seed listing, so the assertion is that the
+   CALL is refused and adds nothing — not that the list is bare.
+   ⚠️ READ THROUGH `boostedIds()` SINCE `665أ`. That batch moved three of
+   the four operator settings to `public.settings` and deliberately left
+   `boosted` where it is — the write policy there is admin-only and a boost
+   is a paid action a MEMBER performs — so the call is still synchronous
+   and the accessor is now the one definition of the list. */
 ok('3.2 …and boosting it from the console is refused too',
    await S((id) => {const S = window.__m.S;
-     const before = S.state.boosted.length;
-     return S.boostClassified(id) === false && S.state.boosted.length === before;
+     const before = S.boostedIds().length;
+     return S.boostClassified(id) === false && S.boostedIds().length === before;
    }, theirs));
 await go('#/post?edit=' + theirs);
 ok('3.3 #/post?edit=<not mine> does not open their listing',

@@ -217,8 +217,15 @@ async function open(seed = {}) {
      a message, a report, a claim and a masjid a stranger suggested, each of
      them now taking its id from the row it was written into. Eleven call
      sites remain, and `test_v83 · 4` is the registry that names which. */
+  /* ⚠️ REVERSED AGAIN IN `665أ`, and the floor MOVES WITH A DECISION as it
+     did the three times before it. `g` (a greeting) left the device: the
+     record moved to `public.greetings` and takes the row's id from
+     `.insert().select()`, so `saveGreeting` mints nothing. Ten call sites
+     remain, and `test_v83 · 4` is the registry that names which kinds and
+     holds their count at seven — an agreement that is two-way, so a kind
+     that moves and is not struck turns THAT red rather than this one. */
   ok('11.1 every id in the store is minted — and the floor moves with a decision',
-     mints >= 11, `${mints} call sites`);
+     mints >= 10, `${mints} call sites`);
   ok('11.2 zero ids are still made out of the clock alone', handmade.length === 0, handmade.join(' '));
   ok('11.3 the time in an id comes from now(), which carries the test clock',
      /mintId\(prefix\)[\s\S]{0,200}now\(\)\.toString\(36\)/.test(src));

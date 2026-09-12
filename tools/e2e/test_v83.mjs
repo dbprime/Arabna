@@ -171,8 +171,19 @@ console.log('--- 2: a read with no order and no limit is cut short in silence --
   const fn = /function makeLiveReader\([\s\S]*?\n}/.exec(st);
   ok('2.4 the factory orders every read', !!fn && /\.order\(col, opt\)/.test(fn[0]));
   /* ⚠️ two rows sharing the leading key with no unique tiebreak swap places
-     between pages: one appears twice and the other disappears */
-  ok('2.5 …and `id` is always the last key', !!fn && /\.order\('id'\)/.test(fn[0]));
+     between pages: one appears twice and the other disappears.
+     ⚠️ REVERSED IN `665أ`, and the subject did not move — what moved is
+     that the key is no longer always called `id`. `public.settings` is the
+     ONE table in the schema keyed by `key`, so ordering it by `id` asks
+     PostgREST for a column that does not exist, and `makeLiveReader`
+     swallows that into «the last good answer stands» — which is nothing,
+     for ever, with no error anywhere. So the tiebreak is a parameter that
+     DEFAULTS to `id`, and what is asserted is that every read still ends
+     on one. */
+  ok('2.5 …and a unique tiebreak is always the last key',
+     !!fn && /tiebreak = 'id'/.test(fn[0]) && /\.order\(tiebreak\)/.test(fn[0]));
+  ok('2.5b …and the one table not keyed by `id` says so where it is created',
+     /makeLiveReader\('settings'[\s\S]{0,240}tiebreak: 'key'/.test(st), 'settings/key');
   ok('2.6 it pages with `.range`', !!fn && /\.range\(from, from \+ LIVE_PAGE - 1\)/.test(fn[0]));
   /* ⚠️ a loop with no ceiling spins for ever on a broken answer, and
      reaching the ceiling is SAID rather than swallowed */
@@ -436,8 +447,12 @@ console.log('--- 4: the rule, and a check that keeps it ---');
        named what was missing in the code and not what broke for the
        reader. What broke was «the button that suggests a masjid does not
        reach the admin», and that is read and everybody moves. */
-    { p: 'g',  what: 'greeting',         table: 'greetings',  moves: '665' },
-    { p: 'ua', what: 'article',          table: 'articles',   moves: '665' },
+    /* ⚠️ STRUCK BY `665أ`, THE SIXTH: `g` (a greeting). Its record moved to
+       `public.greetings` and takes the row's id from `.insert().select()`,
+       so a line left standing here would read a year from now as a local
+       id somebody decided on — and this item is what made it impossible to
+       forget, because the agreement is two-way. */
+    { p: 'ua', what: 'article',          table: 'articles',   moves: '665ج' },
     { p: 'of', what: 'offer',            table: 'offers',     moves: '' },
     { p: 'wf', what: 'worship-time fix', table: '',           moves: '' },
     { p: 'n',  what: 'notification',     table: '',           moves: '' },
@@ -450,8 +465,8 @@ console.log('--- 4: the rule, and a check that keeps it ---');
   const minted = [...new Set([...st.matchAll(/mintId\('([a-z_]+)'\)/g)].map(m => m[1]))]
     .filter(x => !/_$/.test(x));
   /* ⚠️ the count is a NUMBER on purpose and moves with a decision, never
-     derived from the list it guards: eight since `655` struck five */
-  ok('4.1 eight kinds are still minted on the device', LOCAL.length === 8,
+     derived from the list it guards: seven since `665أ` struck `g` */
+  ok('4.1 seven kinds are still minted on the device', LOCAL.length === 7,
      String(LOCAL.length));
   const listedNotMinted = LOCAL.map(e => e.p).filter(x => !minted.includes(x));
   ok('4.2 every listed kind is really minted here — one that moved and was not struck turns this red',

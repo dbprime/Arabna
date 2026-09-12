@@ -362,6 +362,29 @@ if (state.user && state.user.password !== undefined) {
   writeState();
 }
 
+/* 665أ: the calculation method and the asr school become the OPERATOR's
+   default, and the reader's own choice takes priority over it — so the app
+   has to know which of the two a stored value is, and the value alone
+   cannot say. ⚠️ THIS IS V.04.8's `state: 'TX'` EXACTLY: a default written
+   by the app read as a decision by a person.
+
+   A device that predates this batch carries no mark, and the answer is
+   already in its own data: nothing but a reader's tap ever wrote a method
+   that is not `isna` or an asr of 2, because those are the declared
+   defaults. So it is inferred ONCE and stamped, the shape `location.manual`
+   was given in V.04.2 — never guessed again on every read.
+
+   `!== undefined` and not `if (…)`: a device that chose `isna` back must
+   keep `methodChosen: false` rather than be asked the same question on
+   every launch. */
+if (state.prayer && state.prayer.methodChosen === undefined) {
+  state.prayer = Object.assign({}, state.prayer, {
+    methodChosen: !!state.prayer.method && state.prayer.method !== 'isna',
+    asrChosen: state.prayer.asr === 2,
+  });
+  writeState();
+}
+
 /** Last write result — false when the browser refused (quota full, private mode). */
 export let lastSaveOk = true;
 
@@ -786,7 +809,10 @@ export function closingSoon(biz, now = new Date()) {
 
 /** the seasonal groups the owner has switched on (admin → settings) */
 export function seasonOn(season) {
-  return !season || !!(state.seasons && state.seasons[season]);
+  if (!season) return true;
+  const live = liveSetting('seasons');
+  if (live) return !!live[season];
+  return !!(state.seasons && state.seasons[season]);
 }
 /**
  * How many live listings actually carry a seasonal speciality. The switch
@@ -813,12 +839,15 @@ export function seasonCount(season) {
  * the whole estimate falls away.
  */
 export function ramadanDates() {
-  const d = state.ramadanDates || {};
+  const d = liveSetting('ramadanDates') || state.ramadanDates || {};
   return { from: d.from || '', eid: d.eid || '' };
 }
-export function setRamadanDates(from, eid) {
-  state.ramadanDates = { from: (from || '').trim(), eid: (eid || '').trim() };
+export async function setRamadanDates(from, eid) {
+  const v = { from: (from || '').trim(), eid: (eid || '').trim() };
+  if (!await pushSetting('ramadanDates', v)) return false;
+  state.ramadanDates = v;
   save();
+  return true;
 }
 
 /* ---------------- greetings ------------------------------------------
@@ -844,7 +873,6 @@ export function todayKey(ms) {
   return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate());
 }
 
-export function greetings() { return state.greetings || []; }
 export function greetingById(id) { return greetings().find(g => g.id === id) || null; }
 export function greetingSeen(id) { return (state.seenGreetings || []).includes(id); }
 
@@ -883,7 +911,7 @@ export function greetingClash(from, to, ignoreId) {
  * Add or update. Returns { ok } or { ok: false, err, clash } — the panel
  * puts the reason under the field that caused it, never in a toast.
  */
-export function saveGreeting(g) {
+export async function saveGreeting(g) {
   const title = (g.title || '').trim();
   const body = (g.body || '').trim();
   const from = (g.from || '').trim();
@@ -893,46 +921,98 @@ export function saveGreeting(g) {
   if (!from) return { ok: false, err: 'from' };
   if (!to) return { ok: false, err: 'to' };
   if (to < from) return { ok: false, err: 'order' };
+  /* ⚠️ AND THE CLASH IS MEASURED ON THE MERGED LIST, which is what
+     `greetings()` now returns — the server's rows first. Measured on the
+     device alone, a second phone would allow a window overlapping one it
+     has never heard of, and two cards would stack on one launch. */
   const clash = greetingClash(from, to, g.id);
   if (clash) return { ok: false, err: 'clash', clash };
   const rec = {
-    id: g.id || mintId('g'),
+    id: g.id || null,
     title, body, from, to,
     cta: g.cta && g.cta.label && g.cta.route ? { label: g.cta.label, route: g.cta.route } : null,
     off: !!g.off,
   };
-  const list = greetings().slice();
-  const i = list.findIndex(x => x.id === rec.id);
-  if (i < 0) list.push(rec); else list[i] = rec;
-  state.greetings = list;
+  /* ⚠️ THE SERVER FIRST, AND A REFUSAL CHANGES NOTHING AND IS SAID —
+     `620`'s order for the password and `630`'s for the moderation queue.
+     Nothing local moves, no line reaches `adminLog`, and the panel puts
+     the reason under the field that caused it. */
+  const row = greetingRowFrom(rec);
+  try {
+    const rows = greetReader.get();
+    if (rec.id) {
+      const { data, error } = await sb.from('greetings').update(row).eq('id', rec.id).select();
+      if (error) throw error;
+      /* ⚠️ `.select()` and then the COUNT: PostgREST answers a row the
+         policy hides with 200 and an empty list, never an error — so a
+         write that changed nothing would otherwise read as a success. */
+      if (!data || !data.length) return { ok: false, err: 'server' };
+      if (rows) {
+        const i = rows.findIndex(x => x.id === rec.id);
+        if (i < 0) rows.push(data[0]); else rows[i] = data[0];
+      } else greetReader.set([data[0]]);
+    } else {
+      const { data, error } = await sb.from('greetings').insert(row).select().single();
+      if (error) throw error;
+      /* ⚠️ THE ID COMES FROM THE SERVER, never from `mintId`: the row
+         lives in a table, and `648`'s rule is that a record with a table
+         takes its id from the insert. `g` is struck from the mint registry
+         with this batch. */
+      rec.id = data.id;
+      if (rows) rows.push(data); else greetReader.set([data]);
+    }
+  } catch (e) { return { ok: false, err: 'server' }; }
   /* ⚠️ the log line BEFORE the save, or it is never written to disk —
      `logAdminAction` builds the row and leaves the persisting to its
      caller, the way every other action in this file does. */
-  logAdminAction(rec.title, i < 0 ? 'greetAdd' : 'greetEdit');
+  logAdminAction(rec.title, g.id ? 'greetEdit' : 'greetAdd');
   save();
   return { ok: true, greeting: rec };
 }
 
-export function deleteGreeting(id) {
+export async function deleteGreeting(id) {
   const g = greetingById(id);
-  state.greetings = greetings().filter(x => x.id !== id);
+  try {
+    const { data, error } = await sb.from('greetings').delete().eq('id', id).select();
+    if (error) throw error;
+    if (!data || !data.length) return false;
+  } catch (e) { return false; }
+  const rows = greetReader.get();
+  if (rows) greetReader.set(rows.filter(x => x.id !== id));
+  /* a row this device wrote and never managed to send is local only, and
+     leaves with the same call */
+  state.greetings = (state.greetings || []).filter(x => x.id !== id);
   if (g) logAdminAction(g.title, 'greetDelete');
   save();
+  return true;
 }
 
 /** ⚠️ Immediate, and that is the point: a typo in something everybody
     sees once has to stop NOW, not on the day its window ends. */
-export function setGreetingOff(id, off) {
+export async function setGreetingOff(id, off) {
   const g = greetingById(id);
-  if (!g) return;
-  g.off = !!off;
+  if (!g) return false;
+  try {
+    const { data, error } = await sb.from('greetings').update({ off: !!off }).eq('id', id).select();
+    if (error) throw error;
+    if (!data || !data.length) return false;
+    const rows = greetReader.get();
+    if (rows) {
+      const i = rows.findIndex(x => x.id === id);
+      if (i >= 0) rows[i] = data[0];
+    }
+  } catch (e) { return false; }
   logAdminAction(g.title, off ? 'greetOff' : 'greetOn');
   save();
+  return true;
 }
 
-export function setSeason(season, on) {
-  state.seasons = Object.assign({}, state.seasons, { [season]: !!on });
+export async function setSeason(season, on) {
+  const v = Object.assign({}, liveSetting('seasons') || state.seasons, { [season]: !!on });
+  if (!await pushSetting('seasons', v)) return false;
+  state.seasons = v;
   save();
+  return true;
 }
 
 /* ---------------- the order of the two blocks on #/prayer and #/mass ----
@@ -1075,14 +1155,69 @@ export function cityOf(biz) {
    PRAYER — the settings, the point, and the mosques nearby
    ============================================================ */
 
-/** 'isna' · 'mwl' · 'makkah' · 'jafari' — a setting, never a constant */
-export function prayerMethod() { return (state.prayer && state.prayer.method) || 'isna'; }
+/* ───────── the calculation: the reader, then the operator, then us ─────
+ * ⚠️ THE OPERATOR'S SETTING IS THE DEFAULT AND NEVER THE COMPULSION, and
+ * the order is written once and read three times:
+ *
+ *      the reader's own choice  →  the server  →  what is written here
+ *
+ * Somebody who picked Jafari for himself is not to have it taken away
+ * because the panel moved the house default, and somebody who never chose
+ * is to receive whatever the operator set rather than a frozen `isna`.
+ *
+ * ⚠️ AND `homeBar` AND `alert` NEVER RISE TO THE SERVER. They live in the
+ * same `state.prayer` object and they are the READER'S OWN — whether the
+ * bar shows on Home, whether the pre-adhan alert is wanted — so uploading
+ * the key whole would make one reader's answer the house default for
+ * everybody, which is V.04.8's rule inverted. Only `method` and `asr` are
+ * the operator's, and `prayerHouse()` is the only thing that leaves.
+ */
+
+/** what the operator set, or null — `{ method, asr }` and nothing else */
+function prayerHouse() {
+  const v = liveSetting('prayer');
+  return v && typeof v === 'object' ? v : null;
+}
+
+/**
+ * ⚠️ «Did the reader CHOOSE this, or is it the default sitting there?» —
+ * and the answer cannot be read off the value, which is exactly the fault
+ * V.04.8 found in `state: 'TX'`: a default written by the app was read as
+ * a decision by a person. So the two setters mark their own work, and a
+ * device that predates this batch is inferred ONCE at boot from what only
+ * a choice could have produced (`bootPrayerChoice`).
+ */
+export function prayerMethod() {
+  const p = state.prayer || {};
+  if (p.methodChosen && p.method) return p.method;
+  const house = prayerHouse();
+  if (house && house.method) return house.method;
+  return p.method || 'isna';
+}
 export function setPrayerMethod(m) {
-  state.prayer = Object.assign({ method: 'isna', asr: 1 }, state.prayer, { method: m });
+  state.prayer = Object.assign({ method: 'isna', asr: 1 }, state.prayer,
+    { method: m, methodChosen: true });
   save();
 }
 /** 1 = the majority, 2 = Hanafi */
-export function asrShadow() { return (state.prayer && state.prayer.asr) === 2 ? 2 : 1; }
+export function asrShadow() {
+  const p = state.prayer || {};
+  if (p.asrChosen) return p.asr === 2 ? 2 : 1;
+  const house = prayerHouse();
+  if (house && house.asr != null) return house.asr === 2 ? 2 : 1;
+  return p.asr === 2 ? 2 : 1;
+}
+
+/** the house default, read by the panel — never what this reader picked */
+export function housePrayer() {
+  const h = prayerHouse() || {};
+  return { method: h.method || 'isna', asr: h.asr === 2 ? 2 : 1 };
+}
+/** the panel writes the house default, and only these two fields leave */
+export async function setHousePrayer(method, asr) {
+  const v = { method: method || 'isna', asr: asr === 2 ? 2 : 1 };
+  return pushSetting('prayer', v);
+}
 
 /* ---------------- the bar on Home: asked, not assumed ----------------
    The owner asked for a hide switch, defaulted to HIDDEN, out of consideration
@@ -1160,7 +1295,8 @@ export function setPrayerAlert(on) {
   save();
 }
 export function setAsrShadow(n) {
-  state.prayer = Object.assign({ method: 'isna', asr: 1 }, state.prayer, { asr: n === 2 ? 2 : 1 });
+  state.prayer = Object.assign({ method: 'isna', asr: 1 }, state.prayer,
+    { asr: n === 2 ? 2 : 1, asrChosen: true });
   save();
 }
 
@@ -2487,7 +2623,7 @@ export function liveReaderTables() { return _liveTables.slice(); }
  * @param {string} table
  * @param {{order?: Array<[string, {ascending: boolean}]>}} opts
  */
-function makeLiveReader(table, { order } = {}) {
+function makeLiveReader(table, { order, tiebreak = 'id' } = {}) {
   /* ⚠️ `created_at desc` is the fallback and NOT the rule: the server's
      order has to match the screen's or the page lies. The events reader
      orders `featured desc, starts_at asc` — ordered by `created_at` a
@@ -2518,11 +2654,18 @@ function makeLiveReader(table, { order } = {}) {
            had opened it to. Ordering is not filtering. */
         let q = sb.from(table).select('*');
         for (const [col, opt] of keys) q = q.order(col, opt);
-        /* ⚠️ `id` last, always. Two rows sharing the leading key with no
-           unique tiebreak swap places between one page and the next: one
-           of them appears twice and the other disappears. A known family
-           of paging faults, closed by one line. */
-        q = q.order('id');
+        /* ⚠️ The primary key last, always. Two rows sharing the leading
+           key with no unique tiebreak swap places between one page and the
+           next: one of them appears twice and the other disappears. A
+           known family of paging faults, closed by one line.
+
+           ⚠️ AND IT IS A PARAMETER RATHER THAN THE WORD `id`, measured
+           in `665أ`: `public.settings` is keyed by `key` and is the only
+           table in the schema that is — so ordering it by `id` asks
+           PostgREST for a column that does not exist and the whole read
+           fails, which `makeLiveReader` swallows into «the last good
+           answer stands», i.e. nothing, for ever and with no error. */
+        q = q.order(tiebreak);
         const from = pages * LIVE_PAGE;
         const { data, error } = await q.range(from, from + LIVE_PAGE - 1);
         if (error) throw error;
@@ -2548,6 +2691,146 @@ function makeLiveReader(table, { order } = {}) {
   };
 }
 
+/* ⚠️ AND EVERY READER IS CREATED HERE, BELOW THE FACTORY, never beside the
+   functions that read it. `_liveTables` and `makeLiveReader` are `const`,
+   so a `makeLiveReader(…)` written earlier in the file runs inside their
+   temporal dead zone and throws AT MODULE LOAD — «Cannot access
+   '_liveTables' before initialization» — which takes `store.js` down and
+   with it every screen in the app. Measured in `665أ`, on a blank page.
+   The functions that READ a reader may live anywhere: they are function
+   declarations and are only called at run time. */
+
+/* ───────── the operator's four switches, on the server (665أ) ─────────
+   ⚠️ A SETTING THE OPERATOR CHANGES AND NOBODY RECEIVES IS NOT A SETTING,
+   and in the prayer times it is worse than that. Ramadan mode was switched
+   on from a laptop and NOBODY saw it; the calculation method was changed
+   and everybody kept the old one — and people pray by those times.
+
+   `0001_schema.sql` names the four above the table in so many words —
+   seasons · ramadanDates · prayer · boosted — one row per key, and the two
+   policies stand in `0002`. ⚠️ SO THERE IS NO MIGRATION HERE EITHER.
+
+   ⚠️ AND IT IS READ AT BOOT WITH THE OTHER LIVE READERS AND NEVER AT THE
+   POINT OF USE. Measured: `seasonOn()` is called inside two loops that
+   walk every speciality in the registry, so a network call there freezes
+   the screen. */
+const setReader = makeLiveReader('settings', {
+  order: [['key', { ascending: true }]],
+  /* ⚠️ `settings` is keyed by `key`, and is the only table in the schema
+     that is not keyed by `id` — see the factory. */
+  tiebreak: 'key',
+});
+
+/** when the live settings last arrived, or 0 — read by the suite */
+export function liveSettingsLoadedAt() { return setReader.loadedAt(); }
+/** Fetch the operator's settings once. */
+export async function loadLiveSettings() { return setReader.load(); }
+
+/**
+ * ⚠️ A VALUE THAT DID NOT ARRIVE IS READ FROM THE DECLARED DEFAULT, NEVER
+ * FROM AN EMPTY OBJECT. `null` is not `{}` — the rule `650` set for the
+ * live readers — so a failed read leaves the app exactly as it was rather
+ * than switching every season off and resetting the calculation method.
+ */
+function liveSetting(key) {
+  const rows = setReader.get();
+  if (!rows) return null;
+  const row = rows.find(r => r.key === key);
+  return row && row.value != null ? row.value : null;
+}
+
+/** the one door that writes one of the four, and the only one */
+async function pushSetting(key, value) {
+  try {
+    const { data, error } = await sb.from('settings')
+      .upsert({ key, value }, { onConflict: 'key' }).select();
+    if (error) throw error;
+    /* ⚠️ `.select()` and then the COUNT — a row the policy hides comes
+       back 200 with an empty list and never an error. */
+    if (!data || !data.length) return false;
+    const rows = setReader.get();
+    if (rows) {
+      const i = rows.findIndex(r => r.key === key);
+      if (i < 0) rows.push(data[0]); else rows[i] = data[0];
+    } else setReader.set([data[0]]);
+    return true;
+  } catch (e) { return false; }
+}
+
+/* ───────────── the greetings, on the server (665أ) ─────────────
+   ⚠️ THE FAULT WAS NOT «a card that is late», IT WAS «nobody at all».
+   `state.greetings` is a key on one phone, so a greeting was written,
+   saved, and shown to WHOEVER WROTE IT and to no other person on earth
+   — and the warning is the heavier half: «flooding expected» or «the
+   office is shut today» is written to be read NOW, and whoever wrote it
+   walked away satisfied.
+
+   The table has stood in `0001_schema.sql` since the first day and the
+   two policies in `0002` beside it, «all: read» and «admin: write». So
+   there is NO MIGRATION here: the column, the policy and the screen were
+   all built and the wire was missing — the fifth time this project has
+   found that shape (`645` twice, `649`, `650`, `655`). */
+const greetReader = makeLiveReader('greetings');
+
+/** when the live greetings last arrived, or 0 — read by the suite */
+export function liveGreetLoadedAt() { return greetReader.loadedAt(); }
+/** Fetch the live greetings once. */
+export async function loadLiveGreetings() { return greetReader.load(); }
+
+/**
+ * one row -> the shape the screens have always read. ⚠️ ONE MAP AND NOT
+ * TWO: the rule is written at `mapLiveRowToJs` and holds here — two
+ * copies of a column map part company at the first column added.
+ *
+ * ⚠️ AND `cta` IS A TEXT COLUMN CARRYING JSON, which is a decision and
+ * not an accident. The app's `cta` is `{label, route}` and the column is
+ * `text`; serialising it here needs no migration, and doing it EXPLICITLY
+ * rather than handing PostgREST an object means the shape does not depend
+ * on how somebody else's layer coerces one. A value that is not JSON —
+ * anything written before today by hand — is read as no button rather
+ * than throwing.
+ */
+function mapLiveGreetingRowToJs(r) {
+  let cta = null;
+  if (r.cta) {
+    try {
+      const v = JSON.parse(r.cta);
+      if (v && v.label && v.route) cta = { label: v.label, route: v.route };
+    } catch (e) { /* not JSON: no button, and no exception */ }
+  }
+  return {
+    id: r.id,
+    title: r.title || '',
+    body: r.body || '',
+    from: r.from_date || '',
+    to: r.to_date || '',
+    cta,
+    off: !!r.off,
+  };
+}
+
+/** the reverse, and the only place a greeting is shaped for the table */
+function greetingRowFrom(g) {
+  return {
+    title: g.title, body: g.body,
+    from_date: g.from, to_date: g.to,
+    cta: g.cta ? JSON.stringify({ label: g.cta.label, route: g.cta.route }) : null,
+    off: !!g.off,
+  };
+}
+
+/**
+ * ⚠️ THE MERGED LIST, and every reader of a greeting goes through it.
+ * The server's rows are what everybody sees; a row this device wrote and
+ * could not send stays beside them rather than being dropped, so nothing
+ * somebody typed is lost by a network failure.
+ */
+export function greetings() {
+  const live = (greetReader.get() || []).map(mapLiveGreetingRowToJs);
+  const seen = new Set(live.map(g => g.id));
+  const local = (state.greetings || []).filter(g => !seen.has(g.id));
+  return live.concat(local);
+}
 const bizReader = makeLiveReader('businesses');
 
 /** when the live rows last arrived, or 0 — read by the suite, not by a screen */
@@ -3277,7 +3560,7 @@ export function allClassifieds() {
          photo it had the moment its owner pressed «save». */
       photoPaths: (c.photos || []).slice(),
       photos: photoUrls('listings', c.photos),
-      boosted: state.boosted.includes(c.id),
+      boosted: boostedIds().includes(c.id),
       status: isHidden(c) ? 'hidden' : (c.status || 'live'),
     }));
 }
@@ -6012,9 +6295,38 @@ export function ownsListing(id) { return mineListing(id); }
  * `startSubscription`, and this is the same shape of hole in the same
  * kind of place.
  */
+/**
+ * ⚠️ `boosted` STAYS ON THE DEVICE IN `665أ`, AND THE REASON IS MEASURED
+ * RATHER THAN CHOSEN. `0001_schema.sql` names it among the four keys
+ * `public.settings` holds, so the intention is right — **but `0002`'s
+ * policy on that table is `admin: write`, and a boost is a paid action AN
+ * ORDINARY MEMBER performs on their own listing.** Measured on the real
+ * path, with the member signed in and owning the listing:
+ *
+ *     boostClassified(theirOwnListing)  ->  false
+ *
+ * So moving it makes the paid button do nothing at all — worse than the
+ * fault it would fix, because today the owner at least sees their own
+ * listing marked on their own device. ⚠️ **AND IT IS NOT FIXED BY
+ * WEAKENING THE POLICY**: a table any signed-in account may write is the
+ * operator's four switches open to everybody.
+ *
+ * The three that really are the operator's — `seasons`, `ramadanDates`
+ * and `prayer` — moved in this batch. This one needs a decision about
+ * where a member's own boost is written, and it belongs with the batch
+ * that carries the money (`665ب`), where the gift-boost button lives too.
+ *
+ * ⚠️ AND NO COLUMN ON `classifieds` EITHER, which would be the fast wrong
+ * answer: it contradicts the schema's own comment and is an unplanned
+ * migration. `test_v94 · 5.1` guards that half and stays.
+ */
+export function boostedIds() {
+  return state.boosted || [];
+}
 export function boostClassified(id) {
   if (!ownsListing(id)) return false;
-  if (!state.boosted.includes(id)) state.boosted.push(id);
+  if (state.boosted.includes(id)) return true;
+  state.boosted.push(id);
   save();
   return true;
 }

@@ -22,6 +22,8 @@ import { chromium } from '/opt/node22/lib/node_modules/playwright/index.mjs';
    real one through. One source, imported. */
 import { readFileSync } from 'node:fs';
 import { SUPABASE_URL } from '../../js/supabase-config.js';
+import { mockSupabase } from './_supabase.mjs';
+import { unlockAdmin } from './_admin.mjs';
 const ROOT = new URL('../../', import.meta.url).pathname;
 
 const BASE = process.env.BASE || 'http://localhost:8099/index.html';
@@ -30,6 +32,11 @@ const ok = (n, c, extra = '') => { if (c) { pass++; console.log('PASS ' + n + (e
 
 const browser = await chromium.launch();
 const ctx = await browser.newContext({ colorScheme: 'dark', viewport: { width: 390, height: 844 } });
+/* ⚠️ THE RAMADAN DATES ARE THE OPERATOR'S SINCE `665أ` — a row in
+   `public.settings` with an admin-only write policy — so the fixture needs
+   a server to answer and a staff session to be allowed. Item 15.4 measures
+   the CALENDAR, and it can only measure it over a date that really landed. */
+await mockSupabase(ctx, { preConfirm: true });
 const page = await ctx.newPage();
 const errors = [];
 let reqs = 0;
@@ -316,12 +323,14 @@ ok('15.3 ramadanStart still works and is still exported',
      const d = window.__m.F.ramadanStart(2027);
      return !!d && d.toISOString().slice(0, 10) === '2027-02-07';
    }));
+await unlockAdmin(page);
 ok('15.4 a hand-written Ramadan date still overrules the arithmetic',
    await page.evaluate(async () => {
      const { S, F } = window.__m;
-     S.setRamadanDates('2027-02-08', '');
+     /* ⚠️ awaited since `665أ` — the dates are a settings row now */
+     await S.setRamadanDates('2027-02-08', '');
      const r = F.calendarNow(Date.UTC(2026, 7, 23), S.ramadanDates()).find(f => f.id === 'ramadan');
-     S.setRamadanDates('', '');
+     await S.setRamadanDates('', '');
      return !!r && r.at.toISOString().slice(0, 10) === '2027-02-08' && r.estimated === false;
    }));
 

@@ -101,13 +101,15 @@ console.log('--- 1: the wires ---');
      own rule stands and hardens here: a live reader written by hand
      outside `makeLiveReader` turns this red whatever batch it belongs to. */
   const readers = [...st.matchAll(/makeLiveReader\('([a-z_]+)'/g)].map(m => m[1]);
-  /* ⚠️ REVERSED IN `660`, AND THE NUMBER MOVES WITH A DECISION RATHER THAN
-     BEING DERIVED. `biz_photos` gains a live reader there — the table has
-     stood since `0001` with nothing reading or writing it — so the count is
-     TEN. It stays a literal for the reason `v16`'s category count does: a
-     count read off the thing it guards compares the file with itself and
-     guards nothing, and a reader added without a decision has to redden. */
-  ok('1.6 ten live readers, all from the one factory', readers.length === 10, readers.join(' '));
+  /* ⚠️ REVERSED IN `660` AND AGAIN IN `665أ`, AND THE NUMBER MOVES WITH A
+     DECISION RATHER THAN BEING DERIVED. `660` gave `biz_photos` a reader
+     and `665أ` gives `greetings` and `settings` theirs — each of the three
+     a table that had stood since `0001` with nothing reading it — so the
+     count is TWELVE. It stays a literal for the reason `v16`'s category
+     count does: a count read off the thing it guards compares the file
+     with itself and guards nothing, and a reader added with no decision
+     behind it has to redden. */
+  ok('1.6 twelve live readers, all from the one factory', readers.length === 12, readers.join(' '));
   for (const t of ['messages', 'reviews', 'review_replies', 'flags', 'claims', 'notifications', 'biz_photos']) {
     ok('1.6.' + t + ' …including `' + t + '`', readers.includes(t), '');
   }

@@ -62,7 +62,11 @@ const SCHEMA = { classifieds: columnsOf('classifieds'), businesses: columnsOf('b
                  claims: columnsOf('claims'), notifications: columnsOf('notifications'),
                  /* and the table `660` finally writes: its columns have stood
                     since `0001` and nothing ever inserted one */
-                 biz_photos: columnsOf('biz_photos') };
+                 biz_photos: columnsOf('biz_photos'),
+                 /* and the two `665أ` finally writes: their columns and their
+                    two policies have stood since `0001`/`0002` and nothing
+                    ever inserted or updated one */
+                 greetings: columnsOf('greetings'), settings: columnsOf('settings') };
 
 /* ⚠️ AND THE SEEDED SETTINGS ARE READ FROM THE MIGRATION TOO, for the same
    reason the columns are: the listing limit lives in `settings` from `0009`,
@@ -92,7 +96,7 @@ function freshDb() {
     classifieds: [],
     events: [],
     messages: [], reviews: [], review_replies: [], flags: [], claims: [],
-    notifications: [], biz_photos: [],
+    notifications: [], biz_photos: [], greetings: [],
     /* the file store (660): one list of objects, and the bucket rules are
        mirrored from `0019` below rather than waved through */
     objects: [],
@@ -546,6 +550,12 @@ export async function mockSupabase(ctx, opts = {}) {
         /* a notification is its addressee's and nobody else's — not even
            the admin's, by the policy in `0013` */
         if (table === 'notifications') return row.user_id === uid;
+        /* ⚠️ `greetings` and `settings` are «all: read using (true)» in
+           `0002`, and that is the whole point of `665أ`: a warning has to
+           reach a VISITOR who has never signed in. Named explicitly rather
+           than left to the `return true` below, so a later edit cannot
+           narrow them without deciding to. */
+        if (table === 'greetings' || table === 'settings') return true;
         return true;
       };
       const wantsOne = /pgrst\.object/.test(req.headers()['accept'] || '');
@@ -631,6 +641,11 @@ export async function mockSupabase(ctx, opts = {}) {
           /* `0002` gives `biz_photos` «admin: update» and nothing else:
              the decision on a photo is the admin's, never the uploader's */
           if (table === 'biz_photos') return false;
+          /* ⚠️ `0002` gives both of `665أ`'s tables «admin: write» and
+             nothing else. Without this line an ordinary member's PATCH
+             would land, and the batch's own «only staff may» would be
+             green on a mock that lets everybody through. */
+          if (table === 'greetings' || table === 'settings') return isAdmin;
           return row.owner_id === uid;
         };
         const hit = (db[table] || []).filter(matches).filter(mayUpdate);
@@ -653,6 +668,8 @@ export async function mockSupabase(ctx, opts = {}) {
           /* `0002`: «own or admin: delete» — the owner drops a photo from
              their own set, which is what `setBizPhotos` does */
           if (table === 'biz_photos') return isAdmin || row.uploader_id === uid;
+          /* «admin: write» is `for all`, so the delete is the admin's */
+          if (table === 'greetings') return isAdmin;
           return false;
         };
         const hit = (db[table] || []).filter(matches).filter(mayDelete);
@@ -767,6 +784,10 @@ export async function mockSupabase(ctx, opts = {}) {
            signed-in account may write into anybody's list is a spam
            channel with a policy on it. */
         if (table === 'notifications' && !isAdmin) return deny('notifications');
+        /* ⚠️ AND THE TWO OF `665أ`: `0002` gives both «admin: write» and
+           nothing else, so an ordinary member's insert is refused by the
+           database and must be refused here. */
+        if ((table === 'greetings' || table === 'settings') && !isAdmin) return deny(table);
         if (table === 'events' && !isAdmin) {
           if (body.status !== 'pending' || body.proposer_id !== uid) {
             return route.fulfill(json({ code: '42501',
@@ -783,6 +804,19 @@ export async function mockSupabase(ctx, opts = {}) {
            calls to `new Date()` can differ by a millisecond, and `648`'s
            first item asserts that a NEW row carries the two equal. */
         const stamp = new Date().toISOString();
+        /* ⚠️ UPSERT, and `settings` is the only table that needs it: it is
+           keyed by `key` and `pushSetting` writes the same key over and
+           over. PostgREST reads the intent from the `Prefer` header, so a
+           mock that ignored it would grow a second row per write and the
+           reader would answer with whichever it met first. */
+        const pref = req.headers()['prefer'] || '';
+        if (/resolution=merge-duplicates/.test(pref) && table === 'settings') {
+          const ex = (db.settings || []).find(r => r.key === body.key);
+          if (ex) {
+            Object.assign(ex, body, { updated_at: stamp });
+            return route.fulfill(json(wantsOne ? ex : [ex], 200));
+          }
+        }
         const row = Object.assign({ id: 'mock-row-' + (++db.seq),
                                     created_at: stamp,
                                     updated_at: stamp },

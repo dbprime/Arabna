@@ -11,7 +11,7 @@ ARABNA · عربنا — a mobile-first web app for the Arab community in the U.
 **business directory + marketplace + events + magazine**, Arabic-first with a full English toggle.
 ("Classifieds / الإعلانات الشخصية" is now "Marketplace / السوق" — the old `#/classifieds`
 routes still resolve so shared links keep working.)
-Current version: **V.11.9 (prototype)**. Owner: dbprime. Deploys to Vercel (team DB Prime).
+Current version: **V.12.0 (prototype)**. Owner: dbprime. Deploys to Vercel (team DB Prime).
 
 ## Hard rules (from the product brief)
 0. ⚠️ **THE OWNER'S NAME IS NEVER WRITTEN — anywhere.** Not in this file, not
@@ -15063,6 +15063,279 @@ alone cannot say.**
 recursion is stopped here on purpose, as it was in the two groups before
 it: a measurement cannot contain its own result.
 
+
+## V.12.0 — the warning reaches the reader, and the four settings reach every device (665أ)
+
+⚠️ **This file does NOT close its group, and it says so at its own head.**
+The owner's decision of 12 September splits `665` into three: `665أ` (the
+greetings and the four settings), `665ب` (the log, the receipts, the
+subscription) and `665ج` (the statistics, the articles and the account
+page — **the closer**). **So the full net runs at `665ج` and nowhere
+before it**, and that is the whole reason for the split: three files in
+one group cost one net, not three. Here: **the suites this file touches.**
+**And no migration** — لا هجرة.
+
+### A warning that does not arrive is not a warning
+```
+state.greetings          a key on ONE PHONE
+public.greetings         columns since 0001, two policies since 0002
+from('greetings') in js/ ZERO
+```
+> **So a greeting was composed, validated, saved and drawn — for whoever
+> wrote it, and for no other person on earth.**
+
+⚠️ **And the warning is the heavier half.** «Flooding expected» or «the
+office is shut today» is written to be read NOW, and **the person who
+wrote it walked away satisfied.** This is the owner's own question, and
+the answer was harsher than the question.
+
+⚠️ **It is the sixth time this project has found that shape** — the
+column, the policy and the screen all built and **the wire missing**
+(`645` twice, `649`, `650`, `655`). Which is why the rule `649` wrote is
+not «a table exists» but **«a table is measured by a writer and a
+reader»**, and `test_v84 · 7` counts it.
+
+**Measured after, with two real browsers sharing one stand-in server:**
+```
+device 1, staff       publishes a warning        the row is on the server
+device 2, NOBODY signed in   reads it            {"n":1,"title":"تحذير"}
+device 1 switches it off     device 2            off: true
+device 1 deletes it          device 2            0 left
+```
+⚠️ **The second device is a VISITOR, and that is `0002`'s «all: read»
+working rather than a convenience** — a warning is for everybody, and
+gating it on an account would have left it unread by exactly the people
+it is written for.
+
+### The id comes from the server, and `g` leaves the mint registry
+`648`'s rule — a record with a table takes its id from the insert — and
+the tooth prints why it is not cosmetic: with `mintId('g')` restored, the
+greeting is created, **and «off» and «delete» then reach nothing at all**,
+because the id the device holds names no row. Three items go red behind
+the one that names the mint.
+
+### The read is at boot, in `js/app.js`, and deliberately not when the panel opens
+> **A greeting is for the ordinary reader, so WHOEVER NEVER OPENS THE
+> PANEL IS THE PERSON WHO HAS TO RECEIVE IT.**
+
+Measured as a tooth: moving the read into `wireGreetings` leaves
+**`1.4` printing `{"n":0}`** — the visitor reads nothing, because the
+visitor never opens the panel. The same shape as `660`'s own fault, where
+a reader put beside the account-shaped ones left an approved photo
+invisible to every visitor.
+
+### The clash is measured on the MERGED list
+«One live at a time» read from the device alone lets a second phone open a
+window overlapping one it has never heard of, **and two cards stack on one
+launch.** `greetingClash` reads `greetings()`, which is the server's rows
+first — proven by putting the first greeting on the server and **wiping
+local state before writing the second**: the refusal still names the first
+by its title.
+
+### «الآن», and never an empty end date
+One button fills today and today + 7. ⚠️ **An unbounded card is a card
+nobody can stop** — `endsAt` is what ends a greeting by itself, exactly as
+`MAX_OFFER_DAYS` ends an offer, and the tooth aims at the end date alone.
+
+### The templates are text, and no occasion is named in the code
+`GREET_TPL` is `[1, 2, 3, 4, 5, 6]` and the words live in `js/i18n.js`.
+⚠️ **The moment an occasion is named in the logic, the tool stops being
+general and the next occasion needs a second branch** — so the guard
+sweeps `store.js`, `app.js`, `ui.js` and `admin.js` for the names and
+demands zero.
+
+⚠️ **And deleting the whole list breaks nothing — proven, not claimed:**
+with `GREET_TPL = []` the suite is **43 of 43**, the picker is simply not
+drawn, and every field of the form stands. **Two of the six are warnings
+and not greetings**, deliberately: that is the half somebody reaches for
+in a hurry.
+
+⚠️ **And the check that guards the coupling had to be written to be right
+in BOTH states.** «A picker is present» goes red on the very deletion the
+rule says must be harmless; what is asserted instead is that the picker is
+drawn **exactly when the list is non-empty**, and that `GREET_TPL` is read
+behind one length guard and nowhere else.
+
+### A setting the operator changes and nobody receives is not a setting
+⚠️ **And `prayer` is the heaviest: people pray by those times.** The
+calculation method was changed from the panel and everybody kept the old
+one; Ramadan mode was switched on from a laptop and nobody saw it.
+
+```
+seasons · ramadanDates · prayer   →  public.settings, one row per key
+boosted                           →  STAYS on the device, and the reason is measured
+```
+⚠️ **`0001_schema.sql` names all four above the table in so many words, so
+there is no migration here either.**
+
+⚠️ **AND THE FOURTH DID NOT MOVE, WHICH IS A DEPARTURE FROM THE
+SPECIFICATION, MEASURED RATHER THAN CHOSEN.** `0002`'s policy on
+`public.settings` is **`admin: write`**, and a boost is a paid action **an
+ordinary member performs on their own listing**. Measured on the real
+path, with the member signed in and owning the listing:
+
+```
+boostClassified(theirOwnListing)  ->  false
+```
+
+**So moving it makes the paid button do nothing at all** — worse than the
+fault it would fix, because today its owner at least sees their own
+listing marked on their own device. ⚠️ **And it is not fixed by weakening
+the policy**: a table any signed-in account may write is the operator's
+switches open to everybody. ⚠️ **Nor by a column on `classifieds`**, which
+contradicts the schema's own contract and is an unplanned migration —
+`test_v94 · 5.1` guards that half and stays. **The boost is money, so it
+belongs with `665ب`, where the gift-boost button already lives.**
+
+- **Read at boot and NEVER at the point of use.** Measured: `seasonOn()`
+  is called inside two loops that walk every speciality in the registry —
+  the tooth that puts a fetch inside it prints **200 requests** for 200
+  calls, on one screen.
+- ⚠️ **Three tiers, and the order is the item: the reader's own choice →
+  the house → the written default.** A reader who picked ISNA for
+  themselves is not moved by the operator. `methodChosen` and `asrChosen`
+  are what separate «I chose this» from «this is what I was given», and a
+  **boot migration infers them once** for every device that predates them
+  — V.04.8's `state: 'TX'` lesson, `!== undefined` and never `if (…)`.
+- ⚠️ **`homeBar` and `alert` never rise to the server.** They live on the
+  same `state.prayer` key and they are the READER's, so uploading the key
+  whole would make one person's answer the house default — V.04.8's rule
+  inverted.
+- ⚠️ **A value that did not arrive reads from the declared default, never
+  from empty.** `null` is not `{}` — `650`'s rule for the live readers —
+  and the tooth prints what the difference costs: `ramadan: false` on a
+  device that already knew it was true, **switched off by one dropped
+  request.**
+
+⚠️ **AND THAT CHECK DID NOT BITE FIRST TIME, AND WAS RE-AIMED RATHER THAN
+SOFTENED.** Measured on a device whose own state was empty too, «read the
+default» and «read an empty object» give the same answer, **so the item
+was green with the fault present.** It is measured with a value already in
+hand now, which is the only state where the two differ.
+
+### And the migration column stops promising a future
+⚠️ **It aged six times** — after `652`, after `655`, after `656`, and last
+with `0019_storage.sql`, which stood written «⏳ تُنفَّذ بالمُشغِّل بعد
+الدمج» **while the runner had already applied it.** Measured from the run
+itself rather than inferred: run `34599027784` on `47b7403`, 11 September
+12:27, «تنفيذ: → 0019_storage.sql» then «تمّ 1», with **twelve NOTICE**
+lines reading «policy … does not exist, skipping» — **which is positive
+evidence the storage policies were absent before it, i.e. that it had not
+been applied by hand first.**
+
+⚠️ **And that corrects the specification, which says the owner ran it.**
+
+> **The column is «ما وقع عند التنفيذ», and carries NO STATUS MARK — no
+> `✓` and no `⏳`. A migration whose execution nobody has seen takes `—`
+> and nothing else. And the live record is `public.migration_log` alone.**
+
+- ⚠️ **The column's TEXT is not deleted**, and the distinction is the
+  whole decision: the output of `0009`, `0005` run as a `concat` copy,
+  `0015`'s predicate, `0016`'s wrong type — **dated execution notes do not
+  age, because they describe what somebody saw on a particular day. What
+  ages is a promise about the future, and that alone is what was removed.**
+- ⚠️ **The guard is scoped to TABLE ROWS, and the first wording of it was
+  wrong.** Measured: the symbol appears five times in the file and **four
+  of them are the prose that explains the fault** — so a guard banning it
+  outright would have deleted the very thing that stops the fault
+  returning. `wiring.mjs · 10.1` reads lines starting with `|`, `10.2` is
+  the counter-guard that the explanation survives, and `10.3` that the
+  line naming the source stands above the table. All three proven in both
+  directions, each on its own item.
+- ⚠️ **And no static check can ask the server, which is said and not
+  pretended:** the net does not reach `public.migration_log`. What it can
+  know is that a human wrote a promise in a place that has no owner.
+
+### `test_v94` — 43 assertions on each build, and ten teeth
+```
+greetings() reads the device alone   → 1.4 {"n":0}: the visitor reads nothing
+the id minted on the device          → 1.2, and «off» and «delete» reach nothing
+«now» leaves the end date empty      → 2.3
+a fetch inside seasonOn              → 4.9 «200 calls, 200 requests»
+an empty read wipes what is held     → 4.7 ramadan:false
+the house outranks the reader        → 4.6 {"method":"jafari"}
+a boosted column in a migration      → 5.1 ALONE
+boosted routed through pushSetting   → 5.3 false — the paid button dead
+the read moved to the panel          → 1.4 · 7.2 · 7.3 · 7.5
+an occasion named in the code        → 3.1 · 3.2
+the whole template list deleted      → 43 of 43: NOTHING breaks
+```
+
+⚠️ **Two older assertions are reversed, each named and neither softened.**
+`test_v86 · 3.5` and `3.6` read the two marks; they read the WORDS now —
+«نُفِّذت» and not «بالمُشغِّل» for the by-hand class, and an empty cell for
+the outstanding one. **The subject did not move; how the row says it did.**
+Measured: the by-hand class is still exactly the seven names `0012` seeds,
+and `v86` is 47/47 — unchanged in count, which is what a reversal should
+look like.
+
+### Three found on the way, recorded and not swept in
+- ⚠️ **`prAsrStandard` and `prAsrHanafi` carry Arabic-Indic digits** —
+  «(ظلّ ١)» and «(ظلّ ٢)» — against V.02.7's standing rule. **Measured:
+  they are the only two displayed strings in the whole of `js/` that do**
+  (the rest are `store.js`'s own normaliser, its comment, and
+  `synonyms.js`, where «مفتوح ٢٤ ساعه» is a word people TYPE, which is the
+  rule's own exception). It is not this batch's subject, and a character
+  in a printed string is not slipped into a batch about greetings.
+- **`boosted: ['c1']` in `DEFAULTS`** is a test seat, against V.03.7's
+  rule that the default state is a brand-new visitor. Deleting it changes
+  what a reader sees in the marketplace, so it is a data decision and goes
+  with the demo arrays.
+- ⚠️ **Two admins writing a greeting in the same moment: the last wins,
+  with no warning**, and «one live at a time» is measured on a list each
+  of them read before the other wrote. Not built — an optimistic lock
+  needs a column and a second read before every write — and there is one
+  admin today.
+
+### The suites this file touches — derived, run on the frozen tree
+```
+148 runs · 74 suites · 8,025 assertions · zero red · zero crash
+```
+Sixteen segments over `590cd6a`, `HEAD` re-checked at the head of each —
+the runner exits 2 on a moved character or a dirty tree, and none did —
+**74 derived and 74 run, each on both builds, and no result borrowed.**
+The index prints `NET INCOMPLETE` and names the eighteen suites it did not
+run — **the PARTIAL guard working rather than a shortfall**: the full net
+is deliberately not run here and the line says so at both ends. With
+`wiring.mjs` **19/19** (three of them new) and `chk_i18n` at **425 / 1948
+/ 350**.
+
+⚠️ **AND THE ARITHMETIC IS NOT CLOSED HERE, WHICH IS SAID RATHER THAN
+SKIPPED.** A partial over a different set cannot be summed against `690`'s
+full net of 91 suites, so the figure that proves nothing else moved is
+`665ج`'s, where the group's net runs. What IS said is what changed in the
+suites: **`test_v94` is new at 42 per build**, `v83` gains one (`2.5b`),
+and every other reversal REPLACED an assertion rather than adding one —
+`v27` 100 · `v29` 43 · `v35` 37 · `v36` 39 · `v66` 18 · `v81` 97 · `v83`
+58 · `v87` 96.
+
+⚠️ **And the class was swept BEFORE the run rather than at the last
+segment** — the rule `645`, `650`, `652` and `655` each paid for. Eight
+older suites carry a reversal and every one was found by sweeping what
+this batch changed, not by waiting for the net to meet it: the
+newly-async settings writers (`v35` · `v36` · `v81`), the mint registry
+and its floor (`v83` · `v66`), the live-reader count (`v87`), the word
+rule (`v27`), and the boost accessor (`v29`). **The run that follows cost
+two restarts instead of the four it would otherwise have taken.**
+
+**The heaviest three are unchanged from `615`'s own table, and their order
+did not move:** `v8` 283/281 · `v20` 281/273 · `v14` 236/234. Measured
+suite time: **6,058s on the single-file build and 5,741s on the module
+one.**
+
+⚠️ **And the closing commit is documents, so its tree is measured too** —
+`680`'s rule, and it has now earned itself in four consecutive groups.
+The suites that read `CLAUDE.md` or a file under `docs/` are **derived,
+never listed**, and were run on the closing tree:
+
+```
+40 runs · 20 suites · 2,344 assertions · zero red · zero crash
+```
+Four segments over `5f59682`, `HEAD` re-checked at each, with
+`wiring.mjs` 19/19 and `chk_i18n` at 425 / 1948 / 350. ⚠️ **The one thing
+that run did not read is this paragraph**, and the recursion is stopped
+here on purpose, as in the groups before it: a measurement cannot contain
+its own result.
 
 ## Known open items
 - **The header image is still far larger than its box.** V.04.7 replaced

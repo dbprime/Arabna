@@ -238,5 +238,43 @@ const imgSrc = /img-src ([^;]*)/.exec(cspHtml);
 ok('9.6 …and img-src admits the file store, or no picture is ever drawn',
    imgSrc && /supabase\.co/.test(imgSrc[1]) ? [] : ['img-src does not admit the storage host']);
 
+/* ⚠️ 10 — THE MIGRATION TABLE CARRIES NO STATUS MARK, and the reason is
+   that the mark is a PROMISE ABOUT THE FUTURE written by a human who is
+   not the one who watches it happen. That column aged six times — after
+   `652`, after `655`, after `656`, and last with `0019`, which stood
+   written «تُنفَّذ بعد الدمج» while the runner had already applied it —
+   so the owner's decision of 10 September is one source and not two: the
+   live record is `public.migration_log`, and this table says which batch
+   carried which file and what a person saw the day it ran.
+
+   ⚠️ AND THE GUARD IS SCOPED TO TABLE ROWS, never to the whole file. The
+   first wording banned the symbol outright, and measured, four of its
+   five occurrences are the PROSE THAT EXPLAINS THE FAULT — so a guard
+   written that way would delete the very thing that stops the fault
+   returning. It is the same family as «a check must read the code, never
+   the prose about the code», arriving from the document's side.
+
+   ⚠️ And no static check can ask the server, which is said and never
+   pretended: the net does not reach `public.migration_log`, so nothing
+   here can know a row was marked executed there. What it CAN know is
+   that a human wrote a promise in a place that has no owner, and that is
+   the actual fault. */
+{
+  const doc = read('docs/الحالة.md').split('\n');
+  const marked = [];
+  doc.forEach((l, i) => {
+    if (l.trimStart().startsWith('|') && (l.includes('⏳') || l.includes('✓')))
+      marked.push('docs/الحالة.md:' + (i + 1));
+  });
+  ok('10.1 no status mark stands in a row of the migration table', marked);
+  /* the counter-guard: the explanation must survive the sweep */
+  const prose = doc.filter(l => !l.trimStart().startsWith('|')).join('\n');
+  ok('10.2 …and the prose that explains why is still written',
+     (prose.match(/⏳/g) || []).length >= 4 ? [] : ['the explanation was swept with the marks']);
+  ok('10.3 …and the table says the ledger is the source',
+     /حالةُ الهجرة تُسأل من `public\.migration_log`/.test(prose) ? []
+       : ['the line naming the source is not above the table']);
+}
+
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

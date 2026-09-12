@@ -19,6 +19,8 @@
       rule living on in a second function: the times need a point and a
       date and nothing else. */
 import { chromium } from '/opt/node22/lib/node_modules/playwright/index.mjs';
+import { mockSupabase } from './_supabase.mjs';
+import { unlockAdmin } from './_admin.mjs';
 
 const BASE = process.env.BASE || 'http://localhost:8099/index.html';
 let pass = 0, fail = 0;
@@ -53,6 +55,11 @@ const fresh = async ({ blockNaming = false } = {}) => {
       },
     });
   }, SUGAR);
+  /* ⚠️ THE RAMADAN DATES ARE THE OPERATOR'S SINCE `665أ` — a row in
+     `public.settings` with an admin-only write policy — so block B4 needs
+     a server to answer and a staff session to be allowed. What it measures
+     is the CALENDAR, and it can only measure it over a date that landed. */
+  await mockSupabase(ctx, { preConfirm: true });
   page = await ctx.newPage();
   page.on('console', m => { if (m.type() === 'error' && !/ERR_CONNECTION|ERR_CERT|ERR_TUNNEL|ERR_NAME|ERR_FAILED|ERR_ABORTED|fonts\.googleapis/.test(m.text())) errors.push(m.text().slice(0, 130)); });
   page.on('pageerror', e => errors.push('PAGEERROR ' + e.message.slice(0, 130)));
@@ -282,10 +289,13 @@ const beforeRam = await feastRow();
 ok('B4.1 with nothing written, Ramadan is computed and says «تقديري»',
    !!beforeRam && beforeRam.est === true, JSON.stringify(beforeRam));
 
-const setDates = async (from, eid) => page.evaluate(async (a) => {
+const setDates = async (from, eid) => { await unlockAdmin(page); return page.evaluate(async (a) => {
   const S = await (import('arabna/js/store.js').catch(() => import('./js/store.js')));
-  S.setRamadanDates(a[0], a[1]);
-}, [from, eid]);
+  /* ⚠️ AWAITED SINCE `665أ`: the dates are a row in `public.settings` now,
+     so the write lands a microtask later and an un-awaited call reads the
+     value before it exists. What is measured is unchanged. */
+  await S.setRamadanDates(a[0], a[1]);
+}, [from, eid]); };
 /* a date inside the window the block shows */
 const year = new Date().getUTCFullYear() + (new Date().getUTCMonth() > 1 ? 1 : 0);
 await setDates(`${year}-02-08`, `${year}-03-10`);
