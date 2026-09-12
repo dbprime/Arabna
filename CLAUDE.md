@@ -14911,6 +14911,136 @@ recursion is stopped here on purpose and for the second time: a
 measurement cannot contain its own result.
 
 
+## V.11.9 — the caption says what is in the picture, and `alt` is its own field (695)
+
+⚠️ **This file closes itself, its group is itself, and the full net is
+deliberately NOT run here** — it ran at `690` days ago over this same tree,
+and this batch touches nothing that net covered except the magazine. It
+touches `js/screens/magazine.js`, the two picture blocks in `js/data.js`
+and `tools/e2e/test_v92.mjs`, **and neither `js/store.js`, nor the boot
+path, nor authentication.** **And no migration** — لا هجرة.
+
+### The caption said what is not in the picture
+`690` wrote, under the grocery photograph in the first article:
+
+```
+بقالة عربية في هيوستن — الأسعار مكتوبة بالعربية لأن من يقرؤها عربي.
+```
+
+**And the picture says the opposite.** Read with the eye, on the file
+itself, before a character was deleted:
+
+```
+PAPAYA $0.99/LB   BANANA $0.69/LB   ORANGE $0.79/LB   MOUSSY $9.99
+```
+
+⚠️ **English, in Latin numerals, every one of them.** The Arabic in the
+frame is on the GOODS — the «موسي» cartons stacked under the fruit — and
+on the ARABNA watermark. **Not on the prices.**
+
+⚠️ **AND NO SUITE CATCHES THIS, NOR CAN ONE.** A check proves a caption is
+DRAWN and that it passes `esc()`. **It cannot prove it is TRUE.** So the
+rule is written where a rule can hold instead:
+
+> **A picture's caption is read WITH its picture before it is written, not
+> after.**
+
+**And the fault is the specification writer's, not the code's** — `690`
+§2.2 wrote that sentence and the code carried it out letter for letter,
+correctly. **There is no blame on carrying out a text that is right in its
+execution and false in its content.**
+
+**the owner's decision, 12 September: the caption goes and «تصوير: عربنا»
+stands alone** — and it is not replaced by another. **A caption that adds
+nothing is not written**, and the picture in its place, after the paragraph
+that lists the shops, says what it says with no explaining.
+
+⚠️ **And one correction to the specification's own reading, measured:** it
+says the Arabic in the frame is the shop's name (`AL MADINA`). **There is
+no shop name visible in the picture at all** — what is there is the goods
+and the watermark. It changes nothing the batch does, and it is why the
+`alt` below names no shop.
+
+### ⚠️ And deleting the caption would have left the picture with no description
+```js
+<img src="${esc(src)}" alt="${cap}" loading="lazy" decoding="async" />
+```
+
+**`alt` was taken from `cap`.** So the decision above, carried out alone,
+leaves `alt` empty — **a blind reader hears «image» and nothing after it**,
+and `test_v92 · 11.4b` goes red **with every right to**.
+
+> **`alt` describes the picture to whoever cannot see it. `cap` is a line
+> every reader reads. Merging them is a shortcut, and this is its day.**
+
+- **`b.alt` first, falling back to `b.cap`** — and the fall back is
+  deliberate: a block written before today carries no `alt` and does not
+  break, **and the new field is written where it is needed rather than
+  everywhere.**
+- ⚠️ **The three covers keep `alt=""`, and that is an ITEM rather than an
+  omission.** A cover is decoration beside a written headline; repeating
+  the headline in a blind reader's ear is noise, not service. **Zero change
+  at all three sites** — the article hero, the list card, the strip on Home
+  — and `13.6` is what says so out loud.
+- **The second picture's caption was read against its picture today and
+  stands**: the photographer said what the place is, and the paragraph
+  above it names the centre and its acreage in the same words. It gains an
+  `alt` beside it — **and not the same sentence**, because the description
+  for whoever cannot see must not be the line that identifies the place.
+- ⚠️ **And `alt` names no shop, no street and no language.** That is the
+  first fault stated as a rule for the new field: it describes the frame,
+  it does not interpret it.
+
+### `test_v92` — 91 → 101 on each build, and six teeth
+```
+the markup back to alt="${cap}"    → 13.2 «0 chars» — the picture with no
+                                      description at all, and 11.4b beside it:
+                                      the original fault in one line
+the false caption restored          → 13.1, printing the sentence itself
+the gap filled with the credit line → 13.2 · 13.3
+a cover given an alt                → 13.6
+esc() taken off alt                 → 13.8 «alt: x», and CSP logs the refusal
+figcaption fed from alt             → 13.4 · 13.5 · 13.1
+```
+
+⚠️ **And one reversal, named rather than softened.** `v92 · 11.4` asserted
+the deleted caption's own words. **What it was ever about — the picture
+draws, at its real size and its real width, with its credit under it — is
+unchanged and still asserted**, and the absence of caption text became
+block 13's own item, where it is measured rather than assumed.
+
+⚠️ **AND THE FIGURE IS FOUND BY POSITION, NEVER BY ITS `src`** — `690`'s
+lesson, one batch later: the single-file build inlines every asset as
+base64, so a selector reading the filename matches nothing there and
+reports a fault on a build that is right. **Measured: five red on the
+single-file build and zero on the module one, until it was corrected.** The
+count of picture blocks on the page is asserted rather than assumed.
+
+⚠️ **And a tooth refused to land, which is the guard working.** The
+mutation `<figcaption class="cap">${cap}` matched **twice** — the `img`
+case and the `fig` case — and the script aborted rather than editing
+either. **A mutation whose anchor is not unique is not aimed**, and the run
+that follows an aborted mutation measures an unmutated tree; it is not a
+tooth result and is not read as one.
+
+### The suites this file touches — derived, run on the frozen tree
+```
+98 runs · 49 suites · 5,341 assertions · zero red · zero crash
+```
+Eight segments over `4545ed5`, `HEAD` re-checked at the head of each, **49
+derived and 49 run, each on both builds, and no result borrowed.** The
+index prints `NET INCOMPLETE` and names what it has not run — **and that is
+the guard working rather than a shortfall**: the full net is deliberately
+not run here and the PARTIAL line says so at both ends.
+
+**The 49 are derived**: every suite under `tools/e2e/` mentioning the
+magazine, the article, `ARTICLES`, `blk-img`, an `alt` attribute, a version
+carrier, `sw-manifest`, or a file under `docs/`. **Measured:
+derived-but-not-run is empty.** With `wiring.mjs` 16/16 and `chk_i18n` at
+425 / 1930 / 350 — all three unchanged, because this batch adds no string
+and no key.
+
+
 ## Known open items
 - **The header image is still far larger than its box.** V.04.7 replaced
   the 831/837 KB lockups with the cropped marks at **333/338 KB** — 60% off
