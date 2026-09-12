@@ -15287,6 +15287,42 @@ look like.
   needs a column and a second read before every write — and there is one
   admin today.
 
+### The suites this file touches — derived, run on the frozen tree
+```
+148 runs · 74 suites · 8,025 assertions · zero red · zero crash
+```
+Sixteen segments over `590cd6a`, `HEAD` re-checked at the head of each —
+the runner exits 2 on a moved character or a dirty tree, and none did —
+**74 derived and 74 run, each on both builds, and no result borrowed.**
+The index prints `NET INCOMPLETE` and names the eighteen suites it did not
+run — **the PARTIAL guard working rather than a shortfall**: the full net
+is deliberately not run here and the line says so at both ends. With
+`wiring.mjs` **19/19** (three of them new) and `chk_i18n` at **425 / 1948
+/ 350**.
+
+⚠️ **AND THE ARITHMETIC IS NOT CLOSED HERE, WHICH IS SAID RATHER THAN
+SKIPPED.** A partial over a different set cannot be summed against `690`'s
+full net of 91 suites, so the figure that proves nothing else moved is
+`665ج`'s, where the group's net runs. What IS said is what changed in the
+suites: **`test_v94` is new at 42 per build**, `v83` gains one (`2.5b`),
+and every other reversal REPLACED an assertion rather than adding one —
+`v27` 100 · `v29` 43 · `v35` 37 · `v36` 39 · `v66` 18 · `v81` 97 · `v83`
+58 · `v87` 96.
+
+⚠️ **And the class was swept BEFORE the run rather than at the last
+segment** — the rule `645`, `650`, `652` and `655` each paid for. Eight
+older suites carry a reversal and every one was found by sweeping what
+this batch changed, not by waiting for the net to meet it: the
+newly-async settings writers (`v35` · `v36` · `v81`), the mint registry
+and its floor (`v83` · `v66`), the live-reader count (`v87`), the word
+rule (`v27`), and the boost accessor (`v29`). **The run that follows cost
+two restarts instead of the four it would otherwise have taken.**
+
+**The heaviest three are unchanged from `615`'s own table, and their order
+did not move:** `v8` 283/281 · `v20` 281/273 · `v14` 236/234. Measured
+suite time: **6,058s on the single-file build and 5,741s on the module
+one.**
+
 ## Known open items
 - **The header image is still far larger than its box.** V.04.7 replaced
   the 831/837 KB lockups with the cropped marks at **333/338 KB** — 60% off
