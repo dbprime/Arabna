@@ -114,6 +114,18 @@ console.log('--- the city names ---');
 const CITY_AR = ['هيوستن', 'كاتي', 'شوغر لاند', 'شوقر لاند', 'سبرينغ', 'ريتشموند',
                  'ستافورد', 'بيرلاند', 'تكساس', 'ميزوري', 'بيلير', 'بلير',
                  'سايبرس', 'هامبل', 'كونرو', 'وودلاندز'];
+/* 685 — ⚠️ THE GUARD COVERED A THIRD OF ITS OWN RULE. The owner's rule is
+   «place names, STREET names and city names in English always», and this
+   list held cities alone — so the full net of 11 September caught
+   `figHoHou: 'هيوستن'` and never once caught «هيلكروفت», which `675` had
+   written into an article title, an excerpt and three blocks.
+   The second spelling carries no waw ON PURPOSE: the first draft wrote it
+   that way, and a guard that catches only the correct spelling of the
+   mistake is not a guard.
+   ⚠️ And it is read by 2.2 ALONE, never by 2.1: thirty-one real business
+   descriptions say «على هيلكروفت في Houston», and whether those change is
+   a separate decision of the owner's (685 §3), not this guard's to force. */
+const STREET_AR = ['هيلكروفت', 'هيلكرفت'];
 const leaked = await page.evaluate((cities) => {
   const D = window.__m.D;
   const out = [];
@@ -134,8 +146,8 @@ const i18nLeak = await page.evaluate((cities) => {
     if (typeof v === 'string') cities.forEach(c => { if (v.includes(c)) out.push(L + '.' + k); });
   }));
   return out;
-}, CITY_AR);
-ok('2.2 …nor anywhere in i18n', i18nLeak.length === 0, i18nLeak.join(' '));
+}, CITY_AR.concat(STREET_AR));
+ok('2.2 …nor anywhere in i18n (and the street name, 685)', i18nLeak.length === 0, i18nLeak.join(' '));
 
 ok('2.3 b137 reads «Katy» on both sides', await page.evaluate(() => {
   const b = window.__m.D.BUSINESSES.find(x => x.id === 'b137');

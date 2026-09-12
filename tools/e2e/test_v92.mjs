@@ -188,8 +188,20 @@ const art = (id, blocks, extra = {}) => Object.assign({
   const titles = await p.locator('.mag-card .mag-title').allTextContents();
   ok('3.1 the magazine is NOT empty for a visitor with the invented data off',
      titles.length >= 2, 'real articles now: ' + titles.length);
+  /* 685 REVERSED THE LETTERS, NOT THE SUBJECT. This asked «are the two
+     cards the two real articles», and answered it by freezing the Arabic
+     title — which `685` then rewrote by decision: «هيلكروفت» is `Hillcroft`
+     in the Arabic text, and the vowel marks are gone. The subject is
+     unchanged and is asserted at its own source: the card carries the
+     route, and the route carries the id. A title is copy and moves; an id
+     is a key and does not. */
+  const routes = await p.locator('.mag-card').evaluateAll(
+    els => els.map(e => e.getAttribute('data-route')));
   ok('3.1b …and they are the two real ones',
-     titles.some(t => t.includes('هيلكروفت')) && titles.some(t => t.includes('ليش هيوستن')),
+     routes.includes('#/magazine/r1') && routes.includes('#/magazine/r2'),
+     routes.join(' | '));
+  ok('3.1b2 …and the first still names the street, in English now',
+     titles.some(t => t.includes('Hillcroft')) && !titles.some(t => t.includes('هيلكروفت')),
      titles.join(' | ').slice(0, 90));
   await show(p, '#/magazine/r1');
   ok('3.1c …and the first opens on its blocks',
@@ -407,6 +419,82 @@ for (const lang of ['ar', 'en']) {
   const heroBlock = block.slice(block.indexOf('.article-hero.has-img::before'));
   ok('7.6 and no z-index is written for the back button',
      !/\.back-btn[^}]*z-index/.test(heroBlock));
+}
+
+/* ============================================================
+   10) 685 — the street in English, the text unvocalised, and a
+       compound Latin run that survives the paragraph it sits in
+   ------------------------------------------------------------
+   ⚠️ 10.4 IS THE ONE THAT COULD NOT BE WRITTEN AS A TEXT SEARCH, and
+   that is the whole finding of the batch. `textContent` holds `24-a`
+   in logical order WHATEVER the bidi algorithm does to it, so a check
+   reading the string is green while the reader sees `a-24`. What is
+   measured here is the GLYPH: the box of `24` against the box of `a`.
+   ============================================================ */
+{
+  const HARAKAT = /[ً-ْٰ]/g;
+  const nH = t => (t.match(HARAKAT) || []).length;
+
+  const dataSrc = read('js/data.js');
+  const L = dataSrc.split('\n');
+  const a = L.findIndex(l => /id: 'r1'/.test(l)) - 1;
+  const b = L.findIndex((l, i) => i > a && /^\]\);/.test(l));
+  const arts = L.slice(a, b).join('\n');
+  const rest = L.slice(0, a).concat(L.slice(b)).join('\n');
+
+  ok('10.1 not one vowel mark left in the two real articles', nH(arts) === 0, nH(arts) + ' left');
+  const FIG = Object.keys(STRINGS.ar).filter(k => /^fig/.test(k));
+  const figH = FIG.reduce((n, k) => n + nH(STRINGS.ar[k]), 0);
+  ok('10.2 …nor in the sixteen figure keys of the Arabic pack',
+     FIG.length === 16 && figH === 0, FIG.length + ' keys, ' + figH + ' marks');
+
+  ok('10.3 the street is written in English inside the Arabic text',
+     !/هيلكروفت/.test(arts) && /Hillcroft/.test(arts),
+     (arts.match(/Hillcroft/g) || []).length + '× Hillcroft');
+
+  /* ⚠️ the thirty-one business descriptions are NOT in this batch's scope
+     — a separate decision of the owner's — so they are asserted UNCHANGED
+     rather than left unmeasured: a silent drift either way is the fault. */
+  ok('10.3b …and the thirty-one business descriptions are untouched',
+     (rest.match(/هيلكروفت/g) || []).length === 31,
+     (rest.match(/هيلكروفت/g) || []).length + ' of 31');
+
+  const { ctx, p } = await fresh({});
+  await show(p, '#/magazine/r2');
+  const runs = await p.evaluate(() => {
+    const out = [];
+    const w = document.createTreeWalker(document.querySelector('.article-body') || document.body,
+                                        NodeFilter.SHOW_TEXT);
+    for (let n = w.nextNode(); n; n = w.nextNode()) {
+      const i = n.textContent.indexOf('24-a');
+      if (i < 0) continue;
+      const box = (from, to) => { const r = document.createRange();
+        r.setStart(n, from); r.setEnd(n, to); return r.getBoundingClientRect(); };
+      out.push({ num: box(i, i + 2).left, letter: box(i + 3, i + 4).left });
+    }
+    return out;
+  });
+  ok('10.4 «24-a» is DRAWN in that order, not flipped to «a-24»',
+     runs.length === 2 && runs.every(r => r.num < r.letter),
+     runs.map(r => `24@${Math.round(r.num)} a@${Math.round(r.letter)}`).join(' · ') || 'no run found');
+  await ctx.close();
+
+  /* ⚠️ 10.5 guards the GUARD: the full net of 11 September caught the city
+     and never once caught the street, because that list held cities alone. */
+  const v26 = read('tools/e2e/test_v26.mjs');
+  ok('10.5 the i18n guard knows the street, in both spellings',
+     /STREET_AR\s*=\s*\[[^\]]*هيلكروفت[^\]]*هيلكرفت/.test(v26)
+     && /CITY_AR\.concat\(STREET_AR\)/.test(v26));
+  ok('10.5b …and it is not forced onto the business half, which has 31 honest uses',
+     !/ok\('2\.1[\s\S]{0,400}STREET_AR/.test(v26));
+
+  /* ⚠️ 10.6 IS THE GUARD OF THE WHOLE BATCH, not a footnote: the newcomer
+     guide is a text the owner approved word by word, and a sweep that
+     removes vowel marks is exactly the shape that would flatten it. */
+  ok('10.6 the newcomer guide is untouched — every one of its marks still there',
+     nH(read('tools/nc/nc-ar.json')) === 1689, nH(read('tools/nc/nc-ar.json')) + ' of 1689');
+  ok('10.7 …and the rest of data.js did not move either',
+     nH(rest) === 88, nH(rest) + ' of 88');
 }
 
 ok('9.1 zero console errors across everything above', errors.length === 0,

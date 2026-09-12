@@ -11,7 +11,7 @@ ARABNA · عربنا — a mobile-first web app for the Arab community in the U.
 **business directory + marketplace + events + magazine**, Arabic-first with a full English toggle.
 ("Classifieds / الإعلانات الشخصية" is now "Marketplace / السوق" — the old `#/classifieds`
 routes still resolve so shared links keep working.)
-Current version: **V.11.6 (prototype)**. Owner: dbprime. Deploys to Vercel (team DB Prime).
+Current version: **V.11.7 (prototype)**. Owner: dbprime. Deploys to Vercel (team DB Prime).
 
 ## Hard rules (from the product brief)
 0. ⚠️ **THE OWNER'S NAME IS NEVER WRITTEN — anywhere.** Not in this file, not
@@ -14435,6 +14435,136 @@ family (`v84 · 11.3` reads the §1.هـ table). So they were re-run on the
 closing tree rather than assumed: **38 runs · 19 suites · 2,184 assertions ·
 zero red · zero crash**, plus `wiring.mjs` 16/16. *A document is a file the
 net reads, so editing one is a change that gets measured like any other.*
+
+## V.11.7 — the street in English, the text unvocalised, and `24-a` that would not stay put (685)
+
+⚠️ **This file does NOT close its group, and it says so at its own head.**
+It touches `js/data.js` (the two real articles alone), `js/i18n.js` (sixteen
+figure keys) and two suites — **and neither `js/store.js`, nor the boot
+path, nor authentication.** So it runs the suites it touches and nothing
+more; **`690` — the magazine's photographs — is this group's closer.**
+**And no migration** — لا هجرة.
+
+### The rule was already the owner's, and I followed the file instead of the rule
+> **«Place names, street names and city names in English always — they are
+> not translated.»**
+
+⚠️ **The fault was mine.** `675` measured `js/data.js`, found «هيلكروفت» in
+thirty-one business descriptions, and followed **what had settled in the
+file** rather than **what the rule says** — so the article's own title,
+excerpt and three blocks were written in Arabic letters. **A rule outranks a
+precedent in the data; and where a rule and a file disagree, the file is the
+thing that drifted.** Five occurrences, and «هيلكروفت» is `Hillcroft`.
+
+- ⚠️ **And it is NOT wrapped in a direction isolate.** The file already
+  writes «على Hillcroft في Houston» bare, and `ltrRun()` is kept for the
+  compound runs that actually break — `2811 Travis St`, and §3 below.
+  **One rule, not two.**
+- **The thirty-one business descriptions are untouched**, and that is a
+  separate decision of the owner's rather than an omission — asserted as
+  **still 31**, so a silent drift in either direction turns the suite red.
+
+### No vowel marks — and the measurement is why, not the taste
+> **«People understand Arabic without the vowel marks.»**
+
+```
+js/data.js before 675    88 marks
+js/data.js after  675   530
+so the two articles alone added   442 — five times what the whole file held
+and js/i18n.js gained             44, all of them the figure keys
+```
+
+⚠️ **A wrong mark shows to every reader and the gain is zero.** 486 marks
+removed, and **not one of them outside the two articles and the sixteen
+keys**: 88 before and 88 after in the rest of `js/data.js`, and the diff is
+**42 hunks, every one inside the two article objects** — measured, not
+intended.
+
+- ⚠️ **§2.4's rule was obeyed rather than trusted: the result is READ.** All
+  **127 distinct shadda words** were printed and read one by one —
+  `تُتكلَّم → تتكلم`, `ومُدَّ → ومد`, `يُعَدّ → يعد`, `أوّلاً، → أولا،` —
+  and every one is correct plain Arabic. **One needed context rather than a
+  glance**: `ملّاك → ملاك`, which unvocalised can also read «angel» — and it
+  stands in «موافقة 75% من ملاك العقارات التجارية», a genitive construction
+  where no reader takes the other sense. **Read, not assumed.**
+- ⚠️ **And `tools/nc/nc-ar.json` is not touched by a character.** The
+  newcomer guide is a text the owner approved word by word, and a sweep that
+  strips vowel marks is exactly the shape that would flatten it. **Its 1,689
+  marks are asserted unchanged, and that assertion is the batch's own guard
+  rather than a footnote.**
+
+### ⚠️ And a third fault, on the published screen: `24-a` was drawn `a-24`
+```
+written in the data     المادة الثامنة، الفقرة 24-a من دستور تكساس
+drawn on the screen     المادة الثامنة، الفقرة a-24 من دستور تكساس
+```
+
+**The section of the Texas Constitution is `24-a`, so what was shown was
+wrong rather than merely ugly.** The cause is the bidi algorithm: `24` is a
+number, `-` is neutral, `a` is a Latin letter — and inside an Arabic
+paragraph the neutral between them takes the paragraph's own direction, so
+the three pieces are reordered. `ltrRun('24-a')` at both Arabic sites; **the
+English text is left alone, and nothing that is not broken is wrapped** —
+the five percentages were measured and render correctly.
+
+### ⚠️ THE CHECK COULD NOT BE A TEXT SEARCH, AND THAT IS THE FINDING
+> **`textContent` holds `24-a` in logical order WHATEVER the bidi algorithm
+> does to it.** A check reading the string is green while the reader sees
+> `a-24`. **So what is measured is the GLYPH**: a `Range` over the text node,
+> the box of `24` against the box of `a`.
+
+**Measured: `24@190 a@217` and `24@143 a@167` — the number to the left of the
+letter, twice.** And with the isolate taken off the first site the same item
+prints **`24@206 a@190`**: the fault itself, in one line, **while the second
+site stays correct** — which is how the aim is known to have landed where it
+was pointed.
+
+⚠️ **This is `571`'s and `572`'s lesson in a new place, and the rule is
+general:** a check that reads the source cannot see what the reader sees.
+
+### The guard covered a third of its own rule
+`test_v26 · 2.2` caught `figHoHou: 'هيوستن'` on 11 September **and never once
+caught «هيلكروفت»**, because `CITY_AR` is a list of **cities** while the
+owner's rule names places, streets and cities alike.
+
+- **`STREET_AR` beside it**, and the second spelling carries no waw **on
+  purpose**: the first draft wrote it that way, and **a guard that catches
+  only the correct spelling of the mistake is not a guard.**
+- ⚠️ **It is read by `2.2` alone and never by `2.1`.** Thirty-one business
+  descriptions honestly say «على هيلكروفت في Houston», and forcing the
+  business half red would be a guard making a decision that is the owner's.
+  ⚠️ **The spec asked for both entries «in the same list»; measured, that one
+  list feeds both items, so obeying it literally would have reddened
+  thirty-one honest rows in the very batch that says not to touch them.**
+  The intent is kept and the letter is not.
+- Proven in both directions: «هيلكروفت» written into an i18n key turns
+  `2.2` red naming `ar.figHcOpen`, and taking it out turns it green.
+
+### Two corrections to the spec's own numbers, both measured
+```
+442 marks in the two articles, not 444
+ 44 marks in js/i18n.js, not 70   — the other 26 are `660`'s and out of scope
+```
+**Neither changes anything the batch does**; they are written because a
+figure carried forward unchecked is how a document starts lying.
+
+### `test_v92` — 74 assertions, and six teeth
+```
+a vowel mark back in an article      → 10.1
+the street back in Arabic            → 10.3 · 3.1b2
+ltrRun taken off the first 24-a      → 10.4, printing 24@206 a@190
+the street dropped from the guard    → 10.5
+a mark taken from the newcomer guide → 10.6
+the street written into an i18n key  → test_v26 · 2.2, naming ar.figHcOpen
+```
+
+⚠️ **And one older assertion is reversed, with the reversal named.**
+`3.1b` answered «are these the two real articles» by **freezing the Arabic
+title** — which this batch rewrote by decision. It reads the card's `route`
+now: **a title is copy and moves; an id is a key and does not.** And
+`3.1b2` beside it asserts the street is named in English, so nothing the old
+line guarded was dropped.
+
 
 ## Known open items
 - **The header image is still far larger than its box.** V.04.7 replaced
