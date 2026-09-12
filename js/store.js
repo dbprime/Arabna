@@ -6296,23 +6296,37 @@ export function ownsListing(id) { return mineListing(id); }
  * kind of place.
  */
 /**
- * ⚠️ `boosted` IS A KEY IN `settings` AND NEVER A COLUMN ON `classifieds`.
- * The schema's own comment above that table lists the four keys it holds
- * and `boosted` is one of them by name, so a column would contradict the
- * contract — and it would be an unplanned migration earning `650`'s
- * matching suite a line nobody wrote, found the day it turns red.
+ * ⚠️ `boosted` STAYS ON THE DEVICE IN `665أ`, AND THE REASON IS MEASURED
+ * RATHER THAN CHOSEN. `0001_schema.sql` names it among the four keys
+ * `public.settings` holds, so the intention is right — **but `0002`'s
+ * policy on that table is `admin: write`, and a boost is a paid action AN
+ * ORDINARY MEMBER performs on their own listing.** Measured on the real
+ * path, with the member signed in and owning the listing:
+ *
+ *     boostClassified(theirOwnListing)  ->  false
+ *
+ * So moving it makes the paid button do nothing at all — worse than the
+ * fault it would fix, because today the owner at least sees their own
+ * listing marked on their own device. ⚠️ **AND IT IS NOT FIXED BY
+ * WEAKENING THE POLICY**: a table any signed-in account may write is the
+ * operator's four switches open to everybody.
+ *
+ * The three that really are the operator's — `seasons`, `ramadanDates`
+ * and `prayer` — moved in this batch. This one needs a decision about
+ * where a member's own boost is written, and it belongs with the batch
+ * that carries the money (`665ب`), where the gift-boost button lives too.
+ *
+ * ⚠️ AND NO COLUMN ON `classifieds` EITHER, which would be the fast wrong
+ * answer: it contradicts the schema's own comment and is an unplanned
+ * migration. `test_v94 · 5.1` guards that half and stays.
  */
 export function boostedIds() {
-  const live = liveSetting('boosted');
-  return Array.isArray(live) ? live : (state.boosted || []);
+  return state.boosted || [];
 }
-export async function boostClassified(id) {
+export function boostClassified(id) {
   if (!ownsListing(id)) return false;
-  const list = boostedIds();
-  if (list.includes(id)) return true;
-  const v = list.concat(id);
-  if (!await pushSetting('boosted', v)) return false;
-  state.boosted = v;
+  if (state.boosted.includes(id)) return true;
+  state.boosted.push(id);
   save();
   return true;
 }

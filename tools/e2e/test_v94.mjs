@@ -372,41 +372,41 @@ console.log('--- 4b: no network call inside seasonOn ---');
    ============================================================ */
 console.log('--- 5: boosted ---');
 {
+  /* ⚠️ `boosted` IS THE ONE OF THE FOUR THAT DID NOT MOVE, and the reason
+     is measured rather than chosen. `0001_schema.sql` names it among the
+     four keys `public.settings` holds — but `0002`'s policy on that table
+     is `admin: write`, and a boost is a paid action AN ORDINARY MEMBER
+     performs on their own listing. Measured on the real path: the write
+     comes back refused and the paid button does nothing at all, which is
+     worse than the fault it would fix. */
   const sql = sqlCode();
   ok('5.1 ⚠️ no `boosted` column on `classifieds`, in any migration',
      !/alter table (public\.)?classifieds[\s\S]{0,200}\bboosted\b/i.test(sql)
      && !/\bboosted\b\s+(boolean|text|timestamptz)/i.test(sql), 'none');
-  const st = code('js/store.js');
-  ok('5.2 …and it is read through the settings key',
-     /function boostedIds\(\)[\s\S]{0,300}liveSetting\('boosted'\)/.test(st), 'liveSetting');
-  ok('5.3 …and written through the one door',
-     /pushSetting\('boosted'/.test(st), 'pushSetting');
+  ok('5.2 …and the settings write is admin-only, which is why it stays',
+     /create policy "admin: write" on public\.settings for all/.test(sql), 'admin: write');
 
+  /* the decisive half: an ordinary member, owning the listing */
   const a = await fresh({ preConfirm: true });
   await open(a.p, '#/home');
-  await unlockAdmin(a.p);
-  await prime(a.p);
-  /* ⚠️ THE ACCOUNT HAS TO OWN THE LISTING — `boostClassified` refuses
-     otherwise, which is `620`'s guard and is right. So the suite publishes
-     one and boosts that, rather than reaching for a seed it does not own. */
+  await member(a.p, 'boost@arabna.test', 'Boost Member');
   const r = await a.p.evaluate(async () => {
     const S = window.__S;
-    let res = null, err = '';
-    try {
-      res = await S.addClassified({
-        cat: 'furniture', title: { ar: 'كنبة', en: 'Sofa' },
-        desc: { ar: 'بحالة جيّدة', en: 'Good condition' },
-        price: '650', city: 'Houston', photos: [],
-      });
-    } catch (e) { err = String(e && e.message || e); }
+    const res = await S.addClassified({
+      cat: 'furniture', title: { ar: 'كنبة', en: 'Sofa' },
+      desc: { ar: 'بحالة جيّدة', en: 'Good condition' },
+      price: '650', city: 'Houston', photos: [],
+    });
     const id = res && (res.id || (res.item && res.item.id));
-    const okk = id ? await S.boostClassified(id) : false;
-    return { id, err, okk: !!okk, after: S.boostedIds().slice() };
+    return { id, okk: id ? !!S.boostClassified(id) : false, after: S.boostedIds().slice() };
   });
-  ok('5.4 boosting writes the setting', r.okk && r.after.includes(r.id), JSON.stringify(r.after));
-  const row = (a.db.settings || []).find(x => x.key === 'boosted');
-  ok('5.5 …and it is a row on the server', !!row && (row.value || []).includes(r.id),
-     JSON.stringify(row && row.value));
+  ok('5.3 an ordinary member can still boost their own listing',
+     r.okk && r.after.includes(r.id), JSON.stringify(r.after));
+  /* ⚠️ AND THE TOOTH IS THE MOVE ITSELF: routed through `pushSetting` this
+     item prints `false`, which is the paid button dead. */
+  ok('5.4 …and it is not written to a table only the admin may write',
+     !(a.db.settings || []).some(x => x.key === 'boosted'),
+     JSON.stringify((a.db.settings || []).map(x => x.key)));
   await a.ctx.close();
 }
 

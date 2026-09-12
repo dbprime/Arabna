@@ -15162,13 +15162,30 @@ calculation method was changed from the panel and everybody kept the old
 one; Ramadan mode was switched on from a laptop and nobody saw it.
 
 ```
-seasons · ramadanDates · prayer · boosted   →  public.settings, one row per key
+seasons · ramadanDates · prayer   →  public.settings, one row per key
+boosted                           →  STAYS on the device, and the reason is measured
 ```
-⚠️ **`0001_schema.sql` names those four above the table in so many words,
-so there is no migration here either** — and `boosted` is one of them,
-which is why **it never becomes a column on `classifieds`**: a column would
-contradict the schema's own contract and be an unplanned migration
-earning `650`'s matching suite a line nobody wrote.
+⚠️ **`0001_schema.sql` names all four above the table in so many words, so
+there is no migration here either.**
+
+⚠️ **AND THE FOURTH DID NOT MOVE, WHICH IS A DEPARTURE FROM THE
+SPECIFICATION, MEASURED RATHER THAN CHOSEN.** `0002`'s policy on
+`public.settings` is **`admin: write`**, and a boost is a paid action **an
+ordinary member performs on their own listing**. Measured on the real
+path, with the member signed in and owning the listing:
+
+```
+boostClassified(theirOwnListing)  ->  false
+```
+
+**So moving it makes the paid button do nothing at all** — worse than the
+fault it would fix, because today its owner at least sees their own
+listing marked on their own device. ⚠️ **And it is not fixed by weakening
+the policy**: a table any signed-in account may write is the operator's
+switches open to everybody. ⚠️ **Nor by a column on `classifieds`**, which
+contradicts the schema's own contract and is an unplanned migration —
+`test_v94 · 5.1` guards that half and stays. **The boost is money, so it
+belongs with `665ب`, where the gift-boost button already lives.**
 
 - **Read at boot and NEVER at the point of use.** Measured: `seasonOn()`
   is called inside two loops that walk every speciality in the registry —
@@ -15237,8 +15254,8 @@ the id minted on the device          → 1.2, and «off» and «delete» reach n
 a fetch inside seasonOn              → 4.9 «200 calls, 200 requests»
 an empty read wipes what is held     → 4.7 ramadan:false
 the house outranks the reader        → 4.6 {"method":"jafari"}
-boosted back on the device           → 5.2 · 5.3 · 5.5
 a boosted column in a migration      → 5.1 ALONE
+boosted routed through pushSetting   → 5.3 false — the paid button dead
 the read moved to the panel          → 1.4 · 7.2 · 7.3 · 7.5
 an occasion named in the code        → 3.1 · 3.2
 the whole template list deleted      → 43 of 43: NOTHING breaks
