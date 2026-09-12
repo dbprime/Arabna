@@ -11,7 +11,7 @@ ARABNA · عربنا — a mobile-first web app for the Arab community in the U.
 **business directory + marketplace + events + magazine**, Arabic-first with a full English toggle.
 ("Classifieds / الإعلانات الشخصية" is now "Marketplace / السوق" — the old `#/classifieds`
 routes still resolve so shared links keep working.)
-Current version: **V.11.7 (prototype)**. Owner: dbprime. Deploys to Vercel (team DB Prime).
+Current version: **V.11.8 (prototype)**. Owner: dbprime. Deploys to Vercel (team DB Prime).
 
 ## Hard rules (from the product brief)
 0. ⚠️ **THE OWNER'S NAME IS NEVER WRITTEN — anywhere.** Not in this file, not
@@ -14565,6 +14565,190 @@ now: **a title is copy and moves; an id is a key and does not.** And
 `3.1b2` beside it asserts the street is named in English, so nothing the old
 line guarded was dropped.
 
+
+## V.11.8 — the magazine's real photographs, and the build that ate them (690)
+
+⚠️ **This file CLOSES its group, and the group is five: `660` · `675` ·
+`680` · `685` · this.** And it is not a group of one claiming the name —
+**`660`'s net ran at `1e87e7e` on eighty-nine suites and `675` landed on
+top of it**, so `test_v92` and `675`'s changes to four files had never
+entered a full net at all, and `680` and `685` each ran their touching
+suites by their own written instruction. **The debt is paid here.**
+**And no migration** — لا هجرة.
+
+### Three photographs, and the one line that matters about them
+⚠️ **All three are the owner's own, taken by him and confirmed in writing
+on 11 September 2026. Not one picture in this app comes from anybody's
+site** — and that is not a preference: `675` refused to generate a
+photograph of Droubi's storefront credited «تصوير: عربنا» because a
+fabricated record is the line that also forbids a seeded review and an
+invented jumuah time.
+
+```
+hillcroft-droubis-cover.jpg  1200×500   the cover of r1
+hillcroft-grocery.jpg        1200×800   inside r1
+houston-acc.jpg              1200×800   inside r2
+```
+
+**They are placed as they arrived — not cropped, not resized, not
+recompressed**, which is the spec's own instruction. ⚠️ **And they were
+read before they were committed**: each carries a JFIF header and nothing
+else — no EXIF, no IPTC, no XMP, so no camera, no date and **no
+coordinates published in a public repository**. **Their being empty is not
+proof of authorship and is not read as one** (`670`'s rule): the
+attribution is the owner's own word, and the measurement says only that
+nothing in the files contradicts it and nothing in them is published by
+accident.
+
+- **The caption of the first does not name the street, and that is
+  deliberate**: the photographer did not say where he stood, and a street
+  name in a caption is a claim with nothing under it. «في هيوستن» is true
+  and claims nothing — the `0017` type rule applied to a caption.
+- ⚠️ **And «هيوستن» is written in Arabic there because the prose around it
+  says so twenty-three times in these two articles.** `685` moved the
+  STREET to Latin under the owner's rule and left the city in editorial
+  prose, which `675` had already recorded as neither business data nor
+  `i18n.js`. A caption spelled the other way would be one place written
+  two ways on one screen.
+- **The caption of the second DOES name the place**, because the
+  photographer said what it is and the paragraph above it names the centre
+  and its acreage in the same words.
+- ⚠️ **Each picture follows the paragraph that explains it, never the
+  heading above that paragraph.** The spec named the heading for the
+  second and then named the paragraph in its own next clause; a photograph
+  placed above the line that identifies it is a picture the reader cannot
+  place. `v92 · 11.2d` asserts the position rather than trusting it.
+- ⚠️ **The captions were written in the articles' own orthography**, and
+  that was measured rather than chosen: the spec writes «الامريكي» and the
+  paragraph directly above the picture writes «الأمريكي» — carrying the
+  spec's letters across would have printed one name two ways, four lines
+  apart. Measured in the two articles: `أمريك` 7 · `امريك` 0. **And zero
+  vowel marks**, which is `685`'s rule holding on the day something new
+  was written rather than on the day it was swept.
+
+### ⚠️ ONE PICTURE EXPOSED A WHOLE BUILD, AND IT IS THE BATCH'S OWN FINDING
+`tools/build_single.py` rewrites **every quoted `assets/…` image literal
+inside a module** into a base64 `data:` URI — that is what makes the
+offline build portable, and it has been true since that build existed.
+`safeImgSrc` (675) admits two sources and no third: a file in the
+repository, or a file in our own store.
+
+```
+module build       cover → assets/mag/…jpg   → drawn
+single-file build  cover → data:image/jpeg…  → REFUSED, and nothing is drawn
+```
+
+**So the day the first asset path went through that guard, the single-file
+build stopped drawing all three pictures — silently.** The cover fell to
+the icon branch, both picture blocks returned `''`, and half the net plus
+the whole offline backup showed a magazine with no photograph in it.
+
+> **A feature that works on one build and quietly does nothing on the
+> other is a fault, not a test problem.**
+
+- **The guard is widened by exactly one shape** —
+  `data:image/(png|jpeg|webp);base64,…` — **and `svg+xml` is refused on
+  purpose**: SVG is the one image type that carries markup, and nothing
+  here needs it, so it costs nothing to keep out.
+- ⚠️ **And this does not weaken the guard against its own harm, which is
+  AN ORIGIN WE DID NOT CHOOSE.** A base64 raster fetches nothing and
+  reaches no host — it is the one shape of `src` that cannot phone home —
+  and `img-src 'self' data: blob:` has stood in both policy files since
+  before this. What a `data:` value must never do is reach a ROW, because
+  a table carrying inlined images makes every read carry them (`660`), and
+  **that is the writer's rule, enforced where writes are and never here.**
+- **The alternative was excluding those three files from inlining**, and
+  it is the one that really costs something: the offline build's whole
+  property is that it carries its pictures with it. ⚠️ **Fixing a guard
+  to suit a build would have been the wrong direction; fixing a build to
+  hide a guard's blind spot is the same error wearing the other coat.**
+- **Measured after: both builds are identical** — cover 1200×500 in all
+  three of its places, both pictures 1200×800 with caption and credit,
+  `r2` still on its icon branch, zero console errors.
+
+### ⚠️ A comment is read by tools that do not know it is prose
+The first draft of the paragraph above **broke the build outright**: it
+named the rewritten literal by writing one, in quotes, and
+`build_single.py`'s own pattern matched the EXAMPLE inside the comment and
+went looking for a file called `assets/….jpg`.
+
+> **It is the twin of the rule the checks have paid for six times — a
+> check must read the code and never the prose about the code — arriving
+> from the BUILD's side. A tool that rewrites source cannot tell a comment
+> from a line, so an example written in the shape the tool rewrites is not
+> an example, it is an instruction.**
+
+### The weight: the shell keeps its ceiling and the pictures get their own
+Home draws the magazine strip and the strip draws `r1`'s cover, so a real
+photograph now reaches the first visit — **and `v53 · 6.4`'s own comment
+names that case by name: «a picture walking into the first load» is what
+it exists to catch.** Measured on the same page against `75b37b9`:
+
+```
+main        2,241 KB   ·  zero bytes from assets/mag
+this batch  2,429 KB   ·  and 187 of the 188 are ONE FILE
+```
+
+- ⚠️ **So the ceiling was NOT raised.** Raising it by two hundred is what
+  would let the next two hundred hide underneath — which is the sentence
+  `610` already wrote into that check when it subtracted the vendored
+  client and asserted it apart. **The photographs are counted apart for
+  the same reason, and the shell's own number is 2,242: one kilobyte of
+  module text.**
+- ⚠️ **And they are bounded rather than excused.** `6.4c` allows ONE
+  picture under 260 KB on that first visit; a second cover walking in, or
+  a photograph nobody sized, turns it red and somebody makes a decision.
+  **Subtracting a thing from a ceiling without giving it one of its own is
+  not a measurement, it is a hole with a comment over it.**
+- **`loading="lazy"` is on that strip and does not prevent the fetch** —
+  the browser's own margin is wider than the fold. The real answer is a
+  thumbnail for the card and the strip (the cover is shown there at
+  108×92), and it is not done here because the spec says the files are
+  placed as they arrived. It is written down as an open item with its
+  number.
+
+### What is still absent, and stays absent
+**Four of the seven photographs are not here**: the Gandhi District sign —
+which is the first article's own argument in a picture — the Hillcroft Ave
+sign, the many-languages shopfront, and `r2`'s cover. ⚠️ **Not one of them
+is stubbed.** `r2` opens on `675`'s icon branch exactly as it did, and
+`v92 · 11.2b` and `11.5b` assert that rather than leaving it to be
+noticed: **a reserved place shows the reader nothing at all, and that is
+the whole difference between it and a broken box.**
+
+### The pictures are not in the install, and that is a guard
+`tools/build_sw.py` excludes `assets/` on purpose — `420`'s rule that
+downloading four megabytes of somebody's mobile data before they ask is
+not caching — so the precache list is **the same 38 files it was**, with
+zero `assets/mag` entries, and `sw.js` stores each photograph on first
+use. `v92 · 12.1`–`12.3` are what stop a later batch «fixing» that
+quietly.
+
+⚠️ **And the safe area was measured rather than trusted.** The state file
+recorded that a cover is shown at its narrowest at **108×92**, so only the
+middle **587×500** of a 1200×500 survives in the card. Screenshotted at
+that exact size: **the Droubi's sign falls inside it and is fully
+legible.**
+
+### `test_v92` — 91 assertions, and seven teeth
+```
+the cover taken off r1        → 11.2 · 11.3 · 11.6 · 11.6b, and the blocks stay green
+the guard back to refusing    → SEVEN red on the single-file build and 11.7 ALONE on the
+   the inlined form              module one — the two-build divergence, reproduced
+the guard widened to svg      → 11.7 alone, printing g2:2(want 0)
+a picture above its paragraph → 11.2d alone, printing {"prev":"h","next":"p"}
+one photograph deleted        → 11.1 naming it MISSING — ⚠️ and the single-file build
+                                 cannot even be PRODUCED without it, which is a guard
+                                 of its own the tooth found by accident
+the photographs in the install → 12.1 and 12.2, at 39 files
+a vowel mark in a caption      → 11.2e and 685's own 10.1
+```
+⚠️ **The second tooth is the one worth keeping**: on the module build it
+turns exactly one item red while every behavioural item stays green, and
+on the single-file build it takes seven. **A suite that ran on one build
+would have called the widening unnecessary.**
+
+### And the group closes — the net, run on segments over one frozen tree
 
 ## Known open items
 - **The header image is still far larger than its box.** V.04.7 replaced
