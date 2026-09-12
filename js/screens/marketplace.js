@@ -1006,7 +1006,15 @@ export function BoostScreen(root, params) {
     if (!S.ownsListing(c.id)) { go('#/marketplace/' + c.id); return; }
     e.target.innerHTML = `<span class="spinner"></span> ${t('paying')}`;
     await S.chargeCard(sel.price, 'Marketplace boost');
-    if (!S.boostClassified(c.id)) { go('#/marketplace/' + c.id); return; }
+    /* ⚠️ AWAITED (665أ): `boostClassified` writes to the server now, so an
+       un-awaited call hands back a Promise — always truthy — and the guard
+       below it would never fire again. `650`'s rule: a batch that makes a
+       function async owns every caller of it.
+       ⚠️ AND THE CHARGE STILL RUNS ABOVE THIS LINE, which is the standing
+       open item and is NOT this batch's: the comment four lines up states
+       the intended order and the code charges first. It is registered in
+       `docs/الحالة.md` and belongs with the payment gateway. */
+    if (!await S.boostClassified(c.id)) { go('#/marketplace/' + c.id); return; }
     S.addReceipt({ kind: 'boost', amount: sel.price, method: 'card',
                    refId: c.id, description: `${t('boost')} — ${esc(L(c.title))}` });
     toast(t('done'), 'ok');

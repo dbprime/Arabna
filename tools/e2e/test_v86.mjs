@@ -118,13 +118,24 @@ console.log('--- 3: the seed is typed out, and it matches the state file ---');
   ok('3.4 the state file records a row for every migration file',
      files.every(f => rows.some(r => r[1] === f)),
      files.filter(f => !rows.some(r => r[1] === f)).join(', ') || rows.length + ' rows');
-  /* run by hand = marked done, and not marked as the runner's work */
-  const byHand = rows.filter(r => /✓/.test(r[2]) && !/بالمُشغِّل/.test(r[2])).map(r => r[1]).sort();
+  /* ⚠️ REVERSED IN `665أ`, and the check's subject did not move: the class
+     is still «ran by hand, before the runner existed», and what changed is
+     how the row says it. The ✓ was a STATUS MARK, and a status mark in this
+     table is a promise about the future written by somebody who is not the
+     one who watches it happen — it aged six times, last with `0019`, which
+     stood written «تُنفَّذ بعد الدمج» while the runner had already applied
+     it. The marks are gone from every row and the column now says WHAT
+     HAPPENED, so the class is read from the words: the row records an
+     execution, and does not attribute it to the runner. */
+  const byHand = rows.filter(r => /نُفِّذت/.test(r[2]) && !/بالمُشغِّل/.test(r[2])).map(r => r[1]).sort();
   ok('3.5 the seed is exactly what the state file marks as run BY HAND',
      seeded.join(',') === byHand.join(','),
      'seeded [' + seeded.join(' ') + '] · by hand [' + byHand.join(' ') + ']');
-  /* ⚠️ and nothing still outstanding is seeded — that is the silent skip */
-  const pendingRows = rows.filter(r => /⏳/.test(r[2])).map(r => r[1]);
+  /* ⚠️ and nothing outstanding is seeded — that is the silent skip. REVERSED
+     with the item above: a migration whose execution nobody has seen takes
+     `—` and nothing else, so «outstanding» is an empty cell rather than a
+     waiting symbol. */
+  const pendingRows = rows.filter(r => /^\s*—\s*$/.test(r[2])).map(r => r[1]);
   ok('3.6 …and nothing still outstanding is seeded as done',
      !pendingRows.some(f => seeded.includes(f)),
      pendingRows.filter(f => seeded.includes(f)).join(', ') || pendingRows.length + ' outstanding');

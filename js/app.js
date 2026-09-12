@@ -6,6 +6,7 @@ import { setLang, bothPacks } from './i18n.js';
 import { state, registerStrings, runReminders, runSubscriptionCycle,
          liveGreeting, markGreetingSeen, noteVisit, requestPersistence,
          loadLiveBusinesses, loadLiveClassifieds, loadLiveEvents, loadLiveBizPhotos,
+         loadLiveGreetings, loadLiveSettings,
          onLiveRows } from './store.js';
 import { $, renderHeader, renderNav, hideNav, closeSheet, hideDrawer, drawerOwnsEntry, closeDropdown,
          mountScrollMemory, restoreScroll, historyKey, markShown, startClock, mountAdShare,
@@ -347,6 +348,25 @@ async function boot() {
      visitor. Measured: `test_v9`'s «and survives a reload» went red on
      exactly that, and the row was approved the whole time. */
   loadLiveBizPhotos().then(rows => {
+    if (!rows || !rows.length) return;
+    if (location.hash !== route) return;
+    render();
+  });
+  /* ⚠️ AND THE GREETINGS (665أ) — AT BOOT AND DELIBERATELY NOT WHEN THE
+     PANEL OPENS. A greeting is shown to the ordinary reader and not to the
+     admin, so WHOEVER NEVER OPENS THE PANEL IS THE PERSON WHO HAS TO
+     RECEIVE IT. Before this the key was local, and a warning written for
+     everybody to read now was read by the one who wrote it. */
+  loadLiveGreetings().then(rows => {
+    if (!rows || !rows.length) return;
+    if (location.hash !== route) return;
+    render();
+  });
+  /* and the operator's four switches (665أ). ⚠️ Read here rather than at
+     the point of use: `seasonOn()` is called inside two loops that walk
+     every speciality in the registry, and a network call there freezes the
+     screen. */
+  loadLiveSettings().then(rows => {
     if (!rows || !rows.length) return;
     if (location.hash !== route) return;
     render();
