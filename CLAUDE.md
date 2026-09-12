@@ -14749,6 +14749,68 @@ on the single-file build it takes seven. **A suite that ran on one build
 would have called the widening unnecessary.**
 
 ### And the group closes — the net, run on segments over one frozen tree
+```
+182 runs · 91 suites · 8,921 assertions · zero red · zero crash
+```
+Twenty-eight segments over `14ff364`, `HEAD` re-checked at the head of each
+— the runner exits 2 on a moved character or a dirty tree, and none did —
+**91 present and 91 run, each on both builds, and no result borrowed.** The
+verdict is READ from the index and never summed: `NET COMPLETE — every
+derived suite ran on both builds in this index`.
+
+⚠️ **AND THIS IS THE NET THE GROUP OWED, NOT THIS BATCH'S ALONE.** The last
+complete one was `660`'s, 89 suites at `0c45bec`; `675`, `680` and `685`
+landed on top of it, so `test_v92`, `test_v93` and everything `675` changed
+in four files are measured here for the first time.
+
+⚠️ **The arithmetic was written down BEFORE the run and it was WRONG BY
+TWO, and finding the two is the point of writing it.** Predicted 8,642
+(`660`) + 128 (`675`'s `v92` at 64) + 20 (`685`'s `v92` 64→74) + 94 (`680`'s
+`v93` at 47) + 34 (this batch's `v92` 74→91) + 1 (`v53 · 6.4c`, the module
+build alone) = **8,919**, against **8,921** measured. **Diffing the suites
+against `0c45bec` rather than reasoning about them** named it in one line:
+`675` split `test_v58 · 1.6` into `1.6` and `1.6b` — «not one INVENTED
+article reaches the magazine» **and «it is not empty either»**, which is the
+vacuity guard that became necessary the moment real articles existed. **One
+assertion × two builds, and nothing else in the net moved.** A total that
+lands two out and is left there is a total that proves nothing; a total
+whose two are named proves every other suite stood still.
+
+⚠️ **And the verdict is proven in both directions on the finished index:**
+one line deleted prints `NET INCOMPLETE — 1 run(s) missing: m/v50`, and
+putting it back prints `NET COMPLETE` — **with the distinct count standing
+at 91 in both**, which is exactly why the condition is `nmiss == 0` AND
+`distinct == derived` AND both builds named.
+
+**The heaviest three are unchanged from `615`'s own table, and their order
+did not move:** `v8` 282/280 · `v20` 281/273 · `v14` 235/234. Measured suite
+time: **7,115s on the single-file build and 6,675s on the module one.**
+
+⚠️ **AND THE NET WAS RUN ONCE, FROM THE TOP, WITH NO RESTART — the first
+time in this run of batches.** What paid for it is the rule `645`, `650`,
+`652` and `655` each learned the hard way, applied **before** the first
+segment rather than at segment twenty: the twenty-five suites this batch
+could touch — every reader of `CLAUDE.md` or a file under `docs/`, every
+carrier of the version, the manifest and the weight, and `v84`'s
+seed-field guard, which `cover` had just become a member of — were
+**derived and run first**, as segments one to seven. All fifty runs green,
+so there was no reversal left for the other sixty-six segments to find.
+**Ordering the net by risk costs nothing and is what makes a restart
+unnecessary.**
+
+⚠️ **AND THE CLOSING COMMIT IS DOCUMENTS, WHICH IS ITSELF A TREE THAT HAS
+TO BE MEASURED** — `680`'s rule, and it earned itself twice over in this
+group, since the full net's own two reds under `675` were both readers of
+a document (`v26 · 2.2` reads the packs, `v84 · 11.3` reads §1.هـ). The
+nineteen suites that read `CLAUDE.md` or a file under `docs/` are
+**derived, never listed**, and were re-run on the closing tree:
+**38 runs · 19 suites · 2,238 assertions · zero red · zero crash**, with
+`wiring.mjs` 16/16 and `chk_i18n` at 425 / 1930 / 350. ⚠️ **The one thing
+that run did not read is the paragraph reporting it**, and that is where
+the recursion is stopped on purpose rather than by oversight: a
+measurement cannot contain its own result, and a line of prose added to a
+file whose readers have just been measured green is the smallest thing
+left unmeasured.
 
 ## Known open items
 - **The header image is still far larger than its box.** V.04.7 replaced
