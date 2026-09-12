@@ -14812,6 +14812,70 @@ measurement cannot contain its own result, and a line of prose added to a
 file whose readers have just been measured green is the smallest thing
 left unmeasured.
 
+### The appendix — a documentation debt from `685`, and the cell a generated file could not fill
+
+⚠️ **`685` merged with no closing commit.** Measured rather than taken from
+the appendix: its single commit `58c16db` carries the work and the
+documents, and **nothing follows it but the merge** — where `680` had two
+closing commits (`0027999` for its suite figures, `fd5a12e` for the
+closing-tree measurement). **The code is sound; what was missing is
+documentary alone.** ⚠️ **And a batch does not correct in silence: what was
+missed is said to have been missed.**
+
+⚠️ **AND THE FIGURES WERE MEASURED ON `685`'S OWN TREE RATHER THAN COPIED
+OFF THE PAGE** — `58c16db` checked out into its own worktree, its own
+server, the seven suites on **both** builds:
+
+```
+14 runs · 7 suites · 868 assertions · zero red · zero crash
+v20 89 · v26 56 · v27 100 · v39 33 · v58 24 · v84 58 · v92 74   (per build)
+```
+
+⚠️ **And that is a correction to the appendix's own number, which is why it
+was measured.** It reports «434», and 434 is **one build** — the seven
+per-build counts sum to it exactly. **This project's line counts both**
+(`680`'s own: 86 runs for 43 suites), so in that format the figure is
+**868**. The number was not wrong where it stood; it was half the sum in a
+format that asks for both halves — **and that is what measuring finds and
+copying does not.**
+
+### ⚠️ And the provenance cell could not be written, so the TOOL learned to read
+`docs/AI-PROVENANCE.md` is **generated and never edited by hand** (rule 9),
+and `netOf` derives the net cell from **the commit's own message**.
+`58c16db`'s message is English and carries no such figures, **and it is
+merged into `main`, so it is not rewritten** — the rule `376` and
+`d69603f` both stand on. **Three roads, and two of them are closed by a
+rule the project already carries; the third is the tool.**
+
+> **The tool reads the figures from the one place a human wrote them —
+> `docs/الحالة.md` — exactly as it already reads the owner's acceptance out
+> of `docs/الطابور.md`. ONE source, two readers, and no second copy of the
+> number anywhere.**
+
+- ⚠️ **The commit's own message ALWAYS wins.** A back-fill can only fill an
+  empty cell, never overwrite a measured one — proven, not intended:
+  `0027999` keeps `86 · 43 · 5,438` from its own message with a back-fill
+  standing beside it.
+- ⚠️ **GUARD C, because a back-fill that lands nowhere is debt that reads as
+  a record.** An entry naming a commit the log does not hold, or one whose
+  message already carries its figures, fills no cell **and says so to
+  nobody** — the silent-failure class this project has paid for four times.
+  Both are refused with exit 1 and named.
+- **Four teeth, each aimed at its own item:**
+
+```
+a sha the log does not hold          → exit 1, «deadbee: ليس في السجلّ»
+a commit whose message has figures   → exit 1, «0027999: رسالتُه تحمل أرقامَها»
+the back-fill line deleted           → the cell goes back to «—»
+a back-fill beside a real message    → the message wins, both cells right
+```
+
+⚠️ **And the restore put back what the mutations PRODUCED, not only what
+they mutated** — `670`'s rule: the tool is a generator, so its output is
+part of the working tree too, and `docs/AI-PROVENANCE.md` was regenerated
+before anything was staged.
+
+
 ## Known open items
 - **The header image is still far larger than its box.** V.04.7 replaced
   the 831/837 KB lockups with the cropped marks at **333/338 KB** — 60% off

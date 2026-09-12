@@ -57,6 +57,7 @@ const commits = raw.split(END).map(s => s.replace(/^\n+/, '')).filter(Boolean).m
 
 /* the owner's acceptance: [x] NNN in the queue */
 const queuePath = 'docs/الطابور.md';
+const statePath = 'docs/الحالة.md';
 const accepted = new Set();
 if (existsSync(queuePath)) {
   for (const m of readFileSync(queuePath, 'utf8').matchAll(/^\[x\]\s+(\d{3})\b/gm)) accepted.add(m[1]);
@@ -74,10 +75,28 @@ const batchOf = (s) => {
 const kindOf = (s) => (/^إغلاق\s/.test(s) || /^docs:\s*\d{3}\s*—\s*الشبكة/.test(s)) ? 'إغلاق'
   : /\bV\.\d+\.\d+\b/.test(s) ? 'شغل' : 'وثائق';
 const sessionOf = (b) => { const m = /Claude-Session:\s*(\S+)/.exec(b); return m ? m[1] : ''; };
+const NET_RE = /([\d,]+)\s*تشغيلة\s*·\s*(\d+)\s*سويتاً\s*·\s*([\d,]+)\s*بنداً/;
 const netOf = (s, b) => {
-  const m = /([\d,]+)\s*تشغيلة\s*·\s*(\d+)\s*سويتاً\s*·\s*([\d,]+)\s*بنداً/.exec(s + '\n' + b);
+  const m = NET_RE.exec(s + '\n' + b);
   return m ? `${m[1]} · ${m[2]} · ${m[3]}` : '';
 };
+
+/* ⚠️ A BACK-FILL, and only for a commit whose OWN message cannot carry the
+   figures. `685` merged with no closing commit, so `58c16db` reached `main`
+   with an English message and an empty net cell — and a merged message is
+   not rewritten, while this file is GENERATED and never hand-edited
+   (rule 9). So the tool reads the figures from the one place a human wrote
+   them, `docs/الحالة.md`, exactly as it already reads the owner's
+   acceptance out of `docs/الطابور.md`: ONE source, two readers.
+   ⚠️ THE COMMIT'S OWN MESSAGE ALWAYS WINS — a back-fill can never overwrite
+   a measured figure, only fill an empty cell. */
+const backfill = new Map();
+if (existsSync(statePath)) {
+  const re = /شبكةٌ مُستدرَكة\s*—\s*`([0-9a-f]{7,40})`\s*=\s*([\d,]+)\s*تشغيلة\s*·\s*(\d+)\s*سويتاً\s*·\s*([\d,]+)\s*بنداً/g;
+  for (const m of readFileSync(statePath, 'utf8').matchAll(re)) {
+    backfill.set(m[1], `${m[2]} · ${m[3]} · ${m[4]}`);
+  }
+}
 const specOf = (n) => {
   if (!n) return '';
   if (existsSync('إصلاحات')) {
@@ -90,8 +109,27 @@ const link = (u) => u ? `[جلسة](${u})` : '—';
 
 const rows = commits.map((c) => {
   const n = batchOf(c.subject);
-  return `| ${c.date} | ${cell(n)} | ${kindOf(c.subject)} | \`${c.short}\` | ${cell(specOf(n))} | ${link(sessionOf(c.body))} | ${cell(netOf(c.subject, c.body))} | ${n && accepted.has(n) ? 'owner ✓' : '—'} |`;
+  return `| ${c.date} | ${cell(n)} | ${kindOf(c.subject)} | \`${c.short}\` | ${cell(specOf(n))} | ${link(sessionOf(c.body))} | ${cell(netOf(c.subject, c.body) || backfill.get(c.short) || '')} | ${n && accepted.has(n) ? 'owner ✓' : '—'} |`;
 });
+
+/* ⚠️ GUARD C — A BACK-FILL THAT LANDS NOWHERE IS DEBT THAT READS AS A
+   RECORD. An entry naming a commit the log does not hold, or one whose own
+   message already carries its figures, fills no cell and says so to nobody.
+   Both are refused loudly rather than ignored quietly. */
+if (backfill.size) {
+  const byShort = new Map(commits.map((c) => [c.short, c]));
+  const bad = [];
+  for (const [short, fig] of backfill) {
+    const c = byShort.get(short);
+    if (!c) { bad.push(`${short}: ليس في السجلّ`); continue; }
+    if (netOf(c.subject, c.body)) bad.push(`${short}: رسالتُه تحمل أرقامَها، فالاستدراكُ ميّت`);
+    void fig;
+  }
+  if (bad.length) {
+    console.error(`استدراكُ شبكةٍ لا يقع في خانة:\n  ${bad.join('\n  ')}`);
+    process.exit(1);
+  }
+}
 
 const head = sh(`git rev-parse --short ${ref}`).trim();
 const lastDate = sh(`git log -1 --format=%ad --date=short ${ref}`).trim();
