@@ -111,7 +111,7 @@ export const CLASSIFIED_CATS = MARKET_CATS;
    hand-typed «0.1» while the project had reached V.03.6 — two literals,
    both stale, and a reader reporting a fault could not tell us which build
    they were on. Raise it here when CLAUDE.md's version line moves. */
-export const APP_VERSION = '0.11.8';
+export const APP_VERSION = '0.11.9';
 
 /* ⚠️ توثيق الجوال مؤجَّلٌ إلى ما بعد الإطلاق على App Store — قرار مالك
    البرنامج، وسببه الكلفة: مزوّد الرسائل حسابٌ مدفوعٌ بكلفةٍ لكلّ رسالة،
@@ -6572,17 +6572,21 @@ export const ARTICLES = markDemo([
         ar: 'واليوم يمشي فيه من يعرف: Jerusalem للحم الحلال — يقول مصدر منشور إنه فتح في التسعينات وكان أول من نوعه في المنطقة — وCedars Bakery، وMecca، وAlmadina، وAl-Nimer للمكسرات، وCafé Layal، وLebanon Halal Meat الذي فتح سنة 2019، ومدرسة Al-Hadi ومركزها التعليمي.',
         en: 'Today those who know walk it: Jerusalem halal meat — a published source says it opened in the nineties and was the first of its kind in the area — Cedars Bakery, Mecca, Almadina, Al-Nimer nuts, Café Layal, Lebanon Halal Meat which opened in 2019, and the Al-Hadi school and its education centre.' } },
 
-      /* ⚠️ 690 — and the caption does not name the street. The photographer
-         did not say where he stood, and a street name in a caption is a
-         claim with nothing under it; «in Houston» is true and claims
-         nothing. It is the type rule of `0017` applied to a caption.
-         And «هيوستن» in Arabic is what the prose around it says, twenty-three
-         times in these two articles — a caption spelled the other way would
-         be the same place written two ways on one screen. */
+      /* ⚠️ 695 — THE CAPTION IS GONE AND IS NOT REPLACED. 690 wrote that the
+         prices here «are written in Arabic», and the picture says the
+         opposite: the signs read BANANA $0.69/LB · PAPAYA $0.99/LB ·
+         ORANGE $0.79/LB · MOUSSY $9.99, every one of them English with
+         Latin numerals. The Arabic in the frame is on the goods, not on
+         the prices. The owner's decision of 12 September: the caption goes and
+         the credit line stands alone — a caption that adds nothing is not
+         written, and the picture in its place after the paragraph listing
+         the shops says what it says with no explaining.
+         And `alt` is not `cap`: it describes the frame to whoever cannot
+         see it, so it names no shop, no street, and no language. */
       { t: 'img', src: 'assets/mag/hillcroft-grocery.jpg',
-        cap: {
-          ar: 'بقالة عربية في هيوستن — الأسعار مكتوبة بالعربية لأن من يقرؤها عربي.',
-          en: 'An Arab grocery in Houston — the prices are written in Arabic because whoever reads them is Arab.' },
+        alt: {
+          ar: 'رفوف خضار وفاكهة في بقالة عربية، وفوقها لافتات أسعار.',
+          en: 'Produce shelves in an Arab grocery, price signs above them.' },
         credit: { ar: 'تصوير: عربنا', en: 'Photo: ARABNA' } },
 
       { t: 'h', x: { ar: 'الاسم الذي جاء متأخرا', en: 'The name that came late' } },
@@ -6687,7 +6691,13 @@ export const ARTICLES = markDemo([
          the same words. The picture follows the naming paragraph rather than
          its heading: a photograph above the line that identifies it is a
          picture the reader cannot place. */
+      /* 695 — the caption is read against its picture and stands. `alt` is
+         added beside it and is not the same sentence: the description for
+         whoever cannot see must not be the line that identifies the place. */
       { t: 'img', src: 'assets/mag/houston-acc.jpg',
+        alt: {
+          ar: 'مبنى حجري من طابقين وأمامه نافورة ونخيل.',
+          en: 'A two-storey stone building with a fountain and palms in front.' },
         cap: {
           ar: 'المركز الثقافي العربي الأمريكي — أربعة عشر فدانا يديرها متطوعون.',
           en: 'The Arab American Cultural and Community Center — fourteen acres run by volunteers.' },

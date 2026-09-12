@@ -598,8 +598,16 @@ for (const lang of ['ar', 'en']) {
              credit: (f.querySelector('.credit') || {}).textContent || '',
              wide: Math.round(i.getBoundingClientRect().width) };
   });
-  ok('11.4 the picture inside the article draws, with its caption and its credit',
-     fig.there && fig.nat === '1200x800' && fig.cap.includes('بقالة عربية')
+  /* ⚠️ 695 REVERSED THE CAPTION HALF OF THIS, and the reversal is named
+     rather than the line softened: `690` wrote «the prices are written in
+     Arabic» and the signs in the picture read BANANA $0.69/LB, so the
+     owner's decision of 12 September deleted the caption and left the credit
+     alone. What this item was ever about — the picture DRAWS, at its real
+     size and its real width, with its credit under it — is unchanged and
+     still asserted; that there is no caption text is block 13's own item,
+     where it can be measured rather than assumed. */
+  ok('11.4 the picture inside the article draws, at its real size, with its credit',
+     fig.there && fig.nat === '1200x800'
      && fig.credit === 'تصوير: عربنا' && fig.wide > 300, JSON.stringify(fig).slice(0, 200));
   /* ⚠️ 3.3 of the spec, and it is asserted on the pictures the BLOCKS draw.
      Measured on the covers, deliberately not changed and written down so it
@@ -704,6 +712,134 @@ for (const lang of ['ar', 'en']) {
      files === 38, files + ' files');
   ok('12.3 …and the builder still excludes assets/ rather than listing them one by one',
      /assets/.test(code('tools/build_sw.py')));
+}
+
+/* ------------------------------------------------------------
+   13) 695 — A CAPTION SAYS WHAT IS IN THE PICTURE, AND `alt` IS ITS OWN FIELD
+   ⚠️ The first half of this cannot be a check and the file says so: an
+   assertion can prove a caption is DRAWN and that it passes `esc()`; it
+   cannot prove it is TRUE. `690` wrote that the grocery's prices «are
+   written in Arabic» and the signs in that very file read
+   BANANA $0.69/LB — read with the eye, on the picture, which is the only
+   place that answer lives. What IS assertable is the decision that
+   followed: the caption is gone, the credit stands alone, and the
+   picture did not lose its description with it.
+   ------------------------------------------------------------ */
+{
+  const { ctx, p } = await fresh({});
+  await show(p, '#/magazine/r1');
+  /* ⚠️ the figure is found by POSITION, never by its `src`: on the
+     single-file build every asset is an inlined base64 URI, so a selector
+     reading the filename matches nothing there and reports a fault on a
+     build that is right. `r1` carries exactly one picture block, and the
+     count is asserted rather than assumed. */
+  const groc = await p.evaluate(() => {
+    const all = document.querySelectorAll('.article-body figure.blk-img');
+    const f = all[0];
+    if (!f || all.length !== 1) return null;
+    const cap = f.querySelector('.cap');
+    const cr  = cap && cap.querySelector('.credit');
+    const clone = cap && cap.cloneNode(true);
+    if (clone && clone.querySelector('.credit')) clone.querySelector('.credit').remove();
+    return { alt: f.querySelector('img').getAttribute('alt') || '',
+             credit: cr ? cr.textContent.trim() : '',
+             words: clone ? clone.textContent.trim() : null };
+  });
+  ok('13.1 the grocery picture carries no caption text — the credit line alone',
+     !!groc && groc.words === '' && groc.credit.length > 0,
+     JSON.stringify(groc && { words: groc.words, credit: groc.credit }));
+  /* ⚠️ the item that WOULD have broken: deleting `cap` while `alt` read
+     from it leaves a blind reader hearing «image» and nothing after it */
+  ok('13.2 …and its `alt` is not empty', !!groc && groc.alt.length > 20,
+     groc ? groc.alt.length + ' chars: ' + groc.alt : 'no figure');
+  ok('13.3 …and `alt` is not the credit line filling the gap',
+     !!groc && groc.alt !== groc.credit && !/عربنا|ARABNA/.test(groc.alt),
+     groc ? groc.alt : '');
+
+  /* the second picture: its caption was read against its picture today and
+     stands, and `alt` is added BESIDE it rather than repeating it */
+  await show(p, '#/magazine/r2');
+  const seedCap = (() => {
+    const a = ARTICLES.find(x => x.id === 'r2');
+    const b = (a.blocks || []).find(x => x.t === 'img' && /houston-acc/.test(x.src || ''));
+    return b ? b.cap.ar : null;
+  })();
+  const acc = await p.evaluate(() => {
+    const all = document.querySelectorAll('.article-body figure.blk-img');
+    const f = all[0];
+    if (!f || all.length !== 1) return null;
+    const clone = f.querySelector('.cap').cloneNode(true);
+    if (clone.querySelector('.credit')) clone.querySelector('.credit').remove();
+    return { words: clone.textContent.trim(), alt: f.querySelector('img').getAttribute('alt') || '' };
+  });
+  ok('13.4 the centre picture keeps its caption, letter for letter',
+     !!acc && !!seedCap && acc.words === seedCap, acc ? acc.words : 'no figure');
+  ok('13.5 …and its `alt` is a description, not that same sentence',
+     !!acc && acc.alt.length > 20 && acc.alt !== acc.words, acc ? acc.alt : '');
+
+  /* ⚠️ 2.2 in the file, and it is an ITEM rather than an omission: a cover
+     is decoration beside a written headline, and repeating it in a blind
+     reader's ear is noise, not service. ZERO change is what is asserted. */
+  /* ⚠️ the hero is read on `r1` and not on `r2`: `r2` carries no cover at
+     all (690 held four photographs back), so measuring it there would ask
+     an element that does not exist and report `null` for a build that is
+     perfectly right. */
+  await show(p, '#/magazine/r1');
+  const heroAlt = await p.evaluate(() => {
+    const i = document.querySelector('.article-hero img');
+    return i ? i.getAttribute('alt') : null;
+  });
+  await show(p, '#/magazine');
+  const cardAlt = await p.evaluate(() => {
+    const i = document.querySelector('.mag-thumb img');
+    return i ? i.getAttribute('alt') : null;
+  });
+  await show(p, '#/home');
+  const stripAlt = await p.evaluate(() => {
+    const i = document.querySelector('.story-cover img');
+    return i ? i.getAttribute('alt') : null;
+  });
+  ok('13.6 the three covers stay `alt=""` — hero, list card, strip on Home',
+     heroAlt === '' && cardAlt === '' && stripAlt === '',
+     JSON.stringify({ hero: heroAlt, card: cardAlt, strip: stripAlt }));
+  await ctx.close();
+}
+
+/* the fall back, and the escaping — both on fixtures, never on the data:
+   a block written today may carry no `alt`, and it must not lose its
+   description for that */
+{
+  const nasty = 'x" onload="1 <b>bold</b>';
+  const { ctx, p } = await fresh({ articles: [
+    art('k1', [{ t: 'img', src: 'assets/logo.png', cap: { ar: 'تعليقٌ وحده', en: 'cap only' } }]),
+    art('k2', [{ t: 'img', src: 'assets/logo.png', alt: { ar: nasty, en: nasty } }]),
+  ] });
+  await show(p, '#/magazine/k1');
+  const fell = await p.evaluate(() => {
+    const i = document.querySelector('.blk-img img');
+    return i ? i.getAttribute('alt') : null;
+  });
+  ok('13.7 a block with no `alt` falls back to its caption', fell === 'تعليقٌ وحده', String(fell));
+
+  await show(p, '#/magazine/k2');
+  const esced = await p.evaluate(() => {
+    const i = document.querySelector('.blk-img img');
+    return { alt: i ? i.getAttribute('alt') : null,
+             injected: document.querySelectorAll('.blk-img b').length };
+  });
+  ok('13.8 `alt` goes through esc() — a quote and a tag survive as text',
+     esced.alt === nasty && esced.injected === 0, JSON.stringify(esced));
+  await ctx.close();
+}
+
+/* ⚠️ and the structural half, because a behavioural check cannot see the
+   two fields being merged again by a later hand */
+{
+  const mag = code('js/screens/magazine.js');
+  ok('13.9 the markup reads `alt`, never the caption',
+     /alt="\$\{alt\}"/.test(mag) && !/alt="\$\{cap\}"/.test(mag));
+  ok('13.10 …and `alt` is built from b.alt first, with esc() around it',
+     /const alt = esc\(L\(b\.alt \|\| b\.cap \|\| ''\)\)/.test(mag));
 }
 
 ok('9.1 zero console errors across everything above', errors.length === 0,

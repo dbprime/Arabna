@@ -265,8 +265,16 @@ export function blockHtml(b) {
       if (!src) return '';
       const cap = esc(L(b.cap || ''));
       const cr  = esc(L(b.credit || ''));
+      /* 695 — `alt` and `cap` are two fields, not one. `alt` describes the
+         picture to whoever cannot see it; `cap` is a line every reader
+         reads. Merging them was a shortcut, and the day a caption was
+         deleted the picture was left with no description at all.
+         The fall back to `cap` stays on purpose: older blocks carrying no
+         `alt` do not break, and the new field is written where it is
+         needed rather than everywhere. */
+      const alt = esc(L(b.alt || b.cap || ''));
       return `<figure class="blk-img">
-        <img src="${esc(src)}" alt="${cap}" loading="lazy" decoding="async" />
+        <img src="${esc(src)}" alt="${alt}" loading="lazy" decoding="async" />
         ${cap || cr ? `<figcaption class="cap">${cap}${cr ? `<span class="credit">${cr}</span>` : ''}</figcaption>` : ''}
       </figure>`;
     }
