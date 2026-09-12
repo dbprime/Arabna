@@ -11,7 +11,7 @@ ARABNA · عربنا — a mobile-first web app for the Arab community in the U.
 **business directory + marketplace + events + magazine**, Arabic-first with a full English toggle.
 ("Classifieds / الإعلانات الشخصية" is now "Marketplace / السوق" — the old `#/classifieds`
 routes still resolve so shared links keep working.)
-Current version: **V.11.7 (prototype)**. Owner: dbprime. Deploys to Vercel (team DB Prime).
+Current version: **V.11.8 (prototype)**. Owner: dbprime. Deploys to Vercel (team DB Prime).
 
 ## Hard rules (from the product brief)
 0. ⚠️ **THE OWNER'S NAME IS NEVER WRITTEN — anywhere.** Not in this file, not
@@ -14564,6 +14564,351 @@ title** — which this batch rewrote by decision. It reads the card's `route`
 now: **a title is copy and moves; an id is a key and does not.** And
 `3.1b2` beside it asserts the street is named in English, so nothing the old
 line guarded was dropped.
+
+
+## V.11.8 — the magazine's real photographs, and the build that ate them (690)
+
+⚠️ **This file CLOSES its group, and the group is five: `660` · `675` ·
+`680` · `685` · this.** And it is not a group of one claiming the name —
+**`660`'s net ran at `1e87e7e` on eighty-nine suites and `675` landed on
+top of it**, so `test_v92` and `675`'s changes to four files had never
+entered a full net at all, and `680` and `685` each ran their touching
+suites by their own written instruction. **The debt is paid here.**
+**And no migration** — لا هجرة.
+
+### Three photographs, and the one line that matters about them
+⚠️ **All three are the owner's own, taken by him and confirmed in writing
+on 11 September 2026. Not one picture in this app comes from anybody's
+site** — and that is not a preference: `675` refused to generate a
+photograph of Droubi's storefront credited «تصوير: عربنا» because a
+fabricated record is the line that also forbids a seeded review and an
+invented jumuah time.
+
+```
+hillcroft-droubis-cover.jpg  1200×500   the cover of r1
+hillcroft-grocery.jpg        1200×800   inside r1
+houston-acc.jpg              1200×800   inside r2
+```
+
+**They are placed as they arrived — not cropped, not resized, not
+recompressed**, which is the spec's own instruction. ⚠️ **And they were
+read before they were committed**: each carries a JFIF header and nothing
+else — no EXIF, no IPTC, no XMP, so no camera, no date and **no
+coordinates published in a public repository**. **Their being empty is not
+proof of authorship and is not read as one** (`670`'s rule): the
+attribution is the owner's own word, and the measurement says only that
+nothing in the files contradicts it and nothing in them is published by
+accident.
+
+- **The caption of the first does not name the street, and that is
+  deliberate**: the photographer did not say where he stood, and a street
+  name in a caption is a claim with nothing under it. «في هيوستن» is true
+  and claims nothing — the `0017` type rule applied to a caption.
+- ⚠️ **And «هيوستن» is written in Arabic there because the prose around it
+  says so twenty-three times in these two articles.** `685` moved the
+  STREET to Latin under the owner's rule and left the city in editorial
+  prose, which `675` had already recorded as neither business data nor
+  `i18n.js`. A caption spelled the other way would be one place written
+  two ways on one screen.
+- **The caption of the second DOES name the place**, because the
+  photographer said what it is and the paragraph above it names the centre
+  and its acreage in the same words.
+- ⚠️ **Each picture follows the paragraph that explains it, never the
+  heading above that paragraph.** The spec named the heading for the
+  second and then named the paragraph in its own next clause; a photograph
+  placed above the line that identifies it is a picture the reader cannot
+  place. `v92 · 11.2d` asserts the position rather than trusting it.
+- ⚠️ **The captions were written in the articles' own orthography**, and
+  that was measured rather than chosen: the spec writes «الامريكي» and the
+  paragraph directly above the picture writes «الأمريكي» — carrying the
+  spec's letters across would have printed one name two ways, four lines
+  apart. Measured in the two articles: `أمريك` 7 · `امريك` 0. **And zero
+  vowel marks**, which is `685`'s rule holding on the day something new
+  was written rather than on the day it was swept.
+
+### ⚠️ ONE PICTURE EXPOSED A WHOLE BUILD, AND IT IS THE BATCH'S OWN FINDING
+`tools/build_single.py` rewrites **every quoted `assets/…` image literal
+inside a module** into a base64 `data:` URI — that is what makes the
+offline build portable, and it has been true since that build existed.
+`safeImgSrc` (675) admits two sources and no third: a file in the
+repository, or a file in our own store.
+
+```
+module build       cover → assets/mag/…jpg   → drawn
+single-file build  cover → data:image/jpeg…  → REFUSED, and nothing is drawn
+```
+
+**So the day the first asset path went through that guard, the single-file
+build stopped drawing all three pictures — silently.** The cover fell to
+the icon branch, both picture blocks returned `''`, and half the net plus
+the whole offline backup showed a magazine with no photograph in it.
+
+> **A feature that works on one build and quietly does nothing on the
+> other is a fault, not a test problem.**
+
+- **The guard is widened by exactly one shape** —
+  `data:image/(png|jpeg|webp);base64,…` — **and `svg+xml` is refused on
+  purpose**: SVG is the one image type that carries markup, and nothing
+  here needs it, so it costs nothing to keep out.
+- ⚠️ **And this does not weaken the guard against its own harm, which is
+  AN ORIGIN WE DID NOT CHOOSE.** A base64 raster fetches nothing and
+  reaches no host — it is the one shape of `src` that cannot phone home —
+  and `img-src 'self' data: blob:` has stood in both policy files since
+  before this. What a `data:` value must never do is reach a ROW, because
+  a table carrying inlined images makes every read carry them (`660`), and
+  **that is the writer's rule, enforced where writes are and never here.**
+- **The alternative was excluding those three files from inlining**, and
+  it is the one that really costs something: the offline build's whole
+  property is that it carries its pictures with it. ⚠️ **Fixing a guard
+  to suit a build would have been the wrong direction; fixing a build to
+  hide a guard's blind spot is the same error wearing the other coat.**
+- **Measured after: both builds are identical** — cover 1200×500 in all
+  three of its places, both pictures 1200×800 with caption and credit,
+  `r2` still on its icon branch, zero console errors.
+
+### ⚠️ A comment is read by tools that do not know it is prose
+The first draft of the paragraph above **broke the build outright**: it
+named the rewritten literal by writing one, in quotes, and
+`build_single.py`'s own pattern matched the EXAMPLE inside the comment and
+went looking for a file called `assets/….jpg`.
+
+> **It is the twin of the rule the checks have paid for six times — a
+> check must read the code and never the prose about the code — arriving
+> from the BUILD's side. A tool that rewrites source cannot tell a comment
+> from a line, so an example written in the shape the tool rewrites is not
+> an example, it is an instruction.**
+
+### The weight: the shell keeps its ceiling and the pictures get their own
+Home draws the magazine strip and the strip draws `r1`'s cover, so a real
+photograph now reaches the first visit — **and `v53 · 6.4`'s own comment
+names that case by name: «a picture walking into the first load» is what
+it exists to catch.** Measured on the same page against `75b37b9`:
+
+```
+main        2,241 KB   ·  zero bytes from assets/mag
+this batch  2,429 KB   ·  and 187 of the 188 are ONE FILE
+```
+
+- ⚠️ **So the ceiling was NOT raised.** Raising it by two hundred is what
+  would let the next two hundred hide underneath — which is the sentence
+  `610` already wrote into that check when it subtracted the vendored
+  client and asserted it apart. **The photographs are counted apart for
+  the same reason, and the shell's own number is 2,242: one kilobyte of
+  module text.**
+- ⚠️ **And they are bounded rather than excused.** `6.4c` allows ONE
+  picture under 260 KB on that first visit; a second cover walking in, or
+  a photograph nobody sized, turns it red and somebody makes a decision.
+  **Subtracting a thing from a ceiling without giving it one of its own is
+  not a measurement, it is a hole with a comment over it.**
+- **`loading="lazy"` is on that strip and does not prevent the fetch** —
+  the browser's own margin is wider than the fold. The real answer is a
+  thumbnail for the card and the strip (the cover is shown there at
+  108×92), and it is not done here because the spec says the files are
+  placed as they arrived. It is written down as an open item with its
+  number.
+
+### What is still absent, and stays absent
+**Four of the seven photographs are not here**: the Gandhi District sign —
+which is the first article's own argument in a picture — the Hillcroft Ave
+sign, the many-languages shopfront, and `r2`'s cover. ⚠️ **Not one of them
+is stubbed.** `r2` opens on `675`'s icon branch exactly as it did, and
+`v92 · 11.2b` and `11.5b` assert that rather than leaving it to be
+noticed: **a reserved place shows the reader nothing at all, and that is
+the whole difference between it and a broken box.**
+
+### The pictures are not in the install, and that is a guard
+`tools/build_sw.py` excludes `assets/` on purpose — `420`'s rule that
+downloading four megabytes of somebody's mobile data before they ask is
+not caching — so the precache list is **the same 38 files it was**, with
+zero `assets/mag` entries, and `sw.js` stores each photograph on first
+use. `v92 · 12.1`–`12.3` are what stop a later batch «fixing» that
+quietly.
+
+⚠️ **And the safe area was measured rather than trusted.** The state file
+recorded that a cover is shown at its narrowest at **108×92**, so only the
+middle **587×500** of a 1200×500 survives in the card. Screenshotted at
+that exact size: **the Droubi's sign falls inside it and is fully
+legible.**
+
+### `test_v92` — 91 assertions, and seven teeth
+```
+the cover taken off r1        → 11.2 · 11.3 · 11.6 · 11.6b, and the blocks stay green
+the guard back to refusing    → SEVEN red on the single-file build and 11.7 ALONE on the
+   the inlined form              module one — the two-build divergence, reproduced
+the guard widened to svg      → 11.7 alone, printing g2:2(want 0)
+a picture above its paragraph → 11.2d alone, printing {"prev":"h","next":"p"}
+one photograph deleted        → 11.1 naming it MISSING — ⚠️ and the single-file build
+                                 cannot even be PRODUCED without it, which is a guard
+                                 of its own the tooth found by accident
+the photographs in the install → 12.1 and 12.2, at 39 files
+a vowel mark in a caption      → 11.2e and 685's own 10.1
+```
+⚠️ **The second tooth is the one worth keeping**: on the module build it
+turns exactly one item red while every behavioural item stays green, and
+on the single-file build it takes seven. **A suite that ran on one build
+would have called the widening unnecessary.**
+
+### And the group closes — the net, run on segments over one frozen tree
+```
+182 runs · 91 suites · 8,921 assertions · zero red · zero crash
+```
+Twenty-eight segments over `14ff364`, `HEAD` re-checked at the head of each
+— the runner exits 2 on a moved character or a dirty tree, and none did —
+**91 present and 91 run, each on both builds, and no result borrowed.** The
+verdict is READ from the index and never summed: `NET COMPLETE — every
+derived suite ran on both builds in this index`.
+
+⚠️ **AND THIS IS THE NET THE GROUP OWED, NOT THIS BATCH'S ALONE.** The last
+complete one was `660`'s, 89 suites at `0c45bec`; `675`, `680` and `685`
+landed on top of it, so `test_v92`, `test_v93` and everything `675` changed
+in four files are measured here for the first time.
+
+⚠️ **The arithmetic was written down BEFORE the run and it was WRONG BY
+TWO, and finding the two is the point of writing it.** Predicted 8,642
+(`660`) + 128 (`675`'s `v92` at 64) + 20 (`685`'s `v92` 64→74) + 94 (`680`'s
+`v93` at 47) + 34 (this batch's `v92` 74→91) + 1 (`v53 · 6.4c`, the module
+build alone) = **8,919**, against **8,921** measured. **Diffing the suites
+against `0c45bec` rather than reasoning about them** named it in one line:
+`675` split `test_v58 · 1.6` into `1.6` and `1.6b` — «not one INVENTED
+article reaches the magazine» **and «it is not empty either»**, which is the
+vacuity guard that became necessary the moment real articles existed. **One
+assertion × two builds, and nothing else in the net moved.** A total that
+lands two out and is left there is a total that proves nothing; a total
+whose two are named proves every other suite stood still.
+
+⚠️ **And the verdict is proven in both directions on the finished index:**
+one line deleted prints `NET INCOMPLETE — 1 run(s) missing: m/v50`, and
+putting it back prints `NET COMPLETE` — **with the distinct count standing
+at 91 in both**, which is exactly why the condition is `nmiss == 0` AND
+`distinct == derived` AND both builds named.
+
+**The heaviest three are unchanged from `615`'s own table, and their order
+did not move:** `v8` 282/280 · `v20` 281/273 · `v14` 235/234. Measured suite
+time: **7,115s on the single-file build and 6,675s on the module one.**
+
+⚠️ **AND THE NET WAS RUN ONCE, FROM THE TOP, WITH NO RESTART — the first
+time in this run of batches.** What paid for it is the rule `645`, `650`,
+`652` and `655` each learned the hard way, applied **before** the first
+segment rather than at segment twenty: the twenty-five suites this batch
+could touch — every reader of `CLAUDE.md` or a file under `docs/`, every
+carrier of the version, the manifest and the weight, and `v84`'s
+seed-field guard, which `cover` had just become a member of — were
+**derived and run first**, as segments one to seven. All fifty runs green,
+so there was no reversal left for the other sixty-six segments to find.
+**Ordering the net by risk costs nothing and is what makes a restart
+unnecessary.**
+
+⚠️ **AND THE CLOSING COMMIT IS DOCUMENTS, WHICH IS ITSELF A TREE THAT HAS
+TO BE MEASURED** — `680`'s rule, and it earned itself twice over in this
+group, since the full net's own two reds under `675` were both readers of
+a document (`v26 · 2.2` reads the packs, `v84 · 11.3` reads §1.هـ). The
+nineteen suites that read `CLAUDE.md` or a file under `docs/` are
+**derived, never listed**, and were re-run on the closing tree:
+**38 runs · 19 suites · 2,238 assertions · zero red · zero crash**, with
+`wiring.mjs` 16/16 and `chk_i18n` at 425 / 1930 / 350. ⚠️ **The one thing
+that run did not read is the paragraph reporting it**, and that is where
+the recursion is stopped on purpose rather than by oversight: a
+measurement cannot contain its own result, and a line of prose added to a
+file whose readers have just been measured green is the smallest thing
+left unmeasured.
+
+### The appendix — a documentation debt from `685`, and the cell a generated file could not fill
+
+⚠️ **`685` merged with no closing commit.** Measured rather than taken from
+the appendix: its single commit `58c16db` carries the work and the
+documents, and **nothing follows it but the merge** — where `680` had two
+closing commits (`0027999` for its suite figures, `fd5a12e` for the
+closing-tree measurement). **The code is sound; what was missing is
+documentary alone.** ⚠️ **And a batch does not correct in silence: what was
+missed is said to have been missed.**
+
+⚠️ **AND THE FIGURES WERE MEASURED ON `685`'S OWN TREE RATHER THAN COPIED
+OFF THE PAGE** — `58c16db` checked out into its own worktree, its own
+server, the seven suites on **both** builds:
+
+```
+14 runs · 7 suites · 868 assertions · zero red · zero crash
+v20 89 · v26 56 · v27 100 · v39 33 · v58 24 · v84 58 · v92 74   (per build)
+```
+
+⚠️ **And that is a correction to the appendix's own number, which is why it
+was measured.** It reports «434», and 434 is **one build** — the seven
+per-build counts sum to it exactly. **This project's line counts both**
+(`680`'s own: 86 runs for 43 suites), so in that format the figure is
+**868**. The number was not wrong where it stood; it was half the sum in a
+format that asks for both halves — **and that is what measuring finds and
+copying does not.**
+
+### ⚠️ And the provenance cell could not be written, so the TOOL learned to read
+`docs/AI-PROVENANCE.md` is **generated and never edited by hand** (rule 9),
+and `netOf` derives the net cell from **the commit's own message**.
+`58c16db`'s message is English and carries no such figures, **and it is
+merged into `main`, so it is not rewritten** — the rule `376` and
+`d69603f` both stand on. **Three roads, and two of them are closed by a
+rule the project already carries; the third is the tool.**
+
+> **The tool reads the figures from the one place a human wrote them —
+> `docs/الحالة.md` — exactly as it already reads the owner's acceptance out
+> of `docs/الطابور.md`. ONE source, two readers, and no second copy of the
+> number anywhere.**
+
+- ⚠️ **The commit's own message ALWAYS wins.** A back-fill can only fill an
+  empty cell, never overwrite a measured one — proven, not intended:
+  `0027999` keeps `86 · 43 · 5,438` from its own message with a back-fill
+  standing beside it.
+- ⚠️ **GUARD C, because a back-fill that lands nowhere is debt that reads as
+  a record.** An entry naming a commit the log does not hold, or one whose
+  message already carries its figures, fills no cell **and says so to
+  nobody** — the silent-failure class this project has paid for four times.
+  Both are refused with exit 1 and named.
+- **Four teeth, each aimed at its own item:**
+
+```
+a sha the log does not hold          → exit 1, «deadbee: ليس في السجلّ»
+a commit whose message has figures   → exit 1, «0027999: رسالتُه تحمل أرقامَها»
+the back-fill line deleted           → the cell goes back to «—»
+a back-fill beside a real message    → the message wins, both cells right
+```
+
+⚠️ **And the restore put back what the mutations PRODUCED, not only what
+they mutated** — `670`'s rule: the tool is a generator, so its output is
+part of the working tree too, and `docs/AI-PROVENANCE.md` was regenerated
+before anything was staged.
+
+
+### And a third debt, found while writing the second
+
+⚠️ **`docs/الحالة.md` §1.أ.ج is the section a fresh session reads first to
+learn where the net stands, and it is rewritten with every full net** — it
+was created as «`655`» and last read «`680`'s gate on `main`». **`690` ran
+a newer one and did not move it**, so the first number a new session read
+was two nets old, while the figures sat correctly in the V.11.8 block
+further up. It is `690`'s own closing commit that missed it, and it is
+struck here with its reason beside it rather than quietly overwritten: the
+`680` gate keeps every word it had, one heading lower.
+
+### And the appendix's own tree was measured too
+
+⚠️ **`680`'s rule holds for an appendix as much as for a batch: a documents
+commit is itself a tree that has to be measured**, and it earned itself
+again here — the appendix touches `docs/الحالة.md`, `docs/AI-PROVENANCE.md`
+and a tool, and **nineteen suites read `CLAUDE.md` or a file under
+`docs/`.** They are **derived, never listed**, and were run on `c0a7a3b`:
+
+```
+38 runs · 19 suites · 2,238 assertions · zero red · zero crash
+```
+
+Five segments, `HEAD` re-checked at each — the runner exits 2 on a moved
+character or a dirty tree, and none did — with `wiring.mjs` 16/16 and
+`chk_i18n` at 425 / 1930 / 350, all three unchanged. ⚠️ **And no suite
+reads `provenance.mjs` or the file it generates**, which was measured
+before the tool was touched rather than assumed, so the blast radius of
+the change really is those nineteen.
+
+⚠️ **The one thing that run did not read is this paragraph**, and the
+recursion is stopped here on purpose and for the second time: a
+measurement cannot contain its own result.
 
 
 ## Known open items

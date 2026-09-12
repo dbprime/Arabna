@@ -208,12 +208,45 @@ export function MagazineScreen(root) {
     our own store. Escaping stops the attribute being broken; it does not
     stop a path we do not want. Every `src` is ours today and the admin
     writes them from the panel two files from now — so the guard is
-    written today, not then. */
+    written today, not then.
+
+    ⚠️ 690 — AND THE INLINED FORM OF THE FIRST SOURCE IS THE FIRST SOURCE.
+    `tools/build_single.py` rewrites every quoted assets/… image literal in
+    a module into a base64 `data:` URI, so the day an asset path first went
+    through this guard the single-file build stopped drawing it: the cover
+    fell to the icon branch and both picture blocks returned '', silently,
+    on half the net and on the offline backup. A feature that works on one
+    build and quietly does nothing on the other is a fault and not a test
+    problem, and the fix belongs here rather than in the build, because
+    excluding those three files from inlining is what would really cost
+    something — the offline build's whole property is that it carries its
+    pictures with it.
+
+    ⚠️ AND THE SENTENCE ABOVE NAMES THAT LITERAL IN WORDS RATHER THAN IN
+    QUOTES, BECAUSE THE FIRST DRAFT OF IT BROKE THE BUILD: the tool's own
+    pattern matched the EXAMPLE inside this comment and went looking for a
+    file called `assets/….jpg`. It is the twin of the rule the checks have
+    paid for six times — a check must read the code and never the prose
+    about the code — arriving from the build's side: a tool that rewrites
+    source cannot tell a comment from a line, so an example written in the
+    shape the tool rewrites is not an example, it is an instruction.
+
+    ⚠️ AND THIS DOES NOT WEAKEN THE GUARD AGAINST ITS OWN HARM, which is an
+    ORIGIN WE DID NOT CHOOSE: a base64 raster fetches nothing and reaches
+    no host — it is the one shape of `src` that cannot phone home — and
+    `img-src 'self' data: blob:` has permitted it in both policy files
+    since before this. **`svg+xml` is refused on purpose**: SVG is the one
+    image type that carries markup, and nothing in the app needs it here,
+    so it costs nothing to keep out. What a `data:` value must never do is
+    reach a ROW — a table carrying inlined images makes every read carry
+    them (660) — and that is the writer's rule, enforced where writes are,
+    never here. */
 export function safeImgSrc(s) {
   if (typeof s !== 'string' || !s) return '';
   if (s.includes('..')) return '';
   if (s.startsWith('assets/')) return s;
   if (s.startsWith(SUPABASE_URL + '/')) return s;
+  if (/^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/.test(s)) return s;
   return '';
 }
 

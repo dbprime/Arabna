@@ -497,6 +497,215 @@ for (const lang of ['ar', 'en']) {
      nH(rest) === 88, nH(rest) + ' of 88');
 }
 
+/* ============================================================
+   11) 690 — THE THREE PHOTOGRAPHS, AND WHAT STILL HAS NONE
+   ------------------------------------------------------------
+   ⚠️ Block 4 above measures the cover machinery against a FIXTURE. This
+   one measures the real files on the real records, which is a different
+   question: `675` shipped the machinery with nothing behind it on
+   purpose, so until today every one of those items could have been green
+   over a magazine with no picture in it anywhere.
+
+   ⚠️ AND NOTHING HERE IS ASSERTED ON A FILENAME. The single-file build
+   inlines every image as a base64 `data:` URI — the V.04.7 lesson, paid
+   for by `s v40` — so what is true of BOTH builds is the picture's own
+   1200px, read off `naturalWidth` after it has decoded. A check on the
+   `src` string would pass on one build and fail on the other.
+   ============================================================ */
+{
+  const PIX = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGP4z8AAAAMBAQDJ/pLvAAAAAElFTkSuQmCC';
+
+  /* --- the files themselves, read from the bytes and never from the name --- */
+  const jpegSize = (buf) => {           /* SOFn is the only frame that carries it */
+    let i = 2;
+    while (i < buf.length - 1) {
+      if (buf[i] !== 0xFF) { i++; continue; }
+      const m = buf[i + 1];
+      if (m >= 0xC0 && m <= 0xCF && m !== 0xC4 && m !== 0xC8 && m !== 0xCC)
+        return { w: buf.readUInt16BE(i + 7), h: buf.readUInt16BE(i + 5) };
+      if (m === 0xD8 || m === 0xD9) { i += 2; continue; }
+      i += 2 + buf.readUInt16BE(i + 2);
+    }
+    return { w: 0, h: 0 };
+  };
+  const want = { 'hillcroft-droubis-cover.jpg': '1200x500',
+                 'hillcroft-grocery.jpg': '1200x800',
+                 'houston-acc.jpg': '1200x800' };
+  const got = {};
+  for (const f of Object.keys(want)) {
+    try { const b = readFileSync(ROOT + 'assets/mag/' + f);
+          const d = jpegSize(b); got[f] = d.w + 'x' + d.h; }
+    catch (e) { got[f] = 'MISSING'; }
+  }
+  ok('11.1 the three photographs are in the repository at the sizes they were given',
+     Object.keys(want).every(f => got[f] === want[f]), JSON.stringify(got));
+
+  /* --- the records --- */
+  const r1 = ARTICLES.find(a => a.id === 'r1');
+  const r2 = ARTICLES.find(a => a.id === 'r2');
+  ok('11.2 `r1` carries the cover, as a path this app will accept',
+     r1.cover === 'assets/mag/hillcroft-droubis-cover.jpg' && !r1.cover.includes('..'),
+     String(r1.cover));
+  /* ⚠️ `r2` HAS NO COVER, AND THAT IS AN ASSERTION RATHER THAN A GAP: the
+     photograph does not exist, and 675's rule is that a place with nothing
+     in it shows the reader nothing at all. A stub would be the broken box. */
+  ok('11.2b …and `r2` has none, so nothing was stubbed in to fill the hole',
+     r2.cover === undefined, String(r2.cover));
+  const imgs = a => a.blocks.filter(b => b.t === 'img');
+  ok('11.2c one picture block in each article, and both point into assets/mag',
+     imgs(r1).length === 1 && imgs(r2).length === 1 &&
+     imgs(r1)[0].src === 'assets/mag/hillcroft-grocery.jpg' &&
+     imgs(r2)[0].src === 'assets/mag/houston-acc.jpg',
+     imgs(r1).length + ' + ' + imgs(r2).length);
+  /* ⚠️ AND EACH SITS AFTER THE PARAGRAPH THAT EXPLAINS IT, never after the
+     heading above it: a photograph placed before the line that identifies
+     it is a picture the reader cannot place. */
+  const after = (a) => { const i = a.blocks.findIndex(b => b.t === 'img');
+    return { prev: a.blocks[i - 1] && a.blocks[i - 1].t, next: a.blocks[i + 1] && a.blocks[i + 1].t }; };
+  ok('11.2d …after the paragraph, and before the heading that follows it',
+     after(r1).prev === 'p' && after(r1).next === 'h' &&
+     after(r2).prev === 'p' && after(r2).next === 'h',
+     JSON.stringify([after(r1), after(r2)]));
+  /* the caption follows the prose it stands in: 685 took every vowel mark
+     out of these two articles, and a caption written with them would be
+     the one line on the screen wearing them */
+  const nHere = t => (t.match(/[ً-ْٰ]/g) || []).length;
+  ok('11.2e …and the captions carry no vowel mark and no Latin-run to flip',
+     nHere(JSON.stringify(imgs(r1).concat(imgs(r2)))) === 0);
+
+  /* --- what the reader is actually shown, on either build --- */
+  const { ctx, p } = await fresh({});
+  await show(p, '#/magazine/r1');
+  const hero = await p.evaluate(async () => {
+    const i = document.querySelector('.article-hero img');
+    if (!i) return { there: false };
+    if (!i.complete) await i.decode().catch(() => {});
+    return { there: true, nat: i.naturalWidth + 'x' + i.naturalHeight,
+             marked: !!document.querySelector('.article-hero.has-img'),
+             icon: document.querySelectorAll('.article-hero svg').length };
+  });
+  ok('11.3 the real cover is drawn on the article, and it is the real file',
+     hero.there && hero.nat === '1200x500' && hero.marked, JSON.stringify(hero));
+
+  const fig = await p.evaluate(async () => {
+    const f = document.querySelector('.article-body figure.blk-img');
+    if (!f) return { there: false };
+    const i = f.querySelector('img');
+    if (!i.complete) await i.decode().catch(() => {});
+    return { there: true, nat: i.naturalWidth + 'x' + i.naturalHeight,
+             lazy: i.getAttribute('loading'), alt: (i.getAttribute('alt') || '').length,
+             cap: (f.querySelector('.cap') || {}).textContent || '',
+             credit: (f.querySelector('.credit') || {}).textContent || '',
+             wide: Math.round(i.getBoundingClientRect().width) };
+  });
+  ok('11.4 the picture inside the article draws, with its caption and its credit',
+     fig.there && fig.nat === '1200x800' && fig.cap.includes('بقالة عربية')
+     && fig.credit === 'تصوير: عربنا' && fig.wide > 300, JSON.stringify(fig).slice(0, 200));
+  /* ⚠️ 3.3 of the spec, and it is asserted on the pictures the BLOCKS draw.
+     Measured on the covers, deliberately not changed and written down so it
+     is not read as an oversight: the card thumb and the hero carry `alt=""`
+     because the title is printed beside them in both places — an empty alt
+     is the right answer for an image whose meaning is in the adjacent text,
+     not a lapse — and the hero carries no `loading="lazy"` because it is the
+     first thing on the screen, and deferring the largest paint is a
+     regression rather than a fix. */
+  ok('11.4b …and it is lazy, and its alt is not empty',
+     fig.lazy === 'lazy' && fig.alt > 10, fig.lazy + ' / alt ' + fig.alt);
+
+  await show(p, '#/magazine/r2');
+  const two = await p.evaluate(async () => {
+    const i = document.querySelector('.article-body figure.blk-img img');
+    if (i && !i.complete) await i.decode().catch(() => {});
+    return { fig: i ? i.naturalWidth + 'x' + i.naturalHeight : 'none',
+             cap: (document.querySelector('.blk-img .cap') || {}).textContent || '',
+             heroImg: document.querySelectorAll('.article-hero img').length,
+             heroIcon: document.querySelectorAll('.article-hero svg').length,
+             marked: document.querySelectorAll('.article-hero.has-img').length };
+  });
+  ok('11.5 the second article draws its picture, and names the place in the caption',
+     two.fig === '1200x800' && two.cap.includes('المركز الثقافي العربي'), JSON.stringify(two).slice(0, 160));
+  /* the compatibility item: r2 opens exactly as it did before this batch */
+  ok('11.5b …and with no cover it opens on the icon, marked as it always was',
+     two.heroImg === 0 && two.heroIcon >= 1 && two.marked === 0, JSON.stringify(two).slice(0, 160));
+
+  await show(p, '#/magazine');
+  const cards = await p.evaluate(async () => {
+    const out = [];
+    for (const c of document.querySelectorAll('.mag-card')) {
+      const i = c.querySelector('.mag-thumb img');
+      if (i && !i.complete) await i.decode().catch(() => {});
+      out.push([c.getAttribute('data-route'), i ? i.naturalWidth : 0]);
+    }
+    return out;
+  });
+  ok('11.6 the list card draws it too, and the one with no cover keeps its icon',
+     cards.some(c => c[0] === '#/magazine/r1' && c[1] === 1200) &&
+     cards.some(c => c[0] === '#/magazine/r2' && c[1] === 0), JSON.stringify(cards));
+
+  await show(p, '#/home');
+  const strip = await p.evaluate(async () => {
+    const out = [];
+    for (const s of document.querySelectorAll('.story-cover')) {
+      const i = s.querySelector('img');
+      if (i && !i.complete) await i.decode().catch(() => {});
+      out.push(i ? i.naturalWidth : 0);
+    }
+    return out;
+  });
+  ok('11.6b …and so does the third place, the strip on Home',
+     strip.includes(1200), JSON.stringify(strip));
+  await ctx.close();
+}
+
+/* ------------------------------------------------------------
+   ⚠️ THE GUARD, WIDENED BY EXACTLY ONE SHAPE — and measured in the page
+   rather than in Node, because what runs on the single-file build is the
+   INLINED copy of the module and that is the build the widening was for.
+   ------------------------------------------------------------ */
+{
+  const PIX = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGP4z8AAAAMBAQDJ/pLvAAAAAElFTkSuQmCC';
+  const SVG = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciLz4=';
+  const cases = [
+    ['g1', PIX,                                        1, 'a base64 raster, which is what our own build emits'],
+    ['g2', SVG,                                        0, 'svg+xml — the one image type that carries markup'],
+    ['g3', 'data:text/html;base64,PGgxPmhpPC9oMT4=',   0, 'not an image at all'],
+    ['g4', 'http://127.0.0.1:1/evil.jpg',              0, 'an origin we did not choose'],
+    ['g5', 'assets/../../etc/passwd',                  0, 'a walk out of assets/'],
+  ];
+  const { ctx, p } = await fresh({ articles: cases.map(([id, src]) =>
+    art(id, [{ t: 'img', src, cap: { ar: 'ك', en: 'c' } }], { cover: src })) });
+  const seen = [];
+  for (const [id, , want, why] of cases) {
+    await show(p, '#/magazine/' + id);
+    const n = await p.evaluate(() => document.querySelectorAll('.article-hero img, .blk-img img').length);
+    seen.push([id, n, want, why]);
+  }
+  ok('11.7 the guard takes the inlined form of our own file, and nothing else',
+     seen.every(([, n, want]) => (want ? n === 2 : n === 0)),
+     seen.map(([id, n, w, why]) => `${id}:${n}(want ${w ? 2 : 0}) ${why}`).join(' · '));
+  await ctx.close();
+}
+
+/* ------------------------------------------------------------
+   12) THE PICTURES ARE NOT IN THE INSTALL, AND THAT IS THE GUARD
+   ⚠️ `tools/build_sw.py` excludes `assets/` on purpose (420: downloading
+   four megabytes of somebody's mobile data before they ask is not caching)
+   and the day a batch «fixes» that, a phone pays for three photographs it
+   may never open. This is what stops it happening quietly.
+   ------------------------------------------------------------ */
+{
+  const man = read('js/sw-manifest.js');
+  ok('12.1 not one magazine photograph is in the precache list',
+     !/assets\/mag/.test(man), (man.match(/assets\/mag/g) || []).length + ' matches');
+  const files = (man.match(/^\s*'[^']+',/gm) || []).length;
+  /* the number is a NUMBER on purpose: it moves with a decision, and a
+     file walking into the install turns this red before anybody ships it */
+  ok('12.2 …and the list is the 38 files it was, no heavier for this batch',
+     files === 38, files + ' files');
+  ok('12.3 …and the builder still excludes assets/ rather than listing them one by one',
+     /assets/.test(code('tools/build_sw.py')));
+}
+
 ok('9.1 zero console errors across everything above', errors.length === 0,
    errors.slice(0, 3).join(' | ') || 'none');
 

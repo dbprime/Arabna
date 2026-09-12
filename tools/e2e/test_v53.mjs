@@ -135,7 +135,7 @@ console.log('--- online, nothing moved ---');
   page.on('console', m => { if (m.type() === 'error' &&
     !/ERR_CONNECTION|ERR_CERT|ERR_TUNNEL|ERR_NAME|ERR_FAILED|fonts\.googleapis/.test(m.text()))
     errors.push(m.text().slice(0, 120)); });
-  let bytes = 0, vendorBytes = 0;
+  let bytes = 0, vendorBytes = 0, magBytes = 0, magFiles = 0;
   page.on('response', async r => {
     try { if (new URL(r.url()).hostname !== new URL(BASE).hostname) return;
       const h = r.headers()['content-length'];
@@ -149,7 +149,21 @@ console.log('--- online, nothing moved ---');
          was taken openly, or force a raise that then hides the next 200 KB
          somebody adds by accident. So it is subtracted and asserted on its
          own: the page's own weight still has to be what it was. */
-      if (/\/js\/vendor\//.test(r.url())) vendorBytes += n; else bytes += n;
+      if (/\/js\/vendor\//.test(r.url())) vendorBytes += n;
+      /* ⚠️ 690 COUNTS THE MAGAZINE'S PHOTOGRAPHS APART FOR THE SAME REASON,
+         and the reason is the sentence above rather than a second one. The
+         first visit draws Home, Home draws the magazine strip, and the
+         strip draws `r1`'s cover — so a real photograph now reaches the
+         first load. Measured against `75b37b9` on the same page: the
+         SHELL went 2,241 KB → 2,242 KB, one kilobyte of module text, and
+         everything else of the 2,429 is ONE FILE of 187 KB. Folding that
+         into the ceiling would mean raising it by two hundred, and the
+         next two hundred somebody adds by accident would then hide under
+         the raise — which is exactly what this check exists to catch. So
+         the shell keeps its own number and the pictures get a ceiling of
+         their own, below. */
+      else if (/\/assets\/mag\//.test(r.url())) magBytes += n, magFiles++;
+      else bytes += n;
     } catch (_) { /* */ }
   });
   await page.goto(BASE + '#/home'); await page.waitForTimeout(2000);
@@ -183,6 +197,14 @@ console.log('--- online, nothing moved ---');
        judged against this one instead of against nothing. */
     ok('6.4 …and the first visit of the real build is unchanged, the vendored client apart',
        bytes / 1024 < 2300, Math.round(bytes / 1024) + ' KB');
+    /* ⚠️ AND THE PICTURES ARE BOUNDED RATHER THAN EXCUSED. Subtracting a
+       thing from a ceiling without giving it one of its own is not a
+       measurement, it is a hole with a comment over it. ONE cover is what
+       Home draws today; a second walking in, or a photograph nobody sized,
+       turns this red and somebody makes a decision. */
+    ok('6.4c …and the magazine pictures on that first visit are one, and small',
+       magFiles <= 1 && magBytes / 1024 < 260,
+       magFiles + ' file(s), ' + Math.round(magBytes / 1024) + ' KB');
     /* ⚠️ 615 NARROWED THIS. The range was 100–400 KB for a file of 211, so
        it caught the library DISAPPEARING and never caught it GROWING: it
        could have doubled to 399 KB and stayed green, which is the opposite

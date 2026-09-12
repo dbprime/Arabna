@@ -111,7 +111,7 @@ export const CLASSIFIED_CATS = MARKET_CATS;
    hand-typed «0.1» while the project had reached V.03.6 — two literals,
    both stale, and a reader reporting a fault could not tell us which build
    they were on. Raise it here when CLAUDE.md's version line moves. */
-export const APP_VERSION = '0.11.7';
+export const APP_VERSION = '0.11.8';
 
 /* ⚠️ توثيق الجوال مؤجَّلٌ إلى ما بعد الإطلاق على App Store — قرار مالك
    البرنامج، وسببه الكلفة: مزوّد الرسائل حسابٌ مدفوعٌ بكلفةٍ لكلّ رسالة،
@@ -6494,17 +6494,29 @@ export const ARTICLES = markDemo([
      now on. The permanent road is the `articles` table, and the file
      after this one opens it.
 
-     ⚠️ AND NEITHER CARRIES `cover`, NOR ONE `img` BLOCK, AND THAT IS THE
-     RULE RATHER THAN AN OMISSION: a `src` whose file is not in the
-     repository draws a broken picture in three places, and a batch closed
-     with one is a batch that was not tested. The seven photographs of
-     `assets/mag/` are a photographer's job, not a program's — they are
-     named with their sizes in `docs/الحالة.md`, and the covers and the
-     five picture blocks are added in the commit that brings the files.
+     ⚠️ AND THE PICTURES ARRIVED IN `690`, IN THE COMMIT THAT BROUGHT THE
+     FILES — which is the rule `675` wrote here rather than an exception to
+     it: a `src` whose file is not in the repository draws a broken picture
+     in three places, and a batch closed with one is a batch that was not
+     tested. Three of the seven are in `assets/mag/` now, all three the
+     owner's own photographs, so `r1` carries a cover and each article
+     carries one `img` block.
+
+     ⚠️ AND WHAT IS STILL MISSING IS STILL ABSENT RATHER THAN STUBBED:
+     `r2` has no cover, so it opens on `675`'s icon branch exactly as it
+     did; the Gandhi District sign, the Hillcroft Ave sign and the
+     many-languages shopfront are the photographer's job and are named in
+     `docs/الحالة.md`. A reserved place shows a reader nothing at all,
+     which is the whole difference between it and a broken box.
      --------------------------------------------------------------- */
   {
     id: 'r1', cat: 'culture', sponsored: false, read: 8, media: 'image',
     icon: 'mapPin',
+    /* 690 — the shopfront the article opens on, photographed today. The
+       field is a path and nothing else: a cover carries no caption, and
+       `alt` stays empty on all three of its sites because the title is
+       printed beside it in every one of them (675). */
+    cover: 'assets/mag/hillcroft-droubis-cover.jpg',
     author: { ar: 'فريق عربنا', en: 'ARABNA Team' },
     date:   { ar: '10 سبتمبر 2026', en: 'Sep 10, 2026' },
     title: {
@@ -6559,6 +6571,19 @@ export const ARTICLES = markDemo([
       { t: 'p', x: {
         ar: 'واليوم يمشي فيه من يعرف: Jerusalem للحم الحلال — يقول مصدر منشور إنه فتح في التسعينات وكان أول من نوعه في المنطقة — وCedars Bakery، وMecca، وAlmadina، وAl-Nimer للمكسرات، وCafé Layal، وLebanon Halal Meat الذي فتح سنة 2019، ومدرسة Al-Hadi ومركزها التعليمي.',
         en: 'Today those who know walk it: Jerusalem halal meat — a published source says it opened in the nineties and was the first of its kind in the area — Cedars Bakery, Mecca, Almadina, Al-Nimer nuts, Café Layal, Lebanon Halal Meat which opened in 2019, and the Al-Hadi school and its education centre.' } },
+
+      /* ⚠️ 690 — and the caption does not name the street. The photographer
+         did not say where he stood, and a street name in a caption is a
+         claim with nothing under it; «in Houston» is true and claims
+         nothing. It is the type rule of `0017` applied to a caption.
+         And «هيوستن» in Arabic is what the prose around it says, twenty-three
+         times in these two articles — a caption spelled the other way would
+         be the same place written two ways on one screen. */
+      { t: 'img', src: 'assets/mag/hillcroft-grocery.jpg',
+        cap: {
+          ar: 'بقالة عربية في هيوستن — الأسعار مكتوبة بالعربية لأن من يقرؤها عربي.',
+          en: 'An Arab grocery in Houston — the prices are written in Arabic because whoever reads them is Arab.' },
+        credit: { ar: 'تصوير: عربنا', en: 'Photo: ARABNA' } },
 
       { t: 'h', x: { ar: 'الاسم الذي جاء متأخرا', en: 'The name that came late' } },
 
@@ -6656,6 +6681,17 @@ export const ARTICLES = markDemo([
       { t: 'p', x: {
         ar: 'جمعية هيوستن الإسلامية الكبرى تأسست سنة 1969 من عائلات كانت تصلي في بيت قرب المركز الطبي، وتدير اليوم نحو عشرين مركزا. والمركز الثقافي العربي الأمريكي (ACC) تأسس سنة 1995، على نحو أربعة عشر فدانا قرب Alief، وفيه صفوف عربية يوم الأحد ومكتبة ومتحف صغير — ويديره متطوعون، وفيه موظف واحد متفرغ. وللأقباط ثلاث كنائس في المنطقة، وللموارنة جماعة تقارب خمسمئة عائلة.',
         en: 'The Islamic Society of Greater Houston was founded in 1969 by families praying in a house near the medical centre, and today runs some twenty centres. The Arab American Cultural and Community Center was founded in 1995 on about fourteen acres near Alief, with Sunday Arabic classes, a library and a small museum — run by volunteers, with a single full-time member of staff. Copts have three churches in the region; Maronites a congregation of about five hundred families.' } },
+
+      /* 690 — and this caption DOES name the place, because the photographer
+         said what it is and the paragraph above names it and its acreage in
+         the same words. The picture follows the naming paragraph rather than
+         its heading: a photograph above the line that identifies it is a
+         picture the reader cannot place. */
+      { t: 'img', src: 'assets/mag/houston-acc.jpg',
+        cap: {
+          ar: 'المركز الثقافي العربي الأمريكي — أربعة عشر فدانا يديرها متطوعون.',
+          en: 'The Arab American Cultural and Community Center — fourteen acres run by volunteers.' },
+        credit: { ar: 'تصوير: عربنا', en: 'Photo: ARABNA' } },
 
       { t: 'h', x: { ar: 'وأخيرا: رقم لا نعرفه', en: 'And last: a number we do not know' } },
 
