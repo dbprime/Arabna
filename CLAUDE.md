@@ -14876,6 +14876,41 @@ part of the working tree too, and `docs/AI-PROVENANCE.md` was regenerated
 before anything was staged.
 
 
+### And a third debt, found while writing the second
+
+⚠️ **`docs/الحالة.md` §1.أ.ج is the section a fresh session reads first to
+learn where the net stands, and it is rewritten with every full net** — it
+was created as «`655`» and last read «`680`'s gate on `main`». **`690` ran
+a newer one and did not move it**, so the first number a new session read
+was two nets old, while the figures sat correctly in the V.11.8 block
+further up. It is `690`'s own closing commit that missed it, and it is
+struck here with its reason beside it rather than quietly overwritten: the
+`680` gate keeps every word it had, one heading lower.
+
+### And the appendix's own tree was measured too
+
+⚠️ **`680`'s rule holds for an appendix as much as for a batch: a documents
+commit is itself a tree that has to be measured**, and it earned itself
+again here — the appendix touches `docs/الحالة.md`, `docs/AI-PROVENANCE.md`
+and a tool, and **nineteen suites read `CLAUDE.md` or a file under
+`docs/`.** They are **derived, never listed**, and were run on `c0a7a3b`:
+
+```
+38 runs · 19 suites · 2,238 assertions · zero red · zero crash
+```
+
+Five segments, `HEAD` re-checked at each — the runner exits 2 on a moved
+character or a dirty tree, and none did — with `wiring.mjs` 16/16 and
+`chk_i18n` at 425 / 1930 / 350, all three unchanged. ⚠️ **And no suite
+reads `provenance.mjs` or the file it generates**, which was measured
+before the tool was touched rather than assumed, so the blast radius of
+the change really is those nineteen.
+
+⚠️ **The one thing that run did not read is this paragraph**, and the
+recursion is stopped here on purpose and for the second time: a
+measurement cannot contain its own result.
+
+
 ## Known open items
 - **The header image is still far larger than its box.** V.04.7 replaced
   the 831/837 KB lockups with the cropped marks at **333/338 KB** — 60% off
