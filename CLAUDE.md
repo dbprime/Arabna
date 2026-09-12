@@ -15040,6 +15040,29 @@ derived-but-not-run is empty.** With `wiring.mjs` 16/16 and `chk_i18n` at
 425 / 1930 / 350 — all three unchanged, because this batch adds no string
 and no key.
 
+### And the closing commit is documents, so its tree is measured too
+`680`'s rule, and it has now earned itself in three consecutive groups —
+the full net's own two reds under `675` were both readers of a document.
+The suites that read `CLAUDE.md` or a file under `docs/` are **derived,
+never listed**, and were re-run on the closing tree:
+
+```
+38 runs · 19 suites · 2,258 assertions · zero red · zero crash
+```
+Five segments over `a1a5fd6`, `HEAD` re-checked at each — the runner exits
+2 on a moved character or a dirty tree, and none did — with `wiring.mjs`
+16/16 and `chk_i18n` at 425 / 1930 / 350.
+
+⚠️ **And the figure closes itself against `690`'s appendix, which ran the
+same nineteen: 2,238 + 20 (`test_v92`'s ten new assertions × two builds) =
+2,258.** Landing on the predicted number to the unit is what proves no
+other document-reading suite moved — **and it is the one thing a green tick
+alone cannot say.**
+
+⚠️ **The one thing that run did not read is this paragraph**, and the
+recursion is stopped here on purpose, as it was in the two groups before
+it: a measurement cannot contain its own result.
+
 
 ## Known open items
 - **The header image is still far larger than its box.** V.04.7 replaced
