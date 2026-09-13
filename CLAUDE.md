@@ -15516,9 +15516,90 @@ order, from empty, before the file was called finished:
   (measured: ten), and «ten columns missing» over a table listing twelve
   (thirteen, once `covers` is two).
 
+### Six the net found, and every one attributed by reading
+⚠️ **The derived run came back with SIX red suites, and not one was
+softened, deleted, or reasoned about instead of measured.** Two were faults
+this batch created, one was a fixture that had stopped being true, one was
+a key with no place in the contract, one was a frozen literal, and one was
+this batch breaking a rule of the project's own.
+
+| suite | what it was | what closed it |
+|---|---|---|
+| `v25 · 7.9` | ⚠️ **the app**: the panel read `b.plan === 'paid'` to draw the cancel control, against the standing rule that a screen ASKS the store and never reads the plan | `S.isPaid(b)` — and it was wrong on its own terms too: `isPaid` reads through `businessPlan`, which answers `paid` for a subscription recorded on THIS DEVICE a moment ago, **which is exactly when the button is wanted**. ⚠️ And **nothing in the net read `data-plancancel` at all** — the control shipped with no check, so `v95` gains three |
+| `v26` (six items) | a fixture that assumed a synchronous store | ⚠️ **`3.9`'s `startSubscription` fires `pushPlan`, whose late `save()` — and `save()` serialises the WHOLE state — landed on top of the very next patch, put `myBusinessIds: ['b1']` back, and made the staff account look like the OWNER of `b1`.** Proven by running `v26` on `c88eb18`, the tree before this batch: **56/0.** `patch()` writes through the store now |
+| `v47 · 6.1` | ⚠️ **the app, and it is this batch's own class wearing the other coat** | Measured: `POST /rest/v1/businesses` → **403**. `pushPlan` fires a COAT insert for a seed, and `own: insert` demands `owner_id = auth.uid()` while a coat carries no owner — refused **by design** (`650`'s gap, whose obvious cure `650` refused in writing). **The app said «subscribed», the row never moved, and the only trace was a red line in a console nobody reads.** It is not fired now |
+| `v73 · 8.2` | `470`'s guard doing its job | `boostUntil` went into `DEFAULTS` with no class. Placed `[owner-only]` — measured: not in `KEEPS_ON_SIGN_OUT`, so signing out clears it, which is right |
+| `v83 · 2.6` | a **reversal**, named | it froze `.range(from, from + LIVE_PAGE - 1)` and the reader gained a `limit`. The subject — the read is PAGED, never unbounded — is unchanged and asserted with **more** teeth: a limit can only NARROW the page, never widen it past the ceiling |
+| `v88 · 5.1` | ⚠️ **the app breaking the project's own rule** | `||` and `*` in `0020`. **Narrowing a rule so my own file passes is erasing the witness**, so four sites were rewritten in a migration that has not been applied |
+
+⚠️ **AND THE `v26` FIX WAS KEPT EVEN THOUGH THE `v47` FIX ALONE TURNS THAT
+SUITE GREEN.** The store fix only shortens the window from a network round
+trip to a microtask, **and a suite green because a race got narrower is
+green for the wrong reason.** The fixture removes the assumption instead.
+
+⚠️ **And the class was swept, not the instance** — the rule `645`, `650`,
+`652` and `655` each paid for. `pushLogRow` had `v47`'s exact shape
+(`0002` gives `admin_log` «admin: insert» and nothing else), so the
+condition is written in the store once rather than left to every caller to
+remember.
+
+### A real PostgreSQL found what reading did not — twice in one batch
+`655`'s rule, and it earned itself again. `0001`…`0020` applied in order,
+from empty, before the file was called finished:
+
+- ⚠️ **`revoke all … from public` with no matching grant** leaves a function
+  callable by NOBODY but the owner — «permission denied» met the admin as
+  much as anybody, and both new functions were dead. `v95 · 4.8` asserts
+  revoke count === grant count.
+- ⚠️ **A column-level revoke does not bite.** `revoke update
+  (boosted_until)` changed nothing, because a table-level UPDATE grant
+  implies every column — measured before the trigger was written.
+- ⚠️ **`returning receipts into out_row` fails exactly as `returning *`
+  would have**, and no reading finds it: `INTO` a row variable matches the
+  query's columns to the row's fields ONE BY ONE, so a single composite
+  column is assigned to the first field and the whole row is cast to
+  `id`'s uuid. The id comes back and the row is read as an EXPRESSION.
+
+```
+0001..0020 from empty         0 failures  ·  0020 re-runs clean
+new_receipt_ref × 300         300 distinct, shape ARB-YY-XXXXX
+boost 3 then 7                10 days   (greatest + make_interval)
+a non-admin cash receipt      refused: not authorized
+a stranger's boost            refused: not authorized
+365 days                      refused: duration must be 3, 7 or 14 days
+```
+
 ### The suites this file touches — derived, run on the frozen tree
-⚠️ **And the full net is deliberately not run here** — `665ج` is the
-closer, and the PARTIAL line says so at both ends.
+```
+164 runs · 82 suites · 8,311 assertions · zero red · zero crash
+```
+Twenty-one segments over `0cf3a2e`, `HEAD` re-checked at the head of each —
+the runner exits 2 on a moved character or a dirty tree, and none did —
+**82 derived and 82 run, each on both builds, and no result borrowed.**
+With `wiring.mjs` **19/19** and `chk_i18n` at **425 / 1955 / 350**.
+
+⚠️ **And the index prints `NET INCOMPLETE — 22 run(s) missing`, naming the
+eleven suites this batch does not touch. That is the PARTIAL guard working
+rather than a shortfall**: `665ب` is not its group's closer, `665ج` is, and
+the line says so at both ends. **No full-net figure is written here.**
+
+⚠️ **The arithmetic is not closed here either, and that is said rather than
+skipped:** a partial over a different set cannot be summed against `690`'s
+full net of 91 suites, so the figure that proves nothing else moved is
+`665ج`'s. What IS said is what moved in the suites: **`test_v95` is new at
+66 per build**, `v25` +1, `v83` unchanged in count (a reversal REPLACES an
+assertion), `v73` +0, and the rest of the reversals likewise.
+
+⚠️ **AND THE RUN WAS ORDERED BY RISK, NOT BY NUMBER** — the 45 suites this
+repair could touch ran FIRST, so a reversal is met at segment two rather
+than at segment twenty. That is what made `690` a single-run batch, and it
+is why the last of this batch's three runs found nothing: everything it
+could have found had already been swept.
+
+**The heaviest three are unchanged from `615`'s own table, and their order
+did not move:** `v8` 283/285 · `v20` 276/285 · `v14` 239/242. Measured
+suite time: **6,325s on the single-file build and 5,758s on the module
+one.**
 
 ## Known open items
 - **The header image is still far larger than its box.** V.04.7 replaced
@@ -15635,19 +15716,15 @@ closer, and the PARTIAL line says so at both ends.
   arrive the app shows each listing's area name, never a figure in miles,
   the mile options stay out of the filter sheet, and "nearest" falls back to
   the reader's own city and the rating.
-- **The marketplace boost purchase flow charges before confirming
-  success.** In `js/screens/marketplace.js`'s `#payBtn` handler,
-  `await S.chargeCard(sel.price, 'Marketplace boost')` runs **before**
-  `if (!S.boostClassified(c.id))` is checked — so a boost that fails
-  after a (simulated) charge leaves the reader with no receipt and no
-  explanation, contradicting the handler's own comment three lines above
-  it ("nothing is charged and no receipt is written unless the boost
-  itself took"). Found and registered during `572`'s close (`test_v70`'s
-  pattern sweep of every "silent redirect"-shaped guard), deliberately
-  left unfixed — it is payment logic, out of scope for a routine
-  registration/redirect sweep, and a bigger, separate concern. Harmless
-  today only because `chargeCard()` is simulated (V.03.6: "says
-  `ok: true` to anything … unacceptable the moment the first dollar
-  moves"). Becomes a real bug the day a real payment gateway is wired
-  in; the fix is reordering the check before the charge, and belongs
-  with that work, not with a routine sweep.
+- ~~**The marketplace boost purchase flow charges before confirming
+  success.**~~ **Closed in `665ب` §4.5**, where `#payBtn` in
+  `js/screens/marketplace.js` was inverted to boost → charge → receipt.
+  ⚠️ **It was not deferred any longer because that batch itself changed
+  the risk**: `boostClassified` had been local arithmetic that could fail
+  only on wrong ownership, and it became a server call that can fail on
+  the network, the policy and a timeout — **a batch that turns a latent
+  fault into a likely one fixes it rather than handing it on.** The
+  handler's own comment, which had stated the intended order since
+  V.02.2 while the code did the opposite, is now what the code does.
+  Registered in `572`'s close and struck here by the batch that closed
+  it — `645`'s rule, in the same commit.
