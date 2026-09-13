@@ -177,15 +177,17 @@ ok('3.1 #/boost/<not mine> is refused at the door',
    && !(await page.locator('#payBtn').count()), await page.evaluate(() => location.hash));
 /* `boosted` may already carry a seed listing, so the assertion is that the
    CALL is refused and adds nothing — not that the list is bare.
-   ⚠️ READ THROUGH `boostedIds()` SINCE `665أ`. That batch moved three of
-   the four operator settings to `public.settings` and deliberately left
-   `boosted` where it is — the write policy there is admin-only and a boost
-   is a paid action a MEMBER performs — so the call is still synchronous
-   and the accessor is now the one definition of the list. */
+   ⚠️ AWAITED SINCE `665ب`, AND THE SIGNATURE CARRIES A DURATION. That
+   batch found the boost being sold by the day and handed over for ever —
+   the id went into a list with no date — so `boostClassified` is a server
+   call now and takes the number of days. What this item guards is
+   unchanged: the CALL is refused for a listing that is not mine, and it
+   adds nothing. */
 ok('3.2 …and boosting it from the console is refused too',
-   await S((id) => {const S = window.__m.S;
+   await S(async (id) => {const S = window.__m.S;
      const before = S.boostedIds().length;
-     return S.boostClassified(id) === false && S.boostedIds().length === before;
+     const out = await S.boostClassified(id, 3);
+     return out === false && S.boostedIds().length === before;
    }, theirs));
 await go('#/post?edit=' + theirs);
 ok('3.3 #/post?edit=<not mine> does not open their listing',

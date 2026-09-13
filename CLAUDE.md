@@ -11,7 +11,7 @@ ARABNA · عربنا — a mobile-first web app for the Arab community in the U.
 **business directory + marketplace + events + magazine**, Arabic-first with a full English toggle.
 ("Classifieds / الإعلانات الشخصية" is now "Marketplace / السوق" — the old `#/classifieds`
 routes still resolve so shared links keep working.)
-Current version: **V.12.0 (prototype)**. Owner: dbprime. Deploys to Vercel (team DB Prime).
+Current version: **V.12.1 (prototype)**. Owner: dbprime. Deploys to Vercel (team DB Prime).
 
 ## Hard rules (from the product brief)
 0. ⚠️ **THE OWNER'S NAME IS NEVER WRITTEN — anywhere.** Not in this file, not
@@ -15337,6 +15337,270 @@ that run did not read is this paragraph**, and the recursion is stopped
 here on purpose, as in the groups before it: a measurement cannot contain
 its own result.
 
+## V.12.1 — the log survives its device, the receipt says what it bought, and the boost ENDS (665ب)
+
+⚠️ **This file does NOT close its group, and it says so at its own head.**
+`665ج` is the closer, and the full net runs there once for the group. Here:
+**the suites this file touches and nothing more.** **And it carries a
+migration, which is a correction of the batch's own first claim:
+`receipts` was missing its columns.** ⚠️ **Executed by the runner after the
+merge: `0020_receipts_boost_plan.sql`.**
+
+### The worst of the three, and nobody had reported it
+```
+js/data.js   BOOST_PRICES sells 3 days for $2 · 7 for $5 · 14 for $8
+js/store.js  boostClassified pushed the id into a list — NO DATE, NO DURATION
+`days` read anywhere in the repository   nowhere but the card that draws it
+```
+> **So two dollars for three days bought them for ever.**
+
+⚠️ **It is `680`'s fault inverted**: there a paid place was given away by a
+stray touch, here a bounded time was sold and handed over unbounded. **Both
+are money.** And the receipt did not say so either — `marketplace.js` wrote
+it with no `covers` at all, so not even the paper named the days.
+
+⚠️ **AND `665أ` WAS RIGHT TO REFUSE A COLUMN — THIS IS NOT A REVERSAL OF
+IT, AND THE BATCH FILE SAYS SO FIRST.** What that one refused was moving
+`boosted` into `public.settings`, whose policy is `admin: write`: measured,
+the paid button then did nothing at all. What lands here is neither.
+`settings.boosted` fits what the OPERATOR marks; a boost is what a MEMBER
+BUYS FOR THEMSELVES — two things that had been stacked in one key. **The
+row is the listing.** `test_v94 · 5.1` is amended with its reason written:
+what is forbidden is a scattered operator key, and what lands is a duration
+column on the row.
+
+- **`greatest` is deliberate**: buying seven on the second day of three
+  gives nine, not seven — money paid does not swallow what is left of the
+  money paid before it.
+- ⚠️ **And the charge order is inverted NOW, not deferred.** The comment
+  above that button has said since V.02.2 that the intended order is boost
+  → charge, and the code charged first with the item registered for the
+  gateway's batch. **It is not deferred any longer, and the reason is that
+  this batch itself changes the risk:** `boostClassified` was local
+  arithmetic that could fail only on wrong ownership, and it is now a
+  server call that can fail on the network, the policy and a timeout. **A
+  batch that turns a latent fault into a likely one fixes it rather than
+  handing it on.**
+
+### ⚠️ AND THE DOOR WAS NOT THE ONLY WAY IN — found on a real PostgreSQL
+§4.3 says the client writes `classifieds` directly for nothing, and that is
+an instruction to the CLIENT CODE. **The POLICY did not carry it**:
+`0002`'s «own: update» lets a listing's owner write any column of their own
+row, so
+
+```
+PATCH /rest/v1/classifieds?id=eq.X   {"boosted_until": "2030-01-01"}
+```
+
+with the publishable key that ships on every phone **bought a year for
+nothing, and the whole paid item was free to anybody who read the file.**
+
+⚠️ **A COLUMN-LEVEL REVOKE DOES NOT CLOSE IT**, and that was measured
+before the trigger was written: a table-level UPDATE privilege implies
+every column, so `revoke update (boosted_until)` changed nothing at all.
+Revoking the table grant and re-granting column by column would close it
+and leave a hand-written list of columns that ages the day one is added —
+the very shape this project hunts. **So it is a trigger, which is the
+schema's own precedent**: `is_admin` is held by `refuse_admin_escalation`
+in `0002` for the same reason and in the same shape.
+
+### A log that vanishes is not a log
+`state.adminLog` lived on ONE DEVICE and was cut at five hundred rows, and
+the whole of its use is the day somebody asks «who changed this?» — **a day
+that does not come while the phone is still in the hand.**
+
+- **No migration for the log.** `0002` gives it `admin: read` and
+  `admin: insert` **and no update and no delete for anyone, the admin
+  included** — the narrowest pair in the schema, and the reason is written
+  in the file itself: a log its own actor can rewrite is not a log.
+- ⚠️ **`ADMIN_LOG_MAX` IS GONE, AND WHAT REPLACED IT IS A BOUND ON THE
+  READ.** Five hundred rows was a necessity of `localStorage`; on a server
+  the same line is a LOG BEING ERASED. The reader asks for the newest
+  fifty. **Cutting the store and cutting the view look alike and are
+  opposites.**
+- ⚠️ **`actor_id` comes from the session, always.** It meant nothing in a
+  log on one device with one admin, and with two admins it IS the item.
+- ⚠️ **AND THE ROW GOES TO THE SERVER WITHOUT THE ACTION WAITING FOR IT**,
+  which is a deliberate departure from this file's own «server first» rule.
+  Everywhere else the write IS the action; here the action has already
+  happened — the listing is approved, the shop is merged, the money is
+  taken — and a log write that failed must not undo any of that.
+
+### The receipt says what it bought
+The table was **ten columns** and `addReceipt` writes fourteen fields.
+⚠️ **`covers` is the column that ends «I paid and got nothing».**
+
+- ⚠️ **TWO TYPED COLUMNS AND NOT ONE `jsonb`.** Everything that rises is a
+  cash receipt, and a cash receipt's `covers` is always exactly two
+  instants — it does not vary the way a concert's five fields do, which is
+  the one place the schema accepts `jsonb`. And two timestamps answer
+  «which receipts cover today?»; a blob does not.
+- ⚠️ **`biz_id` is `text`** — `0013`'s class: the app passes `b1` … `b515`,
+  and 485 of those are seeds with no row in `businesses` at all.
+- **The number is minted on the SERVER.** `newReceiptNumber()` avoided a
+  duplicate by comparing what is on ONE DEVICE, and two devices cannot see
+  each other; `ref text not null unique` has stood since `0001`. **This is
+  the debt `645` §7.2 recorded, paid here.**
+- ⚠️ **AND THE CARD RECEIPT STAYS LOCAL**, by this file's own rule: no
+  `paid` receipt without the gateway saying so, and `chargeCard` is still a
+  simulation. Uploading one now writes a row saying money arrived that did
+  not. **Only the cash receipt rises, because the admin is the person who
+  saw the money.**
+- **The door is a function, never a policy.** `0002` gives `receipts` no
+  insert from a client at all — a receipt a client can create is a receipt
+  anybody holding the publishable key can invent.
+
+### One column for eleven fields
+`665` said the subscription lives on `businesses.plan`. ⚠️ **Measured, that
+is one text column against eleven fields** — so two columns carry the half
+that decides who sees what: `plan_until` and `plan_cancel_at_end`.
+**`plan` stays the visible truth**, so nothing in `650`'s matching moves,
+and `consent`/`invoices`/`notified` do not rise: they need the payment
+gateway, and their place is its batch.
+
+⚠️ **AND THE MAP DROPPED BOTH SILENTLY, WHICH THE SUITE FOUND.**
+`mapJsToLiveRow` writes only the keys it names, and its own comment
+predicts this fault almost word for word for `plan`. So the panel would
+have read success while the subscription reached the row **with no expiry
+on it** — «subscribed for ever» wearing the other coat.
+
+⚠️ **And a limit is written because it is known, not because it is fixed
+here:** `state.subscription` is one object for the device, so an account
+owning two businesses cannot subscribe for both. What the two columns buy
+is that it becomes fixable the day it is asked for — **the row is the
+business**, and the limit was never in the table.
+
+### `test_v95` — 61 assertions, and fourteen teeth
+```
+the boost back to the dateless list  → 5.1 · 5.1b · 5.2 · 5.3, printing
+                                        {"days":null} and then Infinity
+the card charged first again          → 6.5
+the receipt drops covers              → 5.4
+addCashOrder mints its own number     → 4.1 · 7.5, at zero rows on the server
+the map drops the two plan columns    → 7.2 {"plan":"paid"} — and no expiry
+the log truncated again               → 2.3 · 2.4
+the log line never leaves the device  → seven items, 1.1 printing []
+the cash guard out of first place     → 4.7b
+the client duration guard removed     → 6.1c ALONE
+greatest dropped from the migration   → 5.2b ALONE
+the boost-write trigger deleted       → 6.4b · 8.5
+```
+⚠️ **AND THREE OF THE FOURTEEN DID NOT BITE FIRST TIME, and each was
+diagnosed rather than dismissed — which is where two of the suite's own
+items came from.** Deleting the client's duration guard left every
+behavioural item GREEN, because the server refuses 365 anyway; deleting
+`greatest` from the migration left them green too, because the stand-in
+server mirrors the arithmetic rather than reading the SQL. **That is the
+two-layer property working — each layer alone already saves the reader —
+and it is exactly why a structural item stands beside a behavioural one
+rather than instead of it** (`475`, V.07.9, `660`). `6.1c` and `5.2b` are
+those two, and both bite. **The third was my own aim**: the mutation
+renamed the trigger to `…_disabled`, which still CONTAINS the string the
+check reads, so nothing was broken. Re-aimed at deleting it outright, it
+takes two items. *Prove the break landed where it was pointed, not merely
+that a red appeared.*
+
+### And what a real PostgreSQL found that reading had not
+`655`'s rule paying for itself a fourth time — `0001`…`0020` applied in
+order, from empty, before the file was called finished:
+
+- ⚠️ **`revoke all … from public` with no matching grant leaves a function
+  callable by NOBODY but the owner.** `authenticated` inherits from PUBLIC,
+  so «permission denied for function» met the admin as much as anybody, and
+  both new functions were dead. Every migration in this repository since
+  `0005` pairs the two, and the first draft of this one did not.
+- **The direct-PATCH hole above**, and that a column-level revoke does not
+  close it.
+- ⚠️ **Two of the batch file's own counts were wrong and are named rather
+  than carried**: it says `receipts` is «eight columns» and lists ten
+  (measured: ten), and «ten columns missing» over a table listing twelve
+  (thirteen, once `covers` is two).
+
+### Six the net found, and every one attributed by reading
+⚠️ **The derived run came back with SIX red suites, and not one was
+softened, deleted, or reasoned about instead of measured.** Two were faults
+this batch created, one was a fixture that had stopped being true, one was
+a key with no place in the contract, one was a frozen literal, and one was
+this batch breaking a rule of the project's own.
+
+| suite | what it was | what closed it |
+|---|---|---|
+| `v25 · 7.9` | ⚠️ **the app**: the panel read `b.plan === 'paid'` to draw the cancel control, against the standing rule that a screen ASKS the store and never reads the plan | `S.isPaid(b)` — and it was wrong on its own terms too: `isPaid` reads through `businessPlan`, which answers `paid` for a subscription recorded on THIS DEVICE a moment ago, **which is exactly when the button is wanted**. ⚠️ And **nothing in the net read `data-plancancel` at all** — the control shipped with no check, so `v95` gains three |
+| `v26` (six items) | a fixture that assumed a synchronous store | ⚠️ **`3.9`'s `startSubscription` fires `pushPlan`, whose late `save()` — and `save()` serialises the WHOLE state — landed on top of the very next patch, put `myBusinessIds: ['b1']` back, and made the staff account look like the OWNER of `b1`.** Proven by running `v26` on `c88eb18`, the tree before this batch: **56/0.** `patch()` writes through the store now |
+| `v47 · 6.1` | ⚠️ **the app, and it is this batch's own class wearing the other coat** | Measured: `POST /rest/v1/businesses` → **403**. `pushPlan` fires a COAT insert for a seed, and `own: insert` demands `owner_id = auth.uid()` while a coat carries no owner — refused **by design** (`650`'s gap, whose obvious cure `650` refused in writing). **The app said «subscribed», the row never moved, and the only trace was a red line in a console nobody reads.** It is not fired now |
+| `v73 · 8.2` | `470`'s guard doing its job | `boostUntil` went into `DEFAULTS` with no class. Placed `[owner-only]` — measured: not in `KEEPS_ON_SIGN_OUT`, so signing out clears it, which is right |
+| `v83 · 2.6` | a **reversal**, named | it froze `.range(from, from + LIVE_PAGE - 1)` and the reader gained a `limit`. The subject — the read is PAGED, never unbounded — is unchanged and asserted with **more** teeth: a limit can only NARROW the page, never widen it past the ceiling |
+| `v88 · 5.1` | ⚠️ **the app breaking the project's own rule** | `||` and `*` in `0020`. **Narrowing a rule so my own file passes is erasing the witness**, so four sites were rewritten in a migration that has not been applied |
+
+⚠️ **AND THE `v26` FIX WAS KEPT EVEN THOUGH THE `v47` FIX ALONE TURNS THAT
+SUITE GREEN.** The store fix only shortens the window from a network round
+trip to a microtask, **and a suite green because a race got narrower is
+green for the wrong reason.** The fixture removes the assumption instead.
+
+⚠️ **And the class was swept, not the instance** — the rule `645`, `650`,
+`652` and `655` each paid for. `pushLogRow` had `v47`'s exact shape
+(`0002` gives `admin_log` «admin: insert» and nothing else), so the
+condition is written in the store once rather than left to every caller to
+remember.
+
+### A real PostgreSQL found what reading did not — twice in one batch
+`655`'s rule, and it earned itself again. `0001`…`0020` applied in order,
+from empty, before the file was called finished:
+
+- ⚠️ **`revoke all … from public` with no matching grant** leaves a function
+  callable by NOBODY but the owner — «permission denied» met the admin as
+  much as anybody, and both new functions were dead. `v95 · 4.8` asserts
+  revoke count === grant count.
+- ⚠️ **A column-level revoke does not bite.** `revoke update
+  (boosted_until)` changed nothing, because a table-level UPDATE grant
+  implies every column — measured before the trigger was written.
+- ⚠️ **`returning receipts into out_row` fails exactly as `returning *`
+  would have**, and no reading finds it: `INTO` a row variable matches the
+  query's columns to the row's fields ONE BY ONE, so a single composite
+  column is assigned to the first field and the whole row is cast to
+  `id`'s uuid. The id comes back and the row is read as an EXPRESSION.
+
+```
+0001..0020 from empty         0 failures  ·  0020 re-runs clean
+new_receipt_ref × 300         300 distinct, shape ARB-YY-XXXXX
+boost 3 then 7                10 days   (greatest + make_interval)
+a non-admin cash receipt      refused: not authorized
+a stranger's boost            refused: not authorized
+365 days                      refused: duration must be 3, 7 or 14 days
+```
+
+### The suites this file touches — derived, run on the frozen tree
+```
+164 runs · 82 suites · 8,311 assertions · zero red · zero crash
+```
+Twenty-one segments over `0cf3a2e`, `HEAD` re-checked at the head of each —
+the runner exits 2 on a moved character or a dirty tree, and none did —
+**82 derived and 82 run, each on both builds, and no result borrowed.**
+With `wiring.mjs` **19/19** and `chk_i18n` at **425 / 1955 / 350**.
+
+⚠️ **And the index prints `NET INCOMPLETE — 22 run(s) missing`, naming the
+eleven suites this batch does not touch. That is the PARTIAL guard working
+rather than a shortfall**: `665ب` is not its group's closer, `665ج` is, and
+the line says so at both ends. **No full-net figure is written here.**
+
+⚠️ **The arithmetic is not closed here either, and that is said rather than
+skipped:** a partial over a different set cannot be summed against `690`'s
+full net of 91 suites, so the figure that proves nothing else moved is
+`665ج`'s. What IS said is what moved in the suites: **`test_v95` is new at
+66 per build**, `v25` +1, `v83` unchanged in count (a reversal REPLACES an
+assertion), `v73` +0, and the rest of the reversals likewise.
+
+⚠️ **AND THE RUN WAS ORDERED BY RISK, NOT BY NUMBER** — the 45 suites this
+repair could touch ran FIRST, so a reversal is met at segment two rather
+than at segment twenty. That is what made `690` a single-run batch, and it
+is why the last of this batch's three runs found nothing: everything it
+could have found had already been swept.
+
+**The heaviest three are unchanged from `615`'s own table, and their order
+did not move:** `v8` 283/285 · `v20` 276/285 · `v14` 239/242. Measured
+suite time: **6,325s on the single-file build and 5,758s on the module
+one.**
+
 ## Known open items
 - **The header image is still far larger than its box.** V.04.7 replaced
   the 831/837 KB lockups with the cropped marks at **333/338 KB** — 60% off
@@ -15452,19 +15716,15 @@ its own result.
   arrive the app shows each listing's area name, never a figure in miles,
   the mile options stay out of the filter sheet, and "nearest" falls back to
   the reader's own city and the rating.
-- **The marketplace boost purchase flow charges before confirming
-  success.** In `js/screens/marketplace.js`'s `#payBtn` handler,
-  `await S.chargeCard(sel.price, 'Marketplace boost')` runs **before**
-  `if (!S.boostClassified(c.id))` is checked — so a boost that fails
-  after a (simulated) charge leaves the reader with no receipt and no
-  explanation, contradicting the handler's own comment three lines above
-  it ("nothing is charged and no receipt is written unless the boost
-  itself took"). Found and registered during `572`'s close (`test_v70`'s
-  pattern sweep of every "silent redirect"-shaped guard), deliberately
-  left unfixed — it is payment logic, out of scope for a routine
-  registration/redirect sweep, and a bigger, separate concern. Harmless
-  today only because `chargeCard()` is simulated (V.03.6: "says
-  `ok: true` to anything … unacceptable the moment the first dollar
-  moves"). Becomes a real bug the day a real payment gateway is wired
-  in; the fix is reordering the check before the charge, and belongs
-  with that work, not with a routine sweep.
+- ~~**The marketplace boost purchase flow charges before confirming
+  success.**~~ **Closed in `665ب` §4.5**, where `#payBtn` in
+  `js/screens/marketplace.js` was inverted to boost → charge → receipt.
+  ⚠️ **It was not deferred any longer because that batch itself changed
+  the risk**: `boostClassified` had been local arithmetic that could fail
+  only on wrong ownership, and it became a server call that can fail on
+  the network, the policy and a timeout — **a batch that turns a latent
+  fault into a likely one fixes it rather than handing it on.** The
+  handler's own comment, which had stated the intended order since
+  V.02.2 while the code did the opposite, is now what the code does.
+  Registered in `572`'s close and struck here by the batch that closed
+  it — `645`'s rule, in the same commit.

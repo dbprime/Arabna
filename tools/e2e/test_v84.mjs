@@ -477,16 +477,36 @@ console.log('--- 7: the rule the third repetition earned ---');
      from `js/` — which is precisely the harm. So the row says who writes
      it, and the check asserts the app does NOT. */
   const runnerWritten = t => /يكتبه المُشغِّل/.test(said(t));
-  const wrong = tables.filter(t => claimsWritten(t) ? !writes.has(t)
-                                 : runnerWritten(t) ? writes.has(t)
+  /* ⚠️ AND A FOURTH SHAPE, ADDED IN `665ب` AND NAMED HERE FOR THE SAME
+     REASON AS THE THIRD. `public.receipts` takes NO insert from a client
+     at all — `0002` refuses it to the admin as much as to anybody, because
+     a receipt a client can create is a receipt anybody holding the
+     publishable key can invent — so the app writes it through a
+     `security definer` function and there is no `from('receipts').insert`
+     to find. Reading that as «no writer» would demand the row claim a
+     future batch, and read six months from now as an invitation to open an
+     insert policy: precisely the harm.
+     ⚠️ SO IT IS A TWO-WAY AGREEMENT AND NOT AN EXEMPTION: the row must NAME
+     the function in backticks, and the code must really call it. A row
+     naming a door that does not exist is red, and so is a door nobody
+     names. */
+  const rpcs = new Set([...js.matchAll(/sb\.rpc\('([a-z_]+)'/g)].map(m => m[1]));
+  const throughFn = t => [...said(t).matchAll(/`([a-z_]+)`/g)]
+    .some(m => rpcs.has(m[1]));
+  const appWrites = t => writes.has(t) || throughFn(t);
+  const wrong = tables.filter(t => claimsWritten(t) ? !appWrites(t)
+                                 : runnerWritten(t) ? appWrites(t)
                                  : !named(t));
   ok('7.3 …saying «written today» only where a writer exists, naming a batch otherwise, and the runner\'s own table written by nobody in js/',
      wrong.length === 0, wrong.join(', '));
-  /* the three that really are written, and the day a fourth is wired its
-     line has to move with it */
-  ok('7.4 the tables with a writer today are exactly the three that claim one',
-     [...writes].sort().join(',') === tables.filter(claimsWritten).sort().join(','),
-     [...writes].sort().join(',') + ' | ' + tables.filter(claimsWritten).sort().join(','));
+  /* the tables that really are written, and the day another is wired its
+     line has to move with it. ⚠️ COUNTED THROUGH `appWrites`, so a table
+     the app reaches through a function counts once and only where its row
+     names the door. */
+  const written = tables.filter(appWrites).sort().join(',');
+  ok('7.4 the tables with a writer today are exactly the ones that claim one',
+     written === tables.filter(claimsWritten).sort().join(','),
+     written + ' | ' + tables.filter(claimsWritten).sort().join(','));
 }
 
 /* ============================================================

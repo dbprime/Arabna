@@ -39,7 +39,29 @@ const go = async (h) => {
   return page.evaluate(() => location.hash);
 };
 const txt = () => page.textContent('#app');
-const patch = async (fn) => { await page.evaluate(fn); await page.reload(); await page.waitForTimeout(800); await mods(); };
+/* ⚠️ WRITE THROUGH THE STORE, not only around it. `665ب` gave several
+   store functions a server write that ends in a late `save()`, and
+   `save()` serialises the WHOLE in-memory state — so a fixture that
+   writes `localStorage` directly can be overwritten by a request that
+   resolves a moment later, with nothing said. Measured on this suite:
+   `3.9`'s `startSubscription` fires `pushPlan`, whose `save()` landed on
+   top of the very next patch, put `myBusinessIds: ['b1']` back, and made
+   the staff account look like the OWNER of `b1` — six items red with the
+   app behaving. Folding the written object into the live state makes disk
+   and memory agree, so a late save writes what the fixture wrote.
+   ⚠️ AND IT IS KEPT EVEN THOUGH THE STORE FIX ALONE TURNS THIS SUITE
+   GREEN: that one only shortens the window from a network round trip to a
+   microtask, and a suite that passes because a race got narrower is green
+   for the wrong reason. This removes the assumption instead. */
+const patch = async (fn) => {
+  await page.evaluate(fn);
+  await page.evaluate(() => {
+    const S = window.__m && window.__m.S; if (!S) return;
+    Object.assign(S.state, JSON.parse(localStorage.getItem('arabna.v1') || '{}'));
+    S.save();
+  });
+  await page.reload(); await page.waitForTimeout(800); await mods();
+};
 
 await page.goto(BASE); await page.waitForTimeout(800);
 await patch(() => {

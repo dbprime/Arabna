@@ -368,7 +368,7 @@ console.log('--- 4b: no network call inside seasonOn ---');
 }
 
 /* ============================================================
-   5 — `boosted` is a setting, and never a column
+   5 — `boosted` is never an operator's key on the listing
    ============================================================ */
 console.log('--- 5: boosted ---');
 {
@@ -380,9 +380,22 @@ console.log('--- 5: boosted ---');
      comes back refused and the paid button does nothing at all, which is
      worse than the fault it would fix. */
   const sql = sqlCode();
-  ok('5.1 ⚠️ no `boosted` column on `classifieds`, in any migration',
-     !/alter table (public\.)?classifieds[\s\S]{0,200}\bboosted\b/i.test(sql)
-     && !/\bboosted\b\s+(boolean|text|timestamptz)/i.test(sql), 'none');
+  /* ⚠️ AMENDED IN `665ب` §4.8, AND ITS SUBJECT NARROWED RATHER THAN
+     DROPPED. This item was written «no `boosted` column on `classifieds`»
+     while the two things it was standing between had not yet been told
+     apart. They have been: what the OPERATOR marks is a setting, and what
+     a MEMBER BUYS FOR THEMSELVES is a fact about the listing — and
+     `classifieds.boosted_until` is the second, a DURATION on the row,
+     which `665ب` adds because the boost was sold by the day and handed
+     over for ever. **What stays forbidden is a scattered operator key**:
+     a bare `boosted` flag on the listing, or the key in `settings` that
+     the paid button cannot write. */
+  ok('5.1 ⚠️ no bare `boosted` FLAG on `classifieds` — an operator key on the row',
+     !/\bboosted\s+(boolean|text)\b/i.test(sql)
+     && !/add column if not exists boosted\b/i.test(sql), 'none');
+  ok('5.1b …and what landed instead is a duration, bought through a function',
+     /add column if not exists boosted_until timestamptz/i.test(sql)
+     && /create or replace function public\.boost_classified/i.test(sql));
   ok('5.2 …and the settings write is admin-only, which is why it stays',
      /create policy "admin: write" on public\.settings for all/.test(sql), 'admin: write');
 
@@ -398,7 +411,10 @@ console.log('--- 5: boosted ---');
       price: '650', city: 'Houston', photos: [],
     });
     const id = res && (res.id || (res.item && res.item.id));
-    return { id, okk: id ? !!S.boostClassified(id) : false, after: S.boostedIds().slice() };
+    /* ⚠️ AWAITED AND WITH A DURATION SINCE `665ب`: the boost is a server
+       call bought by the day, not a push onto a list. */
+    const okk = id ? await S.boostClassified(id, 3) : false;
+    return { id, okk: !!okk, after: S.boostedIds().slice() };
   });
   ok('5.3 an ordinary member can still boost their own listing',
      r.okk && r.after.includes(r.id), JSON.stringify(r.after));

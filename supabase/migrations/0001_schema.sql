@@ -44,7 +44,7 @@
 -- [owner-only] its subject's and nobody else's:
 --   user saved myListings myBusinessIds subscription myAds notifPrefs
 --   readNotifs extraNotifs hiddenListings blocked savedEvents reminded
---   cardOnFile myPendingBusinesses
+--   cardOnFile myPendingBusinesses boostUntil
 --
 -- [shared] created by a reader, seen by others — the only class that
 -- needed a rule written by hand; every other one reads from its kind:

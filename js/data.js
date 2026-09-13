@@ -111,7 +111,7 @@ export const CLASSIFIED_CATS = MARKET_CATS;
    hand-typed «0.1» while the project had reached V.03.6 — two literals,
    both stale, and a reader reporting a fault could not tell us which build
    they were on. Raise it here when CLAUDE.md's version line moves. */
-export const APP_VERSION = '0.12.0';
+export const APP_VERSION = '0.12.1';
 
 /* ⚠️ توثيق الجوال مؤجَّلٌ إلى ما بعد الإطلاق على App Store — قرار مالك
    البرنامج، وسببه الكلفة: مزوّد الرسائل حسابٌ مدفوعٌ بكلفةٍ لكلّ رسالة،
@@ -7101,6 +7101,13 @@ export const BOOST_PRICES = [
   { id: 'b7d', days: 7,  price: 5 },
   { id: 'b14d', days: 14, price: 8 },
 ];
+
+/* ⚠️ THE DURATIONS, DERIVED AND NEVER LISTED TWICE (`665ب`). `store.js`
+   refuses anything not in here before the request leaves, and
+   `boost_classified` in `0020` refuses it again on the server — the two
+   are the same three numbers, and `test_v95` compares them so the day one
+   moves the other goes red rather than quietly disagreeing. */
+export const BOOST_DAYS = BOOST_PRICES.map(p => p.days);
 
 export const SUBSCRIPTION_PRICE = 29;
 

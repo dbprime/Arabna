@@ -104,13 +104,15 @@ console.log('--- 1: the wires ---');
   /* ⚠️ REVERSED IN `660` AND AGAIN IN `665أ`, AND THE NUMBER MOVES WITH A
      DECISION RATHER THAN BEING DERIVED. `660` gave `biz_photos` a reader
      and `665أ` gives `greetings` and `settings` theirs — each of the three
-     a table that had stood since `0001` with nothing reading it — so the
-     count is TWELVE. It stays a literal for the reason `v16`'s category
-     count does: a count read off the thing it guards compares the file
-     with itself and guards nothing, and a reader added with no decision
-     behind it has to redden. */
-  ok('1.6 twelve live readers, all from the one factory', readers.length === 12, readers.join(' '));
-  for (const t of ['messages', 'reviews', 'review_replies', 'flags', 'claims', 'notifications', 'biz_photos']) {
+     a table that had stood since `0001` with nothing reading it — and
+     `665ب` gives `admin_log` and `receipts` theirs, for the same reason
+     twice more, so the count is FOURTEEN. It stays a literal for the
+     reason `v16`'s category count does: a count read off the thing it
+     guards compares the file with itself and guards nothing, and a reader
+     added with no decision behind it has to redden. */
+  ok('1.6 fourteen live readers, all from the one factory', readers.length === 14, readers.join(' '));
+  for (const t of ['messages', 'reviews', 'review_replies', 'flags', 'claims', 'notifications',
+                   'biz_photos', 'admin_log', 'receipts']) {
     ok('1.6.' + t + ' …including `' + t + '`', readers.includes(t), '');
   }
   /* ⚠️ `630`'S LESSON: the policy decides who sees what, and a filter in
