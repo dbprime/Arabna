@@ -627,6 +627,25 @@ console.log('--- 8: registration and the migration ---');
   ok('8.5 …and the trigger is dropped before it is created',
      /drop trigger if exists classifieds_no_boost_write[\s\S]{0,200}create trigger classifieds_no_boost_write/i.test(f));
 
+  /* ⚠️ AND NO WRITE IS FIRED WHERE THE POLICY REFUSES IT. `v47 · 6.1`
+     counts console errors and caught a `POST /rest/v1/businesses` → 403
+     that this batch's own `pushPlan` fired for every ordinary owner of a
+     SEED business: the app said «subscribed», the row never moved, and the
+     only trace anywhere was a red line in a console nobody reads. That is
+     the behavioural half; this is the structural one beside it, because a
+     console count only sees the paths a suite happens to walk. */
+  const st = strip(read('js/store.js'));
+  const coat = st.slice(st.indexOf('async function pushBusiness'),
+                        st.indexOf('async function pushBusiness') + 2600);
+  ok('8.7 the coat insert is the admin\'s, and is not fired otherwise',
+     /if \(!isAccountAdmin\(\)\) return false;[\s\S]{0,400}\.insert\(/.test(coat),
+     /isAccountAdmin/.test(coat) ? 'guarded' : 'unguarded');
+  const plog = st.slice(st.indexOf('function pushLogRow'),
+                        st.indexOf('function pushLogRow') + 700);
+  ok('8.8 …and so is the log row, said once in the store',
+     /if \(!isAccountAdmin\(\)\) return;/.test(plog),
+     /isAccountAdmin/.test(plog) ? 'guarded' : 'unguarded');
+
   ok('8.6 no console errors anywhere in the run', !errors.length, errors.slice(0, 2).join(' | '));
   await a.ctx.close();
 }

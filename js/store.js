@@ -4652,6 +4652,12 @@ export function logAdminAction(subject, action, from, to) {
 function pushLogRow(row) {
   const uid = state.user && state.user.id;
   if (!uid) return;
+  /* ⚠️ AND `0002` GIVES `admin_log` «admin: insert» AND NOTHING ELSE, so
+     the condition is written HERE and not left to every caller to
+     remember — the V.03.3 reason the log lives in the store at all. Both
+     callers are the panel's today; the day one is not, this refuses
+     instead of printing a 403 nobody reads. */
+  if (!isAccountAdmin()) return;
   try {
     sb.from('admin_log').insert({
       actor_id: uid,
@@ -4769,6 +4775,22 @@ async function pushBusiness(bizId, patch) {
      built on. */
   const seed = withoutDemo(state.extraBusinesses.concat(BUSINESSES)).find(b => b.id === bizId);
   if (!seed) return false;
+  /* ⚠️ A SEED'S COAT ROW IS THE ADMIN'S TO CREATE, and the request is not
+     even fired otherwise. `0002`'s «own: insert» demands
+     `owner_id = auth.uid()` and a coat carries no owner, so an ordinary
+     owner's insert is refused BY DESIGN — and `650` refused the obvious
+     cure in writing, because `myBusinessIds` is device state anyone with a
+     console can edit and writing `owner_id` from it would hand a row's
+     server ownership to whoever claims it.
+     ⚠️ SO IT IS NOT ATTEMPTED. Measured: a request fired where the policy
+     refuses it prints a 403 on the reader's own console, changes nothing,
+     and is read by nobody — «a success over a write that did not happen»
+     wearing the other coat, in the one path this batch added. It returns
+     false exactly as the refusal did, so the caller's contract does not
+     move and `applyBusinessEdit` still keeps the edit in
+     `state.businessEdits` for the day it can land. The gap it leaves is
+     `650`'s own and is written in `docs/الحالة.md`. */
+  if (!isAccountAdmin()) return false;
   const identity = mapJsToLiveRow({ name: seed.name, cat: seed.cat });
   try {
     const { data, error } = await sb.from('businesses')

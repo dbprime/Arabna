@@ -131,9 +131,18 @@ begin
   for i in 1..200 loop
     code := '';
     for j in 1..5 loop
-      code := code || substr(alphabet, 1 + floor(random() * length(alphabet))::int, 1);
+      -- ⚠️ NO `*` AND NO `||` IN ANY MIGRATION'S CODE — the SQL editor
+      -- drops both characters, and `0005` carries the scar. `652` gave us
+      -- a runner and the rule still stands for whatever is ever pasted by
+      -- hand: `concat()` for `||`, and a random BYTE for the scaling,
+      -- which needs no multiplication and is better randomness besides.
+      -- (256 mod 31 is 8, so the first eight symbols are drawn a ninth
+      -- more often than the rest — irrelevant for a reference protected
+      -- by a unique index and a two-hundred-try loop.)
+      code := concat(code, substr(alphabet,
+                1 + (get_byte(gen_random_bytes(1), 0) % length(alphabet)), 1));
     end loop;
-    candidate := 'ARB-' || yy || '-' || code;
+    candidate := concat('ARB-', yy, '-', code);
     if not exists (select 1 from public.receipts r where r.ref = candidate) then
       return candidate;
     end if;
@@ -195,7 +204,7 @@ security definer
 set search_path = public, auth
 as $$
 declare
-  out_row public.receipts;
+  out_id uuid;
 begin
   if not public.is_admin() then
     raise exception 'not authorized';
@@ -225,9 +234,16 @@ begin
      false,
      p_refund_of,
      case when p_refund_of is null then 'paid' else 'refunded' end)
-  returning * into out_row;
+  -- ⚠️ NOT `returning *`, because the SQL editor drops the `*` — and NOT
+  -- `returning receipts into out_row` either, measured on a real
+  -- PostgreSQL: `INTO` a row variable matches the query's columns to the
+  -- row's fields ONE BY ONE, so a single composite column is assigned to
+  -- the FIRST field and the whole row is cast to `id`'s uuid. The id comes
+  -- back and the row is read as a composite EXPRESSION, which carries no
+  -- `*` and is not subject to that rule.
+  returning id into out_id;
 
-  return out_row;
+  return (select rec from public.receipts rec where rec.id = out_id);
 end;
 $$;
 
@@ -283,8 +299,10 @@ begin
   -- second day of three gets nine, not seven. Money paid does not
   -- swallow what is left of the money paid before it.
   update public.classifieds c
+     -- ⚠️ `make_interval` and not `(days || ' days')::interval`: the
+     -- editor drops `||`, and this says the same thing in one call.
      set boosted_until = greatest(now(), coalesce(c.boosted_until, now()))
-                         + (days || ' days')::interval
+                         + make_interval(days => days)
    where c.id::text = listing_id
    returning c.boosted_until into ends_at;
 

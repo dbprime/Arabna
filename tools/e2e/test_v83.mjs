@@ -184,7 +184,21 @@ console.log('--- 2: a read with no order and no limit is cut short in silence --
      !!fn && /tiebreak = 'id'/.test(fn[0]) && /\.order\(tiebreak\)/.test(fn[0]));
   ok('2.5b …and the one table not keyed by `id` says so where it is created',
      /makeLiveReader\('settings'[\s\S]{0,240}tiebreak: 'key'/.test(st), 'settings/key');
-  ok('2.6 it pages with `.range`', !!fn && /\.range\(from, from \+ LIVE_PAGE - 1\)/.test(fn[0]));
+  /* ⚠️ REVERSED IN `665ب`, and the subject did not move: the read is
+     PAGED and never unbounded. What moved is the expression, because that
+     batch gave the reader a `limit` — `admin_log` asks for the newest
+     fifty, since `ADMIN_LOG_MAX = 500` was a browser's storage being cut
+     and the same line on a server is a LOG ERASED, which `0002` forbids to
+     everyone. So the page size is a value and what is asserted is what the
+     check was ever about, with more teeth than the frozen literal had: the
+     range is taken from it, a read with no limit still asks for a whole
+     `LIVE_PAGE`, and a limit can only ever NARROW the page — never widen
+     it past the ceiling. */
+  const size = !!fn && /const size = limit \? Math\.min\(limit, LIVE_PAGE\) : LIVE_PAGE;/.test(fn[0]);
+  ok('2.6 it pages with `.range`, and the page can only narrow',
+     !!fn && size && /\.range\(from, from \+ size - 1\)/.test(fn[0])
+     && /const from = pages \* size;/.test(fn[0]),
+     size ? 'min(limit, LIVE_PAGE)' : 'the size is not bounded by LIVE_PAGE');
   /* ⚠️ a loop with no ceiling spins for ever on a broken answer, and
      reaching the ceiling is SAID rather than swallowed */
   ok('2.7 a ceiling exists and is announced, not swallowed',
