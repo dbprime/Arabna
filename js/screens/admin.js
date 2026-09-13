@@ -10,7 +10,7 @@
 import { t, arCount, L, icon, $, $$, go, renderHeader, toast, wireRoutes, emptyState, fmtMoney, priceLabel, priceDotHtml,
          confirmSheet, openSheet, closeSheet, esc,
          greetingCardHtml, openGreeting } from '../ui.js';
-import { MAG_CATS, ARTICLES, CATEGORIES, AD_PRODUCTS, MARKET_CATS } from '../data.js';
+import { MAG_CATS, ARTICLES, CATEGORIES, AD_PRODUCTS, MARKET_CATS, BOOST_PRICES } from '../data.js';
 import * as S from '../store.js';
 import { fmtEventDate } from './events.js';
 import { fmtDate } from './directory.js';
@@ -144,7 +144,7 @@ function panelView(root) {
     }));
     // --- a cash order, issued from here and nowhere else ---
     const csh = $('#cshGo');
-    if (csh) csh.addEventListener('click', () => {
+    if (csh) csh.addEventListener('click', async () => {
       const err = $('#cshErr');
       const kind = $('#cshKind').value;
       const bizId = $('#cshBiz').value;
@@ -154,7 +154,10 @@ function panelView(root) {
       // no cash without a record of WHO TOOK IT — that is the whole point
       if (!who) { err.textContent = t('cashNeedWho'); return; }
       const b = S.businessById(bizId);
-      const r = S.addCashOrder({
+      /* ⚠️ AWAITED SINCE `665ب`: the receipt is minted and written by the
+         server now, so a repaint before its answer would draw an order
+         that may not exist — and this one is money. */
+      const r = await S.addCashOrder({
         kind, bizId, days: Number($('#cshDays').value) || 30,
         amount: Number($('#cshAmt').value) || 0,
         method: $('#cshMethod').value,
@@ -630,6 +633,56 @@ function panelView(root) {
           toast(t(ok ? 'adminDeleted' : 'bizSaveFailed'), ok ? 'ok' : 'err');
           if (ok) paint();
         }); },
+      });
+    }));
+
+    /* ⚠️ THE PANEL ENDS A SUBSCRIPTION WITH A WRITTEN REASON, and the two
+       endings are not the same thing: «at the end of the paid period» is
+       what a subscriber asked for, and «now» is what a breach earns. The
+       admin chooses which, and both leave a line in the log.
+       ⚠️ AND THE RECEIPT IS NEVER DELETED — the money was really taken,
+       and what answers a refund is a SECOND receipt pointing at the
+       first, never a hole where the first one stood. */
+    $$('#aBody [data-plancancel]').forEach(b => b.addEventListener('click', () => {
+      const id = b.dataset.plancancel;
+      const biz = S.businessById(id);
+      askReason({
+        title: t('adminPlanEnd'),
+        sub: `${esc(biz ? L(biz.name) : id)} — ${t('adminPlanEndSub')}`,
+        confirmText: t('adminPlanEndAt'), danger: false,
+        onGo: (why) => S.adminCancelPlan(id, 'atEnd', why).then(ok => {
+          toast(t(ok ? 'adminPlanEnded' : 'somethingWrong'), ok ? 'ok' : 'err');
+          if (ok) paint();
+        }),
+      });
+    }));
+
+    /* the gift boost — a duration and a reason, through the same function
+       the paid button uses (`665ب` §3.4) */
+    $$('#aBody [data-mktgift]').forEach(b => b.addEventListener('click', () => {
+      const id = b.dataset.mktgift;
+      openSheet(`
+        <div class="sheet-title">${t('adminGiftBoost')}</div>
+        <div class="sheet-sub">${t('adminGiftBoostSub')}</div>
+        <div class="field"><label class="label">${t('cashDays')}</label>
+          <select class="input" id="giftDays">${
+            BOOST_PRICES.map(p => `<option value="${p.days}">${p.days} ${t('days')}</option>`).join('')
+          }</select></div>
+        <div class="field"><label class="label">${t('cashNote')}</label>
+          <input class="input" id="giftWhy" /></div>
+        <button class="btn btn-gold btn-block mt-12" id="giftGo">${t('adminGiftBoost')}</button>
+        <button class="btn btn-ghost btn-block mt-8" data-close>${t('cancel')}</button>
+      `, (panel) => {
+        panel.querySelector('#giftGo').addEventListener('click', async () => {
+          const days = Number(panel.querySelector('#giftDays').value);
+          const why = panel.querySelector('#giftWhy').value.trim();
+          const ok = await S.boostClassified(id, days);
+          if (!ok) { toast(t('somethingWrong'), 'err'); return; }
+          S.logAdminAction(id, 'giftBoost', String(days), why);
+          closeSheet();
+          toast(t('done'), 'ok');
+          paint();
+        });
       });
     }));
 
@@ -1598,6 +1651,12 @@ function dirBrowseHtml() {
         <button class="mini-btn" data-bizopen="${b.id}" aria-label="${t('adminOpen')}">${icon('eye', 15)}</button>
         <button class="mini-btn gold" data-bizedit="${b.id}" aria-label="${t('adminEdit')}">${icon('edit', 15)}</button>
         <button class="mini-btn" data-bizdel="${b.id}" aria-label="${t('adminDelBiz')}">${icon('trash', 15)}</button>
+        ${/* ⚠️ DRAWN ONLY FOR A BUSINESS THAT IS ACTUALLY PAID. A cancel
+              button on a free listing is a control that cannot do
+              anything, which is worse than no control. */''}
+        ${b.plan === 'paid'
+          ? `<button class="mini-btn" data-plancancel="${b.id}" aria-label="${t('adminPlanEnd')}">${icon('x', 15)}</button>`
+          : ''}
       </div>`).join('')
       : `<div class="hint">${t('adminDirNone')}</div>`}
     ${list.length > rows.length
@@ -1794,6 +1853,16 @@ function mktHtml() {
             ? `<button class="btn btn-gold btn-sm" data-mktshow="${c.id}">${icon('eye', 17)} ${t('republish')}</button>`
             : `<button class="btn btn-ghost btn-sm" data-mkthide="${c.id}">${icon('eye', 17)} ${t('adminHide')}</button>`}
           <button class="btn btn-danger btn-sm" data-mktdel="${c.id}">${icon('trash', 17)} ${t('adminRemove')}</button>
+        </div>
+        ${/* ⚠️ THE GIFT BOOST GOES THROUGH THE SAME FUNCTION AS THE PAID
+              ONE (`665ب` §3.4). A second road to the same column would
+              be a second set of rules about who may write it and for how
+              long, and one of the two would drift. */''}
+        <div class="action-grid" style="margin:8px 0 0">
+          <button class="btn btn-ghost btn-sm" data-mktgift="${c.id}">${icon('bolt', 17)} ${t('adminGiftBoost')}</button>
+          <span class="muted fs-12" style="align-self:center">${
+            S.isBoosted(c.id) ? t('adminBoostedTill').replace('{d}',
+              S.boostedUntil(c.id) === Infinity ? '—' : fmtDate(S.boostedUntil(c.id))) : ''}</span>
         </div>
       </div>`).join('') : `<div class="hint">${t('adminMktNone')}</div>`}
   </div>`;

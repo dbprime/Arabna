@@ -1005,20 +1005,31 @@ export function BoostScreen(root, params) {
        for a boost that did not happen is worse than either fault alone. */
     if (!S.ownsListing(c.id)) { go('#/marketplace/' + c.id); return; }
     e.target.innerHTML = `<span class="spinner"></span> ${t('paying')}`;
+    /* ⚠️ THE BOOST FIRST, THEN THE CARD, THEN THE RECEIPT (`665ب` §4.5).
+       The comment that stood here said the intended order was exactly this
+       and the code charged first, and the item was deferred to the payment
+       gateway's batch. ⚠️ IT IS NOT DEFERRED ANY LONGER, AND THE REASON IS
+       THAT THIS BATCH ITSELF CHANGES THE RISK: `boostClassified` used to be
+       local arithmetic that could only fail on wrong ownership, and it is
+       now a server call that can fail on the network, on the policy and on
+       a timeout. A batch that turns a latent fault into a likely one fixes
+       it rather than handing it on. */
+    const boosted = await S.boostClassified(c.id, sel.days);
+    if (!boosted) {
+      /* nothing was charged and nothing was written — say so, rather than
+         leaving a reader who pressed a paid button with a silent screen */
+      toast(t('somethingWrong'), 'err');
+      go('#/marketplace/' + c.id);
+      return;
+    }
     await S.chargeCard(sel.price, 'Marketplace boost');
-    /* ⚠️ NOT AWAITED, and that is measured rather than left over: `665أ`
-       moved three of the four operator settings to `public.settings` and
-       deliberately left `boosted` where it is — `0002`'s policy on that
-       table is `admin: write`, and a boost is a paid action AN ORDINARY
-       MEMBER performs, so the write comes back refused. See the note at
-       `boostClassified` in `js/store.js`.
-       ⚠️ AND THE CHARGE STILL RUNS ABOVE THIS LINE, which is the standing
-       open item and is NOT this batch's: the comment four lines up states
-       the intended order and the code charges first. It is registered in
-       `docs/الحالة.md` and belongs with the payment gateway. */
-    if (!S.boostClassified(c.id)) { go('#/marketplace/' + c.id); return; }
+    /* ⚠️ AND THE RECEIPT SAYS WHAT THE MONEY BOUGHT. It carried no `covers`
+       at all, so even the paper did not say how many days — which is half
+       of «I paid and got nothing». */
+    const until = S.boostedUntil(c.id);
     S.addReceipt({ kind: 'boost', amount: sel.price, method: 'card',
-                   refId: c.id, description: `${t('boost')} — ${esc(L(c.title))}` });
+                   refId: c.id, description: `${t('boost')} — ${esc(L(c.title))}`,
+                   covers: { from: S.now(), to: until } });
     toast(t('done'), 'ok');
     go('#/marketplace/' + c.id);
   });

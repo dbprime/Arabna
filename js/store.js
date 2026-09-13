@@ -12,7 +12,8 @@ import { CLASSIFIEDS, BUSINESSES, NOTIFICATIONS, SLIDER_ADS, HOUSE_SLIDE, MINI_A
          AD_PRODUCTS, AD_SLOTS, APP_VERSION,
          attrById, attrInCat, isAllDay, week, nextOccurrence, PHONE_AUTH,
          eventIsAllDay, eventStamp, eventToInstant, eventFromInstant,
-         eventTypeIcon } from './data.js';
+         eventTypeIcon, BOOST_DAYS,
+} from './data.js';
 import { expandQuery, hayMatches, catMatches, squash } from './synonyms.js';
 import { holidaysOn } from './holidays.js';
 
@@ -165,6 +166,11 @@ const DEFAULTS = {
   extraBusinesses: [],      // user-created business listings
   extraArticles: [],        // admin-created articles
   boosted: ['c1'],
+  /* ⚠️ NOT A SECOND SOURCE OF TRUTH BUT A TRACE OF THE SERVER'S ANSWER
+     (`665ب`): the row's `boosted_until` is the fact, and this is what the
+     device holds for a listing whose row the live reader has not fetched
+     yet — a listing published a minute ago, before all else. */
+  boostUntil: {},
   reported: [],
   cardOnFile: null,
   reviews: [],               // user-written reviews { id, bizId, rating, text, when }
@@ -2623,7 +2629,7 @@ export function liveReaderTables() { return _liveTables.slice(); }
  * @param {string} table
  * @param {{order?: Array<[string, {ascending: boolean}]>}} opts
  */
-function makeLiveReader(table, { order, tiebreak = 'id' } = {}) {
+function makeLiveReader(table, { order, tiebreak = 'id', limit = 0 } = {}) {
   /* ⚠️ `created_at desc` is the fallback and NOT the rule: the server's
      order has to match the screen's or the page lies. The events reader
      orders `featured desc, starts_at asc` — ordered by `created_at` a
@@ -2666,12 +2672,20 @@ function makeLiveReader(table, { order, tiebreak = 'id' } = {}) {
            fails, which `makeLiveReader` swallows into «the last good
            answer stands», i.e. nothing, for ever and with no error. */
         q = q.order(tiebreak);
-        const from = pages * LIVE_PAGE;
-        const { data, error } = await q.range(from, from + LIVE_PAGE - 1);
+        /* ⚠️ A BOUNDED READ IS FOR A TABLE THAT GROWS WITHOUT A CEILING
+           (`665ب`). `admin_log` had `ADMIN_LOG_MAX = 500` because it lived
+           in one browser's storage; on a server that truncation would be a
+           LOG ERASED, which `0002` forbids to everyone, the admin included.
+           So nothing is cut — and the reader asks for the newest fifty
+           rather than the whole history, which is what the panel shows. */
+        const size = limit ? Math.min(limit, LIVE_PAGE) : LIVE_PAGE;
+        const from = pages * size;
+        const { data, error } = await q.range(from, from + size - 1);
         if (error) throw error;
         const got = data || [];
         out.push.apply(out, got);
         pages++;
+        if (limit) break;
         /* the whole table, not its first page: the screen orders a
            complete set and not a page of one */
         if (got.length < LIVE_PAGE) break;
@@ -2771,6 +2785,47 @@ async function pushSetting(key, value) {
    all built and the wire was missing — the fifth time this project has
    found that shape (`645` twice, `649`, `650`, `655`). */
 const greetReader = makeLiveReader('greetings');
+
+/* ───────── the admin log, on the server (665ب) ─────────
+   ⚠️ A LOG THAT VANISHES IS NOT A LOG. `state.adminLog` lived on ONE
+   DEVICE and was cut at five hundred rows, and the whole of its use is the
+   day somebody asks «who changed this?» — a day that does not come while
+   the phone is still in the hand.
+
+   `0001_schema.sql` has carried the table since the beginning and `0002`
+   gives it the narrowest pair of policies in the schema: `admin: read`
+   and `admin: insert`, AND NO UPDATE AND NO DELETE FOR ANYONE, the admin
+   included — a log its own actor can rewrite is not a log. ⚠️ SO THERE IS
+   NO MIGRATION FOR THE LOG.
+
+   ⚠️ AND IT IS READ WHEN A SESSION APPEARS, NOT AT BOOT. Its policy
+   answers a visitor with nothing by design, so a request on every
+   visitor's launch buys exactly nothing — the rule `refreshLiveRows`
+   already states for the four account-shaped tables. */
+const logReader = makeLiveReader('admin_log', {
+  order: [['created_at', { ascending: false }]],
+  /* ⚠️ FIFTY, AND THIS IS THE HALF THAT REPLACES `ADMIN_LOG_MAX`. The
+     truncation is gone — nothing is cut on the server — and what is
+     bounded instead is the READ, because the panel shows a page and the
+     table now grows without a ceiling. Cutting the store and cutting the
+     view look alike and are opposites: one destroys the record, the other
+     is a window onto it. */
+  limit: 50,
+});
+
+/* ───────── the receipts, on the server (665ب) ─────────
+   ⚠️ AND ONLY THE CASH ONE RISES. `0002` gives `receipts` a read policy
+   and NO insert, update or delete from a client at all — deliberately: a
+   receipt a client can create is a receipt anybody holding the
+   publishable key can invent. The door is `issue_cash_receipt` in `0020`.
+
+   ⚠️ AND THE CARD RECEIPT STAYS LOCAL, which is this file's own rule
+   three thousand lines below: no `paid` receipt without the gateway
+   saying so — and `chargeCard` is still a simulation. Uploading one now
+   would write a row saying money arrived that did not. */
+const rcptReader = makeLiveReader('receipts', {
+  order: [['issued_at', { ascending: false }]],
+});
 
 /** when the live greetings last arrived, or 0 — read by the suite */
 export function liveGreetLoadedAt() { return greetReader.loadedAt(); }
@@ -2928,6 +2983,15 @@ export function mapJsToLiveRow(biz) {
      look live on the admin's phone alone. Nothing writes it until the
      subscription batch; the column is read today, and the door is open. */
   put('plan', b.plan);
+  /* ⚠️ AND THE TWO COLUMNS BESIDE IT (`665ب`), for the reason the paragraph
+     above predicted almost word for word. `pushPlan` sends `plan_until` and
+     `plan_cancel_at_end`, and this map DROPS ANY KEY IT DOES NOT NAME, with
+     no error at all — so the panel would have read success while the
+     subscription reached the row with no expiry on it. Measured: the suite
+     found `plan: 'paid'` on the server and `plan_until` absent, which is
+     «subscribed for ever» wearing the fault's other coat. */
+  put('plan_until', b.plan_until);
+  put('plan_cancel_at_end', b.plan_cancel_at_end);
   /* ⚠️ `ownerId` IS WRITTEN HERE, AND `claimed` IS NOT — the two halves of
      one rule (655 §5). An approved claim makes an account the owner of the
      row, and without this line `approveClaim`'s write is dropped by the map
@@ -3086,6 +3150,11 @@ function refreshLiveRows() {
     loadLiveFlags().then(after);
     loadLiveClaims().then(after);
     loadLiveNotifs().then(after);
+    /* ⚠️ AND THE ADMIN LOG AND THE RECEIPTS (`665ب`), for the same reason
+       and no other: `admin_log` is `admin: read` and `receipts` is «own or
+       admin», so both answer a visitor with nothing by design. */
+    loadLiveAdminLog().then(after);
+    loadLiveReceipts().then(after);
   }
 }
 /**
@@ -3124,6 +3193,12 @@ function forgetLiveRows() {
   flagReader.forget();
   claimReader.forget();
   notifReader.forget();
+  /* ⚠️ AND THE LOG AND THE RECEIPTS (`665ب`) — the sharpest pair in the
+     list. The log is an admin's whole view of who did what, and a receipt
+     names a person and an amount; a session that ENDED must not leave
+     either standing on the phone it left. */
+  logReader.forget();
+  rcptReader.forget();
   /* ⚠️ and the names with them: a display name was read for a party of a
      conversation THIS account is in, so it leaves with the account. */
   forgetThreadNames();
@@ -3560,7 +3635,7 @@ export function allClassifieds() {
          photo it had the moment its owner pressed «save». */
       photoPaths: (c.photos || []).slice(),
       photos: photoUrls('listings', c.photos),
-      boosted: boostedIds().includes(c.id),
+      boosted: isBoosted(c.id),
       status: isHidden(c) ? 'hidden' : (c.status || 'live'),
     }));
 }
@@ -4502,7 +4577,13 @@ export function pendingClaims() { return mergedClaims().filter(c => c.status ===
    admin and NOT the owner. The owner editing their own page
    records nothing — this is a trace of our hand, not theirs.
    ------------------------------------------------------------ */
-export const ADMIN_LOG_MAX = 500;
+/* ⚠️ `ADMIN_LOG_MAX` IS GONE, AND ITS ABSENCE IS THE ITEM (`665ب`).
+   It was five hundred rows because the log lived in `localStorage` and a
+   browser's store is finite. On a server that same line is A LOG BEING
+   ERASED — and `0002` refuses `delete` on `admin_log` to every role, the
+   admin included, precisely so that cannot happen. The bound moved to the
+   READ (`logReader`, fifty rows): cutting the store and cutting the view
+   look alike and are opposites. */
 
 /** a staff account is signed in and this is somebody else's shop */
 export function adminEditing(bizId) {
@@ -4531,7 +4612,8 @@ function recordAdminEdit(bizId, patch) {
                      from: logValue(before[field]), to: logValue(patch[field]) }))
     .filter(r => r.from !== r.to);
   if (!rows.length) return;
-  state.adminLog = (state.adminLog || []).concat(rows).slice(-ADMIN_LOG_MAX);
+  state.adminLog = (state.adminLog || []).concat(rows);
+  rows.forEach(pushLogRow);
 }
 
 /**
@@ -4547,15 +4629,66 @@ function recordAdminEdit(bizId, patch) {
  * moment anything that is not that screen does the same thing.
  */
 export function logAdminAction(subject, action, from, to) {
-  state.adminLog = (state.adminLog || [])
-    .concat([{ at: now(), bizId: subject || '—', field: action,
-               from: logValue(from), to: logValue(to) }])
-    .slice(-ADMIN_LOG_MAX);
+  const row = { at: now(), bizId: subject || '—', field: action,
+                from: logValue(from), to: logValue(to) };
+  state.adminLog = (state.adminLog || []).concat([row]);
+  pushLogRow(row);
 }
 
-/** newest first, for the panel */
+/**
+ * ⚠️ THE ROW GOES TO THE SERVER AND THE ACTION DOES NOT WAIT FOR IT, and
+ * that is a decision rather than an oversight. Everywhere else in this
+ * file the server is written FIRST and the device is the trace of its yes
+ * — because there the write IS the action. Here the action has already
+ * happened: the listing is approved, the shop is merged, the money is
+ * taken. A log write that failed must not undo any of that, and a log
+ * write that is awaited makes every one of those callers async for a line
+ * nobody reads at the time.
+ *
+ * ⚠️ AND `actor_id` COMES FROM THE SESSION, ALWAYS. It meant nothing in a
+ * log on one device with one admin, and with two admins it IS the item —
+ * «who changed this?» has no answer without it.
+ */
+function pushLogRow(row) {
+  const uid = state.user && state.user.id;
+  if (!uid) return;
+  try {
+    sb.from('admin_log').insert({
+      actor_id: uid,
+      ref_id: row.bizId === '—' ? null : row.bizId,
+      action: row.field,
+      from_val: row.from || null,
+      to_val: row.to || null,
+    }).then(() => {}, () => {});
+  } catch (e) { /* a log line never takes the action down with it */ }
+}
+
+/** when the live log last arrived, or 0 — read by the suite */
+export function liveLogLoadedAt() { return logReader.loadedAt(); }
+/** Fetch the newest page of the log. */
+export async function loadLiveAdminLog() { return logReader.load(); }
+
+/**
+ * newest first, for the panel — the server's rows, and beside them
+ * anything this device wrote that has not come back yet.
+ * ⚠️ THE SERVER'S ROWS LEAD: they are the record, and the local copy is
+ * only what keeps the panel from looking empty for a second after an
+ * action. A local line whose server row has arrived is dropped rather
+ * than printed twice.
+ */
 export function adminLog(limit = 50) {
-  return (state.adminLog || []).slice().reverse().slice(0, limit);
+  const live = (logReader.get() || []).map(r => ({
+    at: Date.parse(r.created_at) || 0,
+    bizId: r.ref_id || '—',
+    field: r.action,
+    from: r.from_val || '',
+    to: r.to_val || '',
+    actorId: r.actor_id || null,
+  }));
+  const seen = new Set(live.map(r => r.bizId + '|' + r.field + '|' + r.from + '|' + r.to));
+  const mine = (state.adminLog || [])
+    .filter(r => !seen.has((r.bizId || '—') + '|' + r.field + '|' + (r.from || '') + '|' + (r.to || '')));
+  return live.concat(mine).sort((a, b) => b.at - a.at).slice(0, limit);
 }
 
 /** the live row for a business, coat or standalone, or null */
@@ -4981,6 +5114,92 @@ export function addReceipt({ kind, description, amount, method = 'card',
   return item;
 }
 
+/**
+ * one server row -> the shape the screens have always read.
+ * ⚠️ THE APP'S RECEIPT ID IS THE `ref`, not the row's uuid: `ARB-26-XXXXX`
+ * is what a person reads down a telephone and what `#/receipt/<id>` is
+ * built on, and a link somebody saved has to keep working.
+ */
+function mapLiveReceiptRowToJs(r) {
+  return {
+    id: r.ref,
+    at: Date.parse(r.issued_at || r.created_at) || 0,
+    kind: r.kind || '',
+    description: r.description || '',
+    amount: Number(r.amount) || 0,
+    tax: Number(r.tax) || 0,
+    method: r.method || 'cash',
+    bizId: r.biz_id || null,
+    refId: r.ref_id || null,
+    covers: r.covers_from && r.covers_to
+      ? { from: Date.parse(r.covers_from), to: Date.parse(r.covers_to) } : null,
+    receivedBy: r.received_by || '',
+    reference: r.reference || '',
+    autoRenew: !!r.auto_renew,
+    refundOf: r.refund_of || null,
+    buyer: { name: r.payer_name || '', email: r.payer_email || '' },
+    status: r.status || 'paid',
+  };
+}
+
+/** when the live receipts last arrived, or 0 — read by the suite */
+export function liveReceiptsLoadedAt() { return rcptReader.loadedAt(); }
+/** Fetch the receipts this account may read. */
+export async function loadLiveReceipts() { return rcptReader.load(); }
+
+/**
+ * Issue a CASH receipt — the only kind that rises to the server.
+ *
+ * ⚠️ THE NUMBER IS MINTED BY THE SERVER AND NOT HERE. `newReceiptNumber()`
+ * avoids a duplicate by comparing what is on THIS DEVICE, and two devices
+ * cannot see each other; `ref text not null unique` has stood on the table
+ * since `0001`, so the guarantee is the database's. This is the debt `645`
+ * §7.2 recorded, and it is paid here.
+ *
+ * ⚠️ AND THE DOOR IS A FUNCTION, NOT A POLICY. `0002` gives `receipts` no
+ * insert from a client at all — a receipt a client can create is a receipt
+ * anybody holding the publishable key can invent — so the write goes
+ * through `issue_cash_receipt`, which refuses in its first statement and
+ * raises rather than returning nothing.
+ *
+ * @returns {Promise<object|null>} the receipt, or null when the server
+ *   refused — and then nothing local is written either.
+ */
+export async function issueCashReceipt({ kind, description, amount, method = 'cash',
+                                         bizId = null, covers = null,
+                                         receivedBy = '', reference = '',
+                                         refundOf = null }) {
+  const u = state.user || {};
+  try {
+    const { data, error } = await sb.rpc('issue_cash_receipt', {
+      p_kind: kind || '',
+      p_description: description || '',
+      p_amount: Number(amount) || 0,
+      p_method: method,
+      p_biz_id: bizId,
+      p_covers_from: covers && covers.from ? new Date(covers.from).toISOString() : null,
+      p_covers_to: covers && covers.to ? new Date(covers.to).toISOString() : null,
+      p_received_by: receivedBy || '',
+      p_reference: reference || '',
+      p_payer_id: u.id || null,
+      p_payer_name: u.name || '',
+      p_payer_email: u.email || '',
+      p_refund_of: refundOf,
+    });
+    if (error || !data) return null;
+    const row = Array.isArray(data) ? data[0] : data;
+    if (!row) return null;
+    const item = mapLiveReceiptRowToJs(row);
+    /* the row is on the server; this copy is what keeps the panel from
+       looking empty until the next read comes back */
+    state.receipts = (state.receipts || []).concat(item);
+    const rows = rcptReader.get();
+    if (rows) rows.unshift(row);
+    save();
+    return item;
+  } catch (e) { return null; }
+}
+
 /** newest first */
 /* Signed out, the record is not readable — but it is not erased either.
    `#/receipts` and `#/my-subscription` stay OPEN on purpose (test v38,
@@ -4989,7 +5208,16 @@ export function addReceipt({ kind, description, amount, method = 'card',
    route guard — it was the data answering to nobody. */
 export function receipts() {
   if (!isLoggedIn()) return [];
-  return (state.receipts || []).slice().sort((a, b) => b.at - a.at);
+  /* ⚠️ THE SERVER'S ROWS AND THIS DEVICE'S, AND NEITHER ALONE (`665ب`).
+     A cash receipt is written by the server, so it is read from there and
+     is the same on every device; a CARD receipt is deliberately still
+     local — no `paid` receipt without the gateway saying so, and
+     `chargeCard` is a simulation. A row that is on both sides is printed
+     once, keyed by the number a person reads. */
+  const live = (rcptReader.get() || []).map(mapLiveReceiptRowToJs);
+  const seen = new Set(live.map(r => r.id));
+  const mine = (state.receipts || []).filter(r => !seen.has(r.id));
+  return live.concat(mine).sort((a, b) => b.at - a.at);
 }
 export function receiptById(id) {
   if (!isLoggedIn()) return null;
@@ -6295,40 +6523,94 @@ export function ownsListing(id) { return mineListing(id); }
  * `startSubscription`, and this is the same shape of hole in the same
  * kind of place.
  */
-/**
- * ⚠️ `boosted` STAYS ON THE DEVICE IN `665أ`, AND THE REASON IS MEASURED
- * RATHER THAN CHOSEN. `0001_schema.sql` names it among the four keys
- * `public.settings` holds, so the intention is right — **but `0002`'s
- * policy on that table is `admin: write`, and a boost is a paid action AN
- * ORDINARY MEMBER performs on their own listing.** Measured on the real
- * path, with the member signed in and owning the listing:
- *
- *     boostClassified(theirOwnListing)  ->  false
- *
- * So moving it makes the paid button do nothing at all — worse than the
- * fault it would fix, because today the owner at least sees their own
- * listing marked on their own device. ⚠️ **AND IT IS NOT FIXED BY
- * WEAKENING THE POLICY**: a table any signed-in account may write is the
- * operator's four switches open to everybody.
- *
- * The three that really are the operator's — `seasons`, `ramadanDates`
- * and `prayer` — moved in this batch. This one needs a decision about
- * where a member's own boost is written, and it belongs with the batch
- * that carries the money (`665ب`), where the gift-boost button lives too.
- *
- * ⚠️ AND NO COLUMN ON `classifieds` EITHER, which would be the fast wrong
- * answer: it contradicts the schema's own comment and is an unplanned
- * migration. `test_v94 · 5.1` guards that half and stays.
- */
-export function boostedIds() {
-  return state.boosted || [];
+/* ───────── the boost is bought by the DAY, and it ends (665ب) ─────────
+   ⚠️ THE WORST OF THE THREE IN THIS BATCH, AND NOBODY HAD REPORTED IT.
+   `BOOST_PRICES` in `js/data.js` sells three days for $2, seven for $5 and
+   fourteen for $8 — and `boostClassified` pushed the id into a list WITH
+   NO DATE AND NO DURATION. Measured across the whole repository: `days`
+   was read nowhere but the card that DRAWS it. **So two dollars for three
+   days bought them for ever.**
+
+   ⚠️ It is `680`'s fault inverted: there a paid place was given away by a
+   stray touch, here a bounded time was sold and handed over unbounded.
+   Both are money.
+
+   ⚠️ AND `665أ` WAS RIGHT TO REFUSE A COLUMN — THIS IS NOT A REVERSAL.
+   What it refused was moving `boosted` into `public.settings`, whose
+   policy is `admin: write`: measured, the paid button then did nothing at
+   all. And it refused an unplanned column beside it. What lands here is
+   neither. `settings.boosted` fits what the OPERATOR marks; a boost is
+   what a MEMBER BUYS FOR THEMSELVES — two things that had been stacked in
+   one key. **The row is the listing**, and `classifieds.boosted_until` is
+   a fact about the listing rather than an operator's switch.
+
+   ⚠️ AND THE CLIENT DOES NOT WRITE IT. `0020`'s `boost_classified`
+   refuses a caller who is neither the owner nor staff, refuses a duration
+   that is not one of the three, and adds with `greatest` so a second
+   purchase over a live period EXTENDS rather than replaces — somebody
+   buying seven days on the second day of three gets nine, not seven. And
+   a trigger holds the column against a direct PATCH, because `0002`'s
+   «own: update» would otherwise have let a listing's owner write a year
+   into it with the publishable key that ships on every phone. */
+
+/** when this listing's boost runs out, in ms — 0 if it never started */
+export function boostedUntil(id) {
+  const row = (clsReader.get() || []).find(r => r.id === id);
+  if (row && row.boosted_until) return Date.parse(row.boosted_until) || 0;
+  /* ⚠️ AND THE SERVER'S ANSWER, HELD UNTIL THE READER CATCHES UP. A listing
+     published a moment ago is in `state.extraClassifieds` and NOT yet in
+     `clsReader`, so the row the boost just wrote is one the device cannot
+     see — and the buyer would press the button, be charged, and watch
+     nothing happen. Measured, and it is the trace-of-its-yes pattern this
+     file uses everywhere else: the server decided, and this is the note of
+     what it decided. */
+  const held = (state.boostUntil || {})[id];
+  if (held) return held;
+  /* ⚠️ A DEVICE ENTRY WITH NO DATE IS WHAT IT ALWAYS WAS — a boost with no
+     end. It is the seed listings, which have no row to carry a column, and
+     anything bought before today; giving those an invented expiry would
+     take away time somebody paid for. Nothing new is ever written there. */
+  return (state.boosted || []).includes(id) ? Infinity : 0;
 }
-export function boostClassified(id) {
-  if (!ownsListing(id)) return false;
-  if (state.boosted.includes(id)) return true;
-  state.boosted.push(id);
-  save();
-  return true;
+
+/** is it boosted RIGHT NOW — which is the question every screen asks */
+export function isBoosted(id) { return boostedUntil(id) > now(); }
+
+/** the ids that are boosted right now, the server's and the device's */
+export function boostedIds() {
+  const out = (state.boosted || []).filter(id => isBoosted(id));
+  for (const id of Object.keys(state.boostUntil || {})) {
+    if (isBoosted(id) && !out.includes(id)) out.push(id);
+  }
+  for (const r of (clsReader.get() || [])) {
+    if (r.boosted_until && Date.parse(r.boosted_until) > now() && !out.includes(r.id)) {
+      out.push(r.id);
+    }
+  }
+  return out;
+}
+
+/**
+ * Buy or grant a boost of `days` days.
+ * ⚠️ THE SERVER DECIDES, and a refusal returns false and writes nothing.
+ * @param {string} id
+ * @param {number} days  one of `BOOST_PRICES`' durations
+ * @returns {Promise<boolean>}
+ */
+export async function boostClassified(id, days) {
+  if (!ownsListing(id) && !isAccountAdmin()) return false;
+  if (!BOOST_DAYS.includes(Number(days))) return false;
+  try {
+    const { data, error } = await sb.rpc('boost_classified', {
+      listing_id: id, days: Number(days),
+    });
+    if (error || !data) return false;
+    markLiveClsField(id, 'boosted_until', data);
+    state.boostUntil = Object.assign({}, state.boostUntil,
+      { [id]: Date.parse(data) || 0 });
+    save();
+    return true;
+  } catch (e) { return false; }
 }
 /**
  * ⚠️ `kind` NAMES THE THING REPORTED, and it used to say `'report'` —
@@ -7645,6 +7927,42 @@ export function clockDaysAhead() { return Math.round((state.clockOffset || 0) / 
  * Start a subscription. `consentText` is stored verbatim, not as a link:
  * the wording can change later and what matters is what this person read.
  */
+/**
+ * The subscription's visible half, on the business row (`665ب`).
+ *
+ * ⚠️ TWO COLUMNS AND NOT A TABLE, and `plan` STAYS THE VISIBLE TRUTH:
+ * whoever reads the directory asks one column exactly as they do today,
+ * and nothing in `650`'s matching moves. `state.subscription` carries
+ * eleven fields and `plan` is one text column, so what rises is the half
+ * that decides WHO SEES WHAT — is it paid, until when, and was it
+ * cancelled. The consent, the invoices and the notices stay where they
+ * are: they need the payment gateway, and their place is its batch.
+ *
+ * ⚠️ AND A COAT ROW IS CREATED FOR A SEED, exactly as `applyBusinessEdit`
+ * does: the 485 real listings live in `js/data.js` and have no row until
+ * something is written about them.
+ *
+ * @returns {Promise<boolean>} false when the server refused
+ */
+export async function pushPlan(bizId, plan, until, cancelAtEnd) {
+  if (!bizId) return false;
+  const patch = {
+    plan,
+    plan_until: until ? new Date(until).toISOString() : null,
+    plan_cancel_at_end: !!cancelAtEnd,
+  };
+  return applyBusinessEdit(bizId, patch);
+}
+
+/**
+ * ⚠️ AND A KNOWN LIMIT, WRITTEN BECAUSE IT IS KNOWN AND NOT BECAUSE IT IS
+ * FIXED HERE: `state.subscription` is ONE OBJECT FOR THE DEVICE, so an
+ * account owning two businesses cannot subscribe for both. It is not this
+ * batch's item and it is not smuggled into it — what the two columns above
+ * buy is that it becomes fixable the day it is asked for, because THE ROW
+ * IS THE BUSINESS and the limit was never in the table. Recorded in
+ * `docs/الحالة.md`.
+ */
 export function startSubscription({ businessId, plan = 'monthly', consentText = '', device = '' }) {
   /* The screen guard is a courtesy to the reader; THIS is the rule.
      A guard that lives on a screen is bypassed by anything that is not
@@ -7667,7 +7985,43 @@ export function startSubscription({ businessId, plan = 'monthly', consentText = 
     notified: {},
   };
   save();
+  /* the row says so too, so the owner sees it from any device (`665ب`) */
+  pushPlan(businessId, 'paid', state.subscription.currentPeriodEnd, false);
   return state.subscription;
+}
+
+/**
+ * The panel ends a subscription (`665ب`). Two endings, and the admin
+ * chooses which: let the paid period run out, or end it now.
+ *
+ * ⚠️ AND THE RECEIPT IS NEVER DELETED. «Deletion is a mark, not a wipe»,
+ * and the money really was taken — what answers a cancellation with a
+ * refund is a SECOND receipt pointing at the first (`refund_of` in
+ * `0020`), and both stay in the list.
+ *
+ * @param {string} bizId
+ * @param {'atEnd'|'now'} when
+ * @param {string} reason  written, and it reaches the log verbatim
+ * @returns {Promise<boolean>}
+ */
+export async function adminCancelPlan(bizId, when, reason) {
+  if (!isAccountAdmin()) return false;
+  const b = businessById(bizId);
+  const before = (b && b.plan) || 'free';
+  const ok = when === 'now'
+    ? await pushPlan(bizId, 'free', null, false)
+    : await pushPlan(bizId, before === 'free' ? 'free' : 'paid',
+                     (state.subscription && state.subscription.businessId === bizId)
+                       ? state.subscription.currentPeriodEnd : null, true);
+  if (!ok) return false;
+  logAdminAction(bizId, when === 'now' ? 'planEndNow' : 'planEndAtPeriod',
+                 before, reason || '');
+  if (when === 'now' && state.subscription && state.subscription.businessId === bizId) {
+    state.subscription.status = 'canceled';
+    state.subscription.cancelAtPeriodEnd = true;
+    save();
+  }
+  return true;
 }
 
 /** one period forward from `from`, by the plan's cycle */
@@ -7751,6 +8105,7 @@ export function cancelSubscription() {
   if (!sub) return null;
   sub.cancelAtPeriodEnd = true;
   save();
+  pushPlan(sub.businessId, 'paid', sub.currentPeriodEnd, true);
   return sub;
 }
 export function resumeSubscription() {
@@ -7758,6 +8113,7 @@ export function resumeSubscription() {
   if (!sub) return null;
   sub.cancelAtPeriodEnd = false;
   save();
+  pushPlan(sub.businessId, 'paid', sub.currentPeriodEnd, false);
   return sub;
 }
 export function changeSubscriptionPlan(plan) {
@@ -7855,25 +8211,31 @@ export const CASH_METHODS = ['cash', 'check', 'transfer'];
  * Take money by hand and put it on the books. Issues the receipt, so the
  * buyer walks away with a transaction number like any card payer.
  */
-export function addCashOrder({ kind, bizId = null, product = '', cat = '',
-                               days = 30, amount = 0, method = 'cash',
-                               receivedBy = '', reference = '', note = '',
-                               bizName = '', tagline = '', ctaText = '' }) {
+export async function addCashOrder({ kind, bizId = null, product = '', cat = '',
+                                     days = 30, amount = 0, method = 'cash',
+                                     receivedBy = '', reference = '', note = '',
+                                     bizName = '', tagline = '', ctaText = '' }) {
   if (!CASH_METHODS.includes(method)) return null;
-  /* ⚠️ Money handed over in person is the one action that leaves no trace
-     anywhere else — no card statement, no gateway record — so who issued it
-     and for how much belongs in the log beside everything else. */
-  logAdminAction(bizId || '—', 'cashOrder', receivedBy || '', String(amount || 0));
   const t0 = now();
   const endsAt = t0 + (Number(days) || 30) * DAY_MS;
-  const receipt = addReceipt({
+  /* ⚠️ THE SERVER FIRST, AND NOTHING LOCAL MOVES UNTIL IT ANSWERS (`665ب`).
+     The number is minted there, the row is written there, and a refusal
+     leaves no half-issued order behind — which for money is the whole
+     difference between a record and a story. */
+  const receipt = await issueCashReceipt({
     kind: kind === 'subscription' ? 'subscription' : 'ad',
     description: note || product || strOf(kind === 'subscription' ? 'subscription' : 'kindAd'),
     amount: Number(amount) || 0,
     method, bizId, receivedBy, reference,
-    autoRenew: false,                      // cash never renews
     covers: { from: t0, to: endsAt },
   });
+  if (!receipt) return null;
+  /* ⚠️ Money handed over in person is the one action that leaves no trace
+     anywhere else — no card statement, no gateway record — so who issued it
+     and for how much belongs in the log beside everything else. And it is
+     written AFTER the receipt: a log line for an order that was refused
+     says something happened that did not. */
+  logAdminAction(bizId || '—', 'cashOrder', receivedBy || '', String(amount || 0));
 
   if (kind === 'subscription') {
     /* Written straight in rather than through startSubscription(): that
@@ -7891,6 +8253,10 @@ export function addCashOrder({ kind, bizId = null, product = '', cat = '',
       invoices: [{ id: receipt.id, date: t0, amount: Number(amount) || 0, status: 'paid' }],
       notified: {},
     };
+    /* ⚠️ AND THE ROW SAYS SO, so the owner sees it from any device (`665ب`).
+       `state.subscription` is one object on one phone; `plan` and
+       `plan_until` are on the business, which is the thing subscribed. */
+    pushPlan(bizId, 'paid', endsAt, true);
   } else {
     state.myAds.unshift({
       id: mintId('ad'),

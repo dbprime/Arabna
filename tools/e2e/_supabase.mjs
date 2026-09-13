@@ -66,7 +66,11 @@ const SCHEMA = { classifieds: columnsOf('classifieds'), businesses: columnsOf('b
                  /* and the two `665أ` finally writes: their columns and their
                     two policies have stood since `0001`/`0002` and nothing
                     ever inserted or updated one */
-                 greetings: columnsOf('greetings'), settings: columnsOf('settings') };
+                 greetings: columnsOf('greetings'), settings: columnsOf('settings'),
+                 /* and the two `665ب` finally writes: the log's columns and
+                    its two policies have stood since `0001`/`0002`, and the
+                    receipts' ten columns gained thirteen more in `0020` */
+                 admin_log: columnsOf('admin_log'), receipts: columnsOf('receipts') };
 
 /* ⚠️ AND THE SEEDED SETTINGS ARE READ FROM THE MIGRATION TOO, for the same
    reason the columns are: the listing limit lives in `settings` from `0009`,
@@ -96,7 +100,7 @@ function freshDb() {
     classifieds: [],
     events: [],
     messages: [], reviews: [], review_replies: [], flags: [], claims: [],
-    notifications: [], biz_photos: [], greetings: [],
+    notifications: [], biz_photos: [], greetings: [], admin_log: [], receipts: [],
     /* the file store (660): one list of objects, and the bucket rules are
        mirrored from `0019` below rather than waved through */
     objects: [],
@@ -391,6 +395,74 @@ export async function mockSupabase(ctx, opts = {}) {
       return route.fulfill(json(true));
     }
 
+    /* ⚠️ `0020`'s `issue_cash_receipt`, WITH ITS GUARD — and the guard is
+       the item. `0002` gives `receipts` NO insert from a client at all, so
+       a mock that let a PATCH or a POST through would keep «a cash receipt
+       is written» green on a database where the app could never write one,
+       and would hide that the door is the function. The authorisation is
+       the FIRST thing checked and it ANSWERS AN ERROR, never zero rows. */
+    if (path === '/rest/v1/rpc/issue_cash_receipt') {
+      const me = local.session && db.profiles.get(local.session.user.id);
+      if (!(me && me.is_admin)) {
+        return route.fulfill(json({ code: 'P0001', message: 'not authorized' }, 400));
+      }
+      if (!['cash', 'check', 'transfer'].includes(body.p_method)) {
+        return route.fulfill(json({ code: 'P0001',
+          message: 'method must be cash, check or transfer' }, 400));
+      }
+      /* the number is minted HERE and not by the caller — `ref` is unique
+         on the table, and two devices cannot see each other's */
+      const alpha = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+      let ref = '';
+      do {
+        ref = 'ARB-26-' + Array.from({ length: 5 },
+          () => alpha[Math.floor(Math.random() * alpha.length)]).join('');
+      } while (db.receipts.some(r => r.ref === ref));
+      const row = {
+        id: 'rcpt-' + (++db.seq), created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        payer_id: body.p_payer_id || null, payer_name: body.p_payer_name || null,
+        payer_email: body.p_payer_email || null,
+        ref, amount: body.p_amount, currency: 'USD', method: body.p_method,
+        issued_at: new Date().toISOString(),
+        kind: body.p_kind, description: body.p_description, tax: 0,
+        biz_id: body.p_biz_id, ref_id: null,
+        covers_from: body.p_covers_from, covers_to: body.p_covers_to,
+        received_by: body.p_received_by, reference: body.p_reference,
+        auto_renew: false, refund_of: body.p_refund_of || null,
+        status: body.p_refund_of ? 'refunded' : 'paid',
+      };
+      db.receipts.push(row);
+      return route.fulfill(json(row));
+    }
+
+    /* ⚠️ `0020`'s `boost_classified`, WITH BOTH ITS GUARDS AND ITS
+       `greatest`. A mock that took any duration from anybody would keep
+       «a member cannot boost somebody else's listing» and «a duration off
+       the list is refused» green on a database that had lost both — and
+       `greatest` is what makes a second purchase ADD rather than replace,
+       which is the difference between nine days and seven. */
+    if (path === '/rest/v1/rpc/boost_classified') {
+      const me = local.session && db.profiles.get(local.session.user.id);
+      const uid = local.session ? local.session.user.id : null;
+      const row = db.classifieds.find(c => String(c.id) === String(body.listing_id));
+      if (!row) {
+        return route.fulfill(json({ code: 'P0001', message: 'no such listing' }, 400));
+      }
+      if (row.owner_id !== uid && !(me && me.is_admin)) {
+        return route.fulfill(json({ code: 'P0001', message: 'not authorized' }, 400));
+      }
+      if (![3, 7, 14].includes(Number(body.days))) {
+        return route.fulfill(json({ code: 'P0001',
+          message: 'duration must be 3, 7 or 14 days' }, 400));
+      }
+      const nowMs = Date.now();
+      const had = row.boosted_until ? Date.parse(row.boosted_until) : 0;
+      const from = Math.max(nowMs, had || nowMs);
+      row.boosted_until = new Date(from + Number(body.days) * 86400000).toISOString();
+      return route.fulfill(json(row.boosted_until));
+    }
+
     /* ---------------- the file store (660) ----------------
        ⚠️ THE BUCKET RULES OF `0019`, MIRRORED — not waved through. A mock
        that accepted every upload and signed every path would make «a
@@ -615,6 +687,16 @@ export async function mockSupabase(ctx, opts = {}) {
          the row pending, which is what 630's third item measures. */
       if (req.method() === 'PATCH') {
         if (!local.session) return route.fulfill(json({ message: 'row-level security' }, 401));
+        /* ⚠️ `0002`: NO UPDATE ON `admin_log`, FOR ANYONE, THE ADMIN
+           INCLUDED — a log its own actor can rewrite is not a log. RLS
+           matches no row rather than raising, so the honest answer is an
+           empty set. */
+        if (table.startsWith('admin_log')) return route.fulfill(json([]));
+        /* and the boost column is bought, not written — see the POST */
+        if (table.startsWith('classifieds') && body && body.boosted_until != null) {
+          return route.fulfill(json({ code: 'P0001',
+            message: 'boosted_until is bought through boost_classified, not written' }, 400));
+        }
         if (table.startsWith('profiles')) {
           const pr = db.profiles.get(local.session.user.id);
           if (pr) Object.assign(pr, body);
@@ -661,6 +743,13 @@ export async function mockSupabase(ctx, opts = {}) {
          `messages`, `flags` and `claims` grant it to nobody. */
       if (req.method() === 'DELETE') {
         if (!local.session) return route.fulfill(json({ message: 'row-level security' }, 401));
+        /* ⚠️ AND NO DELETE ON `admin_log` OR `receipts`, FOR ANYONE. The
+           first is the log's own rule; the second is that deleting a
+           receipt is erasing that money was taken, and what answers a
+           refund is a SECOND receipt pointing at the first. */
+        if (table.startsWith('admin_log') || table.startsWith('receipts')) {
+          return route.fulfill(json([]));
+        }
         const mayDelete = (row) => {
           if (table === 'reviews' || table === 'review_replies') {
             return isAdmin || row.author_id === uid;
@@ -680,6 +769,29 @@ export async function mockSupabase(ctx, opts = {}) {
       }
       if (req.method() === 'POST') {
         if (!local.session) return route.fulfill(json({ message: 'new row violates row-level security policy' }, 401));
+        /* ⚠️ `0002` GIVES `receipts` NO INSERT FROM A CLIENT, THE ADMIN
+           INCLUDED — a receipt a client can create is a receipt anybody
+           holding the publishable key can invent. The door is
+           `issue_cash_receipt` above, and this refusal is what proves it
+           is the door rather than one road among several. */
+        if (table.startsWith('receipts')) {
+          return route.fulfill(json({ code: '42501',
+            message: 'new row violates row-level security policy for table "receipts"' }, 403));
+        }
+        /* `0002`: «admin: insert» on the log, and nothing else */
+        if (table.startsWith('admin_log') && !isAdmin) {
+          return route.fulfill(json({ code: '42501',
+            message: 'new row violates row-level security policy for table "admin_log"' }, 403));
+        }
+        /* ⚠️ AND `0020`'s TRIGGER: `boosted_until` IS BOUGHT, NOT WRITTEN.
+           `0002`'s «own: update» would otherwise let a listing's owner
+           PATCH a year into it with the publishable key, and the whole
+           paid item would be free to anybody who read the file. Measured
+           on a real PostgreSQL before the trigger was written. */
+        if (table.startsWith('classifieds') && body && body.boosted_until != null) {
+          return route.fulfill(json({ code: 'P0001',
+            message: 'boosted_until is bought through boost_classified, not written' }, 400));
+        }
         /* ⚠️ THE COLUMN IS `numeric`, AND THE DATABASE REFUSES A STRING IN
            IT. `addClassified` used to send the display price — «⁦$1,250⁩»,
            a dollar sign and two bidi isolates — and a mock that swallowed
