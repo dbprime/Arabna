@@ -557,6 +557,41 @@ console.log('--- 7: the subscription, and its cancellation ---');
   ok('7.6b …and the value trail beside it', fields.length >= 1,
      JSON.stringify(fields.map(r => r.from_val + ' -> ' + (r.to_val || '').slice(0, 10))));
 
+  /* ⚠️ AND THE CONTROL ITSELF IS MEASURED, which it was not when it was
+     written. Nothing in the whole net read `data-plancancel`, and the
+     first fault found in it was found by `test_v25 · 7.9` — an unrelated
+     suite's general rule — rather than by the batch's own. A control
+     added with no check is how the next batch breaks it in silence. */
+  await a.p.goto(BASE + '#/admin', { waitUntil: 'domcontentloaded' });
+  await a.p.waitForTimeout(900);
+  await a.p.click('[data-t="dir"]');
+  await a.p.waitForTimeout(400);
+  await a.p.fill('#dirQ', 'b30');
+  await a.p.waitForTimeout(600);
+  const paidRow = await a.p.evaluate(() =>
+    ({ rows: document.querySelectorAll('#aBody .setting-row [data-bizedit]').length,
+       cancel: !!document.querySelector('[data-plancancel="b30"]') }));
+  ok('7.7 the cancel control is drawn for a business that is paid',
+     paidRow.cancel, JSON.stringify(paidRow));
+
+  await a.p.fill('#dirQ', 'b31');
+  await a.p.waitForTimeout(600);
+  const freeRow = await a.p.evaluate(() =>
+    ({ rows: document.querySelectorAll('#aBody .setting-row [data-bizedit]').length,
+       cancel: !!document.querySelector('[data-plancancel="b31"]') }));
+  ok('7.8 …and NOT for a free one — a button that cannot act is worse than none',
+     freeRow.rows > 0 && !freeRow.cancel, JSON.stringify(freeRow));
+
+  /* ⚠️ AND THE QUESTION GOES TO THE STORE, never to the raw field.
+     `isPaid` reads through `businessPlan`, so a subscription recorded on
+     this device a moment ago — exactly when this button is wanted — is
+     already true, while `b.plan` is still whatever the row last said. */
+  const adm = strip(read('js/screens/admin.js'));
+  ok('7.9 …and the screen asks the store rather than the plan field',
+     /S\.isPaid\(b\)[\s\S]{0,120}data-plancancel/.test(adm)
+     && !/plan\s*===\s*['"]paid['"]/.test(adm),
+     /plan\s*===\s*['"]paid['"]/.test(adm) ? 'reads the field' : 'asks the store');
+
   await a.ctx.close(); await b.ctx.close();
 }
 

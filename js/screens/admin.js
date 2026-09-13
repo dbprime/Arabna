@@ -1653,8 +1653,13 @@ function dirBrowseHtml() {
         <button class="mini-btn" data-bizdel="${b.id}" aria-label="${t('adminDelBiz')}">${icon('trash', 15)}</button>
         ${/* ⚠️ DRAWN ONLY FOR A BUSINESS THAT IS ACTUALLY PAID. A cancel
               button on a free listing is a control that cannot do
-              anything, which is worse than no control. */''}
-        ${b.plan === 'paid'
+              anything, which is worse than no control.
+              ⚠️ AND THE QUESTION GOES TO THE STORE, never to the raw
+              field: `isPaid` reads through `businessPlan`, so a
+              subscription recorded on this device a moment ago — which is
+              exactly when this button is wanted — is already true here,
+              while `b.plan` is still whatever the row last said. */''}
+        ${S.isPaid(b)
           ? `<button class="mini-btn" data-plancancel="${b.id}" aria-label="${t('adminPlanEnd')}">${icon('x', 15)}</button>`
           : ''}
       </div>`).join('')
